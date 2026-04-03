@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useMemo } from 'react'
 import { Loader2 } from 'lucide-react'
+import { derivarNombreBase, extraerColorDelNombre } from '@/shared/lib/productos-utils'
 import { createEntrega } from '@/features/entregas/services/entregas-actions'
 import { MatrizProductos } from '@/shared/components/matriz-productos'
 import type { ProductoEnMatriz } from '@/shared/components/matriz-productos'
@@ -53,6 +54,10 @@ export function EntregaForm({ opId, lineasOP, onSuccess, onCancel }: Props) {
       const productId = lineas[0].producto_id
       const cantidades: Record<string, number> = {}
 
+      // Extraer color del nombre del producto
+      const colorReal = extraerColorDelNombre(nombre, null)
+      const nombreBase = derivarNombreBase(nombre, colorReal)
+
       for (const talla of tallasArray) {
         cantidades[talla] = 0
       }
@@ -64,8 +69,8 @@ export function EntregaForm({ opId, lineasOP, onSuccess, onCancel }: Props) {
       productos.push({
         producto_id: productId,
         referencia,
-        nombre,
-        color: null,
+        nombre: nombreBase,
+        color: colorReal,
         precio_unitario: 0,
         cantidades,
       })

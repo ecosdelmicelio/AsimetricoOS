@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { createOCPrendas } from '@/features/compras/services/compras-actions'
 import { TALLAS_STANDARD } from '@/shared/constants/tallas'
+import { derivarNombreBase, extraerColorDelNombre } from '@/shared/lib/productos-utils'
 import { MatrizProductos } from '@/shared/components/matriz-productos'
 import type { ProductoEnMatriz } from '@/shared/components/matriz-productos'
 
@@ -26,34 +27,6 @@ interface Proveedor {
 interface Props {
   proveedores: Proveedor[]
   productos: Producto[]
-}
-
-// Helper: extract base name without color
-function derivarNombreBase(nombre: string, color: string | null): string {
-  if (!color) return nombre
-  const regex = new RegExp(`\\s*${color.trim()}\\s*$`, 'i')
-  return nombre.replace(regex, '').trim()
-}
-
-// Helper: extract color from name if color field is null
-function extraerColorDelNombre(nombre: string, colorBD: string | null): string | null {
-  if (colorBD) return colorBD
-
-  const palabras = nombre.split(' ')
-  const ultimaPalabra = palabras[palabras.length - 1]
-
-  const coloresComunes = [
-    'Beige', 'Negro', 'Blanco', 'Rojo', 'Azul', 'Verde', 'Amarillo', 'Gris', 'Rosa',
-    'Naranja', 'Marrón', 'Morado', 'Plateado', 'Dorado', 'Marino', 'Claro', 'Oscuro',
-    'Burdeos', 'Vino', 'Navy', 'Royal', 'Teal', 'Turquesa', 'Coral', 'Salmón',
-    'BEN', 'NEN', 'BLN', 'RJO', 'AZL', 'VRD', 'GRS', 'RSA'
-  ]
-
-  if (coloresComunes.some(c => ultimaPalabra.toLowerCase() === c.toLowerCase())) {
-    return ultimaPalabra
-  }
-
-  return null
 }
 
 type GrupoProducto = {
@@ -115,26 +88,46 @@ export function OCPrendasForm({ proveedores, productos }: Props) {
     opt => !productosEnForm.some(pf => pf.producto_id === opt.productoId)
   ) ?? []
 
-  function agregarProducto() {
-    if (!colorSeleccionado) return
+  // Opciones para agregar color inline en MatrizProductos
+  const opcionesAgregarColor = useMemo(() => {
+    const result: Record<string, { productoId: string; color: string | null }[]> = {}
+    for (const grupo of grupos) {
+      const referenciaKey = grupo.opciones[0]?.referencia
+      if (!referenciaKey) continue
+      const disponibles = grupo.opciones.filter(
+        opt => !productosEnForm.some(pf => pf.producto_id === opt.productoId)
+      )
+      if (disponibles.length > 0) {
+        result[referenciaKey] = disponibles
+      }
+    }
+    return result
+  }, [grupos, productosEnForm])
 
-    const productoSeleccionado = coloresDisponibles.find(
-      opt => opt.productoId === colorSeleccionado
-    )
-    if (!productoSeleccionado) return
+  function agregarProductoPorId(productoId: string) {
+    const producto = productos.find(p => p.id === productoId)
+    if (!producto) return
 
-    if (productosEnForm.some(p => p.producto_id === colorSeleccionado)) return
+    if (productosEnForm.some(p => p.producto_id === productoId)) return
+
+    const colorReal = extraerColorDelNombre(producto.nombre, producto.color)
+    const nombreBase = derivarNombreBase(producto.nombre, colorReal)
 
     const nuevoProducto: ProductoEnMatriz = {
-      producto_id: productoSeleccionado.productoId,
-      referencia: productoSeleccionado.referencia,
-      nombre: derivarNombreBase(productoSeleccionado.nombre, productoSeleccionado.color),
-      color: productoSeleccionado.color,
-      precio_unitario: productos.find(p => p.id === colorSeleccionado)?.precio_base ?? 0,
+      producto_id: producto.id,
+      referencia: producto.referencia,
+      nombre: nombreBase,
+      color: colorReal,
+      precio_unitario: producto.precio_base ?? 0,
       cantidades: Object.fromEntries(TALLAS_STANDARD.map(t => [t, 0])),
     }
 
     setProductosEnForm(prev => [...prev, nuevoProducto])
+  }
+
+  function agregarProducto() {
+    if (!colorSeleccionado) return
+    agregarProductoPorId(colorSeleccionado)
     setNombreBaseSeleccionado('')
     setColorSeleccionado('')
   }
@@ -323,9 +316,11 @@ export function OCPrendasForm({ proveedores, productos }: Props) {
           productos={productosEnForm}
           tallas={[...TALLAS_STANDARD]}
           mostrarPrecio
+          opcionesAgregarColor={opcionesAgregarColor}
           onActualizarCantidad={actualizarCantidad}
           onActualizarPrecio={actualizarPrecio}
           onRemover={removerProducto}
+          onAgregarColor={agregarProductoPorId}
         />
       </div>
 

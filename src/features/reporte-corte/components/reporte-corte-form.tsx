@@ -75,7 +75,7 @@ function inicializarTendidos(lineasOP: LineaOPSimple[]): TendidoState[] {
         producto_id: productId,
         referencia,
         nombre,
-        color: null,
+        color: lineas[0].color ?? null,
         precio_unitario: 0,
         cantidades,
       })

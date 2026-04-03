@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { createOrdenVenta } from '@/features/ordenes-venta/services/ov-actions'
 import { TALLAS_STANDARD } from '@/shared/constants/tallas'
+import { derivarNombreBase, extraerColorDelNombre } from '@/shared/lib/productos-utils'
 import type { LineaOV } from '@/features/ordenes-venta/types'
 import { MatrizProductos } from '@/shared/components/matriz-productos'
 import type { ProductoEnMatriz } from '@/shared/components/matriz-productos'
@@ -21,39 +22,6 @@ interface Producto {
   precio_base: number | null
   categoria: string | null
   origen_usa: boolean
-}
-
-function derivarNombreBase(nombre: string, color: string | null): string {
-  if (!color) return nombre
-  // Usa replace final (la mayoría de los colores están al final del nombre)
-  // Ej: "Body Easywear R01 Beige" → "Body Easywear R01"
-  const regex = new RegExp(`\\s*${color.trim()}\\s*$`, 'i')
-  return nombre.replace(regex, '').trim()
-}
-
-// Extrae color del nombre si el campo color es null
-// Ej: "Body Easywear R01 Beige" → "Beige"
-function extraerColorDelNombre(nombre: string, colorBD: string | null): string | null {
-  if (colorBD) return colorBD
-
-  // Si no hay color en la BD, intenta extraer del nombre
-  // Patrón: última palabra si es un color común
-  const palabras = nombre.split(' ')
-  const ultimaPalabra = palabras[palabras.length - 1]
-
-  // Lista de colores comunes en español
-  const coloresComunes = [
-    'Beige', 'Negro', 'Blanco', 'Rojo', 'Azul', 'Verde', 'Amarillo', 'Gris', 'Rosa',
-    'Naranja', 'Marrón', 'Morado', 'Plateado', 'Dorado', 'Marino', 'Claro', 'Oscuro',
-    'Burdeos', 'Vino', 'Navy', 'Royal', 'Teal', 'Turquesa', 'Coral', 'Salmón',
-    'BEN', 'NEN', 'BLN', 'RJO', 'AZL', 'VRD', 'GRS', 'RSA'
-  ]
-
-  if (coloresComunes.some(c => ultimaPalabra.toLowerCase() === c.toLowerCase())) {
-    return ultimaPalabra
-  }
-
-  return null
 }
 
 type GrupoProducto = {
@@ -142,30 +110,50 @@ export function OVForm({ clientes, productos }: Props) {
     opt => !productosEnForm.some(pf => pf.producto_id === opt.productoId)
   ) ?? []
 
+  // Opciones para agregar color inline en MatrizProductos
+  const opcionesAgregarColor = useMemo(() => {
+    const result: Record<string, { productoId: string; color: string | null }[]> = {}
+    for (const grupo of grupos) {
+      const referenciaKey = grupo.opciones[0]?.referencia
+      if (!referenciaKey) continue
+      const disponibles = grupo.opciones.filter(
+        opt => !productosEnForm.some(pf => pf.producto_id === opt.productoId)
+      )
+      if (disponibles.length > 0) {
+        result[referenciaKey] = disponibles
+      }
+    }
+    return result
+  }, [grupos, productosEnForm])
+
   // ---------------------------------------------------------------------------
   // Acciones
   // ---------------------------------------------------------------------------
 
-  function agregarProducto() {
-    if (!colorSeleccionado) return
+  function agregarProductoPorId(productoId: string) {
+    const producto = productos.find(p => p.id === productoId)
+    if (!producto) return
 
-    const productoSeleccionado = coloresDisponibles.find(
-      opt => opt.productoId === colorSeleccionado
-    )
-    if (!productoSeleccionado) return
+    if (productosEnForm.some(p => p.producto_id === productoId)) return
 
-    if (productosEnForm.some(p => p.producto_id === colorSeleccionado)) return
+    const colorReal = extraerColorDelNombre(producto.nombre, producto.color)
+    const nombreBase = derivarNombreBase(producto.nombre, colorReal)
 
     const nuevoProducto: ProductoEnMatriz = {
-      producto_id: productoSeleccionado.productoId,
-      referencia: productoSeleccionado.referencia,
-      nombre: derivarNombreBase(productoSeleccionado.nombre, productoSeleccionado.color),
-      color: productoSeleccionado.color,
-      precio_unitario: productos.find(p => p.id === colorSeleccionado)?.precio_base ?? 0,
+      producto_id: producto.id,
+      referencia: producto.referencia,
+      nombre: nombreBase,
+      color: colorReal,
+      precio_unitario: producto.precio_base ?? 0,
       cantidades: Object.fromEntries(TALLAS_STANDARD.map(t => [t, 0])),
     }
 
     setProductosEnForm(prev => [...prev, nuevoProducto])
+  }
+
+  function agregarProducto() {
+    if (!colorSeleccionado) return
+    agregarProductoPorId(colorSeleccionado)
     setNombreBaseSeleccionado('')
     setColorSeleccionado('')
   }
@@ -343,9 +331,11 @@ export function OVForm({ clientes, productos }: Props) {
           productos={productosEnForm}
           tallas={[...TALLAS_STANDARD]}
           mostrarPrecio
+          opcionesAgregarColor={opcionesAgregarColor}
           onActualizarCantidad={actualizarCantidad}
           onActualizarPrecio={actualizarPrecio}
           onRemover={removerProducto}
+          onAgregarColor={agregarProductoPorId}
         />
       </div>
 

@@ -3,6 +3,7 @@
 import { useState, useTransition, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { formatDate } from '@/shared/lib/utils'
+import { derivarNombreBase, extraerColorDelNombre } from '@/shared/lib/productos-utils'
 import { createOrdenProduccion } from '@/features/ordenes-produccion/services/op-actions'
 import { TALLAS_STANDARD } from '@/shared/constants/tallas'
 import { MatrizProductos } from '@/shared/components/matriz-productos'
@@ -72,6 +73,10 @@ export function OPForm({ ovs, talleres, ovPreseleccionada }: Props) {
       const productId = lineas[0].producto_id
       const cantidades: Record<string, number> = {}
 
+      // Extraer color del nombre del producto
+      const colorReal = extraerColorDelNombre(nombre, null)
+      const nombreBase = derivarNombreBase(nombre, colorReal)
+
       for (const talla of TALLAS_STANDARD) {
         cantidades[talla] = 0
       }
@@ -84,8 +89,8 @@ export function OPForm({ ovs, talleres, ovPreseleccionada }: Props) {
       productos.push({
         producto_id: productId,
         referencia,
-        nombre,
-        color: null,
+        nombre: nombreBase,
+        color: colorReal,
         precio_unitario: 0,
         cantidades,
       })
