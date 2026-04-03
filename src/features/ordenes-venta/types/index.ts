@@ -1,4 +1,6 @@
 import type { Tables } from '@/shared/types/database'
+export { TALLAS_STANDARD } from '@/shared/constants/tallas'
+export type { Talla } from '@/shared/constants/tallas'
 
 export type OrdenVenta = Tables<'ordenes_venta'>
 export type OVDetalle = Tables<'ov_detalle'>
@@ -17,9 +19,6 @@ export interface HistorialEstado {
 }
 
 export type EstadoOV = 'borrador' | 'confirmada' | 'en_produccion' | 'completada' | 'cancelada'
-
-export const TALLAS_STANDARD = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] as const
-export const TALLAS_SHAPE = ['0XS', '00S', '0SM', 'SM', 'ML', 'LXL'] as const
 
 export interface LineaOV {
   producto_id: string

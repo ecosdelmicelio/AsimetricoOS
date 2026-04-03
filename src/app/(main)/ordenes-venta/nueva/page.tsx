@@ -11,6 +11,7 @@ type Producto = {
   id: string
   nombre: string
   referencia: string
+  color: string | null
   precio_base: number | null
   categoria: string | null
   origen_usa: boolean
@@ -34,7 +35,7 @@ export default function NuevaOVPage() {
             .order('nombre'),
           supabase
             .from('productos')
-            .select('id, nombre, referencia, precio_base, categoria, origen_usa')
+            .select('id, nombre, referencia, precio_base, categoria, origen_usa, color')
             .eq('estado', 'activo')
             .order('nombre'),
         ])
