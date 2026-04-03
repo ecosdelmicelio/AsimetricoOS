@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useMemo, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { createOrdenVenta } from '@/features/ordenes-venta/services/ov-actions'
@@ -9,10 +9,9 @@ import type { LineaOV } from '@/features/ordenes-venta/types'
 import { MatrizProductos } from '@/shared/components/matriz-productos'
 import type { ProductoEnMatriz } from '@/shared/components/matriz-productos'
 
-interface Cliente {
-  id: string
-  nombre: string
-}
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 interface Producto {
   id: string
@@ -24,10 +23,106 @@ interface Producto {
   origen_usa: boolean
 }
 
+function derivarNombreBase(nombre: string, color: string | null): string {
+  if (!color) return nombre
+  // Usa replace final (la mayoría de los colores están al final del nombre)
+  // Ej: "Body Easywear R01 Beige" → "Body Easywear R01"
+  const regex = new RegExp(`\\s*${color.trim()}\\s*$`, 'i')
+  return nombre.replace(regex, '').trim()
+}
+
+// Extrae color del nombre si el campo color es null
+// Ej: "Body Easywear R01 Beige" → "Beige"
+function extraerColorDelNombre(nombre: string, colorBD: string | null): string | null {
+  if (colorBD) return colorBD
+
+  // Si no hay color en la BD, intenta extraer del nombre
+  // Patrón: última palabra si es un color común
+  const palabras = nombre.split(' ')
+  const ultimaPalabra = palabras[palabras.length - 1]
+
+  // Lista de colores comunes en español
+  const coloresComunes = [
+    'Beige', 'Negro', 'Blanco', 'Rojo', 'Azul', 'Verde', 'Amarillo', 'Gris', 'Rosa',
+    'Naranja', 'Marrón', 'Morado', 'Plateado', 'Dorado', 'Marino', 'Claro', 'Oscuro',
+    'Burdeos', 'Vino', 'Navy', 'Royal', 'Teal', 'Turquesa', 'Coral', 'Salmón',
+    'BEN', 'NEN', 'BLN', 'RJO', 'AZL', 'VRD', 'GRS', 'RSA'
+  ]
+
+  if (coloresComunes.some(c => ultimaPalabra.toLowerCase() === c.toLowerCase())) {
+    return ultimaPalabra
+  }
+
+  return null
+}
+
+type GrupoProducto = {
+  nombreBase: string
+  opciones: {
+    productoId: string
+    color: string | null
+    referencia: string
+    nombre: string
+  }[]
+}
+
+function derivarGrupos(productos: Producto[]): GrupoProducto[] {
+  const map = new Map<string, GrupoProducto>()
+  for (const p of productos) {
+    // Extrae el color real (del nombre si el campo color es null)
+    const colorReal = extraerColorDelNombre(p.nombre, p.color)
+    const base = derivarNombreBase(p.nombre, colorReal)
+
+    if (!map.has(base)) {
+      map.set(base, { nombreBase: base, opciones: [] })
+    }
+    map.get(base)!.opciones.push({
+      productoId: p.id,
+      color: colorReal,
+      referencia: p.referencia,
+      nombre: p.nombre,
+    })
+  }
+  return [...map.values()].sort((a, b) => a.nombreBase.localeCompare(b.nombreBase))
+}
+
+// ---------------------------------------------------------------------------
+// Helpers de cálculo
+// ---------------------------------------------------------------------------
+
+function calcularUnidadesProducto(producto: ProductoEnMatriz): number {
+  return Object.values(producto.cantidades).reduce((s, q) => s + q, 0)
+}
+
+function calcularTotalProducto(producto: ProductoEnMatriz): number {
+  return calcularUnidadesProducto(producto) * producto.precio_unitario
+}
+
+function calcularTotalOV(productos: ProductoEnMatriz[]): number {
+  return productos.reduce((sum, p) => sum + calcularTotalProducto(p), 0)
+}
+
+function calcularTotalUds(productos: ProductoEnMatriz[]): number {
+  return productos.reduce((sum, p) => sum + calcularUnidadesProducto(p), 0)
+}
+
+// ---------------------------------------------------------------------------
+// Tipos de props del form
+// ---------------------------------------------------------------------------
+
+interface Cliente {
+  id: string
+  nombre: string
+}
+
 interface Props {
   clientes: Cliente[]
   productos: Producto[]
 }
+
+// ---------------------------------------------------------------------------
+// Componente
+// ---------------------------------------------------------------------------
 
 export function OVForm({ clientes, productos }: Props) {
   const router = useRouter()
@@ -36,62 +131,69 @@ export function OVForm({ clientes, productos }: Props) {
   const [clienteId, setClienteId] = useState('')
   const [fechaEntrega, setFechaEntrega] = useState('')
   const [productosEnForm, setProductosEnForm] = useState<ProductoEnMatriz[]>([])
-  const [productoSelId, setProductoSelId] = useState('')
+  const [nombreBaseSeleccionado, setNombreBaseSeleccionado] = useState('')
+  const [colorSeleccionado, setColorSeleccionado] = useState('')
   const [error, setError] = useState<string | null>(null)
 
+  // Grupos derivados del catálogo
+  const grupos = useMemo(() => derivarGrupos(productos), [productos])
+  const grupoActual = grupos.find(g => g.nombreBase === nombreBaseSeleccionado)
+  const coloresDisponibles = grupoActual?.opciones.filter(
+    opt => !productosEnForm.some(pf => pf.producto_id === opt.productoId)
+  ) ?? []
+
+  // ---------------------------------------------------------------------------
+  // Acciones
+  // ---------------------------------------------------------------------------
+
   function agregarProducto() {
-    const prod = productos.find(p => p.id === productoSelId)
-    if (!prod) return
-    if (productosEnForm.some(p => p.producto_id === prod.id)) return
+    if (!colorSeleccionado) return
 
-    const cantidades: Record<string, number> = {}
-    TALLAS_STANDARD.forEach(t => { cantidades[t] = 0 })
+    const productoSeleccionado = coloresDisponibles.find(
+      opt => opt.productoId === colorSeleccionado
+    )
+    if (!productoSeleccionado) return
 
-    const nuevo: ProductoEnMatriz = {
-      producto_id: prod.id,
-      referencia: prod.referencia,
-      nombre: prod.nombre,
-      color: prod.color,
-      precio_unitario: prod.precio_base ?? 0,
-      cantidades,
+    if (productosEnForm.some(p => p.producto_id === colorSeleccionado)) return
+
+    const nuevoProducto: ProductoEnMatriz = {
+      producto_id: productoSeleccionado.productoId,
+      referencia: productoSeleccionado.referencia,
+      nombre: derivarNombreBase(productoSeleccionado.nombre, productoSeleccionado.color),
+      color: productoSeleccionado.color,
+      precio_unitario: productos.find(p => p.id === colorSeleccionado)?.precio_base ?? 0,
+      cantidades: Object.fromEntries(TALLAS_STANDARD.map(t => [t, 0])),
     }
 
-    setProductosEnForm(prev => [...prev, nuevo])
-    setProductoSelId('')
+    setProductosEnForm(prev => [...prev, nuevoProducto])
+    setNombreBaseSeleccionado('')
+    setColorSeleccionado('')
   }
 
-  function actualizarCantidad(productoId: string, talla: string, cantidad: number) {
+  function actualizarCantidad(productoId: string, talla: string, valor: string | number) {
+    const num = typeof valor === 'number' ? valor : parseInt(String(valor)) || 0
     setProductosEnForm(prev =>
       prev.map(p =>
-        p.producto_id !== productoId
-          ? p
-          : { ...p, cantidades: { ...p.cantidades, [talla]: cantidad } }
+        p.producto_id === productoId
+          ? { ...p, cantidades: { ...p.cantidades, [talla]: Math.max(0, num) } }
+          : p
       )
     )
   }
 
-  function actualizarPrecio(productoId: string, precio: number) {
+  function actualizarPrecio(productoId: string, valor: string | number) {
+    const num = typeof valor === 'number' ? valor : parseFloat(String(valor)) || 0
     setProductosEnForm(prev =>
-      prev.map(p => p.producto_id !== productoId ? p : { ...p, precio_unitario: precio })
+      prev.map(p =>
+        p.producto_id === productoId
+          ? { ...p, precio_unitario: Math.max(0, num) }
+          : p
+      )
     )
   }
 
   function removerProducto(productoId: string) {
     setProductosEnForm(prev => prev.filter(p => p.producto_id !== productoId))
-  }
-
-  function calcularTotalUds(): number {
-    return productosEnForm.reduce(
-      (sum, p) => sum + Object.values(p.cantidades).reduce((s, v) => s + (v || 0), 0),
-      0
-    )
-  }
-
-  function calcularTotalOV(): number {
-    return productosEnForm.reduce((sum, p) => {
-      const uds = Object.values(p.cantidades).reduce((s, v) => s + (v || 0), 0)
-      return sum + uds * p.precio_unitario
-    }, 0)
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -132,9 +234,9 @@ export function OVForm({ clientes, productos }: Props) {
     })
   }
 
-  const productosDisponibles = productos.filter(
-    p => !productosEnForm.some(pf => pf.producto_id === p.id)
-  )
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -185,27 +287,50 @@ export function OVForm({ clientes, productos }: Props) {
       <div className="rounded-2xl bg-neu-base shadow-neu p-6 space-y-4">
         <h2 className="font-semibold text-foreground text-body-md">Productos</h2>
 
-        {/* Selector */}
-        <div className="flex gap-3 flex-wrap">
+        {/* Selectores en cascada */}
+        <div className="flex gap-3 flex-wrap items-center">
+          {/* Selector de nombre base */}
           <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5 flex-1 min-w-[200px]">
             <select
-              value={productoSelId}
-              onChange={e => setProductoSelId(e.target.value)}
+              value={nombreBaseSeleccionado}
+              onChange={e => {
+                setNombreBaseSeleccionado(e.target.value)
+                setColorSeleccionado('')
+              }}
               className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none"
             >
               <option value="">Seleccionar producto...</option>
-              {productosDisponibles.map(p => (
-                <option key={p.id} value={p.id}>
-                  {p.referencia} — {p.nombre}
+              {grupos.map(g => (
+                <option key={g.nombreBase} value={g.nombreBase}>
+                  {g.nombreBase}
                 </option>
               ))}
             </select>
           </div>
 
+          {/* Selector de color (solo si hay grupo seleccionado con opciones) */}
+          {grupoActual && coloresDisponibles.length > 0 && (
+            <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5 flex-1 min-w-[150px]">
+              <select
+                value={colorSeleccionado}
+                onChange={e => setColorSeleccionado(e.target.value)}
+                className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none"
+              >
+                <option value="">Seleccionar color...</option>
+                {coloresDisponibles.map(opt => (
+                  <option key={opt.productoId} value={opt.productoId}>
+                    {opt.color ?? 'Sin color'}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Botón agregar */}
           <button
             type="button"
             onClick={agregarProducto}
-            disabled={!productoSelId}
+            disabled={!colorSeleccionado}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset disabled:opacity-40 disabled:pointer-events-none"
           >
             <Plus className="w-4 h-4" />
@@ -230,10 +355,10 @@ export function OVForm({ clientes, productos }: Props) {
           <div>
             <p className="text-muted-foreground text-body-sm">Total estimado</p>
             <p className="text-display-xs font-bold text-foreground">
-              ${calcularTotalOV().toLocaleString('es-CO')}
+              ${calcularTotalOV(productosEnForm).toLocaleString('es-CO')}
             </p>
             <p className="text-muted-foreground text-body-sm">
-              {calcularTotalUds()} unidades
+              {calcularTotalUds(productosEnForm)} unidades
             </p>
           </div>
           <button

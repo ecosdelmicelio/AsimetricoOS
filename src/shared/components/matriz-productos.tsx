@@ -20,8 +20,15 @@ interface MatrizProductosProps {
   onRemover: (productoId: string) => void
 }
 
-const INPUT_CLASS =
-  'w-14 text-center bg-neu-base rounded-lg shadow-neu-inset-sm px-1 py-1 outline-none text-foreground placeholder:text-muted-foreground/50 text-body-sm'
+const INPUT_TALLA_CLASS =
+  'w-12 text-center bg-neu-base rounded-lg shadow-neu-inset-sm px-2 py-1 outline-none text-foreground placeholder:text-muted-foreground/50 text-body-sm'
+
+const INPUT_PRECIO_CLASS =
+  'w-20 text-center bg-neu-base rounded-lg shadow-neu-inset-sm px-2 py-1 outline-none text-foreground placeholder:text-muted-foreground/50 text-body-sm'
+
+function calcularUnidades(cantidades: Record<string, number>): number {
+  return Object.values(cantidades).reduce((sum, v) => sum + (v || 0), 0)
+}
 
 export function MatrizProductos({
   productos,
@@ -33,10 +40,6 @@ export function MatrizProductos({
 }: MatrizProductosProps) {
   const sinTallas = tallas.length === 0
 
-  function calcularTotal(cantidades: Record<string, number>): number {
-    return Object.values(cantidades).reduce((sum, v) => sum + (v || 0), 0)
-  }
-
   if (productos.length === 0) {
     return (
       <p className="text-muted-foreground text-body-sm text-center py-6">
@@ -46,145 +49,117 @@ export function MatrizProductos({
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl bg-neu-base shadow-neu-inset">
-      <table className="w-full text-body-sm whitespace-nowrap">
-        <thead>
-          <tr className="border-b border-black/5">
-            <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">Ref</th>
-            <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">Color</th>
+    <div className="space-y-3">
+      {productos.map(producto => {
+        const totalUds = calcularUnidades(producto.cantidades)
+        const subtotal = totalUds * producto.precio_unitario
 
+        return (
+          <div
+            key={producto.producto_id}
+            className="rounded-2xl bg-neu-base shadow-neu p-4 space-y-3"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-baseline gap-2 min-w-0">
+                <span className="font-semibold text-foreground text-body-sm truncate">
+                  {producto.nombre}
+                </span>
+                <span className="text-muted-foreground text-body-sm shrink-0">
+                  {producto.color ?? '—'}
+                </span>
+                <span className="text-muted-foreground/60 text-xs shrink-0">
+                  {producto.referencia}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => onRemover(producto.producto_id)}
+                className="p-1.5 rounded-lg text-red-400 hover:text-red-600 transition-colors shrink-0"
+                aria-label={`Eliminar ${producto.nombre}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Grid de tallas o input único */}
             {sinTallas ? (
-              <th className="text-center px-3 py-2.5 font-medium text-muted-foreground">Cantidad</th>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground text-body-sm">Cantidad total</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={producto.cantidades['total'] || ''}
+                  onChange={e => {
+                    const val = parseInt(e.target.value) || 0
+                    onActualizarCantidad(producto.producto_id, 'total', Math.max(0, val))
+                  }}
+                  placeholder="0"
+                  className={INPUT_TALLA_CLASS}
+                  aria-label={`Cantidad de ${producto.nombre}`}
+                />
+              </div>
             ) : (
-              <>
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                 {tallas.map(talla => (
-                  <th key={talla} className="text-center px-2 py-2.5 font-medium text-muted-foreground">
-                    {talla}
-                  </th>
-                ))}
-                <th className="text-center px-3 py-2.5 font-medium text-muted-foreground">Total uds</th>
-              </>
-            )}
-
-            {mostrarPrecio && (
-              <>
-                <th className="text-center px-3 py-2.5 font-medium text-muted-foreground">Precio</th>
-                <th className="text-right px-3 py-2.5 font-medium text-muted-foreground">Subtotal</th>
-              </>
-            )}
-
-            <th className="px-2 py-2.5" aria-label="Acciones" />
-          </tr>
-        </thead>
-        <tbody>
-          {productos.map(producto => {
-            const totalUds = calcularTotal(producto.cantidades)
-            const subtotal = totalUds * producto.precio_unitario
-
-            return (
-              <tr key={producto.producto_id} className="border-b border-black/5 last:border-0">
-                {/* Referencia + nombre */}
-                <td className="px-3 py-2">
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-foreground">{producto.referencia}</span>
-                    <span className="text-muted-foreground text-xs">{producto.nombre}</span>
-                  </div>
-                </td>
-
-                {/* Color */}
-                <td className="px-3 py-2 text-foreground">
-                  {producto.color ?? <span className="text-muted-foreground">—</span>}
-                </td>
-
-                {sinTallas ? (
-                  /* Modo sin tallas: una columna "total" */
-                  <td className="px-3 py-2 text-center">
+                  <div key={talla} className="flex flex-col items-center gap-1">
+                    <span className="text-muted-foreground text-xs font-medium">{talla}</span>
                     <input
                       type="number"
                       min="0"
-                      value={producto.cantidades['total'] || ''}
+                      value={producto.cantidades[talla] || ''}
                       onChange={e => {
                         const val = parseInt(e.target.value) || 0
-                        onActualizarCantidad(producto.producto_id, 'total', Math.max(0, val))
+                        onActualizarCantidad(producto.producto_id, talla, Math.max(0, val))
                       }}
                       placeholder="0"
-                      className={INPUT_CLASS}
-                      aria-label={`Cantidad de ${producto.referencia}`}
+                      className={INPUT_TALLA_CLASS}
+                      aria-label={`Cantidad talla ${talla} de ${producto.nombre}`}
                     />
-                  </td>
-                ) : (
-                  <>
-                    {/* Una columna por talla */}
-                    {tallas.map(talla => (
-                      <td key={talla} className="px-2 py-2 text-center">
-                        <input
-                          type="number"
-                          min="0"
-                          value={producto.cantidades[talla] || ''}
-                          onChange={e => {
-                            const val = parseInt(e.target.value) || 0
-                            onActualizarCantidad(producto.producto_id, talla, Math.max(0, val))
-                          }}
-                          placeholder="0"
-                          className={INPUT_CLASS}
-                          aria-label={`Cantidad talla ${talla} de ${producto.referencia}`}
-                        />
-                      </td>
-                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
 
-                    {/* Total unidades */}
-                    <td className="px-3 py-2 text-center text-foreground font-medium">
-                      {totalUds > 0 ? `${totalUds} uds` : <span className="text-muted-foreground">—</span>}
-                    </td>
-                  </>
-                )}
+            {/* Footer */}
+            <div className="flex items-center gap-4 flex-wrap pt-1 border-t border-black/5">
+              <span className="text-muted-foreground text-body-sm">
+                <span className="font-semibold text-foreground">{totalUds}</span> uds
+              </span>
 
-                {/* Precio y subtotal (solo si mostrarPrecio) */}
-                {mostrarPrecio && (
-                  <>
-                    <td className="px-3 py-2 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <span className="text-muted-foreground text-xs">$</span>
-                        <input
-                          type="number"
-                          min="0"
-                          step="100"
-                          value={producto.precio_unitario || ''}
-                          onChange={e => {
-                            const val = parseFloat(e.target.value) || 0
-                            onActualizarPrecio?.(producto.producto_id, Math.max(0, val))
-                          }}
-                          placeholder="0"
-                          className={INPUT_CLASS}
-                          aria-label={`Precio unitario de ${producto.referencia}`}
-                        />
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 text-right text-foreground">
+              {mostrarPrecio && (
+                <>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-muted-foreground text-body-sm">Precio: $</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="100"
+                      value={producto.precio_unitario || ''}
+                      onChange={e => {
+                        const val = parseFloat(e.target.value) || 0
+                        onActualizarPrecio?.(producto.producto_id, Math.max(0, val))
+                      }}
+                      placeholder="0"
+                      className={INPUT_PRECIO_CLASS}
+                      aria-label={`Precio unitario de ${producto.nombre}`}
+                    />
+                  </div>
+
+                  <span className="text-muted-foreground text-body-sm ml-auto">
+                    Subtotal:{' '}
+                    <span className="font-semibold text-foreground">
                       {subtotal > 0
                         ? `$${subtotal.toLocaleString('es-CO')}`
-                        : <span className="text-muted-foreground">—</span>
-                      }
-                    </td>
-                  </>
-                )}
-
-                {/* Eliminar */}
-                <td className="px-2 py-2 text-center">
-                  <button
-                    type="button"
-                    onClick={() => onRemover(producto.producto_id)}
-                    className="p-1.5 rounded-lg text-red-400 hover:text-red-600 transition-colors"
-                    aria-label={`Eliminar ${producto.referencia}`}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+                        : '—'}
+                    </span>
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
