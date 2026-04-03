@@ -61,5 +61,14 @@ export interface CreateReporteCorteInput {
   op_id: string
   fecha: string
   notas?: string
-  tendidos: CreateTendidoInput[]
+  tendidos?: CreateTendidoInput[]
+  // Nuevo flujo: registrar consumo de materiales
+  referencias_seleccionadas?: Array<{ referencia: string; color: string | null }>
+  consumo_materiales?: Array<{
+    material_id: string
+    metros_usados: number
+    desperdicio_kg: number
+    material_devuelto_kg: number
+    referencias_cortadas: Array<{ referencia: string; color: string | null; bomMetros: number }>
+  }>
 }
