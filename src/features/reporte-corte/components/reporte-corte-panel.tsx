@@ -1,6 +1,6 @@
 import { Scissors } from 'lucide-react'
 import type { ReporteCorteCompleto } from '@/features/reporte-corte/types'
-import { ReporteCorteeForm, type LineaOPSimple } from './reporte-corte-form'
+import { ReporteCorteMejorado, type LineaOPSimple } from './reporte-corte-mejorado'
 import { formatDate } from '@/shared/lib/utils'
 
 interface Props {
@@ -111,7 +111,7 @@ export function ReporteCorteePanel({ opId, estadoActual, reporte, lineasOP }: Pr
           <p className="text-body-sm text-muted-foreground">
             Registra el reporte de corte para poder avanzar a Confección.
           </p>
-          <ReporteCorteeForm opId={opId} lineasOP={lineasOP} />
+          <ReporteCorteMejorado opId={opId} lineasOP={lineasOP} />
         </div>
       )}
     </div>

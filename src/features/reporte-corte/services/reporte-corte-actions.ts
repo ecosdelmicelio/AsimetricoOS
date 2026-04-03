@@ -48,8 +48,13 @@ export async function createReporteCorte(input: CreateReporteCorteInput) {
       .map(l => ({
         tendido_id: tendido.id,
         producto_id: l.producto_id,
+        color: l.color ?? null,
+        material_id: l.material_id ?? null,
         talla: l.talla,
         cantidad_cortada: l.cantidad_cortada,
+        metros_usados: l.metros_usados ?? 0,
+        desperdicio_kg: l.desperdicio_kg ?? 0,
+        material_devuelto_kg: l.material_devuelto_kg ?? 0,
       }))
 
     if (lineas.length > 0) {

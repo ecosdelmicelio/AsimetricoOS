@@ -20,8 +20,13 @@ export interface ReporteCorteLinea {
   id: string
   tendido_id: string
   producto_id: string
+  color?: string | null
+  material_id?: string | null
   talla: string
   cantidad_cortada: number
+  metros_usados?: number
+  desperdicio_kg?: number
+  material_devuelto_kg?: number
   created_at: string
 }
 
@@ -42,8 +47,13 @@ export interface CreateTendidoInput {
   peso_desperdicio_kg: number
   lineas: {
     producto_id: string
+    color?: string | null
+    material_id?: string | null
     talla: string
     cantidad_cortada: number
+    metros_usados?: number
+    desperdicio_kg?: number
+    material_devuelto_kg?: number
   }[]
 }
 
