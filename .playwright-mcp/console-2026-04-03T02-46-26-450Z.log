@@ -1,0 +1,19 @@
+[    3544ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://play.google.com/log?format=json&hasfast=true:0
+[    5315ms] [LOG] https://login.jkanime.net @ https://cdn.jkdesa.com/assets3/js/main.js?v=2.0.180:618
+[    5315ms] [LOG]  @ https://cdn.jkdesa.com/assets3/js/main.js?v=2.0.180:619
+[    5318ms] [LOG] [] @ https://cdn.jkdesa.com/assets3/js/history.js?v=2.0.180:147
+[    5322ms] [LOG] [] @ https://cdn.jkdesa.com/assets3/js/main.js?v=2.0.180:1105
+[    5400ms] [LOG] Error @ https://acscdn.com/script/aclib.js:0
+[    5774ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ https://jkanime.net/:0
+[    5774ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "new-password"): (More info: https://goo.gl/9p2vKq) %o @ https://jkanime.net/:0
+[    5774ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "new-password"): (More info: https://goo.gl/9p2vKq) %o @ https://jkanime.net/:0
+[    6254ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://login.jkanime.net/api/usuario:0
+[    6270ms] [ERROR] Error en la primera llamada de api_usr: {readyState: 4, getResponseHeader: , getAllResponseHeaders: , setRequestHeader: , overrideMimeType: } @ https://cdn.jkdesa.com/assets3/js/main.js?v=2.0.180:748
+[   16318ms] [LOG] https://login.jkanime.net @ https://cdn.jkdesa.com/assets3/js/main.js?v=2.0.180:618
+[   16318ms] [LOG]  @ https://cdn.jkdesa.com/assets3/js/main.js?v=2.0.180:619
+[   16318ms] [LOG] [] @ https://cdn.jkdesa.com/assets3/js/history.js?v=2.0.180:147
+[   16319ms] [LOG] [] @ https://cdn.jkdesa.com/assets3/js/main.js?v=2.0.180:1105
+[   16339ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ https://jkanime.net/:0
+[   16339ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "new-password"): (More info: https://goo.gl/9p2vKq) %o @ https://jkanime.net/:0
+[   16339ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "new-password"): (More info: https://goo.gl/9p2vKq) %o @ https://jkanime.net/:0
+[   16365ms] [LOG] Error @ https://acscdn.com/script/aclib.js:0

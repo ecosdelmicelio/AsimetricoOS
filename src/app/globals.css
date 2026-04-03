@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Sans:wght@500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 230 30% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 230 30% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 230 30% 14%;
+    --primary: 214 52% 24%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 38 63% 57%;
+    --secondary-foreground: 230 30% 14%;
+    --muted: 214 20% 94%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 214 20% 94%;
+    --accent-foreground: 214 52% 24%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 214 52% 24%;
+    --radius: 0.5rem;
+
+    /* Status colors */
+    --success: 158 64% 40%;
+    --warning: 38 92% 50%;
+    --info: 214 89% 52%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-neu-base text-foreground font-sans;
+    background-color: #E8EDF2;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+  }
+}
+
+/* Mobile-first utility classes */
+@layer utilities {
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

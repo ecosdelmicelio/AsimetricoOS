@@ -1,0 +1,84 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]: Asimétrico OS
+          - generic [ref=e8]:
+            - link "Torre de Control" [ref=e9] [cursor=pointer]:
+              - /url: /torre-control
+              - img [ref=e10]
+              - generic [ref=e15]: Torre de Control
+            - link "Órdenes de Venta" [active] [ref=e16] [cursor=pointer]:
+              - /url: /ordenes-venta
+              - img [ref=e17]
+              - generic [ref=e20]: Órdenes de Venta
+            - link "Producción" [ref=e21] [cursor=pointer]:
+              - /url: /ordenes-produccion
+              - img [ref=e22]
+              - generic [ref=e24]: Producción
+            - link "Calidad" [ref=e25] [cursor=pointer]:
+              - /url: /calidad
+              - img [ref=e26]
+              - generic [ref=e29]: Calidad
+            - link "Liquidación" [ref=e30] [cursor=pointer]:
+              - /url: /liquidacion
+              - img [ref=e31]
+              - generic [ref=e33]: Liquidación
+            - link "Productos" [ref=e34] [cursor=pointer]:
+              - /url: /productos
+              - img [ref=e35]
+              - generic [ref=e39]: Productos
+            - link "Compras" [ref=e40] [cursor=pointer]:
+              - /url: /compras
+              - img [ref=e41]
+              - generic [ref=e45]: Compras
+            - link "Terceros" [ref=e46] [cursor=pointer]:
+              - /url: /terceros
+              - img [ref=e47]
+              - generic [ref=e52]: Terceros
+            - link "Configuración" [ref=e53] [cursor=pointer]:
+              - /url: /configuracion
+              - img [ref=e54]
+              - generic [ref=e57]: Configuración
+        - generic [ref=e62]:
+          - generic [ref=e175]: alejandro.guevara@asimetrico.co · Orquestador
+          - button "Salir" [ref=e63] [cursor=pointer]:
+            - img [ref=e64]
+            - generic [ref=e67]: Salir
+    - main [ref=e68]:
+      - generic [ref=e176]:
+        - generic [ref=e177]:
+          - generic [ref=e178]:
+            - heading "Órdenes de Venta" [level=1] [ref=e179]
+            - paragraph [ref=e180]: 2 órdenes registradas
+          - link "Nueva OV" [ref=e181] [cursor=pointer]:
+            - /url: /ordenes-venta/nueva
+            - img [ref=e182]
+            - text: Nueva OV
+        - generic [ref=e183]:
+          - 'link "OV-2026-002 Borrador Confecciones López · Entrega: 29/04/2026" [ref=e184] [cursor=pointer]':
+            - /url: /ordenes-venta/85e17b6b-2c42-43c5-bd4a-6b65c238c509
+            - generic [ref=e185]:
+              - generic [ref=e186]:
+                - img [ref=e188]
+                - generic [ref=e191]:
+                  - generic [ref=e192]:
+                    - generic [ref=e193]: OV-2026-002
+                    - generic [ref=e194]: Borrador
+                  - paragraph [ref=e195]: "Confecciones López · Entrega: 29/04/2026"
+              - img [ref=e196]
+          - 'link "OV-2026-001 En Producción 2beCommerce · Entrega: 17/02/2026" [ref=e198] [cursor=pointer]':
+            - /url: /ordenes-venta/199eec80-276a-48fa-89e6-fb1b2208e9e7
+            - generic [ref=e199]:
+              - generic [ref=e200]:
+                - img [ref=e202]
+                - generic [ref=e205]:
+                  - generic [ref=e206]:
+                    - generic [ref=e207]: OV-2026-001
+                    - generic [ref=e208]: En Producción
+                  - paragraph [ref=e209]: "2beCommerce · Entrega: 17/02/2026"
+              - img [ref=e210]
+  - button "Open Next.js Dev Tools" [ref=e170] [cursor=pointer]:
+    - img [ref=e171]
+  - alert [ref=e174]

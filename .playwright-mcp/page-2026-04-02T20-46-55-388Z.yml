@@ -1,0 +1,19 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e7]: A
+      - heading "Asimétrico OS" [level=1] [ref=e8]
+      - paragraph [ref=e9]: Torre de Control
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]: Email
+        - textbox "Email" [ref=e13]:
+          - /placeholder: tu@asimetricolab.com
+      - generic [ref=e14]:
+        - generic [ref=e15]: Contraseña
+        - textbox "Contraseña" [ref=e16]:
+          - /placeholder: ••••••••
+      - button "Ingresar" [ref=e17] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e23] [cursor=pointer]:
+    - img [ref=e24]
+  - alert [ref=e27]

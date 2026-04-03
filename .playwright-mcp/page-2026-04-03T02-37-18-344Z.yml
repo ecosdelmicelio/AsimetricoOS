@@ -1,0 +1,107 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]: Asimétrico OS
+          - generic [ref=e8]:
+            - link "Torre de Control" [ref=e9] [cursor=pointer]:
+              - /url: /torre-control
+              - img [ref=e10]
+              - generic [ref=e15]: Torre de Control
+            - link "Órdenes de Venta" [ref=e16] [cursor=pointer]:
+              - /url: /ordenes-venta
+              - img [ref=e17]
+              - generic [ref=e20]: Órdenes de Venta
+            - link "Producción" [ref=e21] [cursor=pointer]:
+              - /url: /ordenes-produccion
+              - img [ref=e22]
+              - generic [ref=e24]: Producción
+            - link "Calidad" [ref=e25] [cursor=pointer]:
+              - /url: /calidad
+              - img [ref=e26]
+              - generic [ref=e29]: Calidad
+            - link "Liquidación" [ref=e30] [cursor=pointer]:
+              - /url: /liquidacion
+              - img [ref=e31]
+              - generic [ref=e33]: Liquidación
+            - link "Productos" [ref=e34] [cursor=pointer]:
+              - /url: /productos
+              - img [ref=e35]
+              - generic [ref=e39]: Productos
+            - link "Compras" [ref=e40] [cursor=pointer]:
+              - /url: /compras
+              - img [ref=e41]
+              - generic [ref=e45]: Compras
+            - link "Terceros" [ref=e46] [cursor=pointer]:
+              - /url: /terceros
+              - img [ref=e47]
+              - generic [ref=e52]: Terceros
+            - link "Configuración" [ref=e53] [cursor=pointer]:
+              - /url: /configuracion
+              - img [ref=e54]
+              - generic [ref=e57]: Configuración
+        - generic [ref=e62]:
+          - generic [ref=e175]: alejandro.guevara@asimetrico.co · Orquestador
+          - button "Salir" [ref=e63] [cursor=pointer]:
+            - img [ref=e64]
+            - generic [ref=e67]: Salir
+    - main [ref=e68]:
+      - generic [ref=e213]:
+        - generic [ref=e214]:
+          - generic [ref=e215]:
+            - link [ref=e216] [cursor=pointer]:
+              - /url: /ordenes-venta
+              - img [ref=e217]
+            - generic [ref=e219]:
+              - generic [ref=e220]:
+                - heading "OV-2026-002" [level=1] [ref=e221]
+                - generic [ref=e222]: Borrador
+              - paragraph [ref=e223]: Confecciones López
+          - button "Confirmar OV" [ref=e225] [cursor=pointer]
+        - generic [ref=e226]:
+          - generic [ref=e227]:
+            - generic [ref=e228]:
+              - img [ref=e229]
+              - generic [ref=e232]: Cliente
+            - paragraph [ref=e233]: Confecciones López
+          - generic [ref=e234]:
+            - generic [ref=e235]:
+              - img [ref=e236]
+              - generic [ref=e238]: Entrega
+            - paragraph [ref=e239]: 29/04/2026
+          - generic [ref=e240]:
+            - generic [ref=e241]:
+              - img [ref=e242]
+              - generic [ref=e246]: Unidades
+            - paragraph [ref=e247]: "0"
+          - generic [ref=e248]:
+            - generic [ref=e249]:
+              - img [ref=e250]
+              - generic [ref=e253]: Total
+            - paragraph [ref=e254]: $ 0
+        - generic [ref=e255]:
+          - paragraph [ref=e256]: Notas
+          - paragraph [ref=e257]: Test OV
+        - heading "Detalle de Productos" [level=2] [ref=e259]
+        - generic [ref=e260]:
+          - generic [ref=e261]:
+            - paragraph [ref=e262]: Valor total de la OV
+            - paragraph [ref=e263]: $ 0
+          - generic [ref=e264]:
+            - paragraph [ref=e265]: Fecha pedido
+            - paragraph [ref=e266]: 30/03/2026
+        - generic [ref=e267]:
+          - generic [ref=e268]:
+            - img [ref=e269]
+            - heading "Historial de Estados" [level=3] [ref=e273]
+          - generic [ref=e277]:
+            - generic [ref=e282]:
+              - generic [ref=e283]:
+                - generic [ref=e284]: Orden creada
+                - generic [ref=e285]: 30 de mar de 2026, 02:45 p. m.
+              - paragraph [ref=e286]: Sistema
+            - paragraph [ref=e287]: Sin cambios de estado aún
+  - button "Open Next.js Dev Tools" [ref=e170] [cursor=pointer]:
+    - img [ref=e171]
+  - alert [ref=e174]

@@ -1,0 +1,120 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]: Asimétrico OS
+          - generic [ref=e8]:
+            - link "Torre de Control" [ref=e9] [cursor=pointer]:
+              - /url: /torre-control
+              - img [ref=e10]
+              - generic [ref=e15]: Torre de Control
+            - link "Órdenes de Venta" [ref=e16] [cursor=pointer]:
+              - /url: /ordenes-venta
+              - img [ref=e17]
+              - generic [ref=e20]: Órdenes de Venta
+            - link "Producción" [ref=e21] [cursor=pointer]:
+              - /url: /ordenes-produccion
+              - img [ref=e22]
+              - generic [ref=e24]: Producción
+            - link "Calidad" [ref=e25] [cursor=pointer]:
+              - /url: /calidad
+              - img [ref=e26]
+              - generic [ref=e29]: Calidad
+            - link "Liquidación" [ref=e30] [cursor=pointer]:
+              - /url: /liquidacion
+              - img [ref=e31]
+              - generic [ref=e33]: Liquidación
+            - link "Productos" [ref=e34] [cursor=pointer]:
+              - /url: /productos
+              - img [ref=e35]
+              - generic [ref=e39]: Productos
+            - link "Compras" [ref=e40] [cursor=pointer]:
+              - /url: /compras
+              - img [ref=e41]
+              - generic [ref=e45]: Compras
+            - link "Terceros" [ref=e46] [cursor=pointer]:
+              - /url: /terceros
+              - img [ref=e47]
+              - generic [ref=e52]: Terceros
+            - link "Configuración" [ref=e53] [cursor=pointer]:
+              - /url: /configuracion
+              - img [ref=e54]
+              - generic [ref=e57]: Configuración
+            - link "Mi Taller" [ref=e58] [cursor=pointer]:
+              - /url: /taller
+              - img [ref=e59]
+              - generic [ref=e61]: Mi Taller
+        - button "Salir" [ref=e63] [cursor=pointer]:
+          - img [ref=e64]
+          - generic [ref=e67]: Salir
+    - main [ref=e68]:
+      - generic [ref=e69]:
+        - generic [ref=e70]:
+          - heading "Torre de Control" [level=1] [ref=e71]
+          - paragraph [ref=e72]: Visibilidad en tiempo real de todas las órdenes
+        - generic [ref=e73]:
+          - link "0 OPs Activas" [ref=e74] [cursor=pointer]:
+            - /url: /ordenes-produccion
+            - generic [ref=e75]:
+              - img [ref=e78]
+              - paragraph [ref=e80]: "0"
+              - paragraph [ref=e81]: OPs Activas
+          - generic [ref=e82]:
+            - img [ref=e85]
+            - paragraph [ref=e87]: "0"
+            - paragraph [ref=e88]: En Riesgo
+          - generic [ref=e89]:
+            - img [ref=e92]
+            - paragraph [ref=e95]: "0"
+            - paragraph [ref=e96]: En Calidad
+          - generic [ref=e97]:
+            - img [ref=e100]
+            - paragraph [ref=e103]: "0"
+            - paragraph [ref=e104]: Completadas (mes)
+          - link "0 OVs Activas" [ref=e105] [cursor=pointer]:
+            - /url: /ordenes-venta
+            - generic [ref=e106]:
+              - img [ref=e109]
+              - paragraph [ref=e112]: "0"
+              - paragraph [ref=e113]: OVs Activas
+          - generic [ref=e114]:
+            - img [ref=e117]
+            - paragraph [ref=e119]: "0"
+            - paragraph [ref=e120]: OVs Sin OP
+        - generic [ref=e121]:
+          - generic [ref=e122]:
+            - generic [ref=e123]:
+              - heading "Órdenes de Producción Activas" [level=2] [ref=e124]
+              - link "Nueva OP" [ref=e125] [cursor=pointer]:
+                - /url: /ordenes-produccion/nueva
+                - img [ref=e126]
+                - text: Nueva OP
+            - generic [ref=e127]:
+              - img [ref=e129]
+              - paragraph [ref=e131]: No hay OPs activas
+              - paragraph [ref=e132]: Las órdenes aparecerán aquí cuando estén en proceso
+          - generic [ref=e133]:
+            - generic [ref=e134]:
+              - generic [ref=e135]:
+                - heading "OVs sin OP" [level=2] [ref=e136]
+                - link "Ver todas" [ref=e137] [cursor=pointer]:
+                  - /url: /ordenes-venta
+              - paragraph [ref=e139]: Todas las OVs tienen OP asignada
+            - generic [ref=e140]:
+              - generic [ref=e141]:
+                - img [ref=e142]
+                - heading "Ranking Talleres" [level=2] [ref=e145]
+              - paragraph [ref=e147]: Sin datos aún
+  - generic [ref=e152] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e153]:
+      - img [ref=e154]
+    - generic [ref=e157]:
+      - button "Open issues overlay" [ref=e158]:
+        - generic [ref=e159]:
+          - generic [ref=e160]: "0"
+          - generic [ref=e161]: "1"
+        - generic [ref=e162]: Issue
+      - button "Collapse issues badge" [ref=e163]:
+        - img [ref=e164]
+  - alert [ref=e166]

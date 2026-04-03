@@ -1,0 +1,97 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { createClient } from '@/shared/lib/supabase/server'
+import type { Producto, CreateProductoInput, UpdateProductoInput } from '@/features/productos/types'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function db(supabase: unknown): any { return supabase }
+
+async function nextRefNumero(segmento_id: string): Promise<number> {
+  const supabase = db(await createClient())
+  const { data } = await supabase.rpc('next_ref_numero', { p_segmento_id: segmento_id })
+  return (data as number) ?? 1
+}
+
+export async function getProductos(): Promise<Producto[]> {
+  const supabase = db(await createClient())
+  const { data } = await supabase
+    .from('productos')
+    .select('*')
+    .order('referencia', { ascending: true }) as { data: Producto[] | null }
+  return data ?? []
+}
+
+export async function getProductoById(id: string): Promise<Producto | null> {
+  const supabase = db(await createClient())
+  const { data } = await supabase
+    .from('productos')
+    .select('*')
+    .eq('id', id)
+    .single() as { data: Producto | null }
+  return data
+}
+
+export async function createProducto(
+  input: CreateProductoInput,
+): Promise<{ data: Producto | null; error?: string }> {
+  const supabase = db(await createClient())
+
+  // Assemble final referencia — replace '?' placeholders with auto_ref sequence numbers
+  let referencia = input.referencia.toUpperCase().trim()
+  if (input.autoRefs && input.autoRefs.length > 0) {
+    for (const ref of input.autoRefs) {
+      const num = await nextRefNumero(ref.segmento_id)
+      const numStr = String(num).padStart(ref.longitud, '0')
+      referencia = referencia.replace('?'.repeat(ref.longitud), numStr)
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('productos')
+    .insert({
+      referencia,
+      nombre: input.nombre.trim(),
+      categoria: input.categoria ?? '',
+      color: input.color ?? null,
+      origen_usa: input.origen_usa ?? false,
+      precio_base: input.precio_base ?? null,
+      estado: 'activo',
+      tipo_producto: input.tipo_producto ?? 'fabricado',
+      schema_id: input.schema_id ?? null,
+    })
+    .select()
+    .single() as { data: Producto | null; error: { message: string } | null }
+
+  if (error) return { data: null, error: error.message }
+
+  revalidatePath('/productos')
+  return { data }
+}
+
+export async function updateProducto(
+  id: string,
+  input: UpdateProductoInput,
+): Promise<{ error?: string }> {
+  const supabase = db(await createClient())
+
+  const payload: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (input.referencia !== undefined) payload.referencia = input.referencia.toUpperCase().trim()
+  if (input.nombre !== undefined) payload.nombre = input.nombre.trim()
+  if (input.categoria !== undefined) payload.categoria = input.categoria
+  if (input.precio_base !== undefined) payload.precio_base = input.precio_base
+  if (input.estado !== undefined) payload.estado = input.estado
+  if (input.tipo_producto !== undefined) payload.tipo_producto = input.tipo_producto
+  if (input.color !== undefined) payload.color = input.color || null
+  if (input.origen_usa !== undefined) payload.origen_usa = input.origen_usa
+
+  const { error } = await supabase
+    .from('productos')
+    .update(payload)
+    .eq('id', id) as { error: { message: string } | null }
+
+  if (error) return { error: error.message }
+  revalidatePath('/productos')
+  revalidatePath(`/productos/${id}`)
+  return {}
+}
