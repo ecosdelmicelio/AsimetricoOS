@@ -35,7 +35,8 @@ export async function getOrdenCompraById(id: string): Promise<OrdenCompraConDeta
     .select(`
       *,
       terceros!proveedor_id(nombre),
-      rollos(*, materiales(codigo, nombre, unidad))
+      rollos(*, materiales(codigo, nombre, unidad)),
+      oc_detalle(*)
     `)
     .eq('id', id)
     .single() as { data: OrdenCompraConDetalle | null }
@@ -191,31 +192,66 @@ export async function createOCPrendas(input: {
 
 export async function createRecepcionOC(input: {
   oc_id: string
-  material_id: string
+  material_id?: string
+  producto_id?: string
+  talla?: string
   cantidad_recibida: number
   cantidad_esperada?: number
+  precio_unitario?: number
   notas?: string
 }): Promise<{ error?: string }> {
   const supabase = db(await createClient())
   const { data: { user } } = await supabase.auth.getUser()
 
-  // 1. Crear recepcion_oc
+  // 1. Obtener OC para conocer tipo y validar precio
+  const { data: oc } = await supabase
+    .from('ordenes_compra')
+    .select('id, tipo, precio_unitario')
+    .eq('id', input.oc_id)
+    .single() as { data: { id: string; tipo: string; precio_unitario?: number } | null }
+
+  if (!oc) return { error: 'Orden de compra no encontrada' }
+
+  // 2. Validar que material/producto corresponda al tipo de OC
+  if (oc.tipo === 'materia_prima' && !input.material_id) {
+    return { error: 'OC de materia prima requiere material_id' }
+  }
+  if (oc.tipo === 'producto_terminado' && (!input.producto_id || !input.talla)) {
+    return { error: 'OC de producto terminado requiere producto_id y talla' }
+  }
+
+  // 3. Determinar precio unitario (usa input o precio de OC)
+  const precioUnitario = input.precio_unitario ?? oc.precio_unitario ?? 0
+  const costoTotal = input.cantidad_recibida * precioUnitario
+
+  // 4. Si precio cambió en OC de materia prima, actualizar OC
+  if (oc.tipo === 'materia_prima' && input.precio_unitario && input.precio_unitario !== oc.precio_unitario) {
+    await supabase
+      .from('ordenes_compra')
+      .update({ precio_unitario: input.precio_unitario })
+      .eq('id', input.oc_id)
+  }
+
+  // 5. Crear recepcion_oc (polimórfica)
   const { data: recepcion, error: recepcionError } = await supabase
     .from('recepcion_oc')
     .insert({
       oc_id: input.oc_id,
-      material_id: input.material_id,
+      material_id: input.material_id ?? null,
+      producto_id: input.producto_id ?? null,
+      talla: input.talla ?? null,
       cantidad_recibida: input.cantidad_recibida,
       cantidad_esperada: input.cantidad_esperada ?? null,
+      precio_unitario: precioUnitario,
       notas: input.notas?.trim() || null,
       recibido_por: user?.id ?? null,
     })
     .select('id')
     .single() as { data: { id: string } | null; error: { message: string } | null }
 
-  if (recepcionError || !recepcion) return { error: recepcionError?.message || 'Error creating recepcion' }
+  if (recepcionError || !recepcion) return { error: recepcionError?.message || 'Error creando recepción' }
 
-  // 2. Buscar bodega principal (Asimetrico Central)
+  // 6. Buscar bodega principal
   const { data: bodega } = await supabase
     .from('bodegas')
     .select('id')
@@ -225,7 +261,7 @@ export async function createRecepcionOC(input: {
 
   if (!bodega) return { error: 'Bodega principal no encontrada' }
 
-  // 3. Buscar tipo de movimiento ENTRADA_OC
+  // 7. Buscar tipo de movimiento ENTRADA_OC
   const { data: tipoMov } = await supabase
     .from('kardex_tipos_movimiento')
     .select('id')
@@ -235,26 +271,54 @@ export async function createRecepcionOC(input: {
 
   if (!tipoMov) return { error: 'Tipo de movimiento ENTRADA_OC no encontrado' }
 
-  // 4. Obtener información del material para la unidad
-  const { data: material } = await supabase
-    .from('materiales')
-    .select('unidad')
-    .eq('id', input.material_id)
-    .single() as { data: { unidad: string } | null }
+  // 8. Obtener información para calcular CPP y unidad
+  let unidad = 'unidades'
+  let saldoPonderado = precioUnitario
+  let materialesData = null
 
-  if (!material) return { error: 'Material no encontrado' }
+  if (oc.tipo === 'materia_prima') {
+    const { data: material } = await supabase
+      .from('materiales')
+      .select('unidad')
+      .eq('id', input.material_id)
+      .single() as { data: { unidad: string } | null }
+    if (!material) return { error: 'Material no encontrado' }
+    unidad = material.unidad
 
-  // 5. Insertar movimiento kardex
+    // Calcular CPP (saldo_ponderado)
+    const { data: kardexAnterior } = await supabase
+      .from('kardex')
+      .select('cantidad, saldo_ponderado')
+      .eq('material_id', input.material_id)
+      .eq('bodega_id', bodega.id)
+      .order('fecha_movimiento', { ascending: false })
+      .limit(1)
+      .single() as { data: { cantidad: number; saldo_ponderado: number } | null }
+
+    if (kardexAnterior && kardexAnterior.saldo_ponderado) {
+      const saldoAnterior = kardexAnterior.cantidad
+      const precioAnterior = kardexAnterior.saldo_ponderado
+      saldoPonderado = (saldoAnterior * precioAnterior + input.cantidad_recibida * precioUnitario) / (saldoAnterior + input.cantidad_recibida)
+    } else {
+      saldoPonderado = precioUnitario
+    }
+  }
+
+  // 9. Insertar movimiento kardex
   const { error: kardexError } = await supabase
     .from('kardex')
     .insert({
-      material_id: input.material_id,
+      material_id: input.material_id ?? null,
+      producto_id: input.producto_id ?? null,
       bodega_id: bodega.id,
       tipo_movimiento_id: tipoMov.id,
       documento_tipo: 'recepcion_oc',
       documento_id: recepcion.id,
       cantidad: input.cantidad_recibida,
-      unidad: material.unidad,
+      unidad,
+      costo_unitario: precioUnitario,
+      costo_total: costoTotal,
+      saldo_ponderado: saldoPonderado,
       fecha_movimiento: new Date().toISOString(),
       registrado_por: user?.id ?? null,
       notas: `Recepción OC - ${input.notas ? input.notas.substring(0, 50) : ''}`,
@@ -270,19 +334,23 @@ export async function getRecepcionesByOC(ocId: string) {
   const supabase = db(await createClient())
   const { data } = await supabase
     .from('recepcion_oc')
-    .select('*, materiales(codigo, nombre, unidad), profiles(full_name)')
+    .select('*, materiales(codigo, nombre, unidad), productos(referencia, nombre), profiles(full_name)')
     .eq('oc_id', ocId)
     .order('fecha_recepcion', { ascending: false }) as {
       data: Array<{
         id: string
         oc_id: string
-        material_id: string
+        material_id: string | null
+        producto_id: string | null
+        talla: string | null
         cantidad_recibida: number
         cantidad_esperada: number | null
+        precio_unitario: number | null
         notas: string | null
         recibido_por: string | null
         fecha_recepcion: string
         materiales: { codigo: string; nombre: string; unidad: string } | null
+        productos: { referencia: string; nombre: string } | null
         profiles: { full_name: string } | null
       }> | null
     }

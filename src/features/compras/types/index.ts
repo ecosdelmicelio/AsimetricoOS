@@ -7,6 +7,7 @@ export interface OrdenCompra {
   proveedor_id: string | null
   estado_documental: EstadoDocumental
   estado_greige: EstadoGreige
+  tipo: 'materia_prima' | 'producto_terminado'
   fecha_oc: string
   fecha_entrega_est: string
   notas: string | null
