@@ -201,9 +201,6 @@ export function ReporteCorteeForm({ opId, lineasOP }: Props) {
       {/* Tendidos por color */}
       <div className="space-y-4">
         {tendidos.map((tendido) => {
-          const lineasColor = lineasPorColor[tendido.color] ?? []
-          const tallas = Array.from(tallasPorColor[tendido.color] ?? new Set()).sort()
-
           return (
             <div key={tendido.id} className="rounded-xl bg-neu-base shadow-neu p-4 space-y-4">
               {/* Color / Metros / Peso */}
