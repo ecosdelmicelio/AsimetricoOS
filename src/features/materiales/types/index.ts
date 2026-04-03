@@ -8,6 +8,7 @@ export interface Material {
   costo_unit: number
   descripcion: string | null
   activo: boolean
+  rendimiento_kg: number | null
   created_at: string
   updated_at: string
 }

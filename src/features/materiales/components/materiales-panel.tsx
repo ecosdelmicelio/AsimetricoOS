@@ -152,6 +152,7 @@ function MaterialForm({
   const [unidad, setUnidad] = useState<UnidadMaterial>(material?.unidad ?? 'metros')
   const [costoUnit, setCostoUnit] = useState(material?.costo_unit?.toString() ?? '')
   const [descripcion, setDescripcion] = useState(material?.descripcion ?? '')
+  const [rendimientoKg, setRendimientoKg] = useState(material?.rendimiento_kg?.toString() ?? '')
   const isEdit = !!material
   const usaSchema = !isEdit && !!schema
 
@@ -226,14 +227,16 @@ function MaterialForm({
 
     setError(null)
     startTransition(async () => {
+      const rendimientoNum = rendimientoKg ? parseFloat(rendimientoKg) : null
       const res = isEdit
-        ? await updateMaterial(material.id, { nombre, unidad, costo_unit: costoNum, descripcion, activo })
+        ? await updateMaterial(material.id, { nombre, unidad, costo_unit: costoNum, descripcion, activo, rendimiento_kg: rendimientoNum })
         : await createMaterial({
             codigo: codigoEffectivo,
             nombre,
             unidad,
             costo_unit: costoNum,
             descripcion,
+            rendimiento_kg: rendimientoNum,
             autoRefs: autoRefs.length > 0 ? autoRefs : undefined,
             schema_id: schema?.id,
           })
@@ -334,7 +337,7 @@ function MaterialForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* Costo */}
         <div className="space-y-1">
           <label className="text-xs font-medium text-foreground">Costo/unidad (COP) *</label>
@@ -352,8 +355,27 @@ function MaterialForm({
           </div>
         </div>
 
+        {/* Rendimiento (m/kg) — solo para metros */}
+        {unidad === 'metros' && (
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-foreground">Rendimiento (m/kg)</label>
+            <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={rendimientoKg}
+                onChange={e => setRendimientoKg(e.target.value)}
+                placeholder="3.5"
+                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground">Metros por kilogramo</p>
+          </div>
+        )}
+
         {/* Descripción */}
-        <div className="space-y-1">
+        <div className={`space-y-1 ${unidad === 'metros' ? 'sm:col-span-1' : 'sm:col-span-2'}`}>
           <div className="flex items-center gap-1.5">
             <label className="text-xs font-medium text-foreground">Descripción</label>
             {usaSchema && autoTexto && descripcionEditadaRef.current && (

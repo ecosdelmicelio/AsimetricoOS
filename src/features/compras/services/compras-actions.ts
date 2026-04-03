@@ -188,3 +188,103 @@ export async function createOCPrendas(input: {
   revalidatePath('/compras')
   return { data: { id: oc.id } }
 }
+
+export async function createRecepcionOC(input: {
+  oc_id: string
+  material_id: string
+  cantidad_recibida: number
+  cantidad_esperada?: number
+  notas?: string
+}): Promise<{ error?: string }> {
+  const supabase = db(await createClient())
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // 1. Crear recepcion_oc
+  const { data: recepcion, error: recepcionError } = await supabase
+    .from('recepcion_oc')
+    .insert({
+      oc_id: input.oc_id,
+      material_id: input.material_id,
+      cantidad_recibida: input.cantidad_recibida,
+      cantidad_esperada: input.cantidad_esperada ?? null,
+      notas: input.notas?.trim() || null,
+      recibido_por: user?.id ?? null,
+    })
+    .select('id')
+    .single() as { data: { id: string } | null; error: { message: string } | null }
+
+  if (recepcionError || !recepcion) return { error: recepcionError?.message || 'Error creating recepcion' }
+
+  // 2. Buscar bodega principal (Asimetrico Central)
+  const { data: bodega } = await supabase
+    .from('bodegas')
+    .select('id')
+    .eq('tipo', 'principal')
+    .limit(1)
+    .single() as { data: { id: string } | null }
+
+  if (!bodega) return { error: 'Bodega principal no encontrada' }
+
+  // 3. Buscar tipo de movimiento ENTRADA_OC
+  const { data: tipoMov } = await supabase
+    .from('kardex_tipos_movimiento')
+    .select('id')
+    .eq('codigo', 'ENTRADA_OC')
+    .limit(1)
+    .single() as { data: { id: string } | null }
+
+  if (!tipoMov) return { error: 'Tipo de movimiento ENTRADA_OC no encontrado' }
+
+  // 4. Obtener información del material para la unidad
+  const { data: material } = await supabase
+    .from('materiales')
+    .select('unidad')
+    .eq('id', input.material_id)
+    .single() as { data: { unidad: string } | null }
+
+  if (!material) return { error: 'Material no encontrado' }
+
+  // 5. Insertar movimiento kardex
+  const { error: kardexError } = await supabase
+    .from('kardex')
+    .insert({
+      material_id: input.material_id,
+      bodega_id: bodega.id,
+      tipo_movimiento_id: tipoMov.id,
+      documento_tipo: 'recepcion_oc',
+      documento_id: recepcion.id,
+      cantidad: input.cantidad_recibida,
+      unidad: material.unidad,
+      fecha_movimiento: new Date().toISOString(),
+      registrado_por: user?.id ?? null,
+      notas: `Recepción OC - ${input.notas ? input.notas.substring(0, 50) : ''}`,
+    }) as { error: { message: string } | null }
+
+  if (kardexError) return { error: `Error en kardex: ${kardexError.message}` }
+
+  revalidatePath(`/compras/${input.oc_id}`)
+  return {}
+}
+
+export async function getRecepcionesByOC(ocId: string) {
+  const supabase = db(await createClient())
+  const { data } = await supabase
+    .from('recepcion_oc')
+    .select('*, materiales(codigo, nombre, unidad), profiles(full_name)')
+    .eq('oc_id', ocId)
+    .order('fecha_recepcion', { ascending: false }) as {
+      data: Array<{
+        id: string
+        oc_id: string
+        material_id: string
+        cantidad_recibida: number
+        cantidad_esperada: number | null
+        notas: string | null
+        recibido_por: string | null
+        fecha_recepcion: string
+        materiales: { codigo: string; nombre: string; unidad: string } | null
+        profiles: { full_name: string } | null
+      }> | null
+    }
+  return data ?? []
+}

@@ -30,6 +30,7 @@ export async function createMaterial(input: {
   unidad: UnidadMaterial
   costo_unit: number
   descripcion?: string
+  rendimiento_kg?: number | null
   autoRefs?: { segmento_id: string; longitud: number }[]
   schema_id?: string
 }): Promise<{ error?: string }> {
@@ -53,6 +54,7 @@ export async function createMaterial(input: {
       unidad:      input.unidad,
       costo_unit:  input.costo_unit,
       descripcion: input.descripcion?.trim() || null,
+      rendimiento_kg: input.rendimiento_kg ?? null,
       schema_id:   input.schema_id ?? null,
     }) as { error: { message: string } | null }
 
@@ -70,6 +72,7 @@ export async function updateMaterial(
     costo_unit?: number
     descripcion?: string
     activo?: boolean
+    rendimiento_kg?: number | null
   },
 ): Promise<{ error?: string }> {
   const supabase = db(await createClient())
@@ -81,6 +84,7 @@ export async function updateMaterial(
       ...(input.costo_unit !== undefined && { costo_unit:  input.costo_unit }),
       ...(input.descripcion !== undefined && { descripcion: input.descripcion?.trim() || null }),
       ...(input.activo !== undefined     && { activo:      input.activo }),
+      ...(input.rendimiento_kg !== undefined && { rendimiento_kg: input.rendimiento_kg }),
     })
     .eq('id', id) as { error: { message: string } | null }
   if (error) return { error: error.message }

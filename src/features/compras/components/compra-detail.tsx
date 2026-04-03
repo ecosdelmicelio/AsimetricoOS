@@ -1,9 +1,10 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Calendar, FileText, Package } from 'lucide-react'
-import { getOrdenCompraById, getMateriales } from '@/features/compras/services/compras-actions'
+import { getOrdenCompraById, getMateriales, getRecepcionesByOC } from '@/features/compras/services/compras-actions'
 import { OCDocBadge, OCGreigeBadge } from './oc-status-badge'
 import { RollosPanel } from './rollos-panel'
+import { RecepcionOC } from './recepcion-oc'
 import { DocEstadoSelector } from './doc-estado-selector'
 import { formatDate } from '@/shared/lib/utils'
 
@@ -12,9 +13,10 @@ interface Props {
 }
 
 export async function CompraDetail({ id }: Props) {
-  const [oc, materiales] = await Promise.all([
+  const [oc, materiales, recepciones] = await Promise.all([
     getOrdenCompraById(id),
     getMateriales(),
+    getRecepcionesByOC(id),
   ])
 
   if (!oc) notFound()
@@ -91,6 +93,9 @@ export async function CompraDetail({ id }: Props) {
 
       {/* Rollos */}
       <RollosPanel ocId={oc.id} rollos={oc.rollos} materiales={materiales} />
+
+      {/* Recepciones */}
+      <RecepcionOC oc={oc} recepciones={recepciones} />
     </div>
   )
 }

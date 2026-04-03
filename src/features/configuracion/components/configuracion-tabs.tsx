@@ -4,16 +4,19 @@ import { useState } from 'react'
 import { Code2, AlertTriangle, ShieldCheck } from 'lucide-react'
 import { SchemaManager } from '@/features/codigo-schema/components/schema-manager'
 import { CalidadConfigForm } from '@/features/calidad/components/calidad-config-form'
+import { TiposMovimientoTab } from '@/features/configuracion/components/tipos-movimiento-tab'
 import type { CodigoSchema } from '@/features/codigo-schema/types'
 import type { CalidadConfig } from '@/features/calidad/types'
+import type { TipoMovimiento } from '@/features/configuracion/services/tipos-movimiento-actions'
 
-type Tab = 'pt' | 'mp' | 'servicio' | 'defectos' | 'calidad'
+type Tab = 'pt' | 'mp' | 'servicio' | 'defectos' | 'calidad' | 'movimientos'
 
 const TABS: { id: Tab; label: string; sub: string; icon: 'code' | 'shield' }[] = [
   { id: 'pt',       label: 'Esquema PT',      sub: 'Código de Producto Terminado', icon: 'code'  },
   { id: 'mp',       label: 'Esquema MP',       sub: 'Código de Materia Prima',      icon: 'code'  },
   { id: 'servicio', label: 'Esquema Servicio', sub: 'Código de Servicio',           icon: 'code'  },
   { id: 'defectos', label: 'Tipos de Defecto', sub: 'Catálogo para calidad',        icon: 'code'  },
+  { id: 'movimientos', label: 'Movimientos', sub: 'Tipos de movimiento kardex',    icon: 'code'  },
   { id: 'calidad',  label: 'Calidad',          sub: 'Parámetros de inspección',     icon: 'shield'},
 ]
 
@@ -22,6 +25,7 @@ interface Props {
   schemaMaterial: CodigoSchema | null
   schemaServicio: CodigoSchema | null
   tiposDefecto: { id: string; codigo: string; nombre: string; categoria: string }[]
+  tiposMovimiento: TipoMovimiento[]
   calidadConfig: CalidadConfig
 }
 
@@ -30,6 +34,7 @@ export function ConfiguracionTabs({
   schemaMaterial,
   schemaServicio,
   tiposDefecto,
+  tiposMovimiento,
   calidadConfig,
 }: Props) {
   const [tab, setTab] = useState<Tab>('pt')
@@ -71,6 +76,7 @@ export function ConfiguracionTabs({
       {tab === 'mp'       && <SchemaManager entidad="material" schema={schemaMaterial} />}
       {tab === 'servicio' && <SchemaManager entidad="servicio" schema={schemaServicio} />}
       {tab === 'defectos' && <DefectosPanel tiposDefecto={tiposDefecto} />}
+      {tab === 'movimientos' && <TiposMovimientoTab tiposMovimiento={tiposMovimiento} />}
       {tab === 'calidad'  && <CalidadConfigForm config={calidadConfig} />}
     </div>
   )
