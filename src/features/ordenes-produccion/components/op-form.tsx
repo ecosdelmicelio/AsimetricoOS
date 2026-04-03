@@ -2,8 +2,11 @@
 
 import { useState, useTransition, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { cn, formatDate } from '@/shared/lib/utils'
+import { formatDate } from '@/shared/lib/utils'
 import { createOrdenProduccion } from '@/features/ordenes-produccion/services/op-actions'
+import { TALLAS_STANDARD } from '@/shared/constants/tallas'
+import { MatrizProductos } from '@/shared/components/matriz-productos'
+import type { ProductoEnMatriz } from '@/shared/components/matriz-productos'
 
 interface OVItem {
   id: string
@@ -40,43 +43,94 @@ export function OPForm({ ovs, talleres, ovPreseleccionada }: Props) {
   const [tallerId, setTallerId] = useState('')
   const [fechaPromesa, setFechaPromesa] = useState('')
   const [notas, setNotas] = useState('')
-  const [cantidades, setCantidades] = useState<Record<string, number>>({})
+  const [productosEnMatriz, setProductosEnMatriz] = useState<ProductoEnMatriz[]>([])
+  const [maxCantidades, setMaxCantidades] = useState<Record<string, number>>({})
   const [error, setError] = useState<string | null>(null)
 
   const ovSeleccionada = useMemo(() => ovs.find(o => o.id === ovId), [ovs, ovId])
 
-  // Inicializar cantidades con los valores disponibles de la OV cuando cambia la selección
+  // Agrupar ov_detalle por producto_id y construir ProductoEnMatriz[]
+  function agruparPorProducto(detalles: OVItem['ov_detalle']): { productos: ProductoEnMatriz[]; maxCantidades: Record<string, number> } {
+    const map = new Map<string, { referencia: string; nombre: string; lineas: typeof detalles }>()
+
+    for (const linea of detalles) {
+      const key = linea.producto_id
+      if (!map.has(key)) {
+        map.set(key, {
+          referencia: linea.productos?.referencia ?? '',
+          nombre: linea.productos?.nombre ?? 'Producto desconocido',
+          lineas: [],
+        })
+      }
+      map.get(key)!.lineas.push(linea)
+    }
+
+    const maxCant: Record<string, number> = {}
+    const productos: ProductoEnMatriz[] = []
+
+    for (const { referencia, nombre, lineas } of map.values()) {
+      const productId = lineas[0].producto_id
+      const cantidades: Record<string, number> = {}
+
+      for (const talla of TALLAS_STANDARD) {
+        cantidades[talla] = 0
+      }
+
+      for (const linea of lineas) {
+        cantidades[linea.talla] = 0
+        maxCant[`${productId}:${linea.talla}`] = linea.cantidad_disponible
+      }
+
+      productos.push({
+        producto_id: productId,
+        referencia,
+        nombre,
+        color: null,
+        precio_unitario: 0,
+        cantidades,
+      })
+    }
+
+    return { productos, maxCantidades: maxCant }
+  }
+
   function handleOVChange(id: string) {
     setOvId(id)
-    setCantidades({})
     const ov = ovs.find(o => o.id === id)
     if (ov) {
-      const initial: Record<string, number> = {}
-      ov.ov_detalle.forEach(d => {
-        initial[d.id] = d.cantidad_disponible
-      })
-      setCantidades(initial)
+      const { productos, maxCantidades: max } = agruparPorProducto(ov.ov_detalle)
+      setProductosEnMatriz(productos)
+      setMaxCantidades(max)
+    } else {
+      setProductosEnMatriz([])
+      setMaxCantidades({})
     }
   }
 
-  // Cuando se selecciona una OV al montar (preseleccionada), inicializar cantidades
+  // Cuando se selecciona una OV al montar (preseleccionada), inicializar
   useState(() => {
     if (ovPreseleccionada) handleOVChange(ovPreseleccionada)
   })
 
-  function handleCantidad(detalleId: string, valor: string) {
-    const num = parseInt(valor) || 0
-    setCantidades(prev => ({ ...prev, [detalleId]: Math.max(0, num) }))
+  function actualizarCantidad(productoId: string, talla: string, cantidad: number) {
+    setProductosEnMatriz(prev =>
+      prev.map(p =>
+        p.producto_id === productoId
+          ? { ...p, cantidades: { ...p.cantidades, [talla]: cantidad } }
+          : p
+      )
+    )
   }
 
   function calcularTotalLineas() {
-    if (!ovSeleccionada) return 0
-    return ovSeleccionada.ov_detalle.reduce((s, d) => s + (cantidades[d.id] ?? d.cantidad_disponible), 0)
+    return productosEnMatriz.reduce((total, producto) => {
+      const productTotal = Object.values(producto.cantidades).reduce((s, q) => s + q, 0)
+      return total + productTotal
+    }, 0)
   }
 
   function hayDisponible() {
-    if (!ovSeleccionada) return false
-    return ovSeleccionada.ov_detalle.some(d => d.cantidad_disponible > 0)
+    return Object.values(maxCantidades).some(max => max > 0)
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -87,14 +141,14 @@ export function OPForm({ ovs, talleres, ovPreseleccionada }: Props) {
     if (!tallerId) { setError('Selecciona un taller'); return }
     if (!fechaPromesa) { setError('Indica la fecha promesa'); return }
 
-    const lineas = ovSeleccionada?.ov_detalle
-      .filter(d => (cantidades[d.id] ?? d.cantidad) > 0)
-      .map(d => ({
-        producto_id: d.producto_id,
-        producto_nombre: d.productos?.nombre ?? '',
-        talla: d.talla,
-        cantidad_asignada: cantidades[d.id] ?? d.cantidad,
-      })) ?? []
+    const lineas = productosEnMatriz.flatMap(producto =>
+      TALLAS_STANDARD.map(talla => ({
+        producto_id: producto.producto_id,
+        producto_nombre: producto.nombre,
+        talla,
+        cantidad_asignada: producto.cantidades[talla] ?? 0,
+      })).filter(l => l.cantidad_asignada > 0)
+    )
 
     if (lineas.length === 0) {
       setError('Al menos una línea debe tener cantidad mayor a 0')
@@ -119,26 +173,6 @@ export function OPForm({ ovs, talleres, ovPreseleccionada }: Props) {
     })
   }
 
-  // Agrupar detalle de OV por producto
-  const porProducto = useMemo(() => {
-    if (!ovSeleccionada) return {}
-    return ovSeleccionada.ov_detalle.reduce<Record<string, {
-      referencia: string
-      nombre: string
-      lineas: typeof ovSeleccionada.ov_detalle
-    }>>((acc, det) => {
-      const key = det.productos?.referencia ?? 'sin-ref'
-      if (!acc[key]) {
-        acc[key] = {
-          referencia: det.productos?.referencia ?? '',
-          nombre: det.productos?.nombre ?? 'Producto desconocido',
-          lineas: [],
-        }
-      }
-      acc[key].lineas.push(det)
-      return acc
-    }, {})
-  }, [ovSeleccionada])
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -237,68 +271,14 @@ export function OPForm({ ovs, talleres, ovPreseleccionada }: Props) {
             <span className="text-red-600">No hay unidades disponibles en esta OV</span>}
           </p>
 
-          <div className="space-y-3">
-            {Object.values(porProducto).map(({ referencia, nombre, lineas }) => (
-              <div key={referencia} className="rounded-xl bg-neu-base shadow-neu overflow-hidden">
-                <div className="px-4 py-3 border-b border-black/5">
-                  <span className="font-semibold text-foreground text-body-sm">{referencia}</span>
-                  <span className="text-muted-foreground text-body-sm ml-2">{nombre}</span>
-                </div>
-                <div className="px-4 py-3">
-                  <div className="rounded-xl bg-neu-base shadow-neu-inset overflow-x-auto">
-                    <table className="w-full text-body-sm">
-                      <thead>
-                        <tr className="border-b border-black/5">
-                          <th className="text-left px-3 py-2 font-medium text-muted-foreground">Talla</th>
-                          <th className="text-center px-3 py-2 font-medium text-muted-foreground text-xs">Total</th>
-                          <th className="text-center px-3 py-2 font-medium text-muted-foreground text-xs">Disponible</th>
-                          <th className="text-center px-3 py-2 font-medium text-muted-foreground">Esta OP</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {lineas.map(linea => (
-                          <tr key={linea.id} className="border-b border-black/5 last:border-0">
-                            <td className="px-3 py-2">
-                              <span className={cn(
-                                'inline-flex items-center justify-center w-10 h-7 rounded-lg text-xs font-bold',
-                                'bg-neu-base shadow-neu-inset text-foreground'
-                              )}>
-                                {linea.talla}
-                              </span>
-                            </td>
-                            <td className="px-3 py-2 text-center">
-                              <span className="text-muted-foreground text-xs">{linea.cantidad}</span>
-                            </td>
-                            <td className="px-3 py-2 text-center">
-                              <span className={cn(
-                                'text-xs font-semibold',
-                                linea.cantidad_disponible === 0 ? 'text-red-600' : 'text-foreground'
-                              )}>
-                                {linea.cantidad_disponible}
-                              </span>
-                            </td>
-                            <td className="px-3 py-2">
-                              <div className="flex justify-center">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max={linea.cantidad_disponible}
-                                  disabled={linea.cantidad_disponible === 0}
-                                  value={cantidades[linea.id] ?? linea.cantidad_disponible}
-                                  onChange={e => handleCantidad(linea.id, e.target.value)}
-                                  className="w-20 text-center bg-neu-base rounded-lg shadow-neu-inset-sm px-2 py-1.5 outline-none text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-                                />
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <MatrizProductos
+            productos={productosEnMatriz}
+            tallas={TALLAS_STANDARD}
+            mostrarPrecio={false}
+            maxCantidades={maxCantidades}
+            onActualizarCantidad={actualizarCantidad}
+            onRemover={() => {}}
+          />
         </div>
       )}
 

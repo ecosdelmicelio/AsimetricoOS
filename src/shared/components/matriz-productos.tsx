@@ -15,6 +15,7 @@ interface MatrizProductosProps {
   productos: ProductoEnMatriz[]
   tallas: string[]
   mostrarPrecio?: boolean
+  maxCantidades?: Record<string, number>
   onActualizarCantidad: (productoId: string, talla: string, cantidad: number) => void
   onActualizarPrecio?: (productoId: string, precio: number) => void
   onRemover: (productoId: string) => void
@@ -34,6 +35,7 @@ export function MatrizProductos({
   productos,
   tallas,
   mostrarPrecio = false,
+  maxCantidades,
   onActualizarCantidad,
   onActualizarPrecio,
   onRemover,
@@ -101,23 +103,32 @@ export function MatrizProductos({
               </div>
             ) : (
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                {tallas.map(talla => (
-                  <div key={talla} className="flex flex-col items-center gap-1">
-                    <span className="text-muted-foreground text-xs font-medium">{talla}</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={producto.cantidades[talla] || ''}
-                      onChange={e => {
-                        const val = parseInt(e.target.value) || 0
-                        onActualizarCantidad(producto.producto_id, talla, Math.max(0, val))
-                      }}
-                      placeholder="0"
-                      className={INPUT_TALLA_CLASS}
-                      aria-label={`Cantidad talla ${talla} de ${producto.nombre}`}
-                    />
-                  </div>
-                ))}
+                {tallas.map(talla => {
+                  const maxKey = `${producto.producto_id}:${talla}`
+                  const maxValue = maxCantidades?.[maxKey]
+                  return (
+                    <div key={talla} className="flex flex-col items-center gap-1">
+                      <span className="text-muted-foreground text-xs font-medium">{talla}</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={producto.cantidades[talla] || ''}
+                        onChange={e => {
+                          const val = parseInt(e.target.value) || 0
+                          onActualizarCantidad(producto.producto_id, talla, Math.max(0, val))
+                        }}
+                        placeholder="0"
+                        className={INPUT_TALLA_CLASS}
+                        aria-label={`Cantidad talla ${talla} de ${producto.nombre}`}
+                      />
+                      {maxValue !== undefined && (
+                        <span className="text-muted-foreground/60 text-xs">
+                          / {maxValue}
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
 

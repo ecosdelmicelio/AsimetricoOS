@@ -3,6 +3,8 @@
 import { useState, useTransition, useMemo } from 'react'
 import { Loader2 } from 'lucide-react'
 import { createEntrega } from '@/features/entregas/services/entregas-actions'
+import { MatrizProductos } from '@/shared/components/matriz-productos'
+import type { ProductoEnMatriz } from '@/shared/components/matriz-productos'
 
 export interface LineaOPSimple {
   producto_id: string
@@ -23,41 +25,78 @@ export function EntregaForm({ opId, lineasOP, onSuccess, onCancel }: Props) {
   const [isPending, startTransition] = useTransition()
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
   const [notas, setNotas] = useState('')
-  const [cantidades, setCantidades] = useState<Record<string, string>>(() => {
-    const init: Record<string, string> = {}
-    lineasOP.forEach(l => { init[`${l.producto_id}:${l.talla}`] = '' })
-    return init
-  })
   const [error, setError] = useState<string | null>(null)
 
-  // Agrupar referencias únicas (sorted)
-  const referencias = useMemo(() => {
-    const refs = new Set(lineasOP.map(l => l.referencia))
-    return Array.from(refs).sort()
-  }, [lineasOP])
+  // Agrupar por producto_id y construir ProductoEnMatriz[]
+  const { productosEnMatriz, maxCantidades, tallas } = useMemo(() => {
+    const map = new Map<string, { referencia: string; nombre: string; lineas: LineaOPSimple[] }>()
 
-  // Agrupar tallas únicas (sorted)
-  const tallas = useMemo(() => {
+    for (const linea of lineasOP) {
+      const key = linea.producto_id
+      if (!map.has(key)) {
+        map.set(key, {
+          referencia: linea.referencia,
+          nombre: linea.nombre,
+          lineas: [],
+        })
+      }
+      map.get(key)!.lineas.push(linea)
+    }
+
     const tallaSet = new Set(lineasOP.map(l => l.talla))
-    return Array.from(tallaSet).sort()
+    const tallasArray = Array.from(tallaSet).sort()
+
+    const maxCant: Record<string, number> = {}
+    const productos: ProductoEnMatriz[] = []
+
+    for (const { referencia, nombre, lineas } of map.values()) {
+      const productId = lineas[0].producto_id
+      const cantidades: Record<string, number> = {}
+
+      for (const talla of tallasArray) {
+        cantidades[talla] = 0
+      }
+
+      for (const linea of lineas) {
+        maxCant[`${productId}:${linea.talla}`] = linea.cantidad_asignada
+      }
+
+      productos.push({
+        producto_id: productId,
+        referencia,
+        nombre,
+        color: null,
+        precio_unitario: 0,
+        cantidades,
+      })
+    }
+
+    return { productosEnMatriz: productos, maxCantidades: maxCant, tallas: tallasArray }
   }, [lineasOP])
 
-  function handleCantidad(key: string, valor: string) {
-    const num = parseInt(valor) || 0
-    setCantidades(prev => ({ ...prev, [key]: Math.max(0, num).toString() }))
+  const [productosEnMatrizState, setProductosEnMatrizState] = useState(productosEnMatriz)
+
+  function actualizarCantidad(productoId: string, talla: string, cantidad: number) {
+    setProductosEnMatrizState(prev =>
+      prev.map(p =>
+        p.producto_id === productoId
+          ? { ...p, cantidades: { ...p.cantidades, [talla]: cantidad } }
+          : p
+      )
+    )
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
 
-    const lineas = lineasOP
-      .map(l => ({
-        producto_id: l.producto_id,
-        talla: l.talla,
-        cantidad_entregada: parseInt(cantidades[`${l.producto_id}:${l.talla}`]) || 0,
-      }))
-      .filter(l => l.cantidad_entregada > 0)
+    const lineas = productosEnMatrizState.flatMap(producto =>
+      tallas.map(talla => ({
+        producto_id: producto.producto_id,
+        talla,
+        cantidad_entregada: producto.cantidades[talla] ?? 0,
+      })).filter(l => l.cantidad_entregada > 0)
+    )
 
     if (lineas.length === 0) {
       setError('Ingresa al menos una cantidad mayor a 0')
@@ -101,60 +140,17 @@ export function EntregaForm({ opId, lineasOP, onSuccess, onCancel }: Props) {
         </div>
       </div>
 
-      {/* Matriz horizontal: Tallas como columnas */}
+      {/* Matriz de entregas */}
       <div className="space-y-2">
         <p className="text-body-sm font-medium text-foreground">Unidades a entregar</p>
-        <div className="rounded-xl bg-neu-base shadow-neu-inset overflow-x-auto">
-          <table className="w-full text-body-sm">
-            <thead>
-              <tr className="border-b border-black/5">
-                <th className="text-left px-3 py-2 font-medium text-muted-foreground text-xs">Ref</th>
-                {tallas.map(talla => (
-                  <th key={talla} className="text-center px-2 py-2 font-medium text-muted-foreground text-xs min-w-14">
-                    {talla}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {referencias.map(ref => {
-                const lineasRef = lineasOP.filter(l => l.referencia === ref)
-                return (
-                  <tr key={ref} className="border-b border-black/5 last:border-0">
-                    <td className="px-3 py-2">
-                      <span className="font-mono text-xs text-primary-600">{ref}</span>
-                    </td>
-                    {tallas.map(talla => {
-                      const linea = lineasRef.find(l => l.talla === talla)
-                      const key = linea ? `${linea.producto_id}:${linea.talla}` : null
-
-                      return (
-                        <td key={talla} className="px-2 py-1.5 text-center">
-                          {key && linea ? (
-                            <div className="flex flex-col items-center gap-0.5">
-                              <input
-                                type="number"
-                                min={0}
-                                max={linea.cantidad_asignada}
-                                value={cantidades[key] ?? ''}
-                                onChange={e => handleCantidad(key, e.target.value)}
-                                placeholder="0"
-                                className="w-12 text-center bg-neu-base rounded-lg shadow-neu-inset-sm px-1 py-1 outline-none text-foreground text-xs"
-                              />
-                              <span className="text-xs text-muted-foreground">/{linea.cantidad_asignada}</span>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">—</span>
-                          )}
-                        </td>
-                      )
-                    })}
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+        <MatrizProductos
+          productos={productosEnMatrizState}
+          tallas={tallas}
+          mostrarPrecio={false}
+          maxCantidades={maxCantidades}
+          onActualizarCantidad={actualizarCantidad}
+          onRemover={() => {}}
+        />
       </div>
 
       {error && <p className="text-red-600 text-body-sm">{error}</p>}

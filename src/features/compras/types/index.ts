@@ -1,5 +1,5 @@
-export type EstadoDocumental = 'pendiente_afidavit' | 'cargado' | 'na'
-export type EstadoGreige = 'en_crudo' | 'para_tejer'
+export type EstadoDocumental = 'pendiente_afidavit' | 'cargado' | 'na' | 'en_proceso'
+export type EstadoGreige = 'en_crudo' | 'para_tejer' | 'otros'
 
 export interface OrdenCompra {
   id: string
@@ -34,4 +34,21 @@ export interface OrdenCompraConDetalle extends OrdenCompra {
 export interface OCListItem extends OrdenCompra {
   terceros: { nombre: string } | null
   rollos: { id: string }[]
+}
+
+export interface OCDetalle {
+  id: string
+  oc_id: string
+  producto_id: string
+  talla: string
+  cantidad: number
+  precio_pactado: number
+  created_at: string
+}
+
+export interface LineaOC {
+  producto_id: string
+  talla: string
+  cantidad: number
+  precio_pactado: number
 }

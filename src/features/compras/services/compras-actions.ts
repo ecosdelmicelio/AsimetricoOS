@@ -142,3 +142,49 @@ export async function getMateriales() {
     .order('nombre')
   return (data ?? []) as { id: string; codigo: string; nombre: string; unidad: string }[]
 }
+
+export async function createOCPrendas(input: {
+  proveedor_id: string
+  fecha_oc: string
+  fecha_entrega_est?: string
+  notas?: string
+  lineas: { producto_id: string; talla: string; cantidad: number; precio_pactado: number }[]
+}): Promise<{ data: { id: string } | null; error?: string }> {
+  const supabase = db(await createClient())
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Create the OC record
+  const { data: oc, error: ocError } = await supabase
+    .from('ordenes_compra')
+    .insert({
+      proveedor_id: input.proveedor_id,
+      estado_greige: 'otros',
+      estado_documental: 'en_proceso',
+      fecha_oc: input.fecha_oc,
+      fecha_entrega_est: input.fecha_entrega_est || input.fecha_oc,
+      notas: input.notas?.trim() || null,
+      creado_por: user?.id ?? null,
+    })
+    .select('id')
+    .single() as { data: { id: string } | null; error: { message: string } | null }
+
+  if (ocError || !oc) return { data: null, error: ocError?.message || 'Error creating OC' }
+
+  // Insert detail lines
+  const lineasInsert = input.lineas.map(l => ({
+    oc_id: oc.id,
+    producto_id: l.producto_id,
+    talla: l.talla,
+    cantidad: l.cantidad,
+    precio_pactado: l.precio_pactado,
+  }))
+
+  const { error: lineasError } = await supabase
+    .from('oc_detalle')
+    .insert(lineasInsert) as { error: { message: string } | null }
+
+  if (lineasError) return { data: null, error: lineasError.message }
+
+  revalidatePath('/compras')
+  return { data: { id: oc.id } }
+}
