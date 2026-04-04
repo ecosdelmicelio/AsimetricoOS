@@ -15,10 +15,12 @@ interface Props {
 export async function ReporteCorteePanel({ opId, estadoActual, reporte, lineasOP }: Props) {
   // Obtener bodegas
   const supabase = await createClient()
-  const { data: bodegas = [] } = await supabase
+  const { data: bodegasData } = await supabase
     .from('bodegas')
     .select('id, nombre')
     .order('nombre') as { data: Array<{ id: string; nombre: string }> | null }
+
+  const bodegas = bodegasData ?? []
 
   // Mostrar solo si hay reporte existente o si la OP está en corte
   if (!reporte && estadoActual !== 'en_corte') return null

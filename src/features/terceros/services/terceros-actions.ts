@@ -44,6 +44,7 @@ export async function createTercero(
       porcentaje_anticipo:       input.porcentaje_anticipo ?? null,
       calificacion:              input.calificacion ?? null,
       descuento_pago_anticipado: input.descuento_pago_anticipado ?? null,
+      bodega_taller_id:          input.bodega_taller_id ?? null,
       estado:                    'activo',
     })
     .select()
@@ -75,6 +76,7 @@ export async function updateTercero(
   if (input.porcentaje_anticipo !== undefined)       p.porcentaje_anticipo = input.porcentaje_anticipo ?? null
   if (input.calificacion !== undefined)              p.calificacion = input.calificacion || null
   if (input.descuento_pago_anticipado !== undefined) p.descuento_pago_anticipado = input.descuento_pago_anticipado ?? null
+  if (input.bodega_taller_id !== undefined)          p.bodega_taller_id = input.bodega_taller_id || null
 
   const { error } = await supabase
     .from('terceros')

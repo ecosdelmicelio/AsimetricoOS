@@ -17,6 +17,7 @@ export interface Tercero {
   porcentaje_anticipo: number | null
   calificacion: number | null
   descuento_pago_anticipado: number | null
+  bodega_taller_id: string | null
   created_at: string
   updated_at: string
 }
@@ -35,6 +36,7 @@ export interface CreateTerceroInput {
   porcentaje_anticipo?: number
   calificacion?: number
   descuento_pago_anticipado?: number
+  bodega_taller_id?: string
 }
 
 export interface UpdateTerceroInput extends Partial<CreateTerceroInput> {

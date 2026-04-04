@@ -32,9 +32,10 @@ interface Props {
   marcas:     MarcaConTercero[]
   direcciones: TerceroDireccion[]
   contactos:  TerceroContacto[]
+  bodegas:    Array<{ id: string; nombre: string }>
 }
 
-export function TercerosPanel({ terceros, marcas, direcciones, contactos }: Props) {
+export function TercerosPanel({ terceros, marcas, direcciones, contactos, bodegas }: Props) {
   const [filter, setFilter]   = useState<TipoTercero | 'todos'>('todos')
   const [showForm, setShowForm]   = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -81,7 +82,7 @@ export function TercerosPanel({ terceros, marcas, direcciones, contactos }: Prop
 
       {/* Form creación */}
       {showForm && (
-        <TerceroForm onDone={() => setShowForm(false)} marcas={[]} dirs={[]} contactos={[]} />
+        <TerceroForm onDone={() => setShowForm(false)} marcas={[]} dirs={[]} contactos={[]} bodegas={bodegas} />
       )}
 
       {/* Lista vacía */}
@@ -105,7 +106,7 @@ export function TercerosPanel({ terceros, marcas, direcciones, contactos }: Prop
             const terceroDirs      = direcciones.filter(d => d.tercero_id === t.id)
             const terceroContactos = contactos.filter(c => c.tercero_id === t.id)
             return editingId === t.id
-              ? <TerceroForm key={t.id} tercero={t} marcas={terceroMarcas} dirs={terceroDirs} contactos={terceroContactos} onDone={() => setEditingId(null)} />
+              ? <TerceroForm key={t.id} tercero={t} marcas={terceroMarcas} dirs={terceroDirs} contactos={terceroContactos} bodegas={bodegas} onDone={() => setEditingId(null)} />
               : <TerceroRow key={t.id} tercero={t} marcas={terceroMarcas} dirs={terceroDirs} contactos={terceroContactos} onEdit={() => { setEditingId(t.id); setShowForm(false) }} />
           })}
         </div>
@@ -203,7 +204,7 @@ function TerceroRow({ tercero: t, marcas, dirs, contactos, onEdit }: { tercero: 
 }
 
 /* ─── Form ─── */
-function TerceroForm({ tercero, marcas = [], dirs = [], contactos = [], onDone }: { tercero?: Tercero; marcas?: MarcaConTercero[]; dirs?: TerceroDireccion[]; contactos?: TerceroContacto[]; onDone: () => void }) {
+function TerceroForm({ tercero, marcas = [], dirs = [], contactos = [], bodegas = [], onDone }: { tercero?: Tercero; marcas?: MarcaConTercero[]; dirs?: TerceroDireccion[]; contactos?: TerceroContacto[]; bodegas?: Array<{ id: string; nombre: string }>; onDone: () => void }) {
   const isEdit = !!tercero
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -217,6 +218,7 @@ function TerceroForm({ tercero, marcas = [], dirs = [], contactos = [], onDone }
   const [emailFact, setEmailFact] = useState(tercero?.email_facturacion ?? '')
   const [telefono, setTelefono] = useState(tercero?.telefono ?? '')
   const [direccion, setDireccion] = useState(tercero?.direccion ?? '')
+  const [bodegaTallerId, setBodegaTallerId] = useState(tercero?.bodega_taller_id ?? '')
 
   // Satélite
   const [capDiaria, setCapDiaria]     = useState(tercero?.capacidad_diaria?.toString() ?? '')
@@ -265,6 +267,7 @@ function TerceroForm({ tercero, marcas = [], dirs = [], contactos = [], onDone }
       porcentaje_anticipo:       esProveedor && anticipo ? parseFloat(anticipo) : undefined,
       calificacion:              esProveedor && calificacion > 0 ? calificacion : undefined,
       descuento_pago_anticipado: esProveedor && descuento ? parseFloat(descuento) : undefined,
+      bodega_taller_id:          bodegaTallerId || undefined,
     }
 
     startTransition(async () => {
@@ -417,6 +420,25 @@ function TerceroForm({ tercero, marcas = [], dirs = [], contactos = [], onDone }
                   {cfg.label}
                 </button>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Bodega Taller ── */}
+        {isEdit && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Bodega Taller (donde se procesa material)</label>
+            <div className="rounded-xl bg-neu-base shadow-neu px-3 py-2">
+              <select
+                value={bodegaTallerId}
+                onChange={e => setBodegaTallerId(e.target.value)}
+                className="w-full bg-transparent text-body-sm text-foreground outline-none"
+              >
+                <option value="">Sin bodega asignada</option>
+                {bodegas.map(b => (
+                  <option key={b.id} value={b.id}>{b.nombre}</option>
+                ))}
+              </select>
             </div>
           </div>
         )}

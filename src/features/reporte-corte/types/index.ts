@@ -61,8 +61,8 @@ export interface CreateReporteCorteInput {
   op_id: string
   fecha: string
   notas?: string
-  bodega_id: string // Bodega taller donde se consume el material
-  cantidad_total_cortada: number // Total de prendas cortadas (para validación 105%)
+  bodega_id?: string // Bodega taller donde se consume el material (requerida para nuevo flujo)
+  cantidad_total_cortada?: number // Total de prendas cortadas (para validación 105%, requerida para nuevo flujo)
   tendidos?: CreateTendidoInput[]
   // Nuevo flujo: registrar consumo de materiales
   referencias_seleccionadas?: Array<{ referencia: string; color: string | null }>

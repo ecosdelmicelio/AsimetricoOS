@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { createClient } from '@/shared/lib/supabase/server'
 import { getAllTerceros } from '@/features/terceros/services/terceros-actions'
 import { getMarcas } from '@/features/configuracion/services/marcas-actions'
 import { getAllDirecciones } from '@/features/terceros/services/tercero-direcciones-actions'
@@ -8,13 +9,20 @@ import { TercerosPanel } from '@/features/terceros/components/terceros-panel'
 export const metadata = { title: 'Terceros' }
 
 async function Content() {
+  const supabase = await createClient()
   const [terceros, marcas, direcciones, contactos] = await Promise.all([
     getAllTerceros(),
     getMarcas(),
     getAllDirecciones(),
     getAllContactos(),
   ])
-  return <TercerosPanel terceros={terceros} marcas={marcas} direcciones={direcciones} contactos={contactos} />
+  const { data: bodegasData } = await supabase
+    .from('bodegas')
+    .select('id, nombre')
+    .order('nombre') as { data: Array<{ id: string; nombre: string }> | null }
+
+  const bodegas = bodegasData ?? []
+  return <TercerosPanel terceros={terceros} marcas={marcas} direcciones={direcciones} contactos={contactos} bodegas={bodegas} />
 }
 
 function Skeleton() {

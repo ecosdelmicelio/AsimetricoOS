@@ -164,15 +164,17 @@ export async function createReporteCorte(input: CreateReporteCorteInput) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
 
-  // VALIDACIÓN: Verificar límite del 105%
-  const totalAsignado = await getTotalAsignadoOP(input.op_id)
-  const { totalCortado: totalCortadoPrevio } = await getSumaCortesPrevios(input.op_id)
-  const totalNuevo = totalCortadoPrevio + input.cantidad_total_cortada
-  const maximo105 = totalAsignado * 1.05
+  // VALIDACIÓN: Verificar límite del 105% (solo para nuevo flujo con consumo_materiales)
+  if (input.bodega_id && input.cantidad_total_cortada !== undefined) {
+    const totalAsignado = await getTotalAsignadoOP(input.op_id)
+    const { totalCortado: totalCortadoPrevio } = await getSumaCortesPrevios(input.op_id)
+    const totalNuevo = totalCortadoPrevio + input.cantidad_total_cortada
+    const maximo105 = totalAsignado * 1.05
 
-  if (totalNuevo > maximo105) {
-    return {
-      error: `No puedes cortar ${totalNuevo} uds. Máximo permitido: ${maximo105.toFixed(2)} uds (105% de ${totalAsignado}). Ya cortadas: ${totalCortadoPrevio}.`,
+    if (totalNuevo > maximo105) {
+      return {
+        error: `No puedes cortar ${totalNuevo} uds. Máximo permitido: ${maximo105.toFixed(2)} uds (105% de ${totalAsignado}). Ya cortadas: ${totalCortadoPrevio}.`,
+      }
     }
   }
 
@@ -191,7 +193,7 @@ export async function createReporteCorte(input: CreateReporteCorteInput) {
   if (repError || !reporte) return { error: repError?.message ?? 'Error creando reporte' }
 
   // 2. Nuevo flujo: consumo_materiales
-  if (input.consumo_materiales && input.consumo_materiales.length > 0) {
+  if (input.consumo_materiales && input.consumo_materiales.length > 0 && input.bodega_id && input.cantidad_total_cortada !== undefined) {
     // Insertar consumos de materiales
     const materialesInsert = input.consumo_materiales.map(m => ({
       reporte_id: reporte.id,
@@ -216,7 +218,6 @@ export async function createReporteCorte(input: CreateReporteCorteInput) {
         supabase.from('kardex_tipos_movimiento').select('id').eq('codigo', 'DEVOLUCION_CORTE').limit(1).single(),
       ])
 
-      if (!input.bodega_id) return { error: 'Bodega no especificada' }
       if (!tipoSalida?.id) return { error: 'Tipo movimiento SALIDA_CORTE no encontrado' }
       if (!tipoDev?.id) return { error: 'Tipo movimiento DEVOLUCION_CORTE no encontrado' }
 
