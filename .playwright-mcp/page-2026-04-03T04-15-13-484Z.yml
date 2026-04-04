@@ -1,0 +1,110 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]: Asimétrico OS
+          - generic [ref=e8]:
+            - link "Torre de Control" [ref=e9] [cursor=pointer]:
+              - /url: /torre-control
+              - img [ref=e10]
+              - generic [ref=e15]: Torre de Control
+            - link "Órdenes de Venta" [ref=e16] [cursor=pointer]:
+              - /url: /ordenes-venta
+              - img [ref=e17]
+              - generic [ref=e20]: Órdenes de Venta
+            - link "Producción" [ref=e21] [cursor=pointer]:
+              - /url: /ordenes-produccion
+              - img [ref=e22]
+              - generic [ref=e24]: Producción
+            - link "Calidad" [ref=e25] [cursor=pointer]:
+              - /url: /calidad
+              - img [ref=e26]
+              - generic [ref=e29]: Calidad
+            - link "Liquidación" [ref=e30] [cursor=pointer]:
+              - /url: /liquidacion
+              - img [ref=e31]
+              - generic [ref=e33]: Liquidación
+            - link "Productos" [ref=e34] [cursor=pointer]:
+              - /url: /productos
+              - img [ref=e35]
+              - generic [ref=e39]: Productos
+            - link "Compras" [ref=e40] [cursor=pointer]:
+              - /url: /compras
+              - img [ref=e41]
+              - generic [ref=e45]: Compras
+            - link "Terceros" [ref=e46] [cursor=pointer]:
+              - /url: /terceros
+              - img [ref=e47]
+              - generic [ref=e52]: Terceros
+            - link "Configuración" [ref=e53] [cursor=pointer]:
+              - /url: /configuracion
+              - img [ref=e54]
+              - generic [ref=e57]: Configuración
+        - generic [ref=e62]:
+          - generic [ref=e84]: alejandro.guevara@asimetrico.co · Orquestador
+          - button "Salir" [ref=e63] [cursor=pointer]:
+            - img [ref=e64]
+            - generic [ref=e67]: Salir
+    - main [ref=e68]:
+      - generic [ref=e69]:
+        - generic [ref=e70]:
+          - link [ref=e85] [cursor=pointer]:
+            - /url: /ordenes-venta
+            - img [ref=e86]
+          - generic [ref=e88]:
+            - heading "Nueva Orden de Venta" [level=1] [ref=e89]
+            - paragraph [ref=e90]: Configura el pedido y las cantidades por talla
+        - generic [ref=e91]:
+          - generic [ref=e92]:
+            - heading "Datos de la Orden" [level=2] [ref=e93]
+            - generic [ref=e94]:
+              - generic [ref=e95]:
+                - generic [ref=e96]: Cliente *
+                - combobox [ref=e98]:
+                  - option "Seleccionar cliente..." [selected]
+                  - option "2beCommerce"
+                  - option "Confecciones López"
+                  - option "Fajas Salomé"
+                  - option "Taller Bernal"
+                  - option "Textiles Premium"
+              - generic [ref=e99]:
+                - generic [ref=e100]: Fecha de Entrega *
+                - textbox [ref=e102]
+          - generic [ref=e103]:
+            - heading "Productos" [level=2] [ref=e104]
+            - generic [ref=e105]:
+              - combobox [ref=e107]:
+                - option "Seleccionar producto..."
+                - option "adsasd"
+                - option "asd"
+                - option "Blusa Elegante"
+                - option "Body Easywear R01 Beige" [selected]
+                - option "Body Easywear R01 Negro"
+                - option "Body Easywear Snatched P01 Negro"
+                - option "Body Seamless R01 Beige"
+                - option "Body Seamless R01 Negro"
+                - option "Body Shapewear R01 Beige"
+                - option "Body Shapewear R01 Negro"
+                - option "Body Shapewear Sonryse P01 Negro"
+                - option "Body Softwear R01 Beige"
+                - option "Body Softwear R01 Negro"
+                - option "Body Softwear Salomé P01 Beige"
+                - option "Body Softwear Salomé P01 Negro"
+                - option "Camisa Clásica"
+                - option "Chaqueta Deportiva"
+                - option "Faja Shapewear R01 Beige"
+                - option "Faja Shapewear R01 Negro"
+                - option "Faja Shapewear Snatched P01 Negro"
+                - option "Pantalón Casual"
+                - option "Vestido Social"
+              - combobox [ref=e110]:
+                - option "Seleccionar color..." [selected]
+                - option "Sin color"
+              - button "Agregar" [disabled]:
+                - img
+                - text: Agregar
+            - paragraph [ref=e108]: Agrega productos para configurar cantidades por talla
+  - button "Open Next.js Dev Tools" [ref=e79] [cursor=pointer]:
+    - img [ref=e80]
+  - alert [ref=e83]

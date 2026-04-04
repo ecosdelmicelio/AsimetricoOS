@@ -1,6 +1,8 @@
+import { createClient } from '@/shared/lib/supabase/server'
 import { Scissors } from 'lucide-react'
 import type { ReporteCorteCompleto } from '@/features/reporte-corte/types'
-import { ReporteCorteMejorado, type LineaOPSimple } from './reporte-corte-mejorado'
+import { ReporteCorteMejorado } from './reporte-corte-mejorado'
+import type { LineaOPSimple } from './reporte-corte-form'
 import { formatDate } from '@/shared/lib/utils'
 
 interface Props {
@@ -10,7 +12,14 @@ interface Props {
   lineasOP: LineaOPSimple[]
 }
 
-export function ReporteCorteePanel({ opId, estadoActual, reporte, lineasOP }: Props) {
+export async function ReporteCorteePanel({ opId, estadoActual, reporte, lineasOP }: Props) {
+  // Obtener bodegas
+  const supabase = await createClient()
+  const { data: bodegas = [] } = await supabase
+    .from('bodegas')
+    .select('id, nombre')
+    .order('nombre') as { data: Array<{ id: string; nombre: string }> | null }
+
   // Mostrar solo si hay reporte existente o si la OP está en corte
   if (!reporte && estadoActual !== 'en_corte') return null
 
@@ -111,7 +120,7 @@ export function ReporteCorteePanel({ opId, estadoActual, reporte, lineasOP }: Pr
           <p className="text-body-sm text-muted-foreground">
             Registra el reporte de corte para poder avanzar a Confección.
           </p>
-          <ReporteCorteMejorado opId={opId} lineasOP={lineasOP} />
+          <ReporteCorteMejorado opId={opId} lineasOP={lineasOP} bodegas={bodegas} />
         </div>
       )}
     </div>

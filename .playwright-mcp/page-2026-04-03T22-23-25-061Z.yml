@@ -1,0 +1,158 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]: Asimétrico OS
+          - generic [ref=e8]:
+            - link "Torre de Control" [ref=e9] [cursor=pointer]:
+              - /url: /torre-control
+              - img [ref=e10]
+              - generic [ref=e15]: Torre de Control
+            - link "Órdenes de Venta" [ref=e16] [cursor=pointer]:
+              - /url: /ordenes-venta
+              - img [ref=e17]
+              - generic [ref=e20]: Órdenes de Venta
+            - link "Producción" [ref=e21] [cursor=pointer]:
+              - /url: /ordenes-produccion
+              - img [ref=e22]
+              - generic [ref=e24]: Producción
+            - link "Calidad" [ref=e25] [cursor=pointer]:
+              - /url: /calidad
+              - img [ref=e26]
+              - generic [ref=e29]: Calidad
+            - link "Liquidación" [ref=e30] [cursor=pointer]:
+              - /url: /liquidacion
+              - img [ref=e31]
+              - generic [ref=e33]: Liquidación
+            - link "Productos" [ref=e34] [cursor=pointer]:
+              - /url: /productos
+              - img [ref=e35]
+              - generic [ref=e39]: Productos
+            - link "Compras" [ref=e40] [cursor=pointer]:
+              - /url: /compras
+              - img [ref=e41]
+              - generic [ref=e45]: Compras
+            - link "Terceros" [ref=e46] [cursor=pointer]:
+              - /url: /terceros
+              - img [ref=e47]
+              - generic [ref=e52]: Terceros
+            - link "Configuración" [ref=e53] [cursor=pointer]:
+              - /url: /configuracion
+              - img [ref=e54]
+              - generic [ref=e57]: Configuración
+        - generic [ref=e62]:
+          - generic [ref=e119]: alejandro.guevara@asimetrico.co · Orquestador
+          - button "Salir" [ref=e63] [cursor=pointer]:
+            - img [ref=e64]
+            - generic [ref=e67]: Salir
+    - main [ref=e68]:
+      - generic [ref=e69]:
+        - generic [ref=e70]:
+          - link "Compras" [ref=e71] [cursor=pointer]:
+            - /url: /compras
+            - img [ref=e72]
+            - text: Compras
+          - heading "Nueva Orden de Compra" [level=1] [ref=e74]
+          - paragraph [ref=e75]: Registra la compra y luego ingresa los rollos recibidos
+        - generic [ref=e76]:
+          - generic [ref=e77]:
+            - heading "Datos de la Orden" [level=2] [ref=e78]
+            - generic [ref=e79]:
+              - text: Tipo de OC
+              - combobox [ref=e81]:
+                - option "📦 Materia Prima"
+                - option "👕 Producto Terminado" [selected]
+            - generic [ref=e82]:
+              - generic [ref=e83]:
+                - text: Proveedor
+                - combobox [ref=e85]:
+                  - option "Sin proveedor (definir luego)" [selected]
+                  - option "Bivatex"
+              - generic [ref=e86]:
+                - generic [ref=e87]: Fecha OC *
+                - textbox [ref=e89]: 2026-04-03
+            - generic [ref=e102]:
+              - text: Estado documental (Afidávit)
+              - combobox [ref=e104]:
+                - option "N/A — No requiere afidávit" [selected]
+                - option "Requiere afidávit (pendiente)"
+                - option "Afidávit ya cargado"
+            - generic [ref=e121]:
+              - generic [ref=e122]:
+                - heading "Líneas a Recibir" [level=3] [ref=e123]
+                - paragraph [ref=e124]: Selecciona referencias y especifica cantidades por talla
+              - generic [ref=e125]:
+                - generic [ref=e126]: Agregar referencia
+                - combobox [ref=e127]:
+                  - option "Seleccionar producto..." [selected]
+                  - option "— asd"
+                  - option "ASMBOEWRP001CPSLBEN — Body Easywear R01 Beige"
+                  - option "ASMBOSEPR001SPSLBEN — Body Seamless R01 Beige"
+                  - option "ASMBOSEPR001SPSLNEN — Body Seamless R01 Negro"
+                  - option "ASMBOSHRP001PNSLBEN — Body Shapewear R01 Beige"
+                  - option "ASMBOSHRP001PNSLNEN — Body Shapewear R01 Negro"
+                  - option "ASMBOSWR0001SPSLBEN — Body Softwear R01 Beige"
+                  - option "ASMBOSWR0001SPSLNEN — Body Softwear R01 Negro"
+                  - option "ASMFASHRP001PNSLBEN — Faja Shapewear R01 Beige"
+                  - option "ASMFASHRP001PNSLNEN — Faja Shapewear R01 Negro"
+                  - option "MLANVER — adsasd (verde)"
+                  - option "MLASVER — Blusa ML c (verde)"
+                  - option "REF-001 — Camisa Clásica"
+                  - option "REF-002 — Pantalón Casual"
+                  - option "REF-003 — Blusa Elegante"
+                  - option "REF-004 — Chaqueta Deportiva"
+                  - option "REF-005 — Vestido Social"
+                  - option "SALBOSWRP001SPSLBEN — Body Softwear Salomé P01 Beige"
+                  - option "SALBOSWRP001SPSLNEN — Body Softwear Salomé P01 Negro"
+                  - option "SNABOEWRP001CPSLNEN — Body Easywear Snatched P01 Negro"
+                  - option "SNAFASHRP001PNSLNEN — Faja Shapewear Snatched P01 Negro"
+                  - option "SNRBOSHRP001PNSLNEN — Body Shapewear Sonryse P01 Negro"
+              - generic [ref=e131]:
+                - button "ASMBOEWRP001CPSLNEN 0 uds" [ref=e132] [cursor=pointer]:
+                  - generic [ref=e133]:
+                    - img [ref=e134]
+                    - generic [ref=e136]: ASMBOEWRP001CPSLNEN
+                  - generic [ref=e138]: 0 uds
+                - generic [ref=e140]:
+                  - generic [ref=e141]:
+                    - generic [ref=e142]: Body Easywear R01 Negro
+                    - button "Eliminar Body Easywear R01 Negro" [ref=e143] [cursor=pointer]:
+                      - img [ref=e144]
+                  - generic [ref=e147]:
+                    - generic [ref=e148]:
+                      - generic [ref=e149]: XS
+                      - spinbutton "Cantidad talla XS de Body Easywear R01 Negro" [active] [ref=e150]
+                    - generic [ref=e151]:
+                      - generic [ref=e152]: S
+                      - spinbutton "Cantidad talla S de Body Easywear R01 Negro" [ref=e153]
+                    - generic [ref=e154]:
+                      - generic [ref=e155]: M
+                      - spinbutton "Cantidad talla M de Body Easywear R01 Negro" [ref=e156]
+                    - generic [ref=e157]:
+                      - generic [ref=e158]: L
+                      - spinbutton "Cantidad talla L de Body Easywear R01 Negro" [ref=e159]
+                    - generic [ref=e160]:
+                      - generic [ref=e161]: XL
+                      - spinbutton "Cantidad talla XL de Body Easywear R01 Negro" [ref=e162]
+                    - generic [ref=e163]:
+                      - generic [ref=e164]: XXL
+                      - spinbutton "Cantidad talla XXL de Body Easywear R01 Negro" [ref=e165]
+                    - generic [ref=e166]:
+                      - generic [ref=e167]: 3XL
+                      - spinbutton "Cantidad talla 3XL de Body Easywear R01 Negro" [ref=e168]
+                    - generic [ref=e169]:
+                      - generic [ref=e170]: 4XL
+                      - spinbutton "Cantidad talla 4XL de Body Easywear R01 Negro" [ref=e171]
+                    - generic [ref=e172]:
+                      - generic [ref=e173]: 5XL
+                      - spinbutton "Cantidad talla 5XL de Body Easywear R01 Negro" [ref=e174]
+                  - generic [ref=e176]: 0 uds
+              - paragraph [ref=e178]: 1 referencia(s) con 0 talla(s)
+            - generic [ref=e105]:
+              - text: Notas (opcional)
+              - textbox "Especificaciones, referencias del proveedor..." [ref=e107]
+          - button "Crear OC" [ref=e109] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e115] [cursor=pointer]:
+    - img [ref=e116]
+  - alert [ref=e120]

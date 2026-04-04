@@ -14,7 +14,7 @@ export interface ProductoEnMatriz {
 
 interface MatrizProductosProps {
   productos: ProductoEnMatriz[]
-  tallas: string[]
+  tallas: readonly string[] | string[]
   mostrarPrecio?: boolean
   maxCantidades?: Record<string, number>
   opcionesAgregarColor?: Record<string, { productoId: string; color: string | null }[]>

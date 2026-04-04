@@ -1,10 +1,14 @@
 import Link from 'next/link'
 import { ChevronRight, Package } from 'lucide-react'
 import { getProductos } from '@/features/productos/services/producto-actions'
+import { getSaldosTotalesPorProducto } from '@/features/kardex/services/kardex-actions'
 import { formatCurrency } from '@/shared/lib/utils'
 
 export async function ProductoList() {
-  const productos = await getProductos()
+  const [productos, saldosTotales] = await Promise.all([
+    getProductos(),
+    getSaldosTotalesPorProducto(),
+  ])
 
   if (productos.length === 0) {
     return (
@@ -56,11 +60,18 @@ export async function ProductoList() {
                       </span>
                     )}
                   </div>
-                  {p.precio_base && (
-                    <p className="text-muted-foreground text-body-sm mt-0.5">
-                      Precio base: {formatCurrency(p.precio_base)}
-                    </p>
-                  )}
+                  <div className="flex items-center gap-3 mt-0.5">
+                    {p.precio_base && (
+                      <p className="text-muted-foreground text-body-sm">
+                        Precio base: {formatCurrency(p.precio_base)}
+                      </p>
+                    )}
+                    {(saldosTotales[p.id] ?? 0) > 0 && (
+                      <span className="text-xs font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-lg whitespace-nowrap">
+                        {saldosTotales[p.id]} uds
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 ml-3" />
               </Link>

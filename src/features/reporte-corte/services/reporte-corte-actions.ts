@@ -3,10 +3,93 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/shared/lib/supabase/server'
 import type { CreateReporteCorteInput, ReporteCorteCompleto } from '@/features/reporte-corte/types'
+import { getBOMProducto } from '@/features/productos/services/bom-actions'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function db(supabase: unknown): any {
   return supabase
+}
+
+export interface MaterialConsolidado {
+  material_id: string
+  material_nombre: string
+  material_unidad: string
+  consumo_estimado: number
+  referencias_que_usan: Array<{
+    referencia: string
+    color: string | null
+    cantidad_asignada: number
+    consumo_por_unidad: number
+    consumo_total: number
+  }>
+}
+
+export async function consolidarMaterialesDelCorte(
+  referenciasAgrupadas: Array<{
+    referencia: string
+    color: string | null
+    producto_id: string
+    totalUds: number
+  }>,
+) {
+  try {
+    // Map para consolidar por material_id
+    const materialesMap = new Map<string, MaterialConsolidado>()
+
+    // Para cada referencia, fetch su BOM
+    const productosUnicos = [...new Set(referenciasAgrupadas.map(r => r.producto_id))]
+
+    for (const productoId of productosUnicos) {
+      const bom = await getBOMProducto(productoId)
+
+      // Para cada material en el BOM que sea reportable en corte
+      for (const linea of bom.materiales) {
+        // Filtrar solo materiales marcados como reportables en corte
+        if (!linea.reportable_en_corte) continue
+
+        const material = linea.materiales
+
+        // Encontrar todas las referencias que usan este producto
+        const referenciasDelProducto = referenciasAgrupadas.filter(r => r.producto_id === productoId)
+
+        for (const ref of referenciasDelProducto) {
+          const key = material.id
+          const consumoPorUnidad = linea.cantidad
+          const consumoTotal = consumoPorUnidad * ref.totalUds
+
+          if (!materialesMap.has(key)) {
+            materialesMap.set(key, {
+              material_id: material.id,
+              material_nombre: material.nombre,
+              material_unidad: material.unidad,
+              consumo_estimado: 0,
+              referencias_que_usan: [],
+            })
+          }
+
+          const matConsolidado = materialesMap.get(key)!
+          matConsolidado.consumo_estimado += consumoTotal
+          matConsolidado.referencias_que_usan.push({
+            referencia: ref.referencia,
+            color: ref.color,
+            cantidad_asignada: ref.totalUds,
+            consumo_por_unidad: consumoPorUnidad,
+            consumo_total: consumoTotal,
+          })
+        }
+      }
+    }
+
+    return {
+      materiales: Array.from(materialesMap.values()),
+      error: null,
+    }
+  } catch (err) {
+    return {
+      materiales: [],
+      error: `Error consolidando materiales: ${err instanceof Error ? err.message : 'Desconocido'}`,
+    }
+  }
 }
 
 export async function createReporteCorte(input: CreateReporteCorteInput) {
@@ -47,14 +130,13 @@ export async function createReporteCorte(input: CreateReporteCorteInput) {
 
     // 2b. Auto-Kardex: registrar movimientos SALIDA_CORTE y DEVOLUCION_CORTE
     try {
-      // Buscar bodega principal y tipos de movimiento
-      const [{ data: bodega }, { data: tipoSalida }, { data: tipoDev }] = await Promise.all([
-        supabase.from('bodegas').select('id').eq('tipo', 'principal').limit(1).single(),
+      // Obtener tipos de movimiento (bodega ya viene del input)
+      const [{ data: tipoSalida }, { data: tipoDev }] = await Promise.all([
         supabase.from('kardex_tipos_movimiento').select('id').eq('codigo', 'SALIDA_CORTE').limit(1).single(),
         supabase.from('kardex_tipos_movimiento').select('id').eq('codigo', 'DEVOLUCION_CORTE').limit(1).single(),
       ])
 
-      if (!bodega?.id) return { error: 'Bodega principal no encontrada' }
+      if (!input.bodega_id) return { error: 'Bodega no especificada' }
       if (!tipoSalida?.id) return { error: 'Tipo movimiento SALIDA_CORTE no encontrado' }
       if (!tipoDev?.id) return { error: 'Tipo movimiento DEVOLUCION_CORTE no encontrado' }
 
@@ -88,7 +170,7 @@ export async function createReporteCorte(input: CreateReporteCorteInput) {
 
           movimientosKardex.push({
             material_id: consumo.material_id,
-            bodega_id: bodega.id,
+            bodega_id: input.bodega_id,
             tipo_movimiento_id: tipoSalida.id,
             documento_tipo: 'corte',
             documento_id: reporte.id,
@@ -103,7 +185,7 @@ export async function createReporteCorte(input: CreateReporteCorteInput) {
         if (consumo.material_devuelto_kg > 0) {
           movimientosKardex.push({
             material_id: consumo.material_id,
-            bodega_id: bodega.id,
+            bodega_id: input.bodega_id,
             tipo_movimiento_id: tipoDev.id,
             documento_tipo: 'corte',
             documento_id: reporte.id,

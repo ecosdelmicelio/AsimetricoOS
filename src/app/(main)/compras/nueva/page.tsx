@@ -2,9 +2,15 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { CompraForm } from '@/features/compras/components/compra-form'
 import { getProveedores } from '@/features/compras/services/compras-actions'
+import { getProductosActivos } from '@/features/kardex/services/kardex-actions'
+import { getMaterialesActivos } from '@/features/kardex/services/kardex-actions'
 
 export default async function NuevaCompraPage() {
-  const proveedores = await getProveedores()
+  const [proveedores, productos, materiales] = await Promise.all([
+    getProveedores(),
+    getProductosActivos(),
+    getMaterialesActivos(),
+  ])
 
   return (
     <div className="space-y-6">
@@ -18,7 +24,7 @@ export default async function NuevaCompraPage() {
         <p className="text-muted-foreground text-body-sm mt-1">Registra la compra y luego ingresa los rollos recibidos</p>
       </div>
 
-      <CompraForm proveedores={proveedores} />
+      <CompraForm proveedores={proveedores} productos={productos} materiales={materiales} />
     </div>
   )
 }

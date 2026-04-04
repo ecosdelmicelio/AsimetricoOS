@@ -9,6 +9,8 @@ export interface Material {
   descripcion: string | null
   activo: boolean
   rendimiento_kg: number | null
+  es_tela: boolean
+  saldo: number
   created_at: string
   updated_at: string
 }

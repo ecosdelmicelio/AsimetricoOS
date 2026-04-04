@@ -61,6 +61,7 @@ export interface CreateReporteCorteInput {
   op_id: string
   fecha: string
   notas?: string
+  bodega_id: string // Bodega taller donde se consume el material
   tendidos?: CreateTendidoInput[]
   // Nuevo flujo: registrar consumo de materiales
   referencias_seleccionadas?: Array<{ referencia: string; color: string | null }>

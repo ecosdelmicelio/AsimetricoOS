@@ -45,3 +45,38 @@ export function extraerColorDelNombre(nombre: string, colorBD: string | null): s
 
   return null
 }
+
+/**
+ * Extrae referencia base de un código de material (sin color).
+ *
+ * Schema material: CAT-SUB-COL-REF
+ * Ejemplo: TE-SEN-NE01 → TE-SEN (sin color)
+ *
+ * @param codigo - Código completo ej: "TE-SEN-NE01"
+ * @returns Referencia base ej: "TE-SEN"
+ */
+export function extraerReferenciaBase(codigo: string): string {
+  const partes = codigo.split('-')
+  if (partes.length >= 3) {
+    // Retorna CAT-SUB (sin COL y REF)
+    return `${partes[0]}-${partes[1]}`
+  }
+  return codigo
+}
+
+/**
+ * Extrae el color de un código de material.
+ *
+ * Schema material: CAT-SUB-COL-REF
+ * Ejemplo: TE-SEN-NE01 → NE (color es la 3ª parte)
+ *
+ * @param codigo - Código completo ej: "TE-SEN-NE01"
+ * @returns Color ej: "NE"
+ */
+export function extraerColorDelCodigo(codigo: string): string | null {
+  const partes = codigo.split('-')
+  if (partes.length >= 3) {
+    return partes[2]
+  }
+  return null
+}

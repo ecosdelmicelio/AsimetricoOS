@@ -33,6 +33,7 @@ export interface BOMLineaMaterial {
   material_id: string
   cantidad: number
   notas: string | null
+  reportable_en_corte: boolean
   materiales: Material
 }
 
@@ -82,7 +83,7 @@ export async function getBOMProducto(producto_id: string): Promise<BOMResumen> {
   const { data } = await supabase
     .from('bom')
     .select(`
-      id, producto_id, tipo, material_id, servicio_id, cantidad, notas, created_at,
+      id, producto_id, tipo, material_id, servicio_id, cantidad, notas, reportable_en_corte, created_at,
       materiales(id, codigo, nombre, unidad, costo_unit, descripcion, activo),
       servicios_operativos(id, codigo, nombre, tipo_proceso, tarifa_unitaria, descripcion, activo)
     `)
@@ -96,6 +97,7 @@ export async function getBOMProducto(producto_id: string): Promise<BOMResumen> {
         servicio_id: string | null
         cantidad: number
         notas: string | null
+        reportable_en_corte: boolean
         materiales: Material | null
         servicios_operativos: ServicioOperativo | null
       }[] | null
@@ -105,7 +107,12 @@ export async function getBOMProducto(producto_id: string): Promise<BOMResumen> {
 
   const materialesLineas = lineas
     .filter(l => l.tipo === 'materia_prima' && l.materiales)
-    .map(l => ({ ...l, tipo: 'materia_prima' as const, materiales: l.materiales! })) as BOMLineaMaterial[]
+    .map(l => ({
+      ...l,
+      tipo: 'materia_prima' as const,
+      materiales: l.materiales!,
+      reportable_en_corte: l.reportable_en_corte ?? true,
+    })) as BOMLineaMaterial[]
 
   const serviciosLineas = lineas
     .filter(l => l.tipo === 'servicio' && l.servicios_operativos)
@@ -128,6 +135,7 @@ export async function addBOMMaterial(
   material_id: string,
   cantidad: number,
   notas?: string,
+  reportable_en_corte: boolean = true,
 ): Promise<{ error?: string }> {
   const supabase = db(await createClient())
 
@@ -139,6 +147,7 @@ export async function addBOMMaterial(
       material_id,
       cantidad,
       notas: notas ?? null,
+      reportable_en_corte,
     }) as { error: { message: string } | null }
 
   if (error) return { error: error.message }
@@ -174,12 +183,22 @@ export async function updateBOMLinea(
   producto_id: string,
   cantidad: number,
   notas?: string,
+  reportable_en_corte?: boolean,
 ): Promise<{ error?: string }> {
   const supabase = db(await createClient())
 
+  const updateData: Record<string, any> = {
+    cantidad,
+    notas: notas ?? null,
+  }
+
+  if (reportable_en_corte !== undefined) {
+    updateData.reportable_en_corte = reportable_en_corte
+  }
+
   const { error } = await supabase
     .from('bom')
-    .update({ cantidad, notas: notas ?? null })
+    .update(updateData)
     .eq('id', linea_id) as { error: { message: string } | null }
 
   if (error) return { error: error.message }

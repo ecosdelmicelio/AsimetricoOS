@@ -3,12 +3,31 @@ import { ArrowLeft, Edit } from 'lucide-react'
 import { getProductoById } from '@/features/productos/services/producto-actions'
 import { ProductoEstadoToggle } from './producto-estado-toggle'
 import { BOMPanel } from './bom-panel'
+import { ProductoInventarioPanel } from './producto-inventario-panel'
+import {
+  getSaldosKardexPT,
+  getHistorialKardexPT,
+  getBodegas,
+  getTiposMovimientoKardex,
+} from '@/features/kardex/services/kardex-actions'
 import { formatCurrency } from '@/shared/lib/utils'
 
 interface Props { id: string }
 
 export async function ProductoDetail({ id }: Props) {
-  const producto = await getProductoById(id)
+  const [
+    producto,
+    saldosPT,
+    historialPT,
+    bodegas,
+    tiposMovimiento,
+  ] = await Promise.all([
+    getProductoById(id),
+    getSaldosKardexPT({ producto_id: id }),
+    getHistorialKardexPT({ producto_id: id }),
+    getBodegas(),
+    getTiposMovimientoKardex(),
+  ])
 
   if (!producto) {
     return (
@@ -75,6 +94,20 @@ export async function ProductoDetail({ id }: Props) {
 
       {/* BOM */}
       <BOMPanel productoId={producto.id} precioBase={producto.precio_base} />
+
+      {/* Inventario */}
+      <div className="mt-8 pt-8 border-t border-black/10">
+        <h2 className="text-body-lg font-semibold text-foreground mb-6">Inventario</h2>
+        <ProductoInventarioPanel
+          saldosPT={saldosPT}
+          historialPT={historialPT}
+          bodegas={bodegas.map(b => ({
+            id: b.id,
+            nombre: b.nombre,
+          }))}
+          tiposMovimiento={tiposMovimiento}
+        />
+      </div>
     </div>
   )
 }

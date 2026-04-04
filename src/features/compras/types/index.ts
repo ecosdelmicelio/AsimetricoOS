@@ -30,6 +30,28 @@ export interface Rollo {
 export interface OrdenCompraConDetalle extends OrdenCompra {
   terceros: { nombre: string } | null
   rollos: (Rollo & { materiales: { codigo: string; nombre: string; unidad: string } | null })[]
+  oc_detalle: (OCDetalle & {
+    productos: {
+      referencia: string
+      nombre: string
+      color: string | null
+      precio_base?: number | null
+      tallas?: string[]
+    } | null
+  })[]
+  oc_detalle_mp: Array<{
+    id: string
+    oc_id: string
+    material_id: string
+    cantidad: number
+    precio_unitario: number
+    created_at: string
+    materiales: {
+      codigo: string
+      nombre: string
+      unidad: string
+    } | null
+  }>
 }
 
 export interface OCListItem extends OrdenCompra {

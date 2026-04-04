@@ -172,6 +172,7 @@ function MaterialesTab({
           costoUnit={l.materiales.costo_unit}
           cantidad={l.cantidad}
           notas={l.notas}
+          reportable_en_corte={l.reportable_en_corte}
         />
       ))}
 
@@ -342,7 +343,7 @@ function ServiciosTab({
 
 /* ── Fila de línea editable ─────────────────────────────────── */
 function LineaRow({
-  lineaId, productoId, nombre, unidad, costoUnit, cantidad, notas, badge,
+  lineaId, productoId, nombre, unidad, costoUnit, cantidad, notas, badge, reportable_en_corte = true,
 }: {
   lineaId: string
   productoId: string
@@ -352,17 +353,19 @@ function LineaRow({
   cantidad: number
   notas: string | null
   badge?: string
+  reportable_en_corte?: boolean
 }) {
   const [editing, setEditing] = useState(false)
   const [qty, setQty] = useState(String(cantidad))
   const [nota, setNota] = useState(notas ?? '')
+  const [isReportable, setIsReportable] = useState(reportable_en_corte)
   const [pending, startTransition] = useTransition()
 
   const costoLinea = costoUnit * (parseFloat(qty) || 0)
 
   function handleSave() {
     startTransition(async () => {
-      await updateBOMLinea(lineaId, productoId, parseFloat(qty), nota || undefined)
+      await updateBOMLinea(lineaId, productoId, parseFloat(qty), nota || undefined, isReportable)
       setEditing(false)
     })
   }
@@ -387,29 +390,45 @@ function LineaRow({
           </div>
 
           {editing ? (
-            <div className="flex gap-2 mt-2">
-              <input
-                type="number"
-                value={qty}
-                onChange={e => setQty(e.target.value)}
-                min={0.001}
-                step={0.001}
-                className="w-24 rounded-lg bg-neu-base shadow-neu-inset px-2 py-1 text-body-sm text-foreground focus:outline-none"
-              />
-              <span className="self-center text-xs text-muted-foreground">{unidad}</span>
-              <input
-                type="text"
-                value={nota}
-                onChange={e => setNota(e.target.value)}
-                placeholder="Notas"
-                className="flex-1 rounded-lg bg-neu-base shadow-neu-inset px-2 py-1 text-body-sm text-foreground focus:outline-none"
-              />
+            <div className="space-y-2 mt-2">
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={qty}
+                  onChange={e => setQty(e.target.value)}
+                  min={0.001}
+                  step={0.001}
+                  className="w-24 rounded-lg bg-neu-base shadow-neu-inset px-2 py-1 text-body-sm text-foreground focus:outline-none"
+                />
+                <span className="self-center text-xs text-muted-foreground">{unidad}</span>
+                <input
+                  type="text"
+                  value={nota}
+                  onChange={e => setNota(e.target.value)}
+                  placeholder="Notas"
+                  className="flex-1 rounded-lg bg-neu-base shadow-neu-inset px-2 py-1 text-body-sm text-foreground focus:outline-none"
+                />
+              </div>
+              <label className="flex items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  checked={isReportable}
+                  onChange={e => setIsReportable(e.target.checked)}
+                  className="w-4 h-4 rounded border border-primary-600 bg-white"
+                />
+                <span className="text-foreground">Reportable en corte</span>
+              </label>
             </div>
           ) : (
-            <p className="text-muted-foreground text-xs mt-0.5">
-              {cantidad} {unidad} × {formatCurrency(costoUnit)} = <span className="font-medium text-foreground">{formatCurrency(costoLinea)}</span>
-              {notas && <span className="ml-2">· {notas}</span>}
-            </p>
+            <div className="text-xs mt-0.5">
+              <p className="text-muted-foreground">
+                {cantidad} {unidad} × {formatCurrency(costoUnit)} = <span className="font-medium text-foreground">{formatCurrency(costoLinea)}</span>
+                {notas && <span className="ml-2">· {notas}</span>}
+              </p>
+              {isReportable && (
+                <p className="text-primary-600 font-medium mt-1">✓ Se reporta en corte</p>
+              )}
+            </div>
           )}
         </div>
 
