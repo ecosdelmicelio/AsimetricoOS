@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/shared/lib/supabase/server'
 import type { CreateReporteCorteInput, ReporteCorteCompleto } from '@/features/reporte-corte/types'
 import { getBOMProducto } from '@/features/productos/services/bom-actions'
+import { getPorcentajeMaximoCorte } from '@/shared/services/config-service'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function db(supabase: unknown): any {
@@ -164,16 +165,17 @@ export async function createReporteCorte(input: CreateReporteCorteInput) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
 
-  // VALIDACIÓN: Verificar límite del 105% (solo para nuevo flujo con consumo_materiales)
+  // VALIDACIÓN: Verificar límite del porcentaje máximo (solo para nuevo flujo con consumo_materiales)
   if (input.bodega_id && input.cantidad_total_cortada !== undefined) {
     const totalAsignado = await getTotalAsignadoOP(input.op_id)
     const { totalCortado: totalCortadoPrevio } = await getSumaCortesPrevios(input.op_id)
     const totalNuevo = totalCortadoPrevio + input.cantidad_total_cortada
-    const maximo105 = totalAsignado * 1.05
+    const porcentajeMaximo = await getPorcentajeMaximoCorte()
+    const maximoPermitido = totalAsignado * (porcentajeMaximo / 100)
 
-    if (totalNuevo > maximo105) {
+    if (totalNuevo > maximoPermitido) {
       return {
-        error: `No puedes cortar ${totalNuevo} uds. Máximo permitido: ${maximo105.toFixed(2)} uds (105% de ${totalAsignado}). Ya cortadas: ${totalCortadoPrevio}.`,
+        error: `No puedes cortar ${totalNuevo} uds. Máximo permitido: ${maximoPermitido.toFixed(2)} uds (${porcentajeMaximo}% de ${totalAsignado}). Ya cortadas: ${totalCortadoPrevio}.`,
       }
     }
   }
