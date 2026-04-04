@@ -24,6 +24,73 @@ export interface MaterialConsolidado {
   }>
 }
 
+export async function getTotalAsignadoOP(opId: string): Promise<number> {
+  const supabase = db(await createClient())
+
+  const { data: lineas, error } = await supabase
+    .from('lineas_op')
+    .select('cantidad_asignada')
+    .eq('op_id', opId) as {
+      data: Array<{ cantidad_asignada: number }> | null
+      error: { message: string } | null
+    }
+
+  if (error || !lineas) {
+    console.error('Error al obtener total asignado:', error?.message)
+    return 0
+  }
+
+  return lineas.reduce((sum, l) => sum + l.cantidad_asignada, 0)
+}
+
+export async function getSumaCortesPrevios(opId: string) {
+  const supabase = db(await createClient())
+
+  // Obtener todos los reportes previos de esta OP
+  const { data: reportes, error } = await supabase
+    .from('reporte_corte')
+    .select(`
+      id,
+      fecha,
+      reporte_corte_material(cantidad_cortada_total)
+    `)
+    .eq('op_id', opId)
+    .order('fecha', { ascending: false }) as {
+      data: Array<{
+        id: string
+        fecha: string
+        reporte_corte_material: Array<{ cantidad_cortada_total: number }>
+      }> | null
+      error: { message: string } | null
+    }
+
+  if (error) {
+    console.error('Error al obtener cortes previos:', error.message)
+    return { totalCortado: 0, detalleReportes: [] }
+  }
+
+  if (!reportes || reportes.length === 0) {
+    return { totalCortado: 0, detalleReportes: [] }
+  }
+
+  // Calcular total cortado y construir detalle
+  const detalleReportes = reportes.map(r => {
+    const cantidadTotal = (r.reporte_corte_material ?? []).reduce(
+      (sum, m) => sum + (m.cantidad_cortada_total || 0),
+      0
+    )
+    return {
+      id: r.id,
+      fecha: r.fecha,
+      cantidad_total: cantidadTotal,
+    }
+  })
+
+  const totalCortado = detalleReportes.reduce((sum, r) => sum + r.cantidad_total, 0)
+
+  return { totalCortado, detalleReportes }
+}
+
 export async function consolidarMaterialesDelCorte(
   referenciasAgrupadas: Array<{
     referencia: string
@@ -97,6 +164,18 @@ export async function createReporteCorte(input: CreateReporteCorteInput) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
 
+  // VALIDACIÓN: Verificar límite del 105%
+  const totalAsignado = await getTotalAsignadoOP(input.op_id)
+  const { totalCortado: totalCortadoPrevio } = await getSumaCortesPrevios(input.op_id)
+  const totalNuevo = totalCortadoPrevio + input.cantidad_total_cortada
+  const maximo105 = totalAsignado * 1.05
+
+  if (totalNuevo > maximo105) {
+    return {
+      error: `No puedes cortar ${totalNuevo} uds. Máximo permitido: ${maximo105.toFixed(2)} uds (105% de ${totalAsignado}). Ya cortadas: ${totalCortadoPrevio}.`,
+    }
+  }
+
   // 1. Crear cabecera
   const { data: reporte, error: repError } = await supabase
     .from('reporte_corte')
@@ -120,6 +199,7 @@ export async function createReporteCorte(input: CreateReporteCorteInput) {
       metros_usados: m.metros_usados,
       desperdicio_kg: m.desperdicio_kg,
       material_devuelto_kg: m.material_devuelto_kg,
+      cantidad_cortada_total: input.cantidad_total_cortada, // Repetido para cada material del reporte
     }))
 
     const { error: matError } = await supabase

@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useMemo, useEffect } from 'react'
 import { Loader2, ChevronDown, Trash2 } from 'lucide-react'
-import { consolidarMaterialesDelCorte, type MaterialConsolidado } from '@/features/reporte-corte/services/reporte-corte-actions'
+import { consolidarMaterialesDelCorte, type MaterialConsolidado, getSumaCortesPrevios, getTotalAsignadoOP } from '@/features/reporte-corte/services/reporte-corte-actions'
 import { createReporteCorte } from '@/features/reporte-corte/services/reporte-corte-actions'
 import { TALLAS_STANDARD } from '@/shared/constants/tallas'
 import type { LineaOPSimple } from './reporte-corte-form'
@@ -27,6 +27,13 @@ interface GrupoRefColor {
   totalUds: number
 }
 
+interface ProgresoCorte {
+  totalAsignado: number
+  totalCortadoPrevio: number
+  maximo105: number
+  espacioDisponible: number
+}
+
 interface Props {
   opId: string
   lineasOP: LineaOPSimple[]
@@ -36,6 +43,7 @@ interface Props {
 export function ReporteCorteMejorado({ opId, lineasOP, bodegas = [] }: Props) {
   const [isPending, startTransition] = useTransition()
   const [isLoadingMateriales, setIsLoadingMateriales] = useState(false)
+  const [isLoadingProgreso, setIsLoadingProgreso] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
   const [notas, setNotas] = useState('')
@@ -46,6 +54,36 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegas = [] }: Props) {
   const [cantidadesCortadas, setCantidadesCortadas] = useState<Record<string, Record<string, number>>>({})
   // Estado para referencias expandidas en la matriz
   const [expandedRefs, setExpandedRefs] = useState<Record<string, boolean>>({})
+  // Estado para progreso de corte
+  const [infoProgreso, setInfoProgreso] = useState<ProgresoCorte | null>(null)
+
+  // Cargar información de progreso (cortes previos, total asignado, límite 105%)
+  useEffect(() => {
+    const cargarProgreso = async () => {
+      setIsLoadingProgreso(true)
+      try {
+        const [totalAsignado, { totalCortado: totalCortadoPrevio }] = await Promise.all([
+          getTotalAsignadoOP(opId),
+          getSumaCortesPrevios(opId),
+        ])
+
+        const maximo105 = totalAsignado * 1.05
+        const espacioDisponible = maximo105 - totalCortadoPrevio
+
+        setInfoProgreso({
+          totalAsignado,
+          totalCortadoPrevio,
+          maximo105,
+          espacioDisponible,
+        })
+      } catch (err) {
+        console.error('Error cargando progreso:', err)
+      }
+      setIsLoadingProgreso(false)
+    }
+
+    cargarProgreso()
+  }, [opId])
 
   // Inicializar cantidades cortadas desde lineasOP
   useEffect(() => {
@@ -217,6 +255,20 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegas = [] }: Props) {
       return
     }
 
+    // VALIDACIÓN: Verificar límite del 105%
+    if (infoProgreso) {
+      const totalNuevo = infoProgreso.totalCortadoPrevio + totalCortado
+      if (totalNuevo > infoProgreso.maximo105) {
+        setError(
+          `No puedes cortar ${totalCortado} uds más. ` +
+          `Ya cortadas: ${infoProgreso.totalCortadoPrevio}. ` +
+          `Máximo permitido: ${infoProgreso.maximo105.toFixed(0)} uds (105% de ${infoProgreso.totalAsignado}). ` +
+          `Espacio disponible: ${infoProgreso.espacioDisponible.toFixed(0)} uds.`
+        )
+        return
+      }
+    }
+
     // Filtrar materiales con consumo_promedio > 0
     const materialesConConsumo = materiales.filter(
       m => consumosPorMaterial[m.material_id]?.consumo_promedio > 0
@@ -234,6 +286,7 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegas = [] }: Props) {
         fecha,
         notas: notas || undefined,
         bodega_id: bodegaSeleccionada,
+        cantidad_total_cortada: totalCortado, // Pasar cantidad total cortada
         consumo_materiales: materialesConConsumo.map(m => {
           const consumo = consumosPorMaterial[m.material_id]
           // Calcular cantidad total de prendas (con cantidades editadas)
@@ -336,6 +389,55 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegas = [] }: Props) {
         </div>
       </div>
 
+      {/* SECCIÓN 1B: PANEL DE PROGRESO */}
+      {isLoadingProgreso ? (
+        <div className="rounded-2xl bg-neu-base shadow-neu p-6 flex items-center justify-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-primary-600" />
+          <p className="text-body-sm text-muted-foreground">Cargando información...</p>
+        </div>
+      ) : infoProgreso ? (
+        <div className="rounded-2xl bg-neu-base shadow-neu p-6 space-y-4">
+          <h3 className="font-semibold text-foreground text-body-md">
+            Progreso de Corte
+          </h3>
+
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground font-medium">Total Asignado</p>
+              <p className="text-display-xs font-bold text-foreground">
+                {infoProgreso.totalAsignado}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground font-medium">Ya Cortadas</p>
+              <p className="text-display-xs font-bold text-primary-600">
+                {infoProgreso.totalCortadoPrevio}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground font-medium">Máximo (105%)</p>
+              <p className="text-display-xs font-bold text-foreground">
+                {infoProgreso.maximo105.toFixed(0)}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground font-medium">Espacio Disponible</p>
+              <p className={`text-display-xs font-bold ${
+                infoProgreso.espacioDisponible > 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {infoProgreso.espacioDisponible.toFixed(0)}
+              </p>
+            </div>
+          </div>
+
+          {infoProgreso.espacioDisponible < 0 && (
+            <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-red-700 text-body-sm">
+              ⚠️ No hay espacio disponible. Necesita iniciar un nuevo corte para una próxima orden.
+            </div>
+          )}
+        </div>
+      ) : null}
+
       {/* SECCIÓN 2: REFERENCIAS A CORTAR (EDITABLE) */}
       <div className="rounded-2xl bg-neu-base shadow-neu p-6 space-y-4">
         <h3 className="font-semibold text-foreground text-body-md">
@@ -426,11 +528,22 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegas = [] }: Props) {
                         })}
                       </div>
 
-                      {/* Footer resumen */}
+                      {/* Footer resumen con badge faltante */}
                       <div className="flex items-center justify-between pt-2 border-t border-black/5">
                         <span className="text-muted-foreground text-body-sm">
                           <span className="font-semibold text-foreground">{grupo.totalUds}</span> uds cortadas
                         </span>
+
+                        {/* Badge FALTANTE si no cortó el 100% */}
+                        {(() => {
+                          const totalAsignado = grupo.lineas.reduce((s, l) => s + l.cantidad_asignada, 0)
+                          const faltante = totalAsignado - grupo.totalUds
+                          return faltante > 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-100 text-red-700 text-xs font-semibold">
+                              ❌ Faltante: {faltante} uds
+                            </span>
+                          ) : null
+                        })()}
                       </div>
                     </div>
                   )}
