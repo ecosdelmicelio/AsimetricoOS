@@ -28,7 +28,7 @@ export async function getTotalAsignadoOP(opId: string): Promise<number> {
   const supabase = db(await createClient())
 
   const { data: lineas, error } = await supabase
-    .from('lineas_op')
+    .from('op_detalle')
     .select('cantidad_asignada')
     .eq('op_id', opId) as {
       data: Array<{ cantidad_asignada: number }> | null
