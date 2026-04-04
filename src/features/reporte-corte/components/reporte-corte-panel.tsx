@@ -126,18 +126,29 @@ export async function ReporteCorteePanel({ opId, estadoActual, reporte, lineasOP
 
       {/* Formulario para crear nuevo reporte (siempre visible si OP está en corte) */}
       {estadoActual === 'en_corte' && (
-        <div className="rounded-2xl bg-neu-base shadow-neu p-5 space-y-4">
-          <p className="text-body-sm font-semibold text-foreground">
-            {reporte ? '📝 Crear reporte de ajuste' : 'Registra el primer reporte de corte'}
-          </p>
-          <p className="text-body-sm text-muted-foreground">
-            {reporte
-              ? 'Si necesitas corregir cantidades o agregar más cortes, crea un nuevo reporte. Los totales se sumarán automáticamente.'
-              : 'Registra el reporte de corte para poder avanzar a Confección.'
-            }
-          </p>
-          <ReporteCorteMejorado opId={opId} lineasOP={lineasOP} bodegaTallerId={op?.bodega_taller_id ?? null} />
-        </div>
+        <>
+          {reporte && (
+            <div className="pt-2">
+              <p className="text-xs font-semibold text-primary-600 uppercase tracking-wide mb-2">
+                ➕ Crear reporte de ajuste
+              </p>
+            </div>
+          )}
+          <div className={`rounded-2xl ${reporte ? 'bg-blue-50 border-2 border-blue-200' : 'bg-neu-base shadow-neu'} p-5 space-y-4`}>
+            <div>
+              <p className="text-body-sm font-semibold text-foreground">
+                {reporte ? '✏️ Ajusta el corte' : '📝 Registra el primer reporte'}
+              </p>
+              <p className="text-body-sm text-muted-foreground mt-1">
+                {reporte
+                  ? '¿Cortaste mal o faltó cantidad? Ingresa el ajuste aquí. Los reportes se suman automáticamente.'
+                  : 'Registra el reporte de corte para poder avanzar a Confección.'
+                }
+              </p>
+            </div>
+            <ReporteCorteMejorado opId={opId} lineasOP={lineasOP} bodegaTallerId={op?.bodega_taller_id ?? null} />
+          </div>
+        </>
       )}
     </div>
   )
