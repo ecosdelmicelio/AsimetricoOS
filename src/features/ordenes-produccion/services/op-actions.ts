@@ -15,12 +15,20 @@ export async function createOrdenProduccion(input: CreateOPInput) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
 
+  // 0. Obtener bodega_taller_id del taller (tercero)
+  const { data: taller } = await supabase
+    .from('terceros')
+    .select('bodega_taller_id')
+    .eq('id', input.taller_id)
+    .single() as { data: { bodega_taller_id: string | null } | null }
+
   // 1. Crear cabecera OP
   const { data: op, error: opError } = await supabase
     .from('ordenes_produccion')
     .insert({
       ov_id: input.ov_id,
       taller_id: input.taller_id,
+      bodega_taller_id: taller?.bodega_taller_id ?? null,
       fecha_promesa: input.fecha_promesa,
       notas: input.notas ?? null,
       creado_por: user.id,
