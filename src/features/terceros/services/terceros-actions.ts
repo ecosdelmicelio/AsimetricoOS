@@ -87,3 +87,22 @@ export async function updateTercero(
   revalidatePath('/terceros')
   return {}
 }
+
+export async function getBodegaDelTercero(tercero_id: string): Promise<{ id: string; nombre: string } | null> {
+  const supabase = db(await createClient())
+  const { data: tercero } = await supabase
+    .from('terceros')
+    .select('bodega_taller_id')
+    .eq('id', tercero_id)
+    .single() as { data: { bodega_taller_id: string | null } | null }
+
+  if (!tercero?.bodega_taller_id) return null
+
+  const { data: bodega } = await supabase
+    .from('bodegas')
+    .select('id, nombre')
+    .eq('id', tercero.bodega_taller_id)
+    .single() as { data: { id: string; nombre: string } | null }
+
+  return bodega
+}
