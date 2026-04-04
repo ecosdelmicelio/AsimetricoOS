@@ -13,14 +13,14 @@ interface Props {
 }
 
 export async function ReporteCorteePanel({ opId, estadoActual, reporte, lineasOP }: Props) {
-  // Obtener bodegas
   const supabase = await createClient()
-  const { data: bodegasData } = await supabase
-    .from('bodegas')
-    .select('id, nombre')
-    .order('nombre') as { data: Array<{ id: string; nombre: string }> | null }
 
-  const bodegas = bodegasData ?? []
+  // Obtener bodega_taller_id de la OP
+  const { data: op } = await supabase
+    .from('ordenes_produccion')
+    .select('bodega_taller_id')
+    .eq('id', opId)
+    .single() as { data: { bodega_taller_id: string | null } | null }
 
   // Mostrar solo si hay reporte existente o si la OP está en corte
   if (!reporte && estadoActual !== 'en_corte') return null
@@ -122,7 +122,7 @@ export async function ReporteCorteePanel({ opId, estadoActual, reporte, lineasOP
           <p className="text-body-sm text-muted-foreground">
             Registra el reporte de corte para poder avanzar a Confección.
           </p>
-          <ReporteCorteMejorado opId={opId} lineasOP={lineasOP} bodegas={bodegas} />
+          <ReporteCorteMejorado opId={opId} lineasOP={lineasOP} bodegaTallerId={op?.bodega_taller_id ?? null} />
         </div>
       )}
     </div>

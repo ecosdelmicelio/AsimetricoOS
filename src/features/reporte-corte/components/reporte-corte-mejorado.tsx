@@ -37,17 +37,16 @@ interface ProgresoCorte {
 interface Props {
   opId: string
   lineasOP: LineaOPSimple[]
-  bodegas?: Array<{ id: string; nombre: string }>
+  bodegaTallerId: string | null
 }
 
-export function ReporteCorteMejorado({ opId, lineasOP, bodegas = [] }: Props) {
+export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId }: Props) {
   const [isPending, startTransition] = useTransition()
   const [isLoadingMateriales, setIsLoadingMateriales] = useState(false)
   const [isLoadingProgreso, setIsLoadingProgreso] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
   const [notas, setNotas] = useState('')
-  const [bodegaSeleccionada, setBodegaSeleccionada] = useState(bodegas[0]?.id ?? '')
   const [materiales, setMateriales] = useState<MaterialConsolidado[]>([])
   const [consumosPorMaterial, setConsumosPorMaterial] = useState<Record<string, ConsumoPorMaterial>>({})
   // Estado para cantidades cortadas editables
@@ -243,11 +242,6 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegas = [] }: Props) {
       return
     }
 
-    if (!bodegaSeleccionada) {
-      setError('Selecciona una bodega de taller')
-      return
-    }
-
     // Validar que hay al menos una cantidad cortada > 0
     const totalCortado = gruposPorRefColor.reduce((sum, g) => sum + g.totalUds, 0)
     if (totalCortado === 0) {
@@ -279,13 +273,18 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegas = [] }: Props) {
       return
     }
 
+    if (!bodegaTallerId) {
+      setError('La bodega del taller no está configurada')
+      return
+    }
+
     // Construir datos para server action
     startTransition(async () => {
       const res = await createReporteCorte({
         op_id: opId,
         fecha,
         notas: notas || undefined,
-        bodega_id: bodegaSeleccionada,
+        bodega_id: bodegaTallerId,
         cantidad_total_cortada: totalCortado, // Pasar cantidad total cortada
         consumo_materiales: materialesConConsumo.map(m => {
           const consumo = consumosPorMaterial[m.material_id]
@@ -348,28 +347,6 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegas = [] }: Props) {
                 required
                 className="w-full bg-transparent text-body-sm text-foreground outline-none"
               />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-body-sm font-medium text-foreground">
-              Bodega Taller <span className="text-red-500">*</span>
-            </label>
-            <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
-              <select
-                value={bodegaSeleccionada}
-                onChange={e => {
-                  setBodegaSeleccionada(e.target.value)
-                  setError(null)
-                }}
-                required
-                className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none"
-              >
-                <option value="">Seleccionar bodega...</option>
-                {bodegas.map(b => (
-                  <option key={b.id} value={b.id}>{b.nombre}</option>
-                ))}
-              </select>
             </div>
           </div>
 
