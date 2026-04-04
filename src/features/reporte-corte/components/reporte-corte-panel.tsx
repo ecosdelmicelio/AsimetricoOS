@@ -32,8 +32,13 @@ export async function ReporteCorteePanel({ opId, estadoActual, reporte, lineasOP
         <h2 className="font-semibold text-foreground text-body-md">Reporte de Corte</h2>
       </div>
 
-      {reporte ? (
+      {/* Mostrar reporte anterior si existe */}
+      {reporte && (
         <div className="rounded-2xl bg-neu-base shadow-neu overflow-hidden">
+          <div className="px-5 py-3 bg-gray-50 border-b border-black/5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase">Último reporte guardado</p>
+          </div>
+
           {/* Cabecera */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
             <div>
@@ -117,10 +122,19 @@ export async function ReporteCorteePanel({ opId, estadoActual, reporte, lineasOP
             </div>
           )}
         </div>
-      ) : (
+      )}
+
+      {/* Formulario para crear nuevo reporte (siempre visible si OP está en corte) */}
+      {estadoActual === 'en_corte' && (
         <div className="rounded-2xl bg-neu-base shadow-neu p-5 space-y-4">
+          <p className="text-body-sm font-semibold text-foreground">
+            {reporte ? '📝 Crear reporte de ajuste' : 'Registra el primer reporte de corte'}
+          </p>
           <p className="text-body-sm text-muted-foreground">
-            Registra el reporte de corte para poder avanzar a Confección.
+            {reporte
+              ? 'Si necesitas corregir cantidades o agregar más cortes, crea un nuevo reporte. Los totales se sumarán automáticamente.'
+              : 'Registra el reporte de corte para poder avanzar a Confección.'
+            }
           </p>
           <ReporteCorteMejorado opId={opId} lineasOP={lineasOP} bodegaTallerId={op?.bodega_taller_id ?? null} />
         </div>
