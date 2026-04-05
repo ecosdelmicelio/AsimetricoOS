@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { ArrowLeft, Package, Calendar, Building2, FileText, DollarSign, ShieldCheck, Globe } from 'lucide-react'
+import { ArrowLeft, Package, Calendar, Building2, FileText, ShieldCheck, Globe } from 'lucide-react'
+import { createClient } from '@/shared/lib/supabase/server'
 import { getOrdenProduccionById, getHistorialOP } from '@/features/ordenes-produccion/services/op-actions'
 import { OPStatusBadge } from './op-status-badge'
 import { OPActions, OPProgreso } from './op-actions'
@@ -10,7 +11,9 @@ import { getReporteCortePorOP } from '@/features/reporte-corte/services/reporte-
 import { ReporteCorteePanel } from '@/features/reporte-corte/components/reporte-corte-panel'
 import { getEntregasByOP } from '@/features/entregas/services/entregas-actions'
 import { EntregasPanel } from '@/features/entregas/components/entregas-panel'
-import { getLiquidacionesByOP } from '@/features/liquidacion/services/liquidacion-actions'
+import { getLiquidacionesByOP, getInsumosParaReporte, calcularResumenLiquidacion, getLiquidacionOP, getServiciosRef, getServiciosBOMParaOP } from '@/features/liquidacion/services/liquidacion-actions'
+import { ReporteInsumosPanel } from '@/features/liquidacion/components/reporte-insumos-panel'
+import { LiquidacionPanel } from '@/features/liquidacion/components/liquidacion-panel'
 import type { EstadoOP } from '@/features/ordenes-produccion/types'
 import { formatDate } from '@/shared/lib/utils'
 
@@ -19,7 +22,13 @@ interface Props {
 }
 
 export async function OPDetail({ id }: Props) {
-  const [{ data: op, error }, { data: historial }, hitos, { data: reporte }, { data: entregas }, liquidacionesOP] = await Promise.all([
+  const ESTADOS_CON_INSUMOS: EstadoOP[] = ['en_terminado', 'en_entregas', 'liquidada', 'completada']
+  const ESTADOS_CON_LIQUIDACION: EstadoOP[] = ['en_entregas', 'liquidada', 'completada']
+
+  const supabase = await createClient()
+
+  // Fetch paralelo base
+  const [{ data: op, error }, { data: historial }, hitos, reporteData, { data: entregas }, liquidacionesOP] = await Promise.all([
     getOrdenProduccionById(id),
     getHistorialOP(id),
     getHitosByOP(id),
@@ -27,6 +36,8 @@ export async function OPDetail({ id }: Props) {
     getEntregasByOP(id),
     getLiquidacionesByOP(id),
   ])
+
+  const { data: reporte, dataAll: reportes } = reporteData
 
   if (error || !op) {
     return (
@@ -39,9 +50,28 @@ export async function OPDetail({ id }: Props) {
     )
   }
 
+  // Fetch condicionales (solo cuando el estado lo requiere)
+  const estadoOP = op.estado as EstadoOP
   const taller = op.terceros
   const ov = op.ordenes_venta
   const detalles = op.op_detalle ?? []
+  const productoIdsOP = [...new Set(detalles.map(d => d.producto_id))]
+
+  const [insumosParaReporte, resumenLiquidacion, liquidacionAprobada, bodegasData, serviciosRef, serviciosBOM] = await Promise.all([
+    ESTADOS_CON_INSUMOS.includes(estadoOP) ? getInsumosParaReporte(id) : Promise.resolve([]),
+    ESTADOS_CON_LIQUIDACION.includes(estadoOP) ? calcularResumenLiquidacion(id) : Promise.resolve(null),
+    ESTADOS_CON_LIQUIDACION.includes(estadoOP) ? getLiquidacionOP(id) : Promise.resolve(null),
+    estadoOP === 'en_entregas'
+      ? supabase.from('bodegas').select('id, nombre').eq('activo', true).order('nombre')
+      : Promise.resolve({ data: [] }),
+    ESTADOS_CON_LIQUIDACION.includes(estadoOP) ? getServiciosRef(id) : Promise.resolve([]),
+    ESTADOS_CON_LIQUIDACION.includes(estadoOP) ? getServiciosBOMParaOP(productoIdsOP) : Promise.resolve([]),
+  ])
+
+  const bodegas = (bodegasData?.data ?? []) as { id: string; nombre: string }[]
+  const bodegaDestino = (op as unknown as Record<string, string | null>).bodega_destino_id ?? null
+
+  const hayReporteInsumos = insumosParaReporte.length === 0 || insumosParaReporte.some(i => i.ya_reportado)
 
   const totalUnidades = detalles.reduce((s, d) => s + d.cantidad_asignada, 0)
 
@@ -114,15 +144,6 @@ export async function OPDetail({ id }: Props) {
               Inspeccionar
             </Link>
           )}
-          {op.estado === 'completada' && (
-            <Link
-              href={`/liquidacion/nueva?op=${id}`}
-              className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-neu-base shadow-neu text-muted-foreground font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg"
-            >
-              <DollarSign className="w-4 h-4" />
-              Liquidar
-            </Link>
-          )}
           <OPActions opId={id} estadoActual={op.estado} tieneReporteCorte={!!reporte} />
         </div>
       </div>
@@ -143,6 +164,7 @@ export async function OPDetail({ id }: Props) {
         opId={id}
         estadoActual={op.estado}
         reporte={reporte}
+        reportes={reportes}
         lineasOP={lineasOP}
       />
 
@@ -205,6 +227,7 @@ export async function OPDetail({ id }: Props) {
       {/* Entregas */}
       <EntregasPanel
         opId={id}
+        opCodigo={op.codigo}
         estadoActual={op.estado}
         entregas={entregas ?? []}
         lineasOP={lineasOP}
@@ -212,7 +235,43 @@ export async function OPDetail({ id }: Props) {
         liquidacionesPorEntrega={Object.fromEntries(
           liquidacionesOP.filter(l => l.entrega_id).map(l => [l.entrega_id!, l.id])
         )}
+        bodegas={bodegas}
+        bodegaDestinoId={bodegaDestino}
       />
+
+      {/* Reporte de Insumos (en_terminado en adelante) */}
+      {ESTADOS_CON_INSUMOS.includes(estadoOP) && (
+        <ReporteInsumosPanel
+          opId={id}
+          insumos={insumosParaReporte}
+          bloqueado={liquidacionAprobada?.estado === 'aprobada'}
+        />
+      )}
+
+      {/* Panel de Liquidación (en_entregas en adelante) */}
+      {ESTADOS_CON_LIQUIDACION.includes(estadoOP) && resumenLiquidacion && (
+        <LiquidacionPanel
+          opId={id}
+          resumenInicial={resumenLiquidacion}
+          serviciosRefIniciales={serviciosRef}
+          serviciosBOM={serviciosBOM}
+          lineasOP={(() => {
+            const unidadesPorProducto = detalles.reduce<Record<string, number>>((acc, d) => {
+              acc[d.producto_id] = (acc[d.producto_id] ?? 0) + d.cantidad_asignada
+              return acc
+            }, {})
+            return [...new Map(lineasOP.map(l => [l.producto_id, l])).values()]
+              .map(l => ({ producto_id: l.producto_id, referencia: l.referencia, nombre: l.nombre, unidades: unidadesPorProducto[l.producto_id] ?? 0 }))
+          })()}
+          liquidacionAprobada={liquidacionAprobada?.estado === 'aprobada' ? {
+            costo_total: liquidacionAprobada.costo_total,
+            cpp: liquidacionAprobada.cpp,
+            cantidad_entregada: liquidacionAprobada.cantidad_entregada,
+            fecha_aprobacion: liquidacionAprobada.fecha_aprobacion,
+          } : null}
+          hayReporteInsumos={hayReporteInsumos}
+        />
+      )}
 
       {/* Hitos de producción */}
       <HitosPanel

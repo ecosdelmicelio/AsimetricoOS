@@ -9,10 +9,41 @@ function db(supabase: unknown): any {
   return supabase
 }
 
-export async function createEntrega(input: CreateEntregaInput) {
+export async function createEntrega(input: CreateEntregaInput & { reporte_corte_id?: string }) {
   const supabase = db(await createClient())
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
+
+  // Si está vinculado a un corte específico, validar cantidad
+  let cantidad_cortada = 0
+  if (input.reporte_corte_id) {
+    const { data: reporte } = await supabase
+      .from('reporte_corte')
+      .select('cantidad_total_cortada')
+      .eq('id', input.reporte_corte_id)
+      .single() as { data: { cantidad_total_cortada: number | null } | null }
+
+    cantidad_cortada = reporte?.cantidad_total_cortada || 0
+
+    // Sumar entregas previas del mismo corte
+    const { data: entregas_prev } = await supabase
+      .from('entregas')
+      .select('entrega_detalle(cantidad_entregada)')
+      .eq('reporte_corte_id', input.reporte_corte_id) as {
+        data: { entrega_detalle: { cantidad_entregada: number }[] }[] | null
+      }
+
+    const cantidad_ya_entregada = entregas_prev
+      ?.reduce((sum, e) => sum + e.entrega_detalle.reduce((s, d) => s + d.cantidad_entregada, 0), 0) || 0
+
+    // Validar que no se intente entregar más de lo cortado
+    const cantidad_a_entregar = input.lineas.reduce((sum, l) => sum + l.cantidad_entregada, 0)
+    if (cantidad_ya_entregada + cantidad_a_entregar > cantidad_cortada) {
+      return {
+        error: `No puedes entregar ${cantidad_ya_entregada + cantidad_a_entregar} uds. Solo se cortaron ${cantidad_cortada}. Ya entregadas: ${cantidad_ya_entregada}`,
+      }
+    }
+  }
 
   // Auto-incrementar numero_entrega por OP
   const { data: last } = await supabase
@@ -25,15 +56,30 @@ export async function createEntrega(input: CreateEntregaInput) {
 
   const numero_entrega = (last?.numero_entrega ?? 0) + 1
 
+  // Calcular totales
+  const cantidad_entregada = input.lineas.reduce((sum, l) => sum + l.cantidad_entregada, 0)
+  const cantidad_faltante = cantidad_cortada > 0 ? Math.max(0, cantidad_cortada - cantidad_entregada) : 0
+  const es_faltante = cantidad_faltante > 0
+
+  // Generar BIN único para esta entrega
+  const fecha = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+  const bin_codigo = `BIN-E${numero_entrega}-${fecha}`
+
   // 1. Crear cabecera
   const { data: entrega, error: entError } = await supabase
     .from('entregas')
     .insert({
       op_id: input.op_id,
+      reporte_corte_id: input.reporte_corte_id || null,
       numero_entrega,
       fecha_entrega: input.fecha_entrega,
       notas: input.notas ?? null,
       estado: 'recibida',
+      bin_codigo,
+      cantidad_cortada,
+      cantidad_entregada,
+      cantidad_faltante,
+      es_faltante,
     })
     .select('id, numero_entrega')
     .single() as { data: { id: string; numero_entrega: number } | null; error: { message: string } | null }

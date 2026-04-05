@@ -53,14 +53,14 @@ export async function getSumaCortesPrevios(opId: string) {
     .select(`
       id,
       fecha,
-      reporte_corte_material(cantidad_cortada_total)
+      cantidad_total_cortada
     `)
     .eq('op_id', opId)
     .order('fecha', { ascending: false }) as {
       data: Array<{
         id: string
         fecha: string
-        reporte_corte_material: Array<{ cantidad_cortada_total: number }>
+        cantidad_total_cortada: number | null
       }> | null
       error: { message: string } | null
     }
@@ -75,17 +75,11 @@ export async function getSumaCortesPrevios(opId: string) {
   }
 
   // Calcular total cortado y construir detalle
-  const detalleReportes = reportes.map(r => {
-    const cantidadTotal = (r.reporte_corte_material ?? []).reduce(
-      (sum, m) => sum + (m.cantidad_cortada_total || 0),
-      0
-    )
-    return {
-      id: r.id,
-      fecha: r.fecha,
-      cantidad_total: cantidadTotal,
-    }
-  })
+  const detalleReportes = reportes.map(r => ({
+    id: r.id,
+    fecha: r.fecha,
+    cantidad_total: r.cantidad_total_cortada || 0,
+  }))
 
   const totalCortado = detalleReportes.reduce((sum, r) => sum + r.cantidad_total, 0)
 
@@ -196,14 +190,19 @@ export async function createReporteCorte(input: CreateReporteCorteInput) {
 
   // 2. Nuevo flujo: consumo_materiales
   if (input.consumo_materiales && input.consumo_materiales.length > 0 && input.bodega_id && input.cantidad_total_cortada !== undefined) {
-    // Insertar consumos de materiales
+    // Actualizar reporte con cantidad_total_cortada
+    await supabase
+      .from('reporte_corte')
+      .update({ cantidad_total_cortada: input.cantidad_total_cortada })
+      .eq('id', reporte.id)
+
+    // Insertar consumos de materiales (sin cantidad_cortada_total aquí)
     const materialesInsert = input.consumo_materiales.map(m => ({
       reporte_id: reporte.id,
       material_id: m.material_id,
       metros_usados: m.metros_usados,
       desperdicio_kg: m.desperdicio_kg,
       material_devuelto_kg: m.material_devuelto_kg,
-      cantidad_cortada_total: input.cantidad_total_cortada, // Repetido para cada material del reporte
     }))
 
     const { error: matError } = await supabase
@@ -298,7 +297,7 @@ export async function createReporteCorte(input: CreateReporteCorteInput) {
   if (input.tendidos && input.tendidos.length > 0) {
     for (const t of input.tendidos) {
       const { data: tendido, error: tError } = await supabase
-        .from('reporte_corte_tendido')
+        .from('reporte_corte_corte')
         .insert({
           reporte_id: reporte.id,
           color: t.color,
@@ -333,9 +332,63 @@ export async function createReporteCorte(input: CreateReporteCorteInput) {
     }
   }
 
+  // Transición automática: en_corte → en_confeccion
+  await supabase
+    .from('ordenes_produccion')
+    .update({ estado: 'en_confeccion' })
+    .eq('id', input.op_id)
+    .eq('estado', 'en_corte')
+
   revalidatePath(`/ordenes-produccion/${input.op_id}`)
   return { data: { id: reporte.id } }
 }
+
+export async function updateReporteCorte(reporteId: string, input: CreateReporteCorteInput) {
+  const supabase = db(await createClient())
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  // Actualizar cabecera del reporte
+  const { error: updateError } = await supabase
+    .from('reporte_corte')
+    .update({
+      fecha: input.fecha,
+      notas: input.notas ?? null,
+      cantidad_total_cortada: input.cantidad_total_cortada ?? null,
+    })
+    .eq('id', reporteId) as { error: { message: string } | null }
+
+  if (updateError) return { error: `Error actualizando reporte: ${updateError.message}` }
+
+  // Eliminar materiales anteriores
+  const { error: deleteMatError } = await supabase
+    .from('reporte_corte_material')
+    .delete()
+    .eq('reporte_id', reporteId) as { error: { message: string } | null }
+
+  if (deleteMatError) return { error: `Error eliminando materiales anteriores: ${deleteMatError.message}` }
+
+  // Insertar nuevos materiales
+  if (input.consumo_materiales && input.consumo_materiales.length > 0) {
+    const materialesInsert = input.consumo_materiales.map(m => ({
+      reporte_id: reporteId,
+      material_id: m.material_id,
+      metros_usados: m.metros_usados,
+      desperdicio_kg: m.desperdicio_kg,
+      material_devuelto_kg: m.material_devuelto_kg,
+    }))
+
+    const { error: matError } = await supabase
+      .from('reporte_corte_material')
+      .insert(materialesInsert) as { error: { message: string } | null }
+
+    if (matError) return { error: `Error insertando nuevos materiales: ${matError.message}` }
+  }
+
+  revalidatePath(`/ordenes-produccion/${input.op_id}`)
+  return { data: { id: reporteId } }
+}
+
 
 export async function getReporteCortePorOP(opId: string) {
   const supabase = db(await createClient())
@@ -344,16 +397,18 @@ export async function getReporteCortePorOP(opId: string) {
     .select(`
       *,
       profiles ( full_name ),
-      reporte_corte_tendido (
+      reporte_corte_corte (
         *,
         reporte_corte_linea ( *, productos ( nombre, referencia, color ) )
+      ),
+      reporte_corte_material (
+        *
       )
     `)
     .eq('op_id', opId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle() as { data: ReporteCorteCompleto | null; error: { message: string } | null }
+    .order('created_at', { ascending: false }) as { data: ReporteCorteCompleto[] | null; error: { message: string } | null }
 
   if (error) return { error: error.message, data: null }
-  return { data }
+  // Retornar el más reciente para compatibilidad, pero ahora es un array
+  return { data: data && data.length > 0 ? data[0] : null, dataAll: data }
 }

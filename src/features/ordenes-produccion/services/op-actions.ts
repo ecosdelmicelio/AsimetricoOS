@@ -98,6 +98,45 @@ export async function createOrdenProduccion(input: CreateOPInput) {
   }
   if (detError) return { error: detError.message }
 
+  // 2.5. Poblar op_servicios del BOM (servicios únicos de todos los productos)
+  const productoIds = [...new Set(input.lineas.map(l => l.producto_id))]
+  const { data: bomServicios } = await supabase
+    .from('bom')
+    .select('servicio_id, cantidad, servicios_operativos!inner(id, tarifa_unitaria)')
+    .in('producto_id', productoIds)
+    .eq('tipo', 'servicio')
+    .not('servicio_id', 'is', null) as {
+      data: { servicio_id: string; cantidad: number; servicios_operativos: { id: string; tarifa_unitaria: number } }[] | null
+    }
+
+  if (bomServicios && bomServicios.length > 0) {
+    // Usar servicios del input si vienen (tarifas ajustadas), si no usar BOM
+    const serviciosInput = input.servicios ?? []
+    const serviciosMap = new Map(serviciosInput.map(s => [s.servicio_id, s]))
+
+    // Deduplicar por servicio_id (un servicio puede estar en múltiples productos del BOM)
+    const serviciosUnicos = new Map<string, { servicio_id: string; tarifa_unitaria: number; cantidad_por_unidad: number }>()
+    for (const b of bomServicios) {
+      if (!serviciosUnicos.has(b.servicio_id)) {
+        const override = serviciosMap.get(b.servicio_id)
+        serviciosUnicos.set(b.servicio_id, {
+          servicio_id: b.servicio_id,
+          tarifa_unitaria: override?.tarifa_unitaria ?? b.servicios_operativos.tarifa_unitaria,
+          cantidad_por_unidad: b.cantidad,
+        })
+      }
+    }
+
+    const opServiciosRows = [...serviciosUnicos.values()].map(s => ({
+      op_id: op.id,
+      servicio_id: s.servicio_id,
+      tarifa_unitaria: s.tarifa_unitaria,
+      cantidad_por_unidad: s.cantidad_por_unidad,
+    }))
+
+    await supabase.from('op_servicios').insert(opServiciosRows)
+  }
+
   // 3. Si la OV todavía no está en producción, actualizarla
   await supabase
     .from('ordenes_venta')
@@ -182,6 +221,40 @@ export async function getTalleres() {
     .eq('estado', 'activo')
     .order('nombre')
   return (data ?? []) as { id: string; nombre: string; capacidad_diaria: number | null }[]
+}
+
+export async function getServiciosBOM(productoIds: string[]) {
+  const supabase = db(await createClient())
+  if (productoIds.length === 0) return []
+
+  const { data } = await supabase
+    .from('bom')
+    .select('servicio_id, cantidad, servicios_operativos!inner(id, codigo, nombre, tipo_proceso, tarifa_unitaria)')
+    .in('producto_id', productoIds)
+    .eq('tipo', 'servicio')
+    .not('servicio_id', 'is', null) as {
+      data: {
+        servicio_id: string
+        cantidad: number
+        servicios_operativos: { id: string; codigo: string; nombre: string; tipo_proceso: string; tarifa_unitaria: number }
+      }[] | null
+    }
+
+  // Deduplicar por servicio_id
+  const map = new Map<string, { servicio_id: string; nombre: string; codigo: string; tipo_proceso: string; tarifa_unitaria: number; cantidad_por_unidad: number }>()
+  for (const b of data ?? []) {
+    if (!map.has(b.servicio_id)) {
+      map.set(b.servicio_id, {
+        servicio_id: b.servicio_id,
+        nombre: b.servicios_operativos.nombre,
+        codigo: b.servicios_operativos.codigo,
+        tipo_proceso: b.servicios_operativos.tipo_proceso,
+        tarifa_unitaria: b.servicios_operativos.tarifa_unitaria,
+        cantidad_por_unidad: b.cantidad,
+      })
+    }
+  }
+  return [...map.values()]
 }
 
 export async function getOVsConfirmadas() {

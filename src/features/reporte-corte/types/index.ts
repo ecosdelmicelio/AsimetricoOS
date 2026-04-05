@@ -4,6 +4,7 @@ export interface ReporteCorte {
   fecha: string
   reportado_por: string | null
   notas: string | null
+  enviado_a_confeccion?: boolean
   created_at: string
 }
 
@@ -37,7 +38,17 @@ export interface TendidoConLineas extends ReporteCorteTendido {
 }
 
 export interface ReporteCorteCompleto extends ReporteCorte {
-  reporte_corte_tendido: TendidoConLineas[]
+  reporte_corte_corte?: TendidoConLineas[]
+  reporte_corte_tendido?: TendidoConLineas[] // Alias para compatibilidad
+  reporte_corte_material?: Array<{
+    id: string
+    reporte_id: string
+    material_id: string
+    metros_usados: number
+    desperdicio_kg: number
+    material_devuelto_kg: number
+    created_at: string
+  }>
   profiles: { full_name: string } | null
 }
 

@@ -8,6 +8,7 @@ const CONFIG: Record<EstadoOP, { label: string; classes: string }> = {
   dupro_pendiente: { label: 'DUPRO Pendiente',   classes: 'bg-purple-100 text-purple-700' },
   en_terminado:    { label: 'En Terminado',      classes: 'bg-blue-100 text-blue-700' },
   en_entregas:     { label: 'En Entregas',        classes: 'bg-teal-100 text-teal-700' },
+  liquidada:       { label: 'Liquidada',         classes: 'bg-emerald-100 text-emerald-700' },
   completada:      { label: 'Completada',        classes: 'bg-green-100 text-green-700' },
   cancelada:       { label: 'Cancelada',         classes: 'bg-red-100 text-red-600' },
 }

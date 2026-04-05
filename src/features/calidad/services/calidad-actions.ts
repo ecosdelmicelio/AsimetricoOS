@@ -168,9 +168,37 @@ export async function createTipoDefecto(input: {
   return { data: data ?? undefined }
 }
 
+export async function iniciarDupro(opId: string): Promise<{ error?: string }> {
+  const supabase = db(await createClient())
+
+  // Crear inspección DUPRO pendiente
+  const { error: insError } = await supabase
+    .from('inspecciones')
+    .insert({
+      op_id: opId,
+      tipo: 'dupro',
+      resultado: 'pendiente',
+      timestamp_inicio: new Date().toISOString(),
+    }) as { error: { message: string } | null }
+
+  if (insError) return { error: insError.message }
+
+  // Transición: en_confeccion → dupro_pendiente
+  await supabase
+    .from('ordenes_produccion')
+    .update({ estado: 'dupro_pendiente' })
+    .eq('id', opId)
+    .eq('estado', 'en_confeccion')
+
+  revalidatePath(`/ordenes-produccion/${opId}`)
+  revalidatePath('/calidad')
+  return {}
+}
+
 export async function createInspeccion(
   op_id: string,
   tipo: TipoInspeccion,
+  reporteCorteid?: string,
 ): Promise<{ data: Inspeccion | null; error?: string }> {
   const supabase = db(await createClient())
 
@@ -180,6 +208,7 @@ export async function createInspeccion(
       op_id,
       tipo,
       resultado: 'pendiente',
+      reporte_corte_id: reporteCorteid || null,
       timestamp_inicio: new Date().toISOString(),
     })
     .select()
@@ -302,6 +331,13 @@ export async function closeInspeccion(formData: FormData): Promise<{ error?: str
     ? (parseInt(formData.get('cantidad_segundas') as string, 10) || null)
     : null
 
+  // Obtener info de la inspección (tipo y reporte_corte_id)
+  const { data: inspeccionData } = await supabase
+    .from('inspecciones')
+    .select('tipo, reporte_corte_id, cantidad_cortada')
+    .eq('id', inspeccion_id)
+    .single() as { data: { tipo: string; reporte_corte_id: string | null; cantidad_cortada: number | null } | null }
+
   const { error: inspeccionError } = await supabase
     .from('inspecciones')
     .update({
@@ -314,6 +350,25 @@ export async function closeInspeccion(formData: FormData): Promise<{ error?: str
     .eq('id', inspeccion_id) as { error: { message: string } | null }
 
   if (inspeccionError) return { error: inspeccionError.message }
+
+  // Si es DUPRO aceptada y está vinculada a un corte → crear FRI automáticamente
+  if (inspeccionData?.tipo === 'dupro' && resultado === 'aceptada' && inspeccionData?.reporte_corte_id) {
+    try {
+      await supabase
+        .from('inspecciones')
+        .insert({
+          op_id,
+          reporte_corte_id: inspeccionData.reporte_corte_id,
+          tipo: 'fri',
+          resultado: 'pendiente',
+          cantidad_cortada: inspeccionData.cantidad_cortada,
+          timestamp_inicio: new Date().toISOString(),
+        })
+    } catch (err) {
+      console.error('Error creando FRI automática:', err)
+      // No bloquear el cierre de DUPRO
+    }
+  }
 
   // Advance OP state if inspection accepted or classified as segundas
   if (resultado === 'aceptada' || resultado === 'segundas') {

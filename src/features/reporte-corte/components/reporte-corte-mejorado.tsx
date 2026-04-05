@@ -2,8 +2,8 @@
 
 import { useState, useTransition, useMemo, useEffect } from 'react'
 import { Loader2, ChevronDown, Trash2 } from 'lucide-react'
-import { consolidarMaterialesDelCorte, type MaterialConsolidado, getSumaCortesPrevios, getTotalAsignadoOP } from '@/features/reporte-corte/services/reporte-corte-actions'
-import { createReporteCorte } from '@/features/reporte-corte/services/reporte-corte-actions'
+import { consolidarMaterialesDelCorte, type MaterialConsolidado, getSumaCortesPrevios, getTotalAsignadoOP, createReporteCorte, updateReporteCorte } from '@/features/reporte-corte/services/reporte-corte-actions'
+import type { ReporteCorteCompleto } from '@/features/reporte-corte/types'
 import { TALLAS_STANDARD } from '@/shared/constants/tallas'
 import type { LineaOPSimple } from './reporte-corte-form'
 
@@ -38,15 +38,17 @@ interface Props {
   opId: string
   lineasOP: LineaOPSimple[]
   bodegaTallerId: string | null
+  reporteAEditar?: ReporteCorteCompleto | null
+  onEditComplete?: () => void
 }
 
-export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId }: Props) {
+export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId, reporteAEditar, onEditComplete }: Props) {
   const [isPending, startTransition] = useTransition()
   const [isLoadingMateriales, setIsLoadingMateriales] = useState(false)
   const [isLoadingProgreso, setIsLoadingProgreso] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
-  const [notas, setNotas] = useState('')
+  const [fecha, setFecha] = useState(reporteAEditar?.fecha ?? new Date().toISOString().split('T')[0])
+  const [notas, setNotas] = useState(reporteAEditar?.notas ?? '')
   const [materiales, setMateriales] = useState<MaterialConsolidado[]>([])
   const [consumosPorMaterial, setConsumosPorMaterial] = useState<Record<string, ConsumoPorMaterial>>({})
   // Estado para cantidades cortadas editables
@@ -66,13 +68,13 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId }: Props) 
           getSumaCortesPrevios(opId),
         ])
 
-        const maximo105 = totalAsignado * 1.05
-        const espacioDisponible = maximo105 - totalCortadoPrevio
+        const maximo103 = totalAsignado * 1.03
+        const espacioDisponible = maximo103 - totalCortadoPrevio
 
         setInfoProgreso({
           totalAsignado,
           totalCortadoPrevio,
-          maximo105,
+          maximo105: maximo103,
           espacioDisponible,
         })
       } catch (err) {
@@ -249,14 +251,14 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId }: Props) 
       return
     }
 
-    // VALIDACIÓN: Verificar límite del 105%
-    if (infoProgreso) {
+    // VALIDACIÓN: Verificar límite del 103% (solo si no estamos editando)
+    if (!reporteAEditar && infoProgreso) {
       const totalNuevo = infoProgreso.totalCortadoPrevio + totalCortado
       if (totalNuevo > infoProgreso.maximo105) {
         setError(
           `No puedes cortar ${totalCortado} uds más. ` +
           `Ya cortadas: ${infoProgreso.totalCortadoPrevio}. ` +
-          `Máximo permitido: ${infoProgreso.maximo105.toFixed(0)} uds (105% de ${infoProgreso.totalAsignado}). ` +
+          `Máximo permitido: ${infoProgreso.maximo105.toFixed(0)} uds (103% de ${infoProgreso.totalAsignado}). ` +
           `Espacio disponible: ${infoProgreso.espacioDisponible.toFixed(0)} uds.`
         )
         return
@@ -280,20 +282,18 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId }: Props) 
 
     // Construir datos para server action
     startTransition(async () => {
-      const res = await createReporteCorte({
+      const input = {
         op_id: opId,
         fecha,
         notas: notas || undefined,
         bodega_id: bodegaTallerId,
-        cantidad_total_cortada: totalCortado, // Pasar cantidad total cortada
+        cantidad_total_cortada: totalCortado,
         consumo_materiales: materialesConConsumo.map(m => {
           const consumo = consumosPorMaterial[m.material_id]
-          // Calcular cantidad total de prendas (con cantidades editadas)
           const cantidadTotal = m.referencias_que_usan.reduce(
             (sum, ref) => sum + ref.cantidad_asignada,
             0
           )
-          // Calcular consumo real = promedio × cantidad
           const metros_usados = consumo.consumo_promedio * cantidadTotal
 
           return {
@@ -308,18 +308,27 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId }: Props) 
             })),
           }
         }),
-      })
+      }
+
+      // Si estamos editando, usar updateReporteCorte, sino createReporteCorte
+      const res = reporteAEditar
+        ? await updateReporteCorte(reporteAEditar.id, input)
+        : await createReporteCorte(input)
 
       if (res.error) {
         setError(res.error)
         return
       }
 
-      // Reset
-      setFecha(new Date().toISOString().split('T')[0])
-      setNotas('')
-      setConsumosPorMaterial({})
-      setCantidadesCortadas({})
+      // Reset y callback
+      if (reporteAEditar && onEditComplete) {
+        onEditComplete()
+      } else {
+        setFecha(new Date().toISOString().split('T')[0])
+        setNotas('')
+        setConsumosPorMaterial({})
+        setCantidadesCortadas({})
+      }
     })
   }
 
@@ -392,7 +401,7 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId }: Props) 
               </p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground font-medium">Máximo (105%)</p>
+              <p className="text-xs text-muted-foreground font-medium">Máximo (103%)</p>
               <p className="text-display-xs font-bold text-foreground">
                 {infoProgreso.maximo105.toFixed(0)}
               </p>
@@ -647,7 +656,10 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId }: Props) 
         className="w-full py-2.5 rounded-xl bg-primary-600 text-white font-semibold text-body-sm hover:bg-primary-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
       >
         {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-        {isPending ? 'Guardando...' : 'Guardar Corte'}
+        {reporteAEditar
+          ? isPending ? 'Guardando cambios...' : 'Guardar cambios'
+          : isPending ? 'Guardando...' : 'Guardar Corte'
+        }
       </button>
     </div>
   )

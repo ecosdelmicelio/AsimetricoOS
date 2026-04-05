@@ -7,6 +7,12 @@ export interface Entrega {
   fecha_entrega: string
   estado: EstadoEntrega
   notas: string | null
+  bin_codigo: string | null
+  reporte_corte_id?: string | null
+  cantidad_cortada?: number
+  cantidad_entregada?: number
+  cantidad_faltante?: number
+  es_faltante?: boolean
   created_at: string
   updated_at: string
 }

@@ -2,10 +2,11 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Package, Plus, CheckCircle, XCircle, DollarSign } from 'lucide-react'
+import { Package, Plus, CheckCircle, XCircle, DollarSign, Warehouse } from 'lucide-react'
 import Link from 'next/link'
 import type { EntregaConDetalle } from '@/features/entregas/types'
 import { resolverFRI } from '@/features/entregas/services/entregas-actions'
+import { guardarBodegaDestino } from '@/features/liquidacion/services/liquidacion-actions'
 import { EntregaForm, type LineaOPSimple } from './entrega-form'
 import { formatDate } from '@/shared/lib/utils'
 
@@ -16,20 +17,54 @@ const ESTADO_CONFIG = {
   rechazada:     { label: 'Rechazada ✗',  classes: 'bg-red-100 text-red-700' },
 }
 
+// Orden canónico de tallas: primero alfabéticas (XS→XXL), luego numéricas pares (2, 4, 6...)
+const TALLA_ORDEN: Record<string, number> = { XS: 0, S: 1, M: 2, L: 3, XL: 4, XXL: 5, XXXL: 6, '3XL': 6, '4XL': 7 }
+function sortTallas(tallas: string[]): string[] {
+  return [...tallas].sort((a, b) => {
+    const na = TALLA_ORDEN[a.toUpperCase()]
+    const nb = TALLA_ORDEN[b.toUpperCase()]
+    if (na !== undefined && nb !== undefined) return na - nb
+    if (na !== undefined) return -1
+    if (nb !== undefined) return 1
+    const numA = parseInt(a), numB = parseInt(b)
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB
+    return a.localeCompare(b)
+  })
+}
+
 interface Props {
   opId: string
+  opCodigo: string
   estadoActual: string
   entregas: EntregaConDetalle[]
   lineasOP: LineaOPSimple[]
   totalUnidadesOP: number
   liquidacionesPorEntrega: Record<string, string>  // entregaId → liquidacionId
+  bodegas: { id: string; nombre: string }[]
+  bodegaDestinoId: string | null
 }
 
-export function EntregasPanel({ opId, estadoActual, entregas, lineasOP, totalUnidadesOP, liquidacionesPorEntrega }: Props) {
+export function EntregasPanel({ opId, opCodigo, estadoActual, entregas, lineasOP, totalUnidadesOP, liquidacionesPorEntrega, bodegas, bodegaDestinoId }: Props) {
   const router = useRouter()
   const [showForm, setShowForm] = useState(false)
   const [friPending, startFriTransition] = useTransition()
   const [friLoading, setFriLoading] = useState<string | null>(null)
+  const [bodegaSeleccionada, setBodegaSeleccionada] = useState(bodegaDestinoId ?? '')
+  const [guardandoBodega, startBodegaTransition] = useTransition()
+  const [bodegaError, setBodegaError] = useState<string | null>(null)
+
+  function handleGuardarBodega() {
+    if (!bodegaSeleccionada) return
+    setBodegaError(null)
+    startBodegaTransition(async () => {
+      const result = await guardarBodegaDestino(opId, bodegaSeleccionada, opCodigo)
+      if (result.error) {
+        setBodegaError(result.error)
+      } else {
+        router.refresh()
+      }
+    })
+  }
 
   if (estadoActual !== 'en_entregas' && estadoActual !== 'completada' && entregas.length === 0) {
     return null
@@ -69,6 +104,52 @@ export function EntregasPanel({ opId, estadoActual, entregas, lineasOP, totalUni
           </button>
         )}
       </div>
+
+      {/* Selector bodega destino */}
+      {estadoActual === 'en_entregas' && (
+        <div className="rounded-2xl bg-neu-base shadow-neu p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <Warehouse className="w-4 h-4 text-muted-foreground" />
+            <p className="font-semibold text-foreground text-body-sm">Bodega de Destino</p>
+          </div>
+          {bodegaDestinoId ? (
+            <div className="flex items-center justify-between">
+              <p className="text-body-sm text-foreground font-medium">
+                {bodegas.find(b => b.id === bodegaDestinoId)?.nombre ?? 'Bodega seleccionada'}
+              </p>
+              <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold">✓ Configurado</span>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-body-sm text-muted-foreground">
+                Selecciona la bodega donde ingresarán los productos al completar la entrega.
+              </p>
+              <div className="flex gap-3">
+                <div className="flex-1 rounded-xl bg-neu-base shadow-neu-inset px-3 py-2">
+                  <select
+                    value={bodegaSeleccionada}
+                    onChange={e => setBodegaSeleccionada(e.target.value)}
+                    className="w-full bg-transparent text-body-sm text-foreground outline-none"
+                  >
+                    <option value="">Selecciona una bodega...</option>
+                    {bodegas.map(b => (
+                      <option key={b.id} value={b.id}>{b.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  onClick={handleGuardarBodega}
+                  disabled={!bodegaSeleccionada || guardandoBodega}
+                  className="px-4 py-2 rounded-xl bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset disabled:opacity-40"
+                >
+                  {guardandoBodega ? 'Guardando...' : 'Guardar'}
+                </button>
+              </div>
+              {bodegaError && <p className="text-xs text-red-600">{bodegaError}</p>}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Barra de progreso */}
       <div className="rounded-2xl bg-neu-base shadow-neu p-4">
@@ -112,6 +193,17 @@ export function EntregasPanel({ opId, estadoActual, entregas, lineasOP, totalUni
         const totalEntregado = entrega.entrega_detalle.reduce((s, d) => s + d.cantidad_entregada, 0)
         const isFriPending = friPending && friLoading === entrega.id
 
+        // Construir matriz: filas = referencia, columnas = tallas (ordenadas)
+        const tallasEntrega = sortTallas([...new Set(entrega.entrega_detalle.map(d => d.talla))])
+        const filaMap = new Map<string, { ref: string; nombre: string; cantidades: Record<string, number> }>()
+        for (const d of entrega.entrega_detalle) {
+          const ref = d.productos?.referencia ?? '—'
+          const nombre = d.productos?.nombre ?? ''
+          const key = ref
+          if (!filaMap.has(key)) filaMap.set(key, { ref, nombre, cantidades: {} })
+          filaMap.get(key)!.cantidades[d.talla] = (filaMap.get(key)!.cantidades[d.talla] ?? 0) + d.cantidad_entregada
+        }
+
         return (
           <div key={entrega.id} className="rounded-2xl bg-neu-base shadow-neu overflow-hidden">
             {/* Cabecera entrega */}
@@ -121,9 +213,16 @@ export function EntregasPanel({ opId, estadoActual, entregas, lineasOP, totalUni
                   Entrega #{entrega.numero_entrega}
                   <span className="text-muted-foreground font-normal ml-2">{formatDate(entrega.fecha_entrega)}</span>
                 </p>
-                {entrega.notas && (
-                  <p className="text-xs text-muted-foreground mt-0.5">{entrega.notas}</p>
-                )}
+                <div className="flex items-center gap-2 mt-0.5">
+                  {entrega.bin_codigo && (
+                    <span className="text-xs font-mono text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded">
+                      {entrega.bin_codigo}
+                    </span>
+                  )}
+                  {entrega.notas && (
+                    <p className="text-xs text-muted-foreground">{entrega.notas}</p>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-body-sm font-semibold text-foreground">{totalEntregado} uds</span>
@@ -133,18 +232,38 @@ export function EntregasPanel({ opId, estadoActual, entregas, lineasOP, totalUni
               </div>
             </div>
 
-            {/* Detalle (chips) */}
-            <div className="px-5 py-3 flex flex-wrap gap-2">
-              {entrega.entrega_detalle.map(d => (
-                <div
-                  key={d.id}
-                  className="flex items-center gap-1.5 rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5"
-                >
-                  <span className="text-xs font-mono text-primary-600">{d.productos?.referencia}</span>
-                  <span className="text-xs text-muted-foreground">{d.talla}</span>
-                  <span className="text-xs font-semibold text-foreground">×{d.cantidad_entregada}</span>
-                </div>
-              ))}
+            {/* Matriz color × talla */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-black/5">
+                    <th className="text-left px-4 py-2 font-medium text-muted-foreground">Referencia</th>
+                    {tallasEntrega.map(t => (
+                      <th key={t} className="text-center px-2 py-2 font-medium text-muted-foreground min-w-10">{t}</th>
+                    ))}
+                    <th className="text-right px-4 py-2 font-medium text-muted-foreground">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from(filaMap.entries()).map(([key, fila]) => {
+                    const totalFila = tallasEntrega.reduce((s, t) => s + (fila.cantidades[t] ?? 0), 0)
+                    return (
+                      <tr key={key} className="border-b border-black/5 last:border-0">
+                        <td className="px-4 py-2">
+                          <p className="font-mono font-semibold text-primary-700 text-xs">{fila.ref}</p>
+                          {fila.nombre && <p className="text-muted-foreground text-[11px] leading-tight">{fila.nombre}</p>}
+                        </td>
+                        {tallasEntrega.map(t => (
+                          <td key={t} className="px-2 py-2 text-center text-foreground">
+                            {fila.cantidades[t] ? <span className="font-semibold">{fila.cantidades[t]}</span> : <span className="text-muted-foreground/30">—</span>}
+                          </td>
+                        ))}
+                        <td className="px-4 py-2 text-right font-semibold text-foreground">{totalFila}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
 
             {/* Botones FRI — solo para entregas recibidas y si OP en_entregas */}

@@ -1,13 +1,22 @@
 'use client'
 
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { formatDate } from '@/shared/lib/utils'
 import { derivarNombreBase, extraerColorDelNombre } from '@/shared/lib/productos-utils'
-import { createOrdenProduccion } from '@/features/ordenes-produccion/services/op-actions'
+import { createOrdenProduccion, getServiciosBOM } from '@/features/ordenes-produccion/services/op-actions'
 import { TALLAS_STANDARD } from '@/shared/constants/tallas'
 import { MatrizProductos } from '@/shared/components/matriz-productos'
 import type { ProductoEnMatriz } from '@/shared/components/matriz-productos'
+
+interface ServicioBOM {
+  servicio_id: string
+  nombre: string
+  codigo: string
+  tipo_proceso: string
+  tarifa_unitaria: number
+  cantidad_por_unidad: number
+}
 
 interface OVItem {
   id: string
@@ -47,6 +56,8 @@ export function OPForm({ ovs, talleres, ovPreseleccionada }: Props) {
   const [productosEnMatriz, setProductosEnMatriz] = useState<ProductoEnMatriz[]>([])
   const [maxCantidades, setMaxCantidades] = useState<Record<string, number>>({})
   const [error, setError] = useState<string | null>(null)
+  const [servicios, setServicios] = useState<ServicioBOM[]>([])
+  const [tarifasAjustadas, setTarifasAjustadas] = useState<Record<string, number>>({})
 
   const ovSeleccionada = useMemo(() => ovs.find(o => o.id === ovId), [ovs, ovId])
 
@@ -99,12 +110,24 @@ export function OPForm({ ovs, talleres, ovPreseleccionada }: Props) {
     return { productos, maxCantidades: maxCant }
   }
 
-  function handleOVChange(id: string) {
+  function handleOVChange(id: string, precargarCantidades = false) {
     setOvId(id)
     const ov = ovs.find(o => o.id === id)
     if (ov) {
       const { productos, maxCantidades: max } = agruparPorProducto(ov.ov_detalle)
-      setProductosEnMatriz(productos)
+      // Si viene preseleccionada, cargar cantidades disponibles por defecto
+      const productosConCantidades = precargarCantidades
+        ? productos.map(p => ({
+            ...p,
+            cantidades: Object.fromEntries(
+              Object.entries(p.cantidades).map(([talla]) => [
+                talla,
+                max[`${p.producto_id}:${talla}`] ?? 0,
+              ])
+            ),
+          }))
+        : productos
+      setProductosEnMatriz(productosConCantidades)
       setMaxCantidades(max)
     } else {
       setProductosEnMatriz([])
@@ -112,10 +135,23 @@ export function OPForm({ ovs, talleres, ovPreseleccionada }: Props) {
     }
   }
 
-  // Cuando se selecciona una OV al montar (preseleccionada), inicializar
-  useState(() => {
-    if (ovPreseleccionada) handleOVChange(ovPreseleccionada)
-  })
+  // Cuando cambian los productos, cargar servicios del BOM
+  useEffect(() => {
+    const productoIds = [...new Set(productosEnMatriz.map(p => p.producto_id))]
+    if (productoIds.length === 0) { setServicios([]); return }
+    getServiciosBOM(productoIds).then(data => {
+      setServicios(data)
+      const init: Record<string, number> = {}
+      data.forEach(s => { init[s.servicio_id] = s.tarifa_unitaria })
+      setTarifasAjustadas(init)
+    })
+  }, [productosEnMatriz])
+
+  // Inicializar con OV preseleccionada al montar
+  useEffect(() => {
+    if (ovPreseleccionada) handleOVChange(ovPreseleccionada, true)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function actualizarCantidad(productoId: string, talla: string, cantidad: number) {
     setProductosEnMatriz(prev =>
@@ -161,12 +197,18 @@ export function OPForm({ ovs, talleres, ovPreseleccionada }: Props) {
     }
 
     startTransition(async () => {
+      const serviciosInput = servicios.map(s => ({
+        servicio_id: s.servicio_id,
+        tarifa_unitaria: tarifasAjustadas[s.servicio_id] ?? s.tarifa_unitaria,
+      }))
+
       const result = await createOrdenProduccion({
         ov_id: ovId,
         taller_id: tallerId,
         fecha_promesa: fechaPromesa,
         notas: notas || undefined,
         lineas,
+        servicios: serviciosInput,
       })
 
       if (result.error) {
@@ -194,7 +236,7 @@ export function OPForm({ ovs, talleres, ovPreseleccionada }: Props) {
             <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
               <select
                 value={ovId}
-                onChange={e => handleOVChange(e.target.value)}
+                onChange={e => handleOVChange(e.target.value, false)}
                 className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none"
                 required
               >
@@ -284,6 +326,44 @@ export function OPForm({ ovs, talleres, ovPreseleccionada }: Props) {
             onActualizarCantidad={actualizarCantidad}
             onRemover={() => {}}
           />
+        </div>
+      )}
+
+      {/* Servicios del BOM */}
+      {ovSeleccionada && servicios.length > 0 && (
+        <div className="rounded-2xl bg-neu-base shadow-neu p-6 space-y-4">
+          <div>
+            <h2 className="font-semibold text-foreground text-body-md">Servicios de la OP</h2>
+            <p className="text-muted-foreground text-body-sm mt-0.5">
+              Cargados del BOM. Puedes ajustar la tarifa si aplica para esta OP.
+            </p>
+          </div>
+          <div className="space-y-2">
+            {servicios.map(s => (
+              <div key={s.servicio_id} className="flex items-center justify-between gap-4 rounded-xl bg-neu-base shadow-neu-inset px-4 py-3">
+                <div>
+                  <p className="text-body-sm font-medium text-foreground">{s.nombre}</p>
+                  <p className="text-xs text-muted-foreground">{s.codigo} · {s.tipo_proceso} · {s.cantidad_por_unidad} × prenda</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs text-muted-foreground">Tarifa</span>
+                  <div className="rounded-lg bg-neu-base shadow-neu-inset px-3 py-1.5 w-28">
+                    <input
+                      type="number"
+                      min={0}
+                      value={tarifasAjustadas[s.servicio_id] ?? s.tarifa_unitaria}
+                      onChange={e => setTarifasAjustadas(prev => ({
+                        ...prev,
+                        [s.servicio_id]: parseFloat(e.target.value) || 0,
+                      }))}
+                      className="w-full bg-transparent text-body-sm text-foreground outline-none text-right"
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground">/ud</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

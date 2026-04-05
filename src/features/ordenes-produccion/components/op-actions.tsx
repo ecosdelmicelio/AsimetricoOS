@@ -3,21 +3,21 @@
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateEstadoOP } from '@/features/ordenes-produccion/services/op-actions'
+import { iniciarDupro } from '@/features/calidad/services/calidad-actions'
 import type { EstadoOP } from '@/features/ordenes-produccion/types'
 import { SECUENCIA_ESTADOS } from '@/features/ordenes-produccion/types'
 
-// Estado dupro_pendiente NO se avanza desde aquí: ocurre al cerrar la inspección DUPRO.
-// Estado en_entregas → completada es automático al registrar todas las entregas.
+// en_corte → en_confeccion es automático al guardar reporte de corte.
+// en_confeccion → dupro_pendiente usa iniciarDupro() (crea inspección + transición).
+// dupro_pendiente → en_terminado ocurre al cerrar la inspección DUPRO en /calidad.
+// en_terminado → en_entregas es automático al guardar insumos.
 const SIGUIENTE: Partial<Record<EstadoOP, EstadoOP>> = {
-  programada:    'en_corte',
-  en_corte:      'en_confeccion',
-  en_confeccion: 'dupro_pendiente',
-  en_terminado:  'en_entregas',
+  programada:   'en_corte',
+  en_terminado: 'en_entregas', // fallback si no hay insumos
 }
 
 const LABELS_ACCION: Partial<Record<EstadoOP, string>> = {
   programada:    'Iniciar Corte',
-  en_corte:      'Pasar a Confección',
   en_confeccion: 'Enviar a DUPRO',
   en_terminado:  'Iniciar Entregas',
 }
@@ -36,33 +36,30 @@ export function OPActions({ opId, estadoActual, tieneReporteCorte = false }: Pro
   const siguienteEstado = SIGUIENTE[estado]
   const labelAccion = LABELS_ACCION[estado]
 
-  if (!siguienteEstado || !labelAccion) return null
+  // en_confeccion tiene su propia acción
+  const esEnviarDupro = estado === 'en_confeccion'
 
-  // Gate: no avanzar de en_corte sin reporte de corte
-  const bloqueado = estado === 'en_corte' && !tieneReporteCorte
+  if (!esEnviarDupro && (!siguienteEstado || !labelAccion)) return null
 
   function handleAvanzar() {
     startTransition(async () => {
-      await updateEstadoOP(opId, siguienteEstado!)
+      if (esEnviarDupro) {
+        await iniciarDupro(opId)
+      } else {
+        await updateEstadoOP(opId, siguienteEstado!)
+      }
       router.refresh()
     })
   }
 
   return (
-    <div className="relative group">
-      <button
-        onClick={handleAvanzar}
-        disabled={isPending || bloqueado}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg disabled:opacity-40 disabled:pointer-events-none shrink-0"
-      >
-        {isPending ? 'Actualizando...' : labelAccion}
-      </button>
-      {bloqueado && (
-        <div className="absolute right-0 top-full mt-2 w-52 rounded-xl bg-neu-base shadow-neu p-3 text-xs text-muted-foreground hidden group-hover:block z-10 pointer-events-none">
-          Registra el Reporte de Corte antes de pasar a Confección
-        </div>
-      )}
-    </div>
+    <button
+      onClick={handleAvanzar}
+      disabled={isPending}
+      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg disabled:opacity-40 disabled:pointer-events-none shrink-0"
+    >
+      {isPending ? 'Actualizando...' : (LABELS_ACCION[estado] ?? 'Enviar a DUPRO')}
+    </button>
   )
 }
 

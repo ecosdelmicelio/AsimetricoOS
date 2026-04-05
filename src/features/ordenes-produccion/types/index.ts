@@ -10,6 +10,7 @@ export type EstadoOP =
   | 'dupro_pendiente'
   | 'en_terminado'
   | 'en_entregas'
+  | 'liquidada'
   | 'completada'
   | 'cancelada'
 
@@ -21,8 +22,45 @@ export const SECUENCIA_ESTADOS: EstadoOP[] = [
   'dupro_pendiente',
   'en_terminado',
   'en_entregas',
+  'liquidada',
   'completada',
 ]
+
+export interface OPServicio {
+  id: string
+  op_id: string
+  servicio_id: string
+  tarifa_unitaria: number
+  cantidad_por_unidad: number
+  servicios_operativos?: { nombre: string; tipo_proceso: string; codigo: string }
+}
+
+export interface ReporteInsumo {
+  id: string
+  op_id: string
+  material_id: string
+  cantidad_usada: number
+  desperdicio: number
+  notas: string | null
+  created_at: string
+  updated_at: string
+  materiales?: { nombre: string; unidad_medida: string }
+}
+
+export interface LiquidacionOP {
+  id: string
+  op_id: string
+  costo_tela: number
+  costo_insumos: number
+  costo_servicios: number
+  costo_total: number
+  cantidad_entregada: number
+  cpp: number | null
+  estado: 'borrador' | 'aprobada'
+  aprobado_por: string | null
+  fecha_aprobacion: string | null
+  created_at: string
+}
 
 export interface OPConDetalle extends OrdenProduccion {
   terceros: { nombre: string } | null
@@ -45,4 +83,5 @@ export interface CreateOPInput {
   fecha_promesa: string
   notas?: string
   lineas: LineaOP[]
+  servicios?: { servicio_id: string; tarifa_unitaria: number }[]
 }
