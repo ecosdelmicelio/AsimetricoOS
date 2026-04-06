@@ -46,6 +46,9 @@ export function OVFilters() {
         <option value="borrador">Borrador</option>
         <option value="confirmada">Confirmada</option>
         <option value="en_produccion">En Producción</option>
+        <option value="terminada">Prod. Terminada</option>
+        <option value="despachada">Despachada</option>
+        <option value="entregada">Entregada</option>
         <option value="completada">Completada</option>
         <option value="cancelada">Cancelada</option>
       </select>

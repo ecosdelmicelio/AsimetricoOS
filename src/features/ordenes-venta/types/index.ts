@@ -18,7 +18,7 @@ export interface HistorialEstado {
   profiles: { full_name: string } | null
 }
 
-export type EstadoOV = 'borrador' | 'confirmada' | 'en_produccion' | 'completada' | 'cancelada'
+export type EstadoOV = 'borrador' | 'confirmada' | 'en_produccion' | 'terminada' | 'despachada' | 'entregada' | 'completada' | 'cancelada'
 
 export interface LineaOV {
   producto_id: string

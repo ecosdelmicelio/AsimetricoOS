@@ -56,13 +56,14 @@ export async function OVDetail({ id }: Props) {
   // Status Derivation (UI Display Status - Reality Check)
   let displayStatus = ov.estado
   
-  if (displayStatus !== 'cancelada') {
-    if (unidadesDespachadas >= totalUnidades && totalUnidades > 0) {
-      displayStatus = 'despachada'
+  if (displayStatus !== 'cancelada' && displayStatus !== 'entregada') {
+    // 1. Process 100% finished (Dispatched total units)
+    if (totalUnidades > 0 && unidadesDespachadas >= totalUnidades) {
+      displayStatus = 'completada'
     } else if (unidadesDespachadas > 0) {
       displayStatus = 'despachada' // Parcialmente despachada
     } else if (progress.length > 0 && progress.every(p => p.producido >= p.pedido)) {
-      displayStatus = 'completada' // Producción completa pero no despachada
+      displayStatus = 'terminada' // Producción completa pero no despachada
     } else if (progress.some(p => p.producido > 0)) {
       displayStatus = 'en_produccion'
     }
