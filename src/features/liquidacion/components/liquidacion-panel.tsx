@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { DollarSign, AlertTriangle, CheckCircle2, RefreshCw, Plus, Trash2, RotateCcw, Warehouse } from 'lucide-react'
 import { aprobarLiquidacion, anularLiquidacion, calcularResumenLiquidacion, upsertServicioRef, deleteServicioRef, guardarBodegaDestino } from '@/features/liquidacion/services/liquidacion-actions'
@@ -54,6 +54,12 @@ export function LiquidacionPanel({ opId, resumenInicial, serviciosRefIniciales, 
   const [guardandoBodega, startBodegaTransition] = useTransition()
 
   const aprobada = !!liquidacionAprobada
+
+  // Sincronizar bodegaSeleccionada cuando bodegaDestinoId cambia (por refresco del servidor)
+  useEffect(() => {
+    setBodegaSeleccionada(bodegaDestinoId ?? '')
+    setEditandoBodega(!bodegaDestinoId)
+  }, [bodegaDestinoId])
 
   function handleRecalcular() {
     setRecalculando(true)

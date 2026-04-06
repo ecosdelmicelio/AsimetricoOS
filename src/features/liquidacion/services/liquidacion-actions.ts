@@ -466,7 +466,7 @@ export async function aprobarLiquidacion(opId: string): Promise<{ error?: string
       updated_at: new Date().toISOString(),
     }, { onConflict: 'op_id' }) as { error: { message: string } | null }
 
-  if (liqError) return { error: liqError.message }
+  if (liqError) return { error: `Liquidación: ${liqError.message}` }
 
   // 3. Generar movimientos de kardex (descarga de inventario)
   const bodegaTallerData = await supabase
@@ -521,7 +521,7 @@ export async function aprobarLiquidacion(opId: string): Promise<{ error?: string
   }
 
   for (const [material_id, tela] of telasAgrupadas) {
-    await supabase.from('kardex').insert({
+    const { error: kardexError } = await supabase.from('kardex').insert({
       material_id,
       bodega_id,
       tipo_movimiento_id: tipoCorte,
@@ -534,7 +534,8 @@ export async function aprobarLiquidacion(opId: string): Promise<{ error?: string
       fecha_movimiento: now,
       registrado_por: user.id,
       notas: `Liquidación OP`,
-    })
+    }) as { error: { message: string } | null }
+    if (kardexError) return { error: `Kardex tela: ${kardexError.message}` }
   }
 
   // Descargar insumos (desde reporte_insumos)
@@ -550,7 +551,7 @@ export async function aprobarLiquidacion(opId: string): Promise<{ error?: string
     }
 
   for (const insumo of insumosReporte ?? []) {
-    await supabase.from('kardex').insert({
+    const { error: kardexError } = await supabase.from('kardex').insert({
       material_id: insumo.material_id,
       bodega_id,
       tipo_movimiento_id: tipoInsumos,
@@ -563,7 +564,8 @@ export async function aprobarLiquidacion(opId: string): Promise<{ error?: string
       fecha_movimiento: now,
       registrado_por: user.id,
       notas: `Liquidación OP`,
-    })
+    }) as { error: { message: string } | null }
+    if (kardexError) return { error: `Kardex insumo: ${kardexError.message}` }
   }
 
   // 4. Ingresar PT al kardex en bodega destino y registrar desperdicios
@@ -589,89 +591,89 @@ export async function aprobarLiquidacion(opId: string): Promise<{ error?: string
   const binCodigo = opData.data?.bin_destino_codigo
 
   if (!bodegaDestino) {
-    return { error: 'La OP no tiene bodega de destino configurada. Ve al panel de Entregas y selecciona la bodega de destino antes de aprobar.' }
+    return { error: 'La OP no tiene bodega de destino configurada' }
   }
 
-  if (true) {
-    const tipoEntrada = tiposMovimiento?.find(t => t.codigo === 'ENTRADA_CONFECCION')?.id
-    const tipoDesp = tiposMovimiento?.find(t => t.codigo === 'DESPERDICIO_CORTE')?.id
+  const tipoEntrada = tiposMovimiento?.find(t => t.codigo === 'ENTRADA_CONFECCION')?.id
+  const tipoDesp = tiposMovimiento?.find(t => t.codigo === 'DESPERDICIO_CORTE')?.id
 
-    // Ingresar PT al kardex (agrupado por producto + talla)
-    // Usar CPP calculado por producto (no el costo catálogo estático)
-    const cppMap = new Map(resumen.cpp_por_producto.map(c => [c.producto_id, c.cpp]))
-    if (tipoEntrada && opData.data?.op_detalle) {
-      const ptMovimientos = opData.data.op_detalle.map(d => {
-        const costoUnit = cppMap.get(d.producto_id) ?? d.productos?.costo_unit ?? 0
-        return {
-          producto_id: d.producto_id,
-          bodega_id: bodegaDestino,
-          tipo_movimiento_id: tipoEntrada,
-          documento_tipo: 'op',
-          documento_id: opId,
-          cantidad: d.cantidad_asignada,
-          unidad: 'ud',
-          talla: d.talla,
-          costo_unitario: costoUnit,
-          costo_total: d.cantidad_asignada * costoUnit,
-          fecha_movimiento: now,
-          registrado_por: user.id,
-          notas: `Entrada por confección OP${binCodigo ? ` · BIN: ${binCodigo}` : ''}`,
-        }
+  // Ingresar PT al kardex (agrupado por producto + talla)
+  const cppMap = new Map(resumen.cpp_por_producto.map(c => [c.producto_id, c.cpp]))
+  if (tipoEntrada && opData.data?.op_detalle) {
+    const ptMovimientos = opData.data.op_detalle.map(d => {
+      const costoUnit = cppMap.get(d.producto_id) ?? d.productos?.costo_unit ?? 0
+      return {
+        producto_id: d.producto_id,
+        bodega_id: bodegaDestino,
+        tipo_movimiento_id: tipoEntrada,
+        documento_tipo: 'op',
+        documento_id: opId,
+        cantidad: d.cantidad_asignada,
+        unidad: 'ud',
+        talla: d.talla,
+        costo_unitario: costoUnit,
+        costo_total: d.cantidad_asignada * costoUnit,
+        fecha_movimiento: now,
+        registrado_por: user.id,
+        notas: `Entrada por confección OP${binCodigo ? ` · BIN: ${binCodigo}` : ''}`,
+      }
+    })
+
+    const { error: ptError } = await supabase.from('kardex').insert(ptMovimientos) as { error: { message: string } | null }
+    if (ptError) return { error: `Kardex PT: ${ptError.message}` }
+  }
+
+  // Registrar desperdicios al kardex (de reporte_corte_material.desperdicio_kg)
+  if (tipoDesp) {
+    const { data: desperdicioDatos } = await supabase
+      .from('reporte_corte_material')
+      .select('material_id, desperdicio_kg, materiales!inner(costo_unit, unidad)')
+      .in('reporte_id', (reporteIds ?? []).map(r => r.id))
+      .gt('desperdicio_kg', 0) as {
+        data: {
+          material_id: string
+          desperdicio_kg: number
+          materiales: { costo_unit: number; unidad: string }
+        }[] | null
+      }
+
+    // Agrupar desperdicios por material
+    const despMap = new Map<string, { kg: number; costo_unit: number; unidad: string }>()
+    for (const d of desperdicioDatos ?? []) {
+      const prev = despMap.get(d.material_id)
+      despMap.set(d.material_id, {
+        kg: (prev?.kg ?? 0) + d.desperdicio_kg,
+        costo_unit: d.materiales.costo_unit,
+        unidad: d.materiales.unidad,
       })
-
-      const { error: ptError } = await supabase.from('kardex').insert(ptMovimientos) as { error: { message: string } | null }
-      if (ptError) return { error: `Error ingresando PT: ${ptError.message}` }
     }
 
-    // Registrar desperdicios al kardex (de reporte_corte_material.desperdicio_kg)
-    if (tipoDesp) {
-      const { data: desperdicioDatos } = await supabase
-        .from('reporte_corte_material')
-        .select('material_id, desperdicio_kg, materiales!inner(costo_unit, unidad)')
-        .in('reporte_id', (reporteIds ?? []).map(r => r.id))
-        .gt('desperdicio_kg', 0) as {
-          data: {
-            material_id: string
-            desperdicio_kg: number
-            materiales: { costo_unit: number; unidad: string }
-          }[] | null
-        }
-
-      // Agrupar desperdicios por material
-      const despMap = new Map<string, { kg: number; costo_unit: number; unidad: string }>()
-      for (const d of desperdicioDatos ?? []) {
-        const prev = despMap.get(d.material_id)
-        despMap.set(d.material_id, {
-          kg: (prev?.kg ?? 0) + d.desperdicio_kg,
-          costo_unit: d.materiales.costo_unit,
-          unidad: d.materiales.unidad,
-        })
-      }
-
-      for (const [material_id, desp] of despMap) {
-        await supabase.from('kardex').insert({
-          material_id,
-          bodega_id,
-          tipo_movimiento_id: tipoDesp,
-          documento_tipo: 'op',
-          documento_id: opId,
-          cantidad: -desp.kg,
-          unidad: 'kg',
-          costo_unitario: desp.costo_unit,
-          costo_total: -(desp.kg * desp.costo_unit),
-          fecha_movimiento: now,
-          registrado_por: user.id,
-          notas: `Desperdicio de corte OP`,
-        })
-      }
+    for (const [material_id, desp] of despMap) {
+      const { error: despError } = await supabase.from('kardex').insert({
+        material_id,
+        bodega_id,
+        tipo_movimiento_id: tipoDesp,
+        documento_tipo: 'op',
+        documento_id: opId,
+        cantidad: -desp.kg,
+        unidad: 'kg',
+        costo_unitario: desp.costo_unit,
+        costo_total: -(desp.kg * desp.costo_unit),
+        fecha_movimiento: now,
+        registrado_por: user.id,
+        notas: `Desperdicio de corte OP`,
+      }) as { error: { message: string } | null }
+      if (despError) return { error: `Kardex desperdicio: ${despError.message}` }
     }
   }
 
   // 5. Actualizar estado OP a liquidada
-  await supabase
+  const { error: updateError } = await supabase
     .from('ordenes_produccion')
     .update({ estado: 'liquidada' })
-    .eq('id', opId)
+    .eq('id', opId) as { error: { message: string } | null }
+
+  if (updateError) return { error: `Estado: ${updateError.message}` }
 
   revalidatePath(`/ordenes-produccion/${opId}`)
   revalidatePath('/ordenes-produccion')
