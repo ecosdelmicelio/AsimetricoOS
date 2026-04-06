@@ -2,10 +2,11 @@
 
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateEstadoOP } from '@/features/ordenes-produccion/services/op-actions'
+import { updateEstadoOP, cancelOrdenProduccion } from '@/features/ordenes-produccion/services/op-actions'
 import { iniciarDupro } from '@/features/calidad/services/calidad-actions'
 import type { EstadoOP } from '@/features/ordenes-produccion/types'
 import { SECUENCIA_ESTADOS } from '@/features/ordenes-produccion/types'
+import { XCircle } from 'lucide-react'
 
 // en_corte → en_confeccion es automático al guardar reporte de corte.
 // en_confeccion → dupro_pendiente usa iniciarDupro() (crea inspección + transición).
@@ -27,7 +28,6 @@ interface Props {
   estadoActual: string
   tieneReporteCorte?: boolean
 }
-
 export function OPActions({ opId, estadoActual, tieneReporteCorte = false }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -35,11 +35,10 @@ export function OPActions({ opId, estadoActual, tieneReporteCorte = false }: Pro
   const estado = estadoActual as EstadoOP
   const siguienteEstado = SIGUIENTE[estado]
   const labelAccion = LABELS_ACCION[estado]
+  const puedeCancelar = estado !== 'completada' && estado !== 'cancelada'
 
   // en_confeccion tiene su propia acción
   const esEnviarDupro = estado === 'en_confeccion'
-
-  if (!esEnviarDupro && (!siguienteEstado || !labelAccion)) return null
 
   function handleAvanzar() {
     startTransition(async () => {
@@ -52,14 +51,38 @@ export function OPActions({ opId, estadoActual, tieneReporteCorte = false }: Pro
     })
   }
 
+  function handleCancelar() {
+    if (!confirm('¿Estás seguro de que deseas cancelar esta orden de producción?')) return
+    startTransition(async () => {
+      await cancelOrdenProduccion(opId)
+      router.refresh()
+    })
+  }
+
   return (
-    <button
-      onClick={handleAvanzar}
-      disabled={isPending}
-      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg disabled:opacity-40 disabled:pointer-events-none shrink-0"
-    >
-      {isPending ? 'Actualizando...' : (LABELS_ACCION[estado] ?? 'Enviar a DUPRO')}
-    </button>
+    <div className="flex items-center gap-2">
+      {puedeCancelar && (
+        <button
+          onClick={handleCancelar}
+          disabled={isPending}
+          className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-neu-base shadow-neu text-red-600 hover:text-red-700 font-medium text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg disabled:opacity-40 shrink-0"
+          title="Cancelar OP"
+        >
+          <XCircle className="w-4 h-4" />
+          <span className="hidden sm:inline">Cancelar</span>
+        </button>
+      )}
+
+      {(esEnviarDupro || (siguienteEstado && labelAccion)) && (
+        <button
+          onClick={handleAvanzar}
+          disabled={isPending}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg disabled:opacity-40 disabled:pointer-events-none shrink-0"
+        >
+          {isPending ? 'Actualizando...' : (LABELS_ACCION[estado] ?? 'Enviar a DUPRO')}
+        </button>
+      )}
+    </div>
   )
 }
 

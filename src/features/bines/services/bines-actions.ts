@@ -5,24 +5,25 @@ import type { Bin, BinContenido } from '../types'
 
 function db(supabase: unknown): any { return supabase }
 
-export async function generarCodigoBin(): Promise<string> {
+export async function generarCodigoBin(prefijo: string = 'ASI'): Promise<string> {
   const supabase = db(await createClient())
   const hoy = new Date().toISOString().split('T')[0].replace(/-/g, '')
   const { data } = await supabase
     .from('bines')
     .select('codigo')
-    .ilike('codigo', `BIN-${hoy}%`) as { data: any[] | null }
+    .ilike('codigo', `${prefijo}-${hoy}%`) as { data: any[] | null }
   const contador = (data?.length ?? 0) + 1
   const secuencial = String(contador).padStart(5, '0')
-  return `BIN-${hoy}-${secuencial}`
+  return `${prefijo}-${hoy}-${secuencial}`
 }
 
 export async function crearBin(
   bodegaId: string,
-  tipo: 'caja_cliente' | 'interno' = 'interno'
+  tipo: 'caja_cliente' | 'interno' = 'interno',
+  prefijo: string = 'ASI'
 ): Promise<Bin> {
   const supabase = db(await createClient())
-  const codigo = await generarCodigoBin()
+  const codigo = await generarCodigoBin(prefijo)
   const { data, error } = await supabase
     .from('bines')
     .insert({

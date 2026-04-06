@@ -1,10 +1,12 @@
+import { use } from 'react'
 import { Suspense } from 'react'
 import { OVList } from '@/features/ordenes-venta/components/ov-list'
 
-export default function OrdenesVentaPage() {
+export default function OrdenesVentaPage({ searchParams }: { searchParams: Promise<any> }) {
+  const params = use(searchParams)
   return (
     <Suspense fallback={<OVListSkeleton />}>
-      <OVList />
+      <OVList filters={params} />
     </Suspense>
   )
 }

@@ -8,7 +8,7 @@ import type { EntregaConDetalle } from '@/features/entregas/types'
 import { resolverFRI } from '@/features/entregas/services/entregas-actions'
 import { guardarBodegaDestino } from '@/features/liquidacion/services/liquidacion-actions'
 import { EntregaForm, type LineaOPSimple } from './entrega-form'
-import { formatDate } from '@/shared/lib/utils'
+import { formatDate, sortTallas } from '@/shared/lib/utils'
 
 const ESTADO_CONFIG = {
   recibida:      { label: 'Recibida',      classes: 'bg-yellow-100 text-yellow-700' },
@@ -17,20 +17,6 @@ const ESTADO_CONFIG = {
   rechazada:     { label: 'Rechazada ✗',  classes: 'bg-red-100 text-red-700' },
 }
 
-// Orden canónico de tallas: primero alfabéticas (XS→XXL), luego numéricas pares (2, 4, 6...)
-const TALLA_ORDEN: Record<string, number> = { XS: 0, S: 1, M: 2, L: 3, XL: 4, XXL: 5, XXXL: 6, '3XL': 6, '4XL': 7 }
-function sortTallas(tallas: string[]): string[] {
-  return [...tallas].sort((a, b) => {
-    const na = TALLA_ORDEN[a.toUpperCase()]
-    const nb = TALLA_ORDEN[b.toUpperCase()]
-    if (na !== undefined && nb !== undefined) return na - nb
-    if (na !== undefined) return -1
-    if (nb !== undefined) return 1
-    const numA = parseInt(a), numB = parseInt(b)
-    if (!isNaN(numA) && !isNaN(numB)) return numA - numB
-    return a.localeCompare(b)
-  })
-}
 
 interface Props {
   opId: string

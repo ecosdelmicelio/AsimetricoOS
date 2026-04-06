@@ -7,9 +7,8 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   // Rutas públicas
-  const publicRoutes = ['/login']
   const pathname = request.nextUrl.pathname
-  const isPublicRoute = publicRoutes.some(route => pathname === route)
+  const isPublicRoute = pathname === '/login' || pathname.startsWith('/tracker')
 
   // Si es ruta pública, permitir
   if (isPublicRoute) {

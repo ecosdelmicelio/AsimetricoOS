@@ -3,10 +3,10 @@
 import { useState, useMemo, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
-import { createOrdenVenta } from '@/features/ordenes-venta/services/ov-actions'
+import { createOrdenVenta, updateOrdenVenta } from '@/features/ordenes-venta/services/ov-actions'
 import { TALLAS_STANDARD } from '@/shared/constants/tallas'
 import { derivarNombreBase, extraerColorDelNombre } from '@/shared/lib/productos-utils'
-import type { LineaOV } from '@/features/ordenes-venta/types'
+import type { LineaOV, OVConDetalle } from '@/features/ordenes-venta/types'
 import { MatrizProductos } from '@/shared/components/matriz-productos'
 import type { ProductoEnMatriz } from '@/shared/components/matriz-productos'
 
@@ -86,19 +86,47 @@ interface Cliente {
 interface Props {
   clientes: Cliente[]
   productos: Producto[]
+  initialData?: OVConDetalle
 }
 
 // ---------------------------------------------------------------------------
 // Componente
 // ---------------------------------------------------------------------------
 
-export function OVForm({ clientes, productos }: Props) {
+export function OVForm({ clientes, productos, initialData }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
-  const [clienteId, setClienteId] = useState('')
-  const [fechaEntrega, setFechaEntrega] = useState('')
-  const [productosEnForm, setProductosEnForm] = useState<ProductoEnMatriz[]>([])
+  const [clienteId, setClienteId] = useState(initialData?.cliente_id ?? '')
+  const [fechaEntrega, setFechaEntrega] = useState(initialData?.fecha_entrega ?? '')
+  const [notas, setNotas] = useState(initialData?.notas ?? '')
+  const [productosEnForm, setProductosEnForm] = useState<ProductoEnMatriz[]>(() => {
+    if (!initialData) return []
+    
+    // Reconstruir la estructura para la matriz
+    const matrixMap = new Map<string, ProductoEnMatriz>()
+    
+    for (const line of initialData.ov_detalle) {
+      if (!matrixMap.has(line.producto_id)) {
+        const prod = line.productos
+        const colorReal = prod ? extraerColorDelNombre(prod.nombre, prod.color) : null
+        const nombreBase = prod ? derivarNombreBase(prod.nombre, colorReal) : 'Producto'
+        
+        matrixMap.set(line.producto_id, {
+          producto_id: line.producto_id,
+          referencia: prod?.referencia ?? '',
+          nombre: nombreBase,
+          color: colorReal,
+          precio_unitario: line.precio_pactado,
+          cantidades: Object.fromEntries(TALLAS_STANDARD.map(t => [t, 0])),
+        })
+      }
+      const entry = matrixMap.get(line.producto_id)!
+      entry.cantidades[line.talla] = line.cantidad
+    }
+    
+    return Array.from(matrixMap.values())
+  })
   const [nombreBaseSeleccionado, setNombreBaseSeleccionado] = useState('')
   const [colorSeleccionado, setColorSeleccionado] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -207,18 +235,24 @@ export function OVForm({ clientes, productos }: Props) {
     }
 
     startTransition(async () => {
-      const result = await createOrdenVenta({
+      const payload = {
         cliente_id: clienteId,
         fecha_entrega: fechaEntrega,
+        notas: notas || undefined,
         lineas: lineasValidas,
-      })
+      }
+
+      const result = initialData
+        ? await updateOrdenVenta(initialData.id, payload)
+        : await createOrdenVenta(payload)
 
       if (result.error) {
         setError(result.error)
         return
       }
 
-      router.push(`/ordenes-venta/${result.data?.id}`)
+      const id = initialData?.id ?? (result.data as { id: string }).id
+      router.push(`/ordenes-venta/${id}`)
     })
   }
 
@@ -267,6 +301,21 @@ export function OVForm({ clientes, productos }: Props) {
                 required
               />
             </div>
+          </div>
+        </div>
+
+        {/* Notas */}
+        <div className="space-y-1.5">
+          <label className="text-body-sm font-medium text-foreground">
+            Notas / Instrucciones Especiales
+          </label>
+          <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
+            <textarea
+              value={notas}
+              onChange={e => setNotas(e.target.value)}
+              placeholder="Ej: Empaque especial, etiquetas específicas, etc."
+              className="w-full bg-transparent text-body-sm text-foreground outline-none min-h-[80px] resize-none"
+            />
           </div>
         </div>
       </div>
@@ -356,7 +405,7 @@ export function OVForm({ clientes, productos }: Props) {
             disabled={isPending}
             className="flex items-center gap-2 px-6 py-3 rounded-xl bg-neu-base shadow-neu text-primary-700 font-bold text-body-sm transition-all active:shadow-neu-inset disabled:opacity-60 hover:shadow-neu-lg"
           >
-            {isPending ? 'Creando...' : 'Crear Orden'}
+            {isPending ? (initialData ? 'Actualizando...' : 'Guardando...') : (initialData ? 'Actualizar Borrador' : 'Guardar Borrador')}
           </button>
         </div>
       )}

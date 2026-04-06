@@ -34,3 +34,41 @@ export interface OVConDetalle extends OrdenVenta {
     productos: { nombre: string; referencia: string; color: string | null; origen_usa: boolean } | null
   })[]
 }
+
+export interface OVProgressLine {
+  producto_id: string
+  referencia: string
+  nombre: string
+  color: string | null
+  talla: string
+  pedido: number
+  producido: number
+  despachado: number
+  pendiente: number
+}
+
+export interface OVDashboardStats {
+  totalSolicitado: number
+  totalEntregado: number
+  unidadesPedidas: number
+  unidadesEntregadas: number
+  ordenesActivas: number
+  ordenesAgingCount: number   // OVs con +30 días desde confirmación sin completar
+  unidadesAging: number       // Unidades en esas OVs
+}
+
+
+export interface ProductionSubState {
+  estado: string
+  timestamp: string
+}
+
+export interface OVMilestone {
+  id: string
+  label: string
+  completed: boolean
+  date?: string
+  daysSinceStart?: number
+  daysBetweenSteps?: number
+  subStates?: ProductionSubState[]
+}

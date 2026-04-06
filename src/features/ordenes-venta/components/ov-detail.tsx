@@ -1,20 +1,21 @@
 import Link from 'next/link'
-import { ArrowLeft, Package, Calendar, User, FileText, Factory, Globe } from 'lucide-react'
-import { getOrdenVentaById, getHistorialOV } from '@/features/ordenes-venta/services/ov-actions'
+import { ArrowLeft, Package, Calendar, User, FileText, Factory, Globe, Pencil, Clock, CheckCircle2, TrendingUp, DollarSign } from 'lucide-react'
+import { getOrdenVentaById, getHistorialOV, getOVProgressSummary, getOVMilestones } from '@/features/ordenes-venta/services/ov-actions'
+import { getOPsByOV } from '@/features/ordenes-produccion/services/op-actions'
+import { getDespachosByOV, getBinesDisponiblesParaOV } from '@/features/ordenes-venta/services/despachos-actions'
 import { OVStatusBadge } from './ov-status-badge'
 import { OVActions } from './ov-actions'
-import { HistorialEstados } from '@/shared/components/historial-estados'
-import { formatDate, formatCurrency } from '@/shared/lib/utils'
+import { OVProgressMatrix } from './ov-progress-matrix'
+import { OVDespachos } from './ov-despachos'
+import { OVStepper } from './ov-stepper'
+import { formatDate, formatCurrency, cn } from '@/shared/lib/utils'
 
 interface Props {
   id: string
 }
 
 export async function OVDetail({ id }: Props) {
-  const [{ data: ov, error }, { data: historial }] = await Promise.all([
-    getOrdenVentaById(id),
-    getHistorialOV(id),
-  ])
+  const { data: ov, error } = await getOrdenVentaById(id)
 
   if (error || !ov) {
     return (
@@ -27,179 +28,193 @@ export async function OVDetail({ id }: Props) {
     )
   }
 
+  const [
+    despachos,
+    bines,
+    progress,
+    milestones
+  ] = await Promise.all([
+    getDespachosByOV(ov.id),
+    getBinesDisponiblesParaOV(ov.id),
+    getOVProgressSummary(ov.id),
+    getOVMilestones(ov.id)
+  ])
+
   const cliente = ov.terceros
   const detalles = ov.ov_detalle ?? []
-
-  // Agrupar por producto
-  const porProducto = detalles.reduce<
-    Record<string, {
-      nombre: string
-      referencia: string
-      lineas: typeof detalles
-    }>
-  >((acc, det) => {
-    const pid = det.productos?.referencia ?? 'sin-ref'
-    if (!acc[pid]) {
-      acc[pid] = {
-        nombre: det.productos?.nombre ?? 'Producto desconocido',
-        referencia: det.productos?.referencia ?? '',
-        lineas: [],
-      }
-    }
-    acc[pid].lineas.push(det)
-    return acc
-  }, {})
-
+  
+  // Metrics Calculation
   const totalUnidades = detalles.reduce((s, d) => s + d.cantidad, 0)
-  const totalValor = detalles.reduce((s, d) => s + d.cantidad * d.precio_pactado, 0)
+  const totalValor = detalles.reduce((s, d) => s + d.cantidad * (d.precio_pactado || 0), 0)
+  
+  const unidadesDespachadas = progress.reduce((s, d) => s + d.despachado, 0)
+  const valorEntregado = progress.reduce((s, d) => {
+    const det = detalles.find(line => line.producto_id === d.producto_id && line.talla === d.talla)
+    return s + (d.despachado * (det?.precio_pactado || 0))
+  }, 0)
+
+  // Status Derivation (UI Display Status - Reality Check)
+  let displayStatus = ov.estado
+  
+  if (displayStatus !== 'cancelada') {
+    if (unidadesDespachadas >= totalUnidades && totalUnidades > 0) {
+      displayStatus = 'despachada'
+    } else if (unidadesDespachadas > 0) {
+      displayStatus = 'despachada' // Parcialmente despachada
+    } else if (progress.length > 0 && progress.every(p => p.producido >= p.pedido)) {
+      displayStatus = 'completada' // Producción completa pero no despachada
+    } else if (progress.some(p => p.producido > 0)) {
+      displayStatus = 'en_produccion'
+    }
+  }
+
+  // Leadtime & Dates
+  const hitoConfirmacion = milestones.find(m => m.id === 'confirmada')
+  const confirmationDate = hitoConfirmacion?.date ? new Date(hitoConfirmacion.date) : null
+  const deliveryDate = new Date(ov.fecha_entrega)
+  const today = new Date()
+  
+  const leadtimeTotal = confirmationDate ? Math.ceil((deliveryDate.getTime() - confirmationDate.getTime()) / (1000 * 3600 * 24)) : null
+  const currentLeadtime = confirmationDate ? Math.max(0, Math.ceil((today.getTime() - confirmationDate.getTime()) / (1000 * 3600 * 24))) : 0
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/ordenes-venta"
-            className="w-9 h-9 rounded-xl bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors active:shadow-neu-inset"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-display-xs font-heading font-bold text-foreground">{ov.codigo}</h1>
-              <OVStatusBadge estado={ov.estado} />
-            </div>
-            <p className="text-muted-foreground text-body-sm mt-0.5">
-              {cliente?.nombre ?? 'Cliente desconocido'}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {(ov.estado === 'confirmada' || ov.estado === 'en_produccion') && (
-            <Link
-              href={`/ordenes-produccion/nueva?ov=${id}`}
-              className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-neu-base shadow-neu text-muted-foreground font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg"
-            >
-              <Factory className="w-4 h-4" />
-              Crear OP
-            </Link>
-          )}
-          <OVActions ovId={id} estadoActual={ov.estado} />
-        </div>
-      </div>
-
-      {/* Info cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <InfoCard icon={<User className="w-4 h-4" />} label="Cliente" value={cliente?.nombre ?? '—'} />
-        <InfoCard icon={<Calendar className="w-4 h-4" />} label="Entrega" value={formatDate(ov.fecha_entrega)} />
-        <InfoCard icon={<Package className="w-4 h-4" />} label="Unidades" value={totalUnidades.toString()} />
-        <InfoCard icon={<FileText className="w-4 h-4" />} label="Total" value={formatCurrency(totalValor)} />
-      </div>
-
-      {/* Banner Origen USA — se muestra si cualquier producto tiene origen_usa */}
-      {detalles.some(d => d.productos?.origen_usa) && (
-        <div className="flex items-center gap-3 rounded-2xl bg-blue-50 border border-blue-200 px-5 py-3">
-          <Globe className="w-4 h-4 text-blue-600 shrink-0" />
-          <div>
-            <p className="text-body-sm font-semibold text-blue-700">Origen USA 🇺🇸</p>
-            <p className="text-xs text-blue-600">
-              Esta orden contiene productos que requieren etiquetas en inglés, composición de fibras y origen &quot;Made in Colombia&quot;
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Notas */}
-      {ov.notas && (
-        <div className="rounded-2xl bg-neu-base shadow-neu p-5">
-          <p className="text-body-sm font-medium text-muted-foreground mb-1">Notas</p>
-          <p className="text-body-sm text-foreground">{ov.notas}</p>
-        </div>
-      )}
-
-      {/* Detalle por producto */}
-      <div className="space-y-3">
-        <h2 className="font-semibold text-foreground text-body-md">Detalle de Productos</h2>
-
-        {Object.values(porProducto).map(({ nombre, referencia, lineas }) => {
-          const subtotal = lineas.reduce((s, l) => s + l.cantidad * l.precio_pactado, 0)
-          const uds = lineas.reduce((s, l) => s + l.cantidad, 0)
-
-          return (
-            <div key={referencia} className="rounded-2xl bg-neu-base shadow-neu overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-foreground text-body-sm">{referencia}</span>
-                  <span className="text-muted-foreground text-body-sm">{nombre}</span>
-                  {lineas[0]?.productos?.origen_usa && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
-                      <Globe className="w-2.5 h-2.5" />
-                      USA
-                    </span>
-                  )}
+    <div className="space-y-8 pb-20 max-w-[1400px] mx-auto">
+      
+      {/* 🏭 INDUSTRIAL COMMAND CENTER HEADER */}
+      <div className="rounded-[2.5rem] bg-white shadow-2xl border border-slate-100 overflow-hidden">
+        <div className="p-6 lg:px-8 lg:py-6">
+                {/* 1. Identification Row & Metrics Stripe */}
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-4 mb-6">
+            
+            {/* Identification & Client */}
+            <div className="flex items-center gap-3 bg-slate-50/50 px-4 py-3 rounded-[1.25rem] border border-slate-100 flex-1 min-w-0 self-stretch">
+              <Link
+                href="/ordenes-venta"
+                className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary-600 transition-all shadow-sm shrink-0"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-col gap-1.5 mb-1">
+                  <div>
+                    <OVStatusBadge estado={displayStatus} />
+                  </div>
+                  <h1 className="text-xl font-black tracking-tighter text-slate-900 leading-none whitespace-nowrap">
+                    {ov.codigo}
+                  </h1>
                 </div>
-                <div className="text-right">
-                  <span className="font-semibold text-foreground text-body-sm">{uds} uds</span>
-                  <span className="text-muted-foreground text-body-sm ml-2">{formatCurrency(subtotal)}</span>
-                </div>
-              </div>
-              <div className="px-5 py-3">
-                <div className="flex flex-wrap gap-2">
-                  {lineas.map(l => (
-                    <div
-                      key={l.id}
-                      className="flex items-center gap-2 rounded-xl bg-neu-base shadow-neu-inset px-3 py-2"
-                    >
-                      <span className="text-xs font-bold text-foreground w-8 text-center">{l.talla}</span>
-                      <span className="text-xs text-muted-foreground">×</span>
-                      <span className="text-xs font-semibold text-foreground">{l.cantidad}</span>
-                    </div>
-                  ))}
+                <div className="flex items-center gap-1.5 text-slate-400 font-bold text-[9px] uppercase tracking-widest leading-none">
+                  <User className="w-3 h-3 text-primary-500" />
+                  <span className="truncate">{cliente?.nombre ?? 'CLIENTE NO DEFINIDO'}</span>
                 </div>
               </div>
             </div>
-          )
-        })}
+
+            {/* Metrics Stripe */}
+            <div className="grid grid-cols-3 gap-2 flex-[1.5] self-stretch">
+              <MetricStripe 
+                icon={<Clock className="w-3 h-3 text-amber-500" />}
+                label="Timeline / Aging"
+                value={`T+${currentLeadtime}d`}
+                subValue={confirmationDate ? `Conf: ${confirmationDate.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}` : `Δ${leadtimeTotal ?? '—'}d`}
+              />
+              <MetricStripe 
+                icon={<TrendingUp className="w-3 h-3 text-primary-500" />}
+                label="Fulfillment"
+                value={`${unidadesDespachadas}/${totalUnidades}`}
+                subValue={`${Math.round((unidadesDespachadas/totalUnidades)*100 || 0)}% Unidades`}
+              />
+              <MetricStripe 
+                icon={<DollarSign className="w-3 h-3 text-emerald-500" />}
+                label="Facturación"
+                value={formatCurrency(valorEntregado)}
+                subValue={`Total: ${formatCurrency(totalValor)}`}
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 shrink-0">
+              {ov.estado === 'borrador' && (
+                <Link
+                  href={`/ordenes-venta/${id}/editar`}
+                  className="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest transition-all hover:bg-slate-50 shadow-sm"
+                >
+                  <Pencil className="w-3.5 h-3.5 inline mr-1" />
+                  Edit
+                </Link>
+              )}
+              <OVActions 
+                ovId={id} 
+                estadoActual={ov.estado} 
+                unidadesProducidas={progress.reduce((s, d) => s + d.producido, 0)}
+                totalUnidades={totalUnidades}
+              />
+            </div>
+          </div>
+
+          {/* 2. Stepper & Compliance Row (The "Single Look" integration) */}
+          <div className="bg-slate-50/30 rounded-[2rem] border border-slate-100/50 p-4 lg:p-6 shadow-inner space-y-6">
+            <div className="px-2">
+              <OVStepper milestones={milestones} currentStatus={ov.estado} />
+            </div>
+            
+            <div className="border-t border-slate-200/50 pt-6">
+               <div className="flex items-center justify-between gap-4 mb-4 px-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
+                    <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Compliance Matrix</h2>
+                  </div>
+                  <div className="text-[9px] font-bold text-slate-400 flex gap-4">
+                    <span>Units: {totalUnidades}</span>
+                    <span>Total: {formatCurrency(totalValor)}</span>
+                  </div>
+               </div>
+               <OVProgressMatrix lines={progress} />
+            </div>
+          </div>
+
+        </div>
       </div>
 
-      {/* Total final */}
-      <div className="rounded-2xl bg-neu-base shadow-neu p-5 flex items-center justify-between">
-        <div>
-          <p className="text-muted-foreground text-body-sm">Valor total de la OV</p>
-          <p className="text-display-xs font-bold text-foreground">{formatCurrency(totalValor)}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-muted-foreground text-body-sm">Fecha pedido</p>
-          <p className="text-body-sm font-medium text-foreground">{formatDate(ov.created_at ?? '')}</p>
-        </div>
-      </div>
+      {/* 📊 LOGISTICS LOGS */}
+      <div className="grid grid-cols-1 gap-8">
+        
+        {/* Dispatch Action Area */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-4 px-4">
+            <div className="w-2 h-8 bg-emerald-500 rounded-full shadow-lg shadow-emerald-200" />
+            <div>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase">Terminal de Despacho y Logística</h2>
+              <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">Identificación de Bines y Gestión de Salidas</p>
+            </div>
+          </div>
+          <div className="rounded-[2.5rem] bg-white shadow-xl border border-slate-50 p-8 sm:p-10">
+            <OVDespachos 
+              ovId={id} 
+              despachos={despachos} 
+              binesDisponibles={bines} 
+              detallesOV={detalles} 
+              estado={ov.estado}
+            />
+          </div>
+        </section>
 
-      {/* Historial de estados */}
-      <HistorialEstados
-        historial={historial}
-        createdAt={ov.created_at ?? ov.fecha_pedido}
-        createdBy={null}
-      />
+      </div>
     </div>
   )
 }
 
-function InfoCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: string
-}) {
+function MetricStripe({ icon, label, value, subValue }: any) {
   return (
-    <div className="rounded-2xl bg-neu-base shadow-neu p-4">
-      <div className="flex items-center gap-2 text-muted-foreground mb-1">
+    <div className="bg-white border border-slate-100 rounded-2xl p-3 flex flex-col justify-center shadow-sm">
+      <div className="flex items-center gap-1.5 mb-1">
         {icon}
-        <span className="text-body-sm">{label}</span>
+        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
       </div>
-      <p className="font-semibold text-foreground text-body-sm truncate">{value}</p>
+      <div className="flex items-baseline justify-between gap-1">
+        <span className="text-sm font-black text-slate-900 leading-none">{value}</span>
+        <span className="text-[8px] font-bold text-slate-400 truncate">{subValue}</span>
+      </div>
     </div>
   )
 }

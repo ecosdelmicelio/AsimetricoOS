@@ -152,10 +152,11 @@ export async function calcularResumenLiquidacion(opId: string): Promise<ResumenL
   // Nombres y referencias de productos (para CPP por producto)
   const { data: productosInfo } = await supabase
     .from('productos')
-    .select('id, nombre, referencia')
-    .in('id', productoIds) as { data: { id: string; nombre: string; referencia: string }[] | null }
+    .select('id, nombre, referencia, costo_unit')
+    .in('id', productoIds) as { data: { id: string; nombre: string; referencia: string; costo_unit: number | null }[] | null }
   const productosNombreMap = new Map((productosInfo ?? []).map(p => [p.id, p.nombre]))
   const referenciasMap = new Map((productosInfo ?? []).map(p => [p.id, p.referencia]))
+  const costosEstandarMap = new Map((productosInfo ?? []).map(p => [p.id, p.costo_unit ?? 0]))
 
   // Total entregado (entregas aceptadas)
   const { data: entregasAceptadas } = await supabase
@@ -417,6 +418,7 @@ export async function calcularResumenLiquidacion(opId: string): Promise<ResumenL
       costo_servicios: cs,
       costo_total: total,
       cpp: unidades > 0 ? total / unidades : 0,
+      costo_estandar: costosEstandarMap.get(producto_id) ?? 0,
     })
   }
 

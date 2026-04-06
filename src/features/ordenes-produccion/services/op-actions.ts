@@ -151,15 +151,75 @@ export async function createOrdenProduccion(input: CreateOPInput) {
 
 export async function updateEstadoOP(id: string, estado: EstadoOP) {
   const supabase = db(await createClient())
-  const { error } = await supabase
+  const { data: op, error } = await supabase
     .from('ordenes_produccion')
     .update({ estado })
+    .eq('id', id)
+    .select('ov_id')
+    .single() as { data: { ov_id: string } | null; error: { message: string } | null }
+
+  if (error) return { error: error.message }
+
+  // Check if OV should be updated automatically
+  if (estado === 'completada' && op?.ov_id) {
+    const { data: ov } = await supabase
+      .from('ordenes_venta')
+      .select('estado, ov_detalle(cantidad)')
+      .eq('id', op.ov_id)
+      .single() as { data: { estado: string; ov_detalle: { cantidad: number }[] } | null }
+
+    if (ov && ov.estado !== 'completada') {
+      const ovUnits = ov.ov_detalle.reduce((sum, d) => sum + d.cantidad, 0)
+
+      const { data: ops } = await supabase
+        .from('ordenes_produccion')
+        .select('estado, op_detalle(cantidad_asignada)')
+        .eq('ov_id', op.ov_id)
+        .neq('estado', 'cancelada') as { data: { estado: string; op_detalle: { cantidad_asignada: number }[] }[] | null }
+
+      if (ops && ops.length > 0) {
+        const allCompleted = ops.every(o => o.estado === 'completada')
+        const totalOpUnits = ops.reduce((sum, o) => {
+          return sum + o.op_detalle.reduce((s, d) => s + d.cantidad_asignada, 0)
+        }, 0)
+
+        if (allCompleted && totalOpUnits >= ovUnits) {
+          await supabase.from('ordenes_venta').update({ estado: 'completada' }).eq('id', op.ov_id)
+          revalidatePath('/ordenes-venta')
+          revalidatePath(`/ordenes-venta/${op.ov_id}`)
+        }
+      }
+    }
+  }
+
+  revalidatePath('/ordenes-produccion')
+  revalidatePath(`/ordenes-produccion/${id}`)
+  return { data: true }
+}
+
+export async function cancelOrdenProduccion(id: string) {
+  const supabase = db(await createClient())
+  const { error } = await supabase
+    .from('ordenes_produccion')
+    .update({ estado: 'cancelada' })
     .eq('id', id) as { error: { message: string } | null }
 
   if (error) return { error: error.message }
   revalidatePath('/ordenes-produccion')
   revalidatePath(`/ordenes-produccion/${id}`)
   return { data: true }
+}
+
+export async function getOPsByOV(ovId: string) {
+  const supabase = db(await createClient())
+  const { data } = await supabase
+    .from('ordenes_produccion')
+    .select('*, terceros!taller_id ( nombre ), op_detalle ( cantidad_asignada )')
+    .eq('ov_id', ovId)
+    .neq('estado', 'cancelada')
+    .order('created_at', { ascending: false })
+  
+  return data ?? []
 }
 
 export async function getOrdenesProduccion() {
