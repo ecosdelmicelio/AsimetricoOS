@@ -32,7 +32,6 @@ export async function getInsumosParaReporte(opId: string): Promise<InsumoParaRep
     .in('id', productoIds) as { data: { id: string; nombre: string; referencia: string }[] | null }
 
   const productosMap = new Map((productos ?? []).map(p => [p.id, p.nombre]))
-  const referenciasMap = new Map((productos ?? []).map(p => [p.id, p.referencia]))
 
   // 3. BOM: materiales NO tela y NO servicio, por producto
   const { data: bomItems } = await supabase
@@ -149,38 +148,49 @@ export async function calcularResumenLiquidacion(opId: string): Promise<ResumenL
   const totalUnidadesOP = (opDetalle ?? []).reduce((s, d) => s + d.cantidad_asignada, 0)
   const productoIds = [...new Set((opDetalle ?? []).map(d => d.producto_id))]
 
-  // Nombres y referencias de productos (para CPP por producto)
-  const { data: productosInfo } = await supabase
-    .from('productos')
-    .select('id, nombre, referencia, costo_unit')
-    .in('id', productoIds) as { data: { id: string; nombre: string; referencia: string; costo_unit: number | null }[] | null }
-  const productosNombreMap = new Map((productosInfo ?? []).map(p => [p.id, p.nombre]))
-  const referenciasMap = new Map((productosInfo ?? []).map(p => [p.id, p.referencia]))
-  const costosEstandarMap = new Map((productosInfo ?? []).map(p => [p.id, p.costo_unit ?? 0]))
-
   // Total entregado (entregas aceptadas)
   const { data: entregasAceptadas } = await supabase
     .from('entregas')
-    .select('entrega_detalle(cantidad_entregada)')
+    .select('entrega_detalle(producto_id, cantidad_entregada)')
     .eq('op_id', opId)
     .eq('estado', 'aceptada') as {
-      data: { entrega_detalle: { cantidad_entregada: number }[] }[] | null
+      data: { entrega_detalle: { producto_id: string; cantidad_entregada: number }[] }[] | null
     }
 
   const cantidad_entregada = (entregasAceptadas ?? []).reduce(
     (s, e) => s + e.entrega_detalle.reduce((ss, d) => ss + d.cantidad_entregada, 0), 0
   )
 
+  // Calcular unidades REALES entregadas por producto para BOM teórico exacto
+  const productosUnidades = new Map<string, number>()
+  for (const entrega of entregasAceptadas ?? []) {
+    for (const d of entrega.entrega_detalle) {
+      if (d.producto_id && d.cantidad_entregada) {
+        productosUnidades.set(d.producto_id, (productosUnidades.get(d.producto_id) ?? 0) + d.cantidad_entregada)
+      }
+    }
+  }
+
+  // Nombres y referencias de productos (para CPP por producto)
+  const { data: productosInfo } = await supabase
+    .from('productos')
+    .select('id, nombre, referencia, precio_base')
+    .in('id', productoIds) as { data: { id: string; nombre: string; referencia: string; precio_base: number | null }[] | null }
+  const productosNombreMap = new Map((productosInfo ?? []).map(p => [p.id, p.nombre]))
+  const referenciasMap = new Map((productosInfo ?? []).map(p => [p.id, p.referencia]))
+  const costosEstandarMap = new Map((productosInfo ?? []).map(p => [p.id, p.precio_base ?? 0]))
+
   const comparativo: LineaComparativo[] = []
 
   // ── TELAS (de reporte_corte_material) ──────────────────────────────────────
   const { data: telasBOM } = await supabase
     .from('bom')
-    .select('material_id, cantidad, materiales!inner(nombre, unidad, costo_unit, es_tela)')
+    .select('producto_id, material_id, cantidad, materiales!inner(nombre, unidad, costo_unit, es_tela)')
     .in('producto_id', productoIds)
     .eq('tipo', 'materia_prima')
     .eq('reportable_en_corte', true) as {
       data: {
+        producto_id: string
         material_id: string
         cantidad: number
         materiales: { nombre: string; unidad: string; costo_unit: number; es_tela: boolean }
@@ -221,9 +231,10 @@ export async function calcularResumenLiquidacion(opId: string): Promise<ResumenL
   // BOM teórico de telas (deduplicado por material)
   const telasBOMMap = new Map<string, { cantidad: number; nombre: string; unidad: string; costo_unit: number }>()
   for (const b of telasBOM ?? []) {
+    const unidades = productosUnidades.get(b.producto_id) ?? 0
     const prev = telasBOMMap.get(b.material_id)
     telasBOMMap.set(b.material_id, {
-      cantidad: (prev?.cantidad ?? 0) + b.cantidad * totalUnidadesOP,
+      cantidad: (prev?.cantidad ?? 0) + b.cantidad * unidades,
       nombre: b.materiales.nombre,
       unidad: b.materiales.unidad,
       costo_unit: b.materiales.costo_unit,
@@ -252,11 +263,7 @@ export async function calcularResumenLiquidacion(opId: string): Promise<ResumenL
   }
 
   // ── INSUMOS (de reporte_insumos) ───────────────────────────────────────────
-  // Calcular unidades por producto para BOM teórico correcto
-  const productosUnidades = new Map<string, number>()
-  for (const d of opDetalle ?? []) {
-    productosUnidades.set(d.producto_id, (productosUnidades.get(d.producto_id) ?? 0) + d.cantidad_asignada)
-  }
+
 
   const { data: insumosReporte } = await supabase
     .from('reporte_insumos')
@@ -403,7 +410,7 @@ export async function calcularResumenLiquidacion(opId: string): Promise<ResumenL
   // - Servicios por ref: directos por producto_id desde liquidacion_servicios_ref
   const cpp_por_producto: CppPorProducto[] = []
   for (const [producto_id, unidades] of productosUnidades) {
-    const proporcion = totalUnidadesOP > 0 ? unidades / totalUnidadesOP : 0
+    const proporcion = cantidad_entregada > 0 ? unidades / cantidad_entregada : 0
     const ct = costo_tela * proporcion
     const cs = (costo_servicios * proporcion) + (costoServiciosRefPorProducto.get(producto_id) ?? 0)
     const ci = costoInsumosPorProducto.get(producto_id) ?? 0
@@ -660,10 +667,108 @@ export async function aprobarLiquidacion(opId: string): Promise<{ error?: string
     }
   }
 
-  // 5. Actualizar estado OP a completada
+  // 5. Actualizar estado OP a liquidada
   await supabase
     .from('ordenes_produccion')
-    .update({ estado: 'completada' })
+    .update({ estado: 'liquidada' })
+    .eq('id', opId)
+
+  revalidatePath(`/ordenes-produccion/${opId}`)
+  revalidatePath('/ordenes-produccion')
+  return {}
+}
+
+export async function anularLiquidacion(opId: string): Promise<{ error?: string }> {
+  const supabase = db(await createClient())
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  // 1. Verificar que la liquidación existe y está aprobada
+  const { data: liq } = await supabase
+    .from('liquidacion_op')
+    .select('id, estado')
+    .eq('op_id', opId)
+    .maybeSingle() as { data: { id: string; estado: string } | null }
+
+  if (!liq) return { error: 'No existe liquidación para esta OP' }
+  if (liq.estado !== 'aprobada') return { error: 'La liquidación no está aprobada' }
+
+  // 2. Obtener tipos de movimiento para las reversas
+  const { data: tiposMovimiento } = await supabase
+    .from('kardex_tipos_movimiento')
+    .select('id, codigo') as { data: { id: string; codigo: string }[] | null }
+
+  const tipoAjuste = tiposMovimiento?.find(t => t.codigo === 'AJUSTE_INVENTARIO')?.id
+  if (!tipoAjuste) return { error: 'No se encontró tipo de movimiento AJUSTE_INVENTARIO' }
+
+  const codigosLiquidacion = ['SALIDA_CORTE', 'SALIDA_INSUMOS_TALLER', 'ENTRADA_CONFECCION', 'DESPERDICIO_CORTE']
+  const idsLiquidacion = new Set(
+    (tiposMovimiento ?? [])
+      .filter(t => codigosLiquidacion.includes(t.codigo))
+      .map(t => t.id)
+  )
+
+  // 3. Obtener todos los movimientos de kardex generados por esta OP
+  const { data: movimientos } = await supabase
+    .from('kardex')
+    .select('id, material_id, producto_id, bodega_id, tipo_movimiento_id, cantidad, unidad, costo_unitario, costo_total, talla, bin_id')
+    .eq('documento_tipo', 'op')
+    .eq('documento_id', opId)
+    .in('tipo_movimiento_id', [...idsLiquidacion]) as {
+      data: {
+        id: string
+        material_id: string | null
+        producto_id: string | null
+        bodega_id: string
+        tipo_movimiento_id: string
+        cantidad: number
+        unidad: string
+        costo_unitario: number
+        costo_total: number
+        talla: string | null
+        bin_id: string | null
+      }[] | null
+    }
+
+  if (!movimientos || movimientos.length === 0) {
+    // No hay movimientos — igual anulamos el estado
+  } else {
+    // 4. Crear movimientos inversos (reversa)
+    const now = new Date().toISOString()
+    const reversas = movimientos.map(m => ({
+      material_id: m.material_id,
+      producto_id: m.producto_id,
+      bodega_id: m.bodega_id,
+      tipo_movimiento_id: tipoAjuste,
+      documento_tipo: 'op_anulacion',
+      documento_id: opId,
+      cantidad: -m.cantidad,
+      unidad: m.unidad,
+      talla: m.talla,
+      bin_id: m.bin_id,
+      costo_unitario: m.costo_unitario,
+      costo_total: -m.costo_total,
+      fecha_movimiento: now,
+      registrado_por: user.id,
+      notas: `Reversa por anulación de liquidación OP`,
+    }))
+
+    const { error: reversaError } = await supabase.from('kardex').insert(reversas) as { error: { message: string } | null }
+    if (reversaError) return { error: `Error creando reversas de kardex: ${reversaError.message}` }
+  }
+
+  // 5. Marcar liquidación como anulada
+  const { error: liqError } = await supabase
+    .from('liquidacion_op')
+    .update({ estado: 'anulada', updated_at: new Date().toISOString() })
+    .eq('op_id', opId) as { error: { message: string } | null }
+
+  if (liqError) return { error: liqError.message }
+
+  // 6. Revertir estado de OP a en_entregas (estado real en DB para "entregada")
+  await supabase
+    .from('ordenes_produccion')
+    .update({ estado: 'en_entregas' })
     .eq('id', opId)
 
   revalidatePath(`/ordenes-produccion/${opId}`)

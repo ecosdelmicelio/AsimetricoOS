@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { DollarSign, AlertTriangle, CheckCircle2, RefreshCw, Plus, Trash2 } from 'lucide-react'
-import { aprobarLiquidacion, calcularResumenLiquidacion, upsertServicioRef, deleteServicioRef } from '@/features/liquidacion/services/liquidacion-actions'
+import { DollarSign, AlertTriangle, CheckCircle2, RefreshCw, Plus, Trash2, RotateCcw } from 'lucide-react'
+import { aprobarLiquidacion, anularLiquidacion, calcularResumenLiquidacion, upsertServicioRef, deleteServicioRef } from '@/features/liquidacion/services/liquidacion-actions'
 import type { ResumenLiquidacion, ServicioRef } from '@/features/liquidacion/types'
 
 interface LineaProducto {
@@ -40,6 +40,9 @@ export function LiquidacionPanel({ opId, resumenInicial, serviciosRefIniciales, 
   const [nuevaLinea, setNuevaLinea] = useState<{ producto_id: string; nombre_servicio: string; tarifa_unitaria: string; cantidad: string }>({ producto_id: '', nombre_servicio: '', tarifa_unitaria: '', cantidad: '' })
   const [srvError, setSrvError] = useState<string | null>(null)
   const [srvPending, startSrvTransition] = useTransition()
+  const [anulando, startAnularTransition] = useTransition()
+  const [anulacionError, setAnulacionError] = useState<string | null>(null)
+  const [confirmarAnulacion, setConfirmarAnulacion] = useState(false)
 
   const aprobada = !!liquidacionAprobada
 
@@ -100,14 +103,59 @@ export function LiquidacionPanel({ opId, resumenInicial, serviciosRefIniciales, 
     })
   }
 
+  function handleAnular() {
+    setAnulacionError(null)
+    startAnularTransition(async () => {
+      const result = await anularLiquidacion(opId)
+      if (result.error) {
+        setAnulacionError(result.error)
+        setConfirmarAnulacion(false)
+      }
+    })
+  }
+
   // Si ya está aprobada, mostrar resumen read-only
   if (aprobada && liquidacionAprobada) {
     return (
       <div className="rounded-2xl bg-green-50 border border-green-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-green-200 flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-green-600" />
-          <h2 className="font-semibold text-green-700 text-body-md">Liquidación Aprobada</h2>
+        <div className="px-5 py-4 border-b border-green-200 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-green-600" />
+            <h2 className="font-semibold text-green-700 text-body-md">Liquidación Aprobada</h2>
+          </div>
+          {!confirmarAnulacion ? (
+            <button
+              onClick={() => setConfirmarAnulacion(true)}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-red-600 transition-colors"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Anular liquidación
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-red-700 font-medium">¿Confirmar anulación?</span>
+              <button
+                onClick={handleAnular}
+                disabled={anulando}
+                className="px-3 py-1 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                {anulando ? 'Anulando...' : 'Sí, anular'}
+              </button>
+              <button
+                onClick={() => setConfirmarAnulacion(false)}
+                disabled={anulando}
+                className="px-3 py-1 rounded-lg bg-white border border-slate-200 text-xs font-medium hover:bg-slate-50 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
         </div>
+        {anulacionError && (
+          <div className="mx-5 mt-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-red-700 text-body-sm">
+            {anulacionError}
+          </div>
+        )}
         <div className="p-5 grid grid-cols-3 gap-4">
           <div className="rounded-xl bg-white border border-green-100 p-4 text-center">
             <p className="text-xs text-muted-foreground mb-1">Costo Total</p>
@@ -412,7 +460,7 @@ export function LiquidacionPanel({ opId, resumenInicial, serviciosRefIniciales, 
           </button>
         </div>
         <p className="text-xs text-muted-foreground text-right -mt-2">
-          Al aprobar se descargará el inventario de la bodega del taller y la OP pasará a Completada.
+          Al aprobar se descargará el inventario de la bodega del taller y la OP pasará a Liquidada.
         </p>
       </div>
     </div>

@@ -9,7 +9,7 @@ export type EstadoOP =
   | 'en_confeccion'
   | 'dupro_pendiente'
   | 'en_terminado'
-  | 'en_entregas'
+  | 'entregada'
   | 'liquidada'
   | 'completada'
   | 'cancelada'
@@ -21,9 +21,8 @@ export const SECUENCIA_ESTADOS: EstadoOP[] = [
   'en_confeccion',
   'dupro_pendiente',
   'en_terminado',
-  'en_entregas',
+  'entregada',
   'liquidada',
-  'completada',
 ]
 
 export interface OPServicio {

@@ -170,12 +170,12 @@ export function ReporteCorteeForm({ opId, lineasOP }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Fecha + Notas */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <label className="text-body-sm font-medium text-foreground">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Fecha del Corte <span className="text-red-500">*</span>
           </label>
-          <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
+          <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2">
             <input
               type="date"
               value={fecha}
@@ -185,9 +185,9 @@ export function ReporteCorteeForm({ opId, lineasOP }: Props) {
             />
           </div>
         </div>
-        <div className="space-y-1.5">
-          <label className="text-body-sm font-medium text-foreground">Notas (opcional)</label>
-          <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Notas (opcional)</label>
+          <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2">
             <input
               value={notas}
               onChange={e => setNotas(e.target.value)}
@@ -199,12 +199,12 @@ export function ReporteCorteeForm({ opId, lineasOP }: Props) {
       </div>
 
       {/* Tendidos por color */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {tendidos.map((tendido) => {
           return (
-            <div key={tendido.id} className="rounded-xl bg-neu-base shadow-neu p-4 space-y-4">
+            <div key={tendido.id} className="rounded-[1.25rem] bg-neu-base shadow-neu p-4 space-y-3">
               {/* Color / Metros / Peso */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-1.5">
                   <label className="text-xs text-muted-foreground">Color <span className="text-red-500">*</span></label>
                   <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2">
@@ -247,8 +247,8 @@ export function ReporteCorteeForm({ opId, lineasOP }: Props) {
               </div>
 
               {/* Matriz de corte */}
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground">Unidades cortadas por talla</p>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary-600 ml-1">Unidades cortadas por talla</p>
                 <MatrizProductos
                   productos={tendido.productosEnMatriz}
                   tallas={Array.from(

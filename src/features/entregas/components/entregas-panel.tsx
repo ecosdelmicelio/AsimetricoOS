@@ -30,6 +30,8 @@ interface Props {
   bodegaDestinoId: string | null
 }
 
+const ESTADOS_ACTIVOS = ['en_entregas', 'entregada', 'liquidada', 'completada']
+
 export function EntregasPanel({ opId, opCodigo, estadoActual, entregas, lineasOP, totalUnidadesOP, liquidacionesPorEntrega, bodegas, bodegaDestinoId }: Props) {
   const router = useRouter()
   const [showForm, setShowForm] = useState(false)
@@ -38,6 +40,7 @@ export function EntregasPanel({ opId, opCodigo, estadoActual, entregas, lineasOP
   const [bodegaSeleccionada, setBodegaSeleccionada] = useState(bodegaDestinoId ?? '')
   const [guardandoBodega, startBodegaTransition] = useTransition()
   const [bodegaError, setBodegaError] = useState<string | null>(null)
+  const [editandoBodega, setEditandoBodega] = useState(false)
 
   function handleGuardarBodega() {
     if (!bodegaSeleccionada) return
@@ -47,12 +50,13 @@ export function EntregasPanel({ opId, opCodigo, estadoActual, entregas, lineasOP
       if (result.error) {
         setBodegaError(result.error)
       } else {
+        setEditandoBodega(false)
         router.refresh()
       }
     })
   }
 
-  if (estadoActual !== 'en_entregas' && estadoActual !== 'completada' && entregas.length === 0) {
+  if (!ESTADOS_ACTIVOS.includes(estadoActual) && entregas.length === 0) {
     return null
   }
 
@@ -80,7 +84,7 @@ export function EntregasPanel({ opId, opCodigo, estadoActual, entregas, lineasOP
           <Package className="w-4 h-4 text-muted-foreground" />
           <h2 className="font-semibold text-foreground text-body-md">Entregas</h2>
         </div>
-        {estadoActual === 'en_entregas' && !showForm && (
+        {(estadoActual === 'en_entregas' || estadoActual === 'entregada') && !showForm && (
           <button
             onClick={() => setShowForm(true)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neu-base shadow-neu text-muted-foreground hover:text-foreground text-body-sm font-medium transition-all active:shadow-neu-inset"
@@ -91,24 +95,34 @@ export function EntregasPanel({ opId, opCodigo, estadoActual, entregas, lineasOP
         )}
       </div>
 
-      {/* Selector bodega destino */}
-      {estadoActual === 'en_entregas' && (
+      {/* Selector bodega destino — visible en estados de entrega/liquidación */}
+      {ESTADOS_ACTIVOS.includes(estadoActual) && (
         <div className="rounded-2xl bg-neu-base shadow-neu p-5 space-y-3">
-          <div className="flex items-center gap-2">
-            <Warehouse className="w-4 h-4 text-muted-foreground" />
-            <p className="font-semibold text-foreground text-body-sm">Bodega de Destino</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Warehouse className="w-4 h-4 text-muted-foreground" />
+              <p className="font-semibold text-foreground text-body-sm">Bodega de Destino</p>
+            </div>
+            {bodegaDestinoId && !editandoBodega && (
+              <button
+                onClick={() => setEditandoBodega(true)}
+                className="text-xs text-primary-600 hover:underline font-medium"
+              >
+                Cambiar
+              </button>
+            )}
           </div>
-          {bodegaDestinoId ? (
+          {bodegaDestinoId && !editandoBodega ? (
             <div className="flex items-center justify-between">
               <p className="text-body-sm text-foreground font-medium">
                 {bodegas.find(b => b.id === bodegaDestinoId)?.nombre ?? 'Bodega seleccionada'}
               </p>
-              <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold">✓ Configurado</span>
+              <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold">✓ Configurada</span>
             </div>
           ) : (
             <div className="space-y-3">
               <p className="text-body-sm text-muted-foreground">
-                Selecciona la bodega donde ingresarán los productos al completar la entrega.
+                Selecciona la bodega donde ingresarán los productos terminados.
               </p>
               <div className="flex gap-3">
                 <div className="flex-1 rounded-xl bg-neu-base shadow-neu-inset px-3 py-2">
@@ -130,6 +144,14 @@ export function EntregasPanel({ opId, opCodigo, estadoActual, entregas, lineasOP
                 >
                   {guardandoBodega ? 'Guardando...' : 'Guardar'}
                 </button>
+                {editandoBodega && (
+                  <button
+                    onClick={() => setEditandoBodega(false)}
+                    className="px-3 py-2 rounded-xl bg-neu-base shadow-neu text-muted-foreground text-body-sm transition-all active:shadow-neu-inset"
+                  >
+                    Cancelar
+                  </button>
+                )}
               </div>
               {bodegaError && <p className="text-xs text-red-600">{bodegaError}</p>}
             </div>
