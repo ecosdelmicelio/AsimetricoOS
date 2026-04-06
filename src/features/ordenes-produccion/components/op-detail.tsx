@@ -1,12 +1,11 @@
 import Link from 'next/link'
-import { ArrowLeft, Package, Calendar, Building2, FileText, ShieldCheck, Globe } from 'lucide-react'
+import { ArrowLeft, Package, Calendar, Building2, FileText, ShieldCheck, Globe, Clock, TrendingUp, DollarSign, Factory } from 'lucide-react'
 import { createClient } from '@/shared/lib/supabase/server'
 import { getOrdenProduccionById, getHistorialOP } from '@/features/ordenes-produccion/services/op-actions'
 import { OPStatusBadge } from './op-status-badge'
 import { OPActions, OPProgreso } from './op-actions'
+import { OPStepper } from './op-stepper'
 import { HistorialEstados } from '@/shared/components/historial-estados'
-import { HitosPanel } from '@/features/hitos-produccion/components/hitos-panel'
-import { getHitosByOP } from '@/features/hitos-produccion/services/hitos-actions'
 import { getReporteCortePorOP } from '@/features/reporte-corte/services/reporte-corte-actions'
 import { ReporteCorteePanel } from '@/features/reporte-corte/components/reporte-corte-panel'
 import { getEntregasByOP } from '@/features/entregas/services/entregas-actions'
@@ -15,23 +14,22 @@ import { getLiquidacionesByOP, getInsumosParaReporte, calcularResumenLiquidacion
 import { ReporteInsumosPanel } from '@/features/liquidacion/components/reporte-insumos-panel'
 import { LiquidacionPanel } from '@/features/liquidacion/components/liquidacion-panel'
 import type { EstadoOP } from '@/features/ordenes-produccion/types'
-import { formatDate, sortTallas } from '@/shared/lib/utils'
+import { formatDate, sortTallas, formatCurrency, cn } from '@/shared/lib/utils'
 
 interface Props {
   id: string
 }
 
 export async function OPDetail({ id }: Props) {
-  const ESTADOS_CON_INSUMOS: EstadoOP[] = ['en_terminado', 'en_entregas', 'liquidada', 'completada']
-  const ESTADOS_CON_LIQUIDACION: EstadoOP[] = ['en_entregas', 'liquidada', 'completada']
+  const ESTADOS_CON_INSUMOS: EstadoOP[] = ['en_terminado', 'entregada', 'liquidada', 'completada']
+  const ESTADOS_CON_LIQUIDACION: EstadoOP[] = ['entregada', 'liquidada', 'completada']
 
   const supabase = await createClient()
 
   // Fetch paralelo base
-  const [{ data: op, error }, { data: historial }, hitos, reporteData, { data: entregas }, liquidacionesOP] = await Promise.all([
+  const [{ data: op, error }, { data: historial }, reporteData, { data: entregas }, liquidacionesOP] = await Promise.all([
     getOrdenProduccionById(id),
     getHistorialOP(id),
-    getHitosByOP(id),
     getReporteCortePorOP(id),
     getEntregasByOP(id),
     getLiquidacionesByOP(id),
@@ -52,20 +50,21 @@ export async function OPDetail({ id }: Props) {
 
   // Fetch condicionales (solo cuando el estado lo requiere)
   const estadoOP = op.estado as EstadoOP
+  const estadoNormalizado = (op.estado === 'en_entregas' ? 'entregada' : op.estado) as EstadoOP
   const taller = op.terceros
   const ov = op.ordenes_venta
   const detalles = op.op_detalle ?? []
   const productoIdsOP = [...new Set(detalles.map(d => d.producto_id))]
 
   const [insumosParaReporte, resumenLiquidacion, liquidacionAprobada, bodegasData, serviciosRef, serviciosBOM] = await Promise.all([
-    ESTADOS_CON_INSUMOS.includes(estadoOP) ? getInsumosParaReporte(id) : Promise.resolve([]),
-    ESTADOS_CON_LIQUIDACION.includes(estadoOP) ? calcularResumenLiquidacion(id) : Promise.resolve(null),
-    ESTADOS_CON_LIQUIDACION.includes(estadoOP) ? getLiquidacionOP(id) : Promise.resolve(null),
-    estadoOP === 'en_entregas'
+    ESTADOS_CON_INSUMOS.includes(estadoNormalizado) ? getInsumosParaReporte(id) : Promise.resolve([]),
+    ESTADOS_CON_LIQUIDACION.includes(estadoNormalizado) ? calcularResumenLiquidacion(id) : Promise.resolve(null),
+    ESTADOS_CON_LIQUIDACION.includes(estadoNormalizado) ? getLiquidacionOP(id) : Promise.resolve(null),
+    ['entregada', 'liquidada', 'completada'].includes(estadoNormalizado)
       ? supabase.from('bodegas').select('id, nombre').eq('activo', true).order('nombre')
       : Promise.resolve({ data: [] }),
-    ESTADOS_CON_LIQUIDACION.includes(estadoOP) ? getServiciosRef(id) : Promise.resolve([]),
-    ESTADOS_CON_LIQUIDACION.includes(estadoOP) ? getServiciosBOMParaOP(productoIdsOP) : Promise.resolve([]),
+    ESTADOS_CON_LIQUIDACION.includes(estadoNormalizado) ? getServiciosRef(id) : Promise.resolve([]),
+    ESTADOS_CON_LIQUIDACION.includes(estadoNormalizado) ? getServiciosBOMParaOP(productoIdsOP) : Promise.resolve([]),
   ])
 
   const bodegas = (bodegasData?.data ?? []) as { id: string; nombre: string }[]
@@ -107,73 +106,105 @@ export async function OPDetail({ id }: Props) {
   // Obtener todas las tallas únicas y ordenarlas
   const todasTallas = sortTallas([...new Set(detalles.map(d => d.talla))])
 
+  const now = new Date()
+  const createdDate = new Date(op.created_at || op.fecha_promesa)
+  const daysPast = Math.max(0, Math.ceil((now.getTime() - createdDate.getTime()) / (1000 * 3600 * 24)))
+  const entregasTotales = (entregas ?? []).reduce((s, e) => s + (e.entrega_detalle?.reduce((sd, d) => sd + d.cantidad_entregada, 0) || 0), 0)
+  const costoTotal = liquidacionAprobada?.costo_total ?? resumenLiquidacion?.costo_total ?? 0
+  const cpp = liquidacionAprobada?.cpp ?? resumenLiquidacion?.cpp ?? 0
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/ordenes-produccion"
-            className="w-9 h-9 rounded-xl bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors active:shadow-neu-inset"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-display-xs font-heading font-bold text-foreground">{op.codigo}</h1>
-              <OPStatusBadge estado={op.estado} />
-              {ov && (
+    <div className="space-y-8 pb-20 max-w-[1400px] mx-auto">
+      
+      {/* 🏭 INDUSTRIAL PRODUCTION COMMAND CENTER HEADER */}
+      <div className="rounded-[2.5rem] bg-white shadow-2xl border border-slate-100 overflow-hidden">
+        <div className="p-6 lg:px-8 lg:py-6">
+          
+          {/* Row 1: Identification & Metrics */}
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-4 mb-6">
+            
+            {/* Identification & Workshop */}
+            <div className="flex items-center gap-3 bg-slate-50/50 px-4 py-3 rounded-[1.25rem] border border-slate-100 flex-1 min-w-0 self-stretch">
+              <Link
+                href="/ordenes-produccion"
+                className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary-600 transition-all shadow-sm shrink-0"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-col gap-1.5 mb-1">
+                  <div className="flex items-center gap-2">
+                    <OPStatusBadge estado={estadoNormalizado} />
+                    {ov && (
+                      <Link
+                        href={`/ordenes-venta/${op.ov_id}`}
+                        className="text-[9px] font-black bg-slate-900 text-white px-2 py-0.5 rounded-full uppercase tracking-widest hover:bg-primary-600 transition-all"
+                      >
+                        {ov.codigo}
+                      </Link>
+                    )}
+                  </div>
+                  <h1 className="text-xl font-black tracking-tighter text-slate-900 leading-none whitespace-nowrap">
+                    {op.codigo}
+                  </h1>
+                </div>
+                <div className="flex items-center gap-1.5 text-slate-400 font-bold text-[9px] uppercase tracking-widest leading-none">
+                  <Factory className="w-3 h-3 text-primary-500" />
+                  <span className="truncate">{taller?.nombre ?? 'TALLER NO DEFINIDO'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Metrics Stripe */}
+            <div className="grid grid-cols-3 gap-2 flex-[1.5] self-stretch">
+              <MetricStripe 
+                icon={<Clock className="w-3 h-3 text-amber-500" />}
+                label="Timeline / Aging"
+                value={`T+${daysPast}d`}
+                subValue={`Promesa: ${formatDate(op.fecha_promesa)}`}
+              />
+              <MetricStripe 
+                icon={<TrendingUp className="w-3 h-3 text-primary-500" />}
+                label="Entregas / Fulfillment"
+                value={`${entregasTotales}/${totalUnidades}`}
+                subValue={`${Math.round((entregasTotales/totalUnidades)*100 || 0)}% Unidades`}
+              />
+              <MetricStripe 
+                icon={<DollarSign className="w-3 h-3 text-emerald-500" />}
+                label="Costo Producción"
+                value={formatCurrency(costoTotal)}
+                subValue={`CPP: ${formatCurrency(cpp)}`}
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col gap-2 shrink-0 w-full sm:w-40 self-start sticky top-4">
+               {op.estado === 'dupro_pendiente' && (
                 <Link
-                  href={`/ordenes-venta/${op.ov_id}`}
-                  className="text-xs text-primary-600 hover:underline bg-neu-base shadow-neu-inset rounded-full px-2 py-0.5"
+                  href={`/calidad/${id}`}
+                  className="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest transition-all hover:bg-slate-50 shadow-sm"
                 >
-                  {ov.codigo}
+                  <ShieldCheck className="w-3.5 h-3.5 inline mr-1" />
+                  Inspección
                 </Link>
               )}
+              <OPActions opId={id} estadoActual={op.estado} tieneReporteCorte={!!reporte} />
             </div>
-            <p className="text-muted-foreground text-body-sm mt-0.5">
-              {taller?.nombre ?? 'Taller desconocido'}
-              {ov?.terceros && ` · ${ov.terceros.nombre}`}
-            </p>
           </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {op.estado === 'dupro_pendiente' && (
-            <Link
-              href={`/calidad/${id}`}
-              className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-neu-base shadow-neu text-muted-foreground font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg"
-            >
-              <ShieldCheck className="w-4 h-4" />
-              Inspeccionar
-            </Link>
-          )}
-          <OPActions opId={id} estadoActual={op.estado} tieneReporteCorte={!!reporte} />
+
+          {/* Row 2: OP Stepper */}
+          <div className="bg-slate-50/30 rounded-[2rem] border border-slate-100/50 p-4 lg:p-8 shadow-inner">
+            <div className="px-4 py-4">
+              <OPStepper currentStatus={estadoNormalizado} historial={historial} />
+            </div>
+          </div>
+
         </div>
       </div>
-
-      {/* Barra de progreso */}
-      <OPProgreso estadoActual={op.estado} />
-
-      {/* Info cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <InfoCard icon={<Building2 className="w-4 h-4" />} label="Taller" value={taller?.nombre ?? '—'} />
-        <InfoCard icon={<Calendar className="w-4 h-4" />} label="Promesa" value={formatDate(op.fecha_promesa)} />
-        <InfoCard icon={<Package className="w-4 h-4" />} label="Unidades" value={totalUnidades.toString()} />
-        <InfoCard icon={<FileText className="w-4 h-4" />} label="OV Origen" value={ov?.codigo ?? '—'} />
-      </div>
-
-      {/* Reporte de Corte */}
-      <ReporteCorteePanel
-        opId={id}
-        estadoActual={op.estado}
-        reporte={reporte}
-        reportes={reportes}
-        lineasOP={lineasOP}
-      />
 
       {/* Banner Origen USA — si algún producto de la OP tiene origen_usa */}
       {detalles.some(d => d.productos?.origen_usa) && (
-        <div className="flex items-center gap-3 rounded-2xl bg-blue-50 border border-blue-200 px-5 py-3">
+        <div className="flex items-center gap-3 rounded-2xl bg-blue-50 border border-blue-200 px-5 py-3 mx-4 lg:mx-0">
           <Globe className="w-4 h-4 text-blue-600 shrink-0" />
           <div>
             <p className="text-body-sm font-semibold text-blue-700">Origen USA 🇺🇸</p>
@@ -253,6 +284,15 @@ export async function OPDetail({ id }: Props) {
         </div>
       </div>
 
+      {/* Reporte de Corte */}
+      <ReporteCorteePanel
+        opId={id}
+        estadoActual={op.estado}
+        reporte={reporte}
+        reportes={reportes}
+        lineasOP={lineasOP}
+      />
+
       {/* Entregas */}
       <EntregasPanel
         opId={id}
@@ -269,7 +309,7 @@ export async function OPDetail({ id }: Props) {
       />
 
       {/* Reporte de Insumos (en_terminado en adelante) */}
-      {ESTADOS_CON_INSUMOS.includes(estadoOP) && (
+      {ESTADOS_CON_INSUMOS.includes(estadoNormalizado) && (
         <ReporteInsumosPanel
           opId={id}
           insumos={insumosParaReporte}
@@ -278,19 +318,29 @@ export async function OPDetail({ id }: Props) {
       )}
 
       {/* Panel de Liquidación (en_entregas en adelante) */}
-      {ESTADOS_CON_LIQUIDACION.includes(estadoOP) && resumenLiquidacion && (
+      {ESTADOS_CON_LIQUIDACION.includes(estadoNormalizado) && resumenLiquidacion && (
         <LiquidacionPanel
           opId={id}
           resumenInicial={resumenLiquidacion}
           serviciosRefIniciales={serviciosRef}
           serviciosBOM={serviciosBOM}
           lineasOP={(() => {
-            const unidadesPorProducto = detalles.reduce<Record<string, number>>((acc, d) => {
-              acc[d.producto_id] = (acc[d.producto_id] ?? 0) + d.cantidad_asignada
-              return acc
-            }, {})
+            // Unidades REALES entregadas (solo entregas aceptadas) por producto_id
+            const unidadesEntregadasPorProducto = (entregas ?? [])
+              .filter(e => e.estado === 'aceptada')
+              .flatMap(e => e.entrega_detalle ?? [])
+              .reduce<Record<string, number>>((acc, d) => {
+                acc[d.producto_id] = (acc[d.producto_id] ?? 0) + d.cantidad_entregada
+                return acc
+              }, {})
             return [...new Map(lineasOP.map(l => [l.producto_id, l])).values()]
-              .map(l => ({ producto_id: l.producto_id, referencia: l.referencia, nombre: l.nombre, unidades: unidadesPorProducto[l.producto_id] ?? 0 }))
+              .map(l => ({
+                producto_id: l.producto_id,
+                referencia: l.referencia,
+                nombre: l.nombre,
+                // Usar entregado real; fallback a programado si aún no hay entregas aceptadas
+                unidades: unidadesEntregadasPorProducto[l.producto_id] ?? l.cantidad_asignada ?? 0,
+              }))
           })()}
           liquidacionAprobada={liquidacionAprobada?.estado === 'aprobada' ? {
             costo_total: liquidacionAprobada.costo_total,
@@ -302,14 +352,6 @@ export async function OPDetail({ id }: Props) {
         />
       )}
 
-      {/* Hitos de producción */}
-      <HitosPanel
-        opId={id}
-        estadoActual={op.estado as EstadoOP}
-        hitos={hitos}
-        lineas={detalles}
-      />
-
       {/* Historial de estados */}
       <HistorialEstados
         historial={historial}
@@ -320,22 +362,17 @@ export async function OPDetail({ id }: Props) {
   )
 }
 
-function InfoCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: string
-}) {
+function MetricStripe({ icon, label, value, subValue }: { icon: React.ReactNode; label: string; value: string; subValue: string }) {
   return (
-    <div className="rounded-2xl bg-neu-base shadow-neu p-4">
-      <div className="flex items-center gap-2 text-muted-foreground mb-1">
+    <div className="bg-white border border-slate-100 rounded-2xl p-3 flex flex-col justify-center shadow-sm">
+      <div className="flex items-center gap-1.5 mb-1">
         {icon}
-        <span className="text-body-sm">{label}</span>
+        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
       </div>
-      <p className="font-semibold text-foreground text-body-sm truncate">{value}</p>
+      <div className="flex items-baseline justify-between gap-1">
+        <span className="text-sm font-black text-slate-900 leading-none">{value}</span>
+        <span className="text-[8px] font-bold text-slate-400 truncate">{subValue}</span>
+      </div>
     </div>
   )
 }

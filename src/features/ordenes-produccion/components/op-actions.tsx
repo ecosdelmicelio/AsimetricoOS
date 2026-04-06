@@ -14,7 +14,7 @@ import { XCircle } from 'lucide-react'
 // en_terminado → en_entregas es automático al guardar insumos.
 const SIGUIENTE: Partial<Record<EstadoOP, EstadoOP>> = {
   programada:   'en_corte',
-  en_terminado: 'en_entregas', // fallback si no hay insumos
+  en_terminado: 'entregada', // fallback si no hay insumos
 }
 
 const LABELS_ACCION: Partial<Record<EstadoOP, string>> = {
@@ -60,26 +60,26 @@ export function OPActions({ opId, estadoActual, tieneReporteCorte = false }: Pro
   }
 
   return (
-    <div className="flex items-center gap-2">
-      {puedeCancelar && (
-        <button
-          onClick={handleCancelar}
-          disabled={isPending}
-          className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-neu-base shadow-neu text-red-600 hover:text-red-700 font-medium text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg disabled:opacity-40 shrink-0"
-          title="Cancelar OP"
-        >
-          <XCircle className="w-4 h-4" />
-          <span className="hidden sm:inline">Cancelar</span>
-        </button>
-      )}
-
+    <div className="flex flex-col gap-2 w-full">
       {(esEnviarDupro || (siguienteEstado && labelAccion)) && (
         <button
           onClick={handleAvanzar}
           disabled={isPending}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg disabled:opacity-40 disabled:pointer-events-none shrink-0"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg disabled:opacity-40 disabled:pointer-events-none w-full shrink-0"
         >
           {isPending ? 'Actualizando...' : (LABELS_ACCION[estado] ?? 'Enviar a DUPRO')}
+        </button>
+      )}
+
+      {puedeCancelar && (
+        <button
+          onClick={handleCancelar}
+          disabled={isPending}
+          className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-neu-base shadow-neu-inset text-red-600 hover:text-red-700 font-medium text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg disabled:opacity-40 w-full shrink-0"
+          title="Cancelar OP"
+        >
+          <XCircle className="w-4 h-4" />
+          <span>Cancelar</span>
         </button>
       )}
     </div>

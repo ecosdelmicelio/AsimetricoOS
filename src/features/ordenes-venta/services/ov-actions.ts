@@ -129,6 +129,30 @@ export async function updateEstadoOV(id: string, estado: string) {
 
 export async function cancelOrdenVenta(id: string) {
   const supabase = db(await createClient())
+
+  // 1. Validar si tiene despachos (no se puede cancelar si ya se envió algo)
+  const { count: despachoCount } = await supabase
+    .from('despachos')
+    .select('*', { count: 'exact', head: true })
+    .eq('ov_id', id)
+    .neq('estado', 'cancelado')
+
+  if (despachoCount && despachoCount > 0) {
+    return { error: 'No se puede cancelar una orden que tiene despachos activos. Debes cancelar los despachos primero.' }
+  }
+
+  // 2. Validar si tiene OPs ya liquidadas o completadas
+  const { count: opCount } = await supabase
+    .from('ordenes_produccion')
+    .select('*', { count: 'exact', head: true })
+    .eq('ov_id', id)
+    .in('estado', ['completada', 'liquidada'])
+
+  if (opCount && opCount > 0) {
+    return { error: 'No se puede cancelar una orden con producción terminada o liquidada.' }
+  }
+
+  // 3. Proceder con la cancelación
   const { error } = await supabase
     .from('ordenes_venta')
     .update({ estado: 'cancelada' })
@@ -141,7 +165,7 @@ export async function cancelOrdenVenta(id: string) {
     .from('ordenes_produccion')
     .update({ estado: 'cancelada' })
     .eq('ov_id', id)
-    .not('estado', 'in', '("completada", "liquidada")')
+    .not('estado', 'in', '("completada", "liquidada", "cancelada")')
 
   revalidatePath('/ordenes-venta')
   revalidatePath(`/ordenes-venta/${id}`)

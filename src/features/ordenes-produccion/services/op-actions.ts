@@ -223,20 +223,53 @@ export async function getOPsByOV(ovId: string) {
 }
 
 export async function getOrdenesProduccion() {
-  const supabase = db(await createClient())
-  const { data, error } = await supabase
-    .from('ordenes_produccion')
-    .select('*, terceros!taller_id ( nombre ), ordenes_venta ( codigo, terceros!cliente_id ( nombre ) )')
-    .order('created_at', { ascending: false }) as {
-      data: (OrdenProduccion & {
-        terceros: { nombre: string } | null
-        ordenes_venta: { codigo: string; terceros: { nombre: string } | null } | null
-      })[] | null
-      error: { message: string } | null
+  try {
+    const supabase = db(await createClient())
+    const { data, error } = await supabase
+      .from('ordenes_produccion')
+      .select(`
+        *,
+        terceros!taller_id ( nombre ),
+        ordenes_venta ( 
+          id,
+          codigo, 
+          terceros!cliente_id ( nombre ) 
+        ),
+        op_detalle ( 
+          cantidad_asignada,
+          producto_id,
+          productos ( precio_base )
+        ),
+        entregas ( 
+          id, 
+          estado, 
+          fecha_entrega,
+          entrega_detalle ( cantidad_entregada ) 
+        ),
+        liquidaciones ( costo_total ),
+        reporte_corte ( id )
+      `)
+      .neq('estado', 'cancelada')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error(' [OP_SERVICE] Error fetching OPs:', error.message)
+      return { error: error.message, data: [] }
     }
 
-  if (error) return { error: error.message, data: [] as typeof data extends null ? [] : NonNullable<typeof data> }
-  return { data: data ?? [] }
+    // Safety check for OV codes
+    if (data) {
+      const missingOVs = data.filter((op: any) => !op.ordenes_venta)
+      if (missingOVs.length > 0) {
+        console.warn(` [OP_SERVICE] Found ${missingOVs.length} OPs without linked OV metadata.`)
+      }
+    }
+
+    return { data: (data as any) ?? [] }
+  } catch (e: any) {
+    console.error(' [OP_SERVICE] Critical failure:', e.message)
+    return { error: e.message, data: [] }
+  }
 }
 
 export async function getOrdenProduccionById(id: string) {
