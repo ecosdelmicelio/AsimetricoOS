@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { DollarSign, AlertTriangle, CheckCircle2, RefreshCw, Plus, Trash2, RotateCcw } from 'lucide-react'
-import { aprobarLiquidacion, anularLiquidacion, calcularResumenLiquidacion, upsertServicioRef, deleteServicioRef } from '@/features/liquidacion/services/liquidacion-actions'
+import { useRouter } from 'next/navigation'
+import { DollarSign, AlertTriangle, CheckCircle2, RefreshCw, Plus, Trash2, RotateCcw, Warehouse } from 'lucide-react'
+import { aprobarLiquidacion, anularLiquidacion, calcularResumenLiquidacion, upsertServicioRef, deleteServicioRef, guardarBodegaDestino } from '@/features/liquidacion/services/liquidacion-actions'
 import type { ResumenLiquidacion, ServicioRef } from '@/features/liquidacion/types'
 
 interface LineaProducto {
@@ -25,13 +26,17 @@ interface Props {
     fecha_aprobacion: string | null
   } | null
   hayReporteInsumos: boolean
+  bodegas: { id: string; nombre: string }[]
+  bodegaDestinoId: string | null
+  opCodigo: string
 }
 
 function formatCOP(n: number) {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n)
 }
 
-export function LiquidacionPanel({ opId, resumenInicial, serviciosRefIniciales, serviciosBOM, lineasOP, liquidacionAprobada, hayReporteInsumos }: Props) {
+export function LiquidacionPanel({ opId, resumenInicial, serviciosRefIniciales, serviciosBOM, lineasOP, liquidacionAprobada, hayReporteInsumos, bodegas, bodegaDestinoId, opCodigo }: Props) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [resumen, setResumen] = useState<ResumenLiquidacion>(resumenInicial)
   const [recalculando, setRecalculando] = useState(false)
@@ -43,6 +48,10 @@ export function LiquidacionPanel({ opId, resumenInicial, serviciosRefIniciales, 
   const [anulando, startAnularTransition] = useTransition()
   const [anulacionError, setAnulacionError] = useState<string | null>(null)
   const [confirmarAnulacion, setConfirmarAnulacion] = useState(false)
+  const [bodegaSeleccionada, setBodegaSeleccionada] = useState(bodegaDestinoId ?? '')
+  const [editandoBodega, setEditandoBodega] = useState(!bodegaDestinoId)
+  const [bodegaError, setBodegaError] = useState<string | null>(null)
+  const [guardandoBodega, startBodegaTransition] = useTransition()
 
   const aprobada = !!liquidacionAprobada
 
@@ -92,6 +101,10 @@ export function LiquidacionPanel({ opId, resumenInicial, serviciosRefIniciales, 
   }
 
   function handleAprobar() {
+    if (!bodegaSeleccionada) {
+      setError('Debes configurar la bodega de destino antes de aprobar.')
+      return
+    }
     if (!hayReporteInsumos && resumen.comparativo.filter(l => l.tipo === 'insumo').length > 0) {
       setError('Debes guardar el reporte de insumos antes de aprobar la liquidación.')
       return
@@ -110,6 +123,20 @@ export function LiquidacionPanel({ opId, resumenInicial, serviciosRefIniciales, 
       if (result.error) {
         setAnulacionError(result.error)
         setConfirmarAnulacion(false)
+      }
+    })
+  }
+
+  function handleGuardarBodega() {
+    if (!bodegaSeleccionada) return
+    setBodegaError(null)
+    startBodegaTransition(async () => {
+      const result = await guardarBodegaDestino(opId, bodegaSeleccionada, opCodigo)
+      if (result.error) {
+        setBodegaError(result.error)
+      } else {
+        setEditandoBodega(false)
+        router.refresh()
       }
     })
   }
@@ -194,6 +221,68 @@ export function LiquidacionPanel({ opId, resumenInicial, serviciosRefIniciales, 
       </div>
 
       <div className="p-5 space-y-5">
+
+        {/* Selector bodega destino — obligatorio antes de aprobar */}
+        {!aprobada && (
+          <div className="rounded-2xl bg-blue-50 border border-blue-200 p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Warehouse className="w-4 h-4 text-blue-600" />
+                <p className="font-semibold text-blue-700 text-body-sm">Bodega de Destino</p>
+              </div>
+              {bodegaSeleccionada && !editandoBodega && (
+                <button
+                  onClick={() => setEditandoBodega(true)}
+                  className="text-xs text-blue-600 hover:underline font-medium"
+                >
+                  Cambiar
+                </button>
+              )}
+            </div>
+            {bodegaSeleccionada && !editandoBodega ? (
+              <div className="flex items-center justify-between">
+                <p className="text-body-sm text-blue-700 font-medium">
+                  {bodegas.find(b => b.id === bodegaSeleccionada)?.nombre ?? 'Bodega'}
+                </p>
+                <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold">✓ Configurada</span>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-body-sm text-blue-600">
+                  Selecciona dónde ingresarán los productos terminados.
+                </p>
+                <div className="flex gap-2">
+                  <select
+                    value={bodegaSeleccionada}
+                    onChange={e => setBodegaSeleccionada(e.target.value)}
+                    className="flex-1 rounded-xl bg-white border border-blue-200 px-3 py-2 text-body-sm text-foreground outline-none"
+                  >
+                    <option value="">Selecciona una bodega...</option>
+                    {bodegas.map(b => (
+                      <option key={b.id} value={b.id}>{b.nombre}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={handleGuardarBodega}
+                    disabled={!bodegaSeleccionada || guardandoBodega}
+                    className="px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold text-body-sm hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    {guardandoBodega ? 'Guardando...' : 'Guardar'}
+                  </button>
+                  {editandoBodega && bodegaDestinoId && (
+                    <button
+                      onClick={() => setEditandoBodega(false)}
+                      className="px-3 py-2 rounded-xl bg-blue-100 text-blue-600 text-body-sm hover:bg-blue-200 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                  )}
+                </div>
+                {bodegaError && <p className="text-xs text-red-600">{bodegaError}</p>}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Resumen de costos */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

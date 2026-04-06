@@ -765,10 +765,10 @@ export async function anularLiquidacion(opId: string): Promise<{ error?: string 
 
   if (liqError) return { error: liqError.message }
 
-  // 6. Revertir estado de OP a en_entregas (estado real en DB para "entregada")
+  // 6. Revertir estado de OP a entregada (pre-liquidación)
   await supabase
     .from('ordenes_produccion')
-    .update({ estado: 'en_entregas' })
+    .update({ estado: 'entregada' })
     .eq('id', opId)
 
   revalidatePath(`/ordenes-produccion/${opId}`)

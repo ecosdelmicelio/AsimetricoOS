@@ -30,7 +30,7 @@ interface Props {
   bodegaDestinoId: string | null
 }
 
-const ESTADOS_ACTIVOS = ['en_entregas', 'entregada', 'liquidada', 'completada']
+const ESTADOS_ACTIVOS = ['entregada', 'liquidada']
 
 export function EntregasPanel({ opId, opCodigo, estadoActual, entregas, lineasOP, totalUnidadesOP, liquidacionesPorEntrega, bodegas, bodegaDestinoId }: Props) {
   const router = useRouter()
@@ -84,7 +84,7 @@ export function EntregasPanel({ opId, opCodigo, estadoActual, entregas, lineasOP
           <Package className="w-4 h-4 text-muted-foreground" />
           <h2 className="font-semibold text-foreground text-body-md">Entregas</h2>
         </div>
-        {(estadoActual === 'en_entregas' || estadoActual === 'entregada') && !showForm && (
+        {(estadoActual === 'entregada') && !showForm && (
           <button
             onClick={() => setShowForm(true)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neu-base shadow-neu text-muted-foreground hover:text-foreground text-body-sm font-medium transition-all active:shadow-neu-inset"
@@ -275,7 +275,7 @@ export function EntregasPanel({ opId, opCodigo, estadoActual, entregas, lineasOP
             </div>
 
             {/* Botones FRI — solo para entregas recibidas y si OP en_entregas */}
-            {entrega.estado === 'recibida' && estadoActual === 'en_entregas' && (
+            {entrega.estado === 'recibida' && estadoActual === 'entregada' && (
               <div className="px-5 py-3 border-t border-black/5 flex items-center gap-3">
                 <p className="text-xs text-muted-foreground mr-auto">FRI:</p>
                 <button

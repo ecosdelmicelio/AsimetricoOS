@@ -294,11 +294,5 @@ async function checkAutoCompleteOP(
     0,
   )
 
-  if (totalAceptado >= totalOP && totalOP > 0) {
-    await supabase
-      .from('ordenes_produccion')
-      .update({ estado: 'completada' })
-      .eq('id', opId)
-      .eq('estado', 'en_entregas')
-  }
+  // Estado se actualiza cuando se liquida, no automáticamente en entregas
 }

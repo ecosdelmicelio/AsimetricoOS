@@ -26,9 +26,8 @@ export function OVTrackerContent({ ov, ops, despachos }: Props) {
       'en_corte': 30,
       'en_confeccion': 60,
       'en_terminado': 80,
-      'en_entregas': 90,
-      'liquidada': 95,
-      'completada': 100,
+      'entregada': 90,
+      'liquidada': 100,
     }
     
     const sum = ops.reduce((acc, op) => acc + (estadoWeights[op.estado] || 0), 0)

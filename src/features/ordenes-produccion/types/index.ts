@@ -11,7 +11,6 @@ export type EstadoOP =
   | 'en_terminado'
   | 'entregada'
   | 'liquidada'
-  | 'completada'
   | 'cancelada'
 
 // Secuencia de hitos (para progreso visual)

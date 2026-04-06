@@ -21,8 +21,8 @@ interface Props {
 }
 
 export async function OPDetail({ id }: Props) {
-  const ESTADOS_CON_INSUMOS: EstadoOP[] = ['en_terminado', 'entregada', 'liquidada', 'completada']
-  const ESTADOS_CON_LIQUIDACION: EstadoOP[] = ['entregada', 'liquidada', 'completada']
+  const ESTADOS_CON_INSUMOS: EstadoOP[] = ['en_terminado', 'entregada', 'liquidada']
+  const ESTADOS_CON_LIQUIDACION: EstadoOP[] = ['entregada', 'liquidada']
 
   const supabase = await createClient()
 
@@ -50,21 +50,20 @@ export async function OPDetail({ id }: Props) {
 
   // Fetch condicionales (solo cuando el estado lo requiere)
   const estadoOP = op.estado as EstadoOP
-  const estadoNormalizado = (op.estado === 'en_entregas' ? 'entregada' : op.estado) as EstadoOP
   const taller = op.terceros
   const ov = op.ordenes_venta
   const detalles = op.op_detalle ?? []
   const productoIdsOP = [...new Set(detalles.map(d => d.producto_id))]
 
   const [insumosParaReporte, resumenLiquidacion, liquidacionAprobada, bodegasData, serviciosRef, serviciosBOM] = await Promise.all([
-    ESTADOS_CON_INSUMOS.includes(estadoNormalizado) ? getInsumosParaReporte(id) : Promise.resolve([]),
-    ESTADOS_CON_LIQUIDACION.includes(estadoNormalizado) ? calcularResumenLiquidacion(id) : Promise.resolve(null),
-    ESTADOS_CON_LIQUIDACION.includes(estadoNormalizado) ? getLiquidacionOP(id) : Promise.resolve(null),
-    ['entregada', 'liquidada', 'completada'].includes(estadoNormalizado)
+    ESTADOS_CON_INSUMOS.includes(estadoOP) ? getInsumosParaReporte(id) : Promise.resolve([]),
+    ESTADOS_CON_LIQUIDACION.includes(estadoOP) ? calcularResumenLiquidacion(id) : Promise.resolve(null),
+    ESTADOS_CON_LIQUIDACION.includes(estadoOP) ? getLiquidacionOP(id) : Promise.resolve(null),
+    ['entregada', 'liquidada', 'completada'].includes(estadoOP)
       ? supabase.from('bodegas').select('id, nombre').eq('activo', true).order('nombre')
       : Promise.resolve({ data: [] }),
-    ESTADOS_CON_LIQUIDACION.includes(estadoNormalizado) ? getServiciosRef(id) : Promise.resolve([]),
-    ESTADOS_CON_LIQUIDACION.includes(estadoNormalizado) ? getServiciosBOMParaOP(productoIdsOP) : Promise.resolve([]),
+    ESTADOS_CON_LIQUIDACION.includes(estadoOP) ? getServiciosRef(id) : Promise.resolve([]),
+    ESTADOS_CON_LIQUIDACION.includes(estadoOP) ? getServiciosBOMParaOP(productoIdsOP) : Promise.resolve([]),
   ])
 
   const bodegas = (bodegasData?.data ?? []) as { id: string; nombre: string }[]
@@ -134,7 +133,7 @@ export async function OPDetail({ id }: Props) {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-col gap-1.5 mb-1">
                   <div className="flex items-center gap-2">
-                    <OPStatusBadge estado={estadoNormalizado} />
+                    <OPStatusBadge estado={estadoOP} />
                     {ov && (
                       <Link
                         href={`/ordenes-venta/${op.ov_id}`}
@@ -195,7 +194,7 @@ export async function OPDetail({ id }: Props) {
           {/* Row 2: OP Stepper */}
           <div className="bg-slate-50/30 rounded-[2rem] border border-slate-100/50 p-4 lg:p-8 shadow-inner">
             <div className="px-4 py-4">
-              <OPStepper currentStatus={estadoNormalizado} historial={historial} />
+              <OPStepper currentStatus={estadoOP} historial={historial} />
             </div>
           </div>
 
@@ -297,7 +296,7 @@ export async function OPDetail({ id }: Props) {
       <EntregasPanel
         opId={id}
         opCodigo={op.codigo}
-        estadoActual={op.estado}
+        estadoActual={estadoOP}
         entregas={entregas ?? []}
         lineasOP={lineasOP}
         totalUnidadesOP={totalUnidades}
@@ -309,7 +308,7 @@ export async function OPDetail({ id }: Props) {
       />
 
       {/* Reporte de Insumos (en_terminado en adelante) */}
-      {ESTADOS_CON_INSUMOS.includes(estadoNormalizado) && (
+      {ESTADOS_CON_INSUMOS.includes(estadoOP) && (
         <ReporteInsumosPanel
           opId={id}
           insumos={insumosParaReporte}
@@ -318,9 +317,10 @@ export async function OPDetail({ id }: Props) {
       )}
 
       {/* Panel de Liquidación (en_entregas en adelante) */}
-      {ESTADOS_CON_LIQUIDACION.includes(estadoNormalizado) && resumenLiquidacion && (
+      {ESTADOS_CON_LIQUIDACION.includes(estadoOP) && resumenLiquidacion && (
         <LiquidacionPanel
           opId={id}
+          opCodigo={op.codigo}
           resumenInicial={resumenLiquidacion}
           serviciosRefIniciales={serviciosRef}
           serviciosBOM={serviciosBOM}
@@ -349,6 +349,8 @@ export async function OPDetail({ id }: Props) {
             fecha_aprobacion: liquidacionAprobada.fecha_aprobacion,
           } : null}
           hayReporteInsumos={hayReporteInsumos}
+          bodegas={bodegas}
+          bodegaDestinoId={bodegaDestino}
         />
       )}
 

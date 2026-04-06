@@ -112,12 +112,12 @@ export async function getTorreData(): Promise<TorreData> {
   const todasOVs = ovsResult.data ?? []
 
   // Clasificar OPs
-  const ESTADOS_ACTIVOS = ['programada', 'en_corte', 'en_confeccion', 'dupro_pendiente', 'en_terminado', 'en_entregas']
+  const ESTADOS_ACTIVOS = ['programada', 'en_corte', 'en_confeccion', 'dupro_pendiente', 'en_terminado', 'entregada']
   const ESTADOS_CALIDAD = ['dupro_pendiente']
 
   const opsActivas = todasOPs.filter(op => ESTADOS_ACTIVOS.includes(op.estado))
   const opsCompletadasMes = todasOPs.filter(op =>
-    op.estado === 'completada' &&
+    op.estado === 'liquidada' &&
     op.created_at &&
     new Date(op.created_at) >= inicioMes
   )
