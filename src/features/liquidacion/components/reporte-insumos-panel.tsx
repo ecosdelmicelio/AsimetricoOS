@@ -30,8 +30,10 @@ export function ReporteInsumosPanel({
   const [valores, setValores] = useState<Record<string, { cantidad_usada: number; desperdicio: number; notas: string }>>(() => {
     const init: Record<string, { cantidad_usada: number; desperdicio: number; notas: string }> = {}
     for (const ins of insumos) {
+      const yaRegistrado = ins.ya_reportado || ins.cantidad_usada > 0
       init[`${ins.producto_id}:${ins.material_id}`] = {
-        cantidad_usada: ins.cantidad_usada,
+        // Si ya está reportado usamos ese valor, si no usamos el BOM como sugerencia inicial
+        cantidad_usada: yaRegistrado ? ins.cantidad_usada : ins.cantidad_bom,
         desperdicio: ins.desperdicio,
         notas: ins.notas ?? '',
       }
@@ -183,8 +185,8 @@ export function ReporteInsumosPanel({
                         <div key={ins.material_id} className="bg-white border border-slate-100 rounded-[1.5rem] p-5 flex flex-col gap-5 shadow-sm hover:shadow-md transition-shadow">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-[11px] font-black text-slate-900 leading-none">{ins.nombre}</p>
-                              <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mt-2">{ins.unidad} • BOM: {teorico.toFixed(2)}</p>
+                              <p className="text-[14px] font-black text-slate-900 leading-tight uppercase tracking-tight">{ins.nombre}</p>
+                              <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1.5">{ins.unidad} • BOM TEÓRICO: {teorico.toFixed(2)}</p>
                             </div>
                             {hayDesvio && (
                               <div className="flex items-center gap-1.5 text-[9px] font-black uppercase bg-red-50 text-red-600 px-2 py-1 rounded-full border border-red-100">
@@ -196,35 +198,35 @@ export function ReporteInsumosPanel({
 
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Cant. Real</label>
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">CANTIDAD REAL</label>
                               <input
                                 type="number"
                                 min={0}
                                 step="0.01"
                                 value={val?.cantidad_usada ?? 0}
                                 onChange={e => handleChange(productoId, ins.material_id, 'cantidad_usada', e.target.value)}
-                                className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-xs font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-100 focus:bg-white transition-all shadow-inner"
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-[14px] font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-100 focus:bg-white transition-all shadow-inner"
                               />
                             </div>
                             <div className="space-y-2">
-                              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Desperdicio</label>
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">DESPERDICIO (KG)</label>
                               <input
                                 type="number"
                                 min={0}
                                 step="0.01"
                                 value={val?.desperdicio ?? 0}
                                 onChange={e => handleChange(productoId, ins.material_id, 'desperdicio', e.target.value)}
-                                className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-xs font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-100 focus:bg-white transition-all shadow-inner"
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-[14px] font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-100 focus:bg-white transition-all shadow-inner"
                               />
                             </div>
                             <div className="col-span-2 space-y-2">
-                              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Justificación / Notas</label>
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">JUSTIFICACIÓN / NOTAS</label>
                               <input
                                 type="text"
                                 value={val?.notas ?? ''}
                                 onChange={e => handleChange(productoId, ins.material_id, 'notas', e.target.value)}
-                                placeholder="Ej: Mayor consumo por falla de tejido..."
-                                className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-100 focus:bg-white transition-all shadow-inner"
+                                placeholder="Notas operativas..."
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-[12px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-100 focus:bg-white transition-all shadow-inner placeholder:text-slate-300"
                               />
                             </div>
                           </div>
