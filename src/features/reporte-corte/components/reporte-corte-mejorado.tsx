@@ -334,17 +334,12 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId, reporteAE
         return
       }
 
-      // Reset y callback
-      if (reporteAEditar && onEditComplete) {
-        onEditComplete()
-      } else {
-        setFecha(new Date().toISOString().split('T')[0])
-        setNotas('')
-        setConsumosPorMaterial({})
-        setCantidadesCortadas({})
-      }
-
       setIsSaving(false)
+
+      // Cerrar modal en ambos casos (creación y edición)
+      if (onEditComplete) {
+        onEditComplete()
+      }
     })
   }
 
