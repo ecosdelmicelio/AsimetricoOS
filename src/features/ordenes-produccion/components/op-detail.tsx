@@ -210,11 +210,21 @@ export async function OPDetail({ id }: Props) {
                       <FileText className="w-3.5 h-3.5 text-slate-400" />
                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Notas de Producción</span>
                     </div>
-                    <p className="text-body-sm text-slate-600 font-medium bg-slate-50/50 p-4 rounded-xl border border-slate-100 italic">
+                    <p className="text-body-sm text-slate-600 font-medium bg-slate-50/50 p-4 rounded-xl border border-slate-100 italic leading-snug">
                       &quot;{op.notas}&quot;
                     </p>
                   </div>
                 )}
+
+                <div className="pt-6 mt-6 border-t border-slate-100 -mx-6 px-6 relative">
+                  <ReporteCorteePanel
+                    opId={id}
+                    estadoActual={op.estado}
+                    reporte={reporte}
+                    reportes={reportes}
+                    lineasOP={lineasOP}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -236,14 +246,6 @@ export async function OPDetail({ id }: Props) {
       )}
 
 
-      {/* Reporte de Corte */}
-      <ReporteCorteePanel
-        opId={id}
-        estadoActual={op.estado}
-        reporte={reporte}
-        reportes={reportes}
-        lineasOP={lineasOP}
-      />
 
       {/* Entregas */}
       <EntregasPanel

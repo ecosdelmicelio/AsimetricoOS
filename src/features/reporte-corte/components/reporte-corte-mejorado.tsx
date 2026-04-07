@@ -333,168 +333,116 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId, reporteAE
   }
 
   return (
-    <div className="space-y-4">
-      {/* SECCIÓN 1: DATOS DEL CORTE */}
-      <div className="rounded-2xl bg-neu-base shadow-neu p-6 space-y-4">
-        <h3 className="font-semibold text-foreground text-body-md">
-          Datos del Corte
-        </h3>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="space-y-1.5">
-            <label className="text-body-sm font-medium text-foreground">
-              Fecha del Corte <span className="text-red-500">*</span>
+    <div className="space-y-3">
+      {/* SECCIÓN 0: DATOS DEL CORTE (Compacto e Industrial) */}
+      <div className="rounded-xl bg-white border border-slate-100 p-3 shadow-sm">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">
+              Fecha de Reporte <span className="text-red-500">*</span>
             </label>
-            <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
-              <input
-                type="date"
-                value={fecha}
-                onChange={e => {
-                  setFecha(e.target.value)
-                  setError(null)
-                }}
-                required
-                className="w-full bg-transparent text-body-sm text-foreground outline-none"
-              />
-            </div>
+            <input
+              type="date"
+              value={fecha}
+              onChange={e => {
+                setFecha(e.target.value)
+                setError(null)
+              }}
+              className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-1.5 text-[10px] font-black focus:border-primary-500 focus:bg-white transition-all outline-none"
+            />
           </div>
-
-          <div className="space-y-1.5">
-            <label className="text-body-sm font-medium text-foreground">
-              Notas (opcional)
+          <div className="space-y-1">
+            <label className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">
+              Notas Operativas
             </label>
-            <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
-              <input
-                value={notas}
-                onChange={e => setNotas(e.target.value)}
-                placeholder="Observaciones..."
-                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-              />
-            </div>
+            <input
+              value={notas}
+              onChange={e => setNotas(e.target.value)}
+              placeholder="Ej: Retal acumulado..."
+              className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-1.5 text-[10px] font-black focus:border-primary-500 focus:bg-white transition-all outline-none placeholder:text-slate-300"
+            />
           </div>
         </div>
       </div>
 
-      {/* SECCIÓN 1B: PANEL DE PROGRESO */}
+      {/* SECCIÓN 1: PROGRESO (Resumen compacto) */}
       {isLoadingProgreso ? (
-        <div className="rounded-2xl bg-neu-base shadow-neu p-6 flex items-center justify-center gap-2">
+        <div className="rounded-xl bg-slate-50 p-3 flex items-center justify-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin text-primary-600" />
-          <p className="text-body-sm text-muted-foreground">Cargando información...</p>
+          <p className="text-[10px] text-slate-400 font-bold uppercase">Cargando...</p>
         </div>
       ) : infoProgreso ? (
-        <div className="rounded-2xl bg-neu-base shadow-neu p-6 space-y-4">
-          <h3 className="font-semibold text-foreground text-body-md">
-            Progreso de Corte
-          </h3>
-
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground font-medium">Total Asignado</p>
-              <p className="text-display-xs font-bold text-foreground">
-                {infoProgreso.totalAsignado}
-              </p>
+        <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="space-y-0.5">
+              <p className="text-[8px] text-slate-400 font-black uppercase tracking-tighter">Asignado</p>
+              <p className="text-[11px] font-black text-slate-900">{infoProgreso.totalAsignado}</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground font-medium">Ya Cortadas</p>
-              <p className="text-display-xs font-bold text-primary-600">
-                {infoProgreso.totalCortadoPrevio}
-              </p>
+            <div className="space-y-0.5">
+              <p className="text-[8px] text-slate-400 font-black uppercase tracking-tighter">Cortadas</p>
+              <p className="text-[11px] font-black text-primary-600">{infoProgreso.totalCortadoPrevio}</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground font-medium">Máximo (103%)</p>
-              <p className="text-display-xs font-bold text-foreground">
-                {infoProgreso.maximo105.toFixed(0)}
-              </p>
+            <div className="space-y-0.5">
+              <p className="text-[8px] text-slate-400 font-black uppercase tracking-tighter">Máximo</p>
+              <p className="text-[11px] font-black text-slate-900">{infoProgreso.maximo105.toFixed(0)}</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground font-medium">Espacio Disponible</p>
-              <p className={`text-display-xs font-bold ${
-                infoProgreso.espacioDisponible > 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
+            <div className="space-y-0.5">
+              <p className="text-[8px] text-slate-400 font-black uppercase tracking-tighter">Disponible</p>
+              <p className={`text-[11px] font-black ${infoProgreso.espacioDisponible > 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {infoProgreso.espacioDisponible.toFixed(0)}
               </p>
             </div>
           </div>
-
-          {infoProgreso.espacioDisponible < 0 && (
-            <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-red-700 text-body-sm">
-              ⚠️ No hay espacio disponible. Necesita iniciar un nuevo corte para una próxima orden.
-            </div>
-          )}
         </div>
       ) : null}
 
-      {/* SECCIÓN 2: REFERENCIAS A CORTAR (EDITABLE) */}
-      <div className="rounded-2xl bg-neu-base shadow-neu p-6 space-y-4">
-        <h3 className="font-semibold text-foreground text-body-md">
-          Cantidades a Cortar
-        </h3>
-
-        <p className="text-body-sm text-muted-foreground">
-          Edita las cantidades por talla. Los cambios recalcularán el consumo de telas automáticamente.
-        </p>
+      {/* SECCIÓN 2: REFERENCIAS A CORTAR */}
+      <div className="rounded-xl bg-white border border-slate-100 p-3 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Cantidades</h3>
+          {gruposPorRefColor.length > 0 && (
+            <span className="text-[8px] font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded-md uppercase tracking-tighter">
+              {gruposPorRefColor.length} Refs
+            </span>
+          )}
+        </div>
 
         {gruposPorRefColor.length === 0 ? (
-          <div className="rounded-xl bg-yellow-50 border border-yellow-200 px-4 py-3 text-yellow-700 text-body-sm">
-            No hay referencias en esta orden
-          </div>
+          <div className="text-[10px] text-slate-400 font-bold uppercase text-center py-2">No hay referencias</div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {gruposPorRefColor.map(grupo => {
               const refColorKey = `${grupo.referencia}|${grupo.color}`
               const isExpanded = expandedRefs[refColorKey] ?? true
               const tallasSorted = Array.from(grupo.lineas.map(l => l.talla)).sort()
 
               return (
-                <div
-                  key={refColorKey}
-                  className="rounded-xl bg-neu-base shadow-neu overflow-hidden"
-                >
-                  {/* Header collapsible */}
+                <div key={refColorKey} className="rounded-lg border border-slate-100 overflow-hidden">
                   <button
                     type="button"
-                    onClick={() =>
-                      setExpandedRefs(prev => ({
-                        ...prev,
-                        [refColorKey]: !prev[refColorKey],
-                      }))
-                    }
-                    className="w-full px-4 py-3 flex items-center justify-between gap-2 hover:bg-black/2 transition-colors"
+                    onClick={() => setExpandedRefs(prev => ({ ...prev, [refColorKey]: !prev[refColorKey] }))}
+                    className="w-full px-3 py-2 flex items-center justify-between bg-slate-50/50 hover:bg-slate-50 transition-colors"
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <ChevronDown
-                        className={`w-4 h-4 text-muted-foreground transition-transform shrink-0 ${
-                          isExpanded ? '' : '-rotate-90'
-                        }`}
-                      />
-                      <div>
-                        <p className="font-semibold text-foreground text-body-sm">
-                          {grupo.referencia}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {grupo.color ?? 'Sin color'}
-                        </p>
+                      <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
+                      <div className="text-left">
+                        <p className="text-[10px] font-black text-slate-900 truncate uppercase">{grupo.referencia}</p>
+                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{grupo.color ?? 'Sin color'}</p>
                       </div>
                     </div>
-                    <p className="text-display-xs font-bold text-primary-600 shrink-0">
-                      {grupo.totalUds} uds
-                    </p>
+                    <p className="text-[11px] font-black text-primary-600">{grupo.totalUds} uds</p>
                   </button>
 
-                  {/* Contenido editable */}
                   {isExpanded && (
-                    <div className="border-t border-black/5 p-4 space-y-4">
-                      {/* Grid de tallas */}
-                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    <div className="p-3 bg-white border-t border-slate-50">
+                      <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
                         {tallasSorted.map(talla => {
                           const cantidad = grupo.cantidadesCortadas[talla] ?? 0
                           const original = grupo.lineas.find(l => l.talla === talla)?.cantidad_asignada ?? 0
 
                           return (
-                            <div key={talla} className="flex flex-col items-center gap-1">
-                              <span className="text-muted-foreground text-xs font-medium">
-                                {talla}
-                              </span>
+                            <div key={talla} className="flex flex-col items-center gap-0.5">
+                              <span className="text-[8px] text-slate-400 font-black uppercase tracking-tighter">{talla}</span>
                               <input
                                 type="number"
                                 min="0"
@@ -503,33 +451,11 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId, reporteAE
                                   const val = parseInt(e.target.value) || 0
                                   actualizarCantidadCortada(refColorKey, talla, Math.max(0, val))
                                 }}
-                                placeholder="0"
-                                className="w-12 text-center bg-neu-base rounded-lg shadow-neu-inset-sm px-2 py-1 outline-none text-foreground placeholder:text-muted-foreground/50 text-body-sm"
+                                className="w-full text-center bg-slate-50 border border-slate-200 rounded-md px-1 py-1 text-[10px] font-black focus:border-primary-500 focus:bg-white transition-all outline-none"
                               />
-                              <span className="text-muted-foreground/60 text-xs">
-                                / {original}
-                              </span>
                             </div>
                           )
                         })}
-                      </div>
-
-                      {/* Footer resumen con badge faltante */}
-                      <div className="flex items-center justify-between pt-2 border-t border-black/5">
-                        <span className="text-muted-foreground text-body-sm">
-                          <span className="font-semibold text-foreground">{grupo.totalUds}</span> uds cortadas
-                        </span>
-
-                        {/* Badge FALTANTE si no cortó el 100% */}
-                        {(() => {
-                          const totalAsignado = grupo.lineas.reduce((s, l) => s + l.cantidad_asignada, 0)
-                          const faltante = totalAsignado - grupo.totalUds
-                          return faltante > 0 ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-100 text-red-700 text-xs font-semibold">
-                              ❌ Faltante: {faltante} uds
-                            </span>
-                          ) : null
-                        })()}
                       </div>
                     </div>
                   )}
@@ -540,126 +466,78 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId, reporteAE
         )}
       </div>
 
-      {/* SECCIÓN 3: CONSUMO DE TELAS CONSOLIDADAS */}
-      <div className="rounded-2xl bg-neu-base shadow-neu p-6 space-y-4">
-        <h3 className="font-semibold text-foreground text-body-md">
-          Consumo de Telas
-        </h3>
-
-        <p className="text-body-sm text-muted-foreground">
-          Registra el consumo promedio por prenda. Los valores se basan en las cantidades que indicaste arriba.
-        </p>
+      {/* SECCIÓN 3: CONSUMO DE TELAS */}
+      <div className="rounded-xl bg-white border border-slate-100 p-3 space-y-3">
+        <h3 className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Consumo Telas</h3>
 
         {isLoadingMateriales ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-5 h-5 animate-spin text-primary-600 mr-2" />
-            <p className="text-body-sm text-muted-foreground">Cargando telas...</p>
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="w-4 h-4 animate-spin text-primary-600 mr-2" />
+            <p className="text-[10px] text-slate-400 font-bold uppercase">Cargando telas...</p>
           </div>
         ) : materiales.length === 0 ? (
-          <div className="rounded-xl bg-yellow-50 border border-yellow-200 px-4 py-3 text-yellow-700 text-body-sm">
-            No se encontraron telas en el BOM de las referencias seleccionadas
-          </div>
+          <div className="text-[10px] text-slate-400 font-bold uppercase text-center py-2">No se encontraron telas</div>
         ) : (
-          <div className="space-y-4">
-            {/* Tabla de materiales */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-body-sm">
-                <thead>
-                  <tr className="border-b border-black/10">
-                    <th className="text-left py-2 px-3 font-semibold text-foreground">Tela</th>
-                    <th className="text-center py-2 px-3 font-semibold text-foreground">Promedio *</th>
-                    <th className="text-center py-2 px-3 font-semibold text-foreground">Cant.</th>
-                    <th className="text-center py-2 px-3 font-semibold text-foreground">Real</th>
-                    <th className="text-center py-2 px-3 font-semibold text-foreground">Desperd. (kg)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {materiales.map(material => {
-                    const cantidadTotal = material.referencias_que_usan.reduce(
-                      (sum, ref) => sum + ref.cantidad_asignada,
-                      0
-                    )
-                    const consumoPromedio = consumosPorMaterial[material.material_id]?.consumo_promedio || 0
-                    const consumoReal = consumoPromedio * cantidadTotal
+          <div className="space-y-2">
+            {materiales.map(material => {
+              const cantidadTotal = material.referencias_que_usan.reduce((sum, ref) => sum + ref.cantidad_asignada, 0)
+              const consumoPromedio = consumosPorMaterial[material.material_id]?.consumo_promedio || 0
+              const consumoReal = consumoPromedio * cantidadTotal
 
-                    return (
-                      <tr key={material.material_id} className="border-b border-black/5 hover:bg-black/2">
-                        <td className="py-3 px-3">
-                          <div>
-                            <p className="font-medium text-foreground">{material.material_nombre}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {material.referencias_que_usan
-                                .map(r => `${r.referencia}${r.color ? ` (${r.color})` : ''}`)
-                                .join(', ')}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="py-3 px-3">
-                          <div className="flex items-center justify-center gap-1">
-                            <input
-                              type="number"
-                              step={0.001}
-                              min={0}
-                              placeholder="0"
-                              value={consumoPromedio || ''}
-                              onChange={e =>
-                                actualizarConsumo(material.material_id, 'consumo_promedio', e.target.value)
-                              }
-                              className="w-16 bg-neu-base shadow-neu-inset rounded px-2 py-1 text-center text-body-sm outline-none"
-                            />
-                            <span className="text-xs text-muted-foreground shrink-0">{material.material_unidad}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-3 text-center">
-                          <p className="text-muted-foreground font-medium">{cantidadTotal}</p>
-                        </td>
-                        <td className="py-3 px-3 text-center">
-                          <p className="font-medium text-foreground">{consumoReal.toFixed(2)} {material.material_unidad}</p>
-                        </td>
-                        <td className="py-3 px-3">
-                          <input
-                            type="number"
-                            step={0.01}
-                            min={0}
-                            placeholder="0"
-                            value={consumosPorMaterial[material.material_id]?.desperdicio_kg || ''}
-                            onChange={e =>
-                              actualizarConsumo(material.material_id, 'desperdicio_kg', e.target.value)
-                            }
-                            className="w-full bg-neu-base shadow-neu-inset rounded px-2 py-1 text-center text-body-sm outline-none"
-                          />
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            <p className="text-xs text-muted-foreground px-2">
-              💡 Ingresa el consumo promedio (*) por prenda. El consumo real se calcula automáticamente. El desperdicio es opcional.
-            </p>
+              return (
+                <div key={material.material_id} className="rounded-lg border border-slate-100 p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-black text-slate-900 uppercase truncate">{material.material_nombre}</p>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest truncate">
+                        {material.referencias_que_usan.map(r => r.referencia).join(', ')}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <input
+                        type="number"
+                        step={0.001}
+                        min={0}
+                        value={consumoPromedio || ''}
+                        onChange={e => actualizarConsumo(material.material_id, 'consumo_promedio', e.target.value)}
+                        className="w-14 bg-slate-50 border border-slate-200 rounded-md px-1.5 py-1 text-center text-[10px] font-black outline-none focus:border-primary-500 focus:bg-white transition-all"
+                      />
+                      <span className="text-[8px] font-black text-slate-400 uppercase">{material.material_unidad} x Prend</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-50">
+                    <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                      <span>Total Real:</span>
+                      <span className="text-slate-900">{consumoReal.toFixed(2)} {material.material_unidad}</span>
+                    </div>
+                    <div className="flex items-center gap-1 justify-end">
+                      <span className="text-[8px] font-bold text-slate-400 uppercase shrink-0">Desperd:</span>
+                      <input
+                        type="number"
+                        step={0.01}
+                        min={0}
+                        value={consumosPorMaterial[material.material_id]?.desperdicio_kg || ''}
+                        onChange={e => actualizarConsumo(material.material_id, 'desperdicio_kg', e.target.value)}
+                        className="w-12 bg-slate-50 border border-slate-200 rounded-md px-1 py-1 text-center text-[10px] font-black outline-none focus:border-primary-500 focus:bg-white transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
 
-        {error && (
-          <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-red-700 text-body-sm">
-            {error}
-          </div>
-        )}
+        {error && <div className="rounded-lg bg-red-50 border border-red-200 p-2 text-red-700 text-[9px] font-bold uppercase tracking-widest">{error}</div>}
       </div>
 
-      {/* BOTÓN GUARDAR */}
       <button
         onClick={handleGuardar}
         disabled={isPending || isLoadingMateriales}
-        className="w-full py-2.5 rounded-xl bg-primary-600 text-white font-semibold text-body-sm hover:bg-primary-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+        className="w-full py-2.5 rounded-xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg active:scale-95"
       >
         {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-        {reporteAEditar
-          ? isPending ? 'Guardando cambios...' : 'Guardar cambios'
-          : isPending ? 'Guardando...' : 'Guardar Corte'
-        }
+        {reporteAEditar ? (isPending ? 'Guardando...' : 'Actualizar Reporte') : (isPending ? 'Enviando...' : 'Confirmar Reporte de Corte')}
       </button>
     </div>
   )
