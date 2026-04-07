@@ -96,8 +96,8 @@ export function EntregasPanel({ opId, opCodigo, estadoActual, entregas, lineasOP
         )}
       </div>
 
-      {/* Selector bodega destino — visible en estados de entrega/liquidación */}
-      {ESTADOS_ACTIVOS.includes(estadoActual) && (
+      {/* Selector bodega destino — visible en estados finales (entregada/liquidada) */}
+      {['entregada', 'liquidada'].includes(estadoActual) && (
         <div className="rounded-2xl bg-neu-base shadow-neu p-5 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -159,23 +159,6 @@ export function EntregasPanel({ opId, opCodigo, estadoActual, entregas, lineasOP
           )}
         </div>
       )}
-
-      {/* Barra de progreso */}
-      <div className="rounded-2xl bg-neu-base shadow-neu p-4">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-body-sm text-muted-foreground">Unidades aceptadas</p>
-          <p className="text-body-sm font-semibold text-foreground">
-            {unidadesAceptadas} / {totalUnidadesOP}
-          </p>
-        </div>
-        <div className="w-full h-2 rounded-full bg-neu-base shadow-neu-inset overflow-hidden">
-          <div
-            className="h-full rounded-full bg-primary-500 transition-all duration-500"
-            style={{ width: `${progresoPct}%` }}
-          />
-        </div>
-        <p className="text-xs text-muted-foreground mt-1.5">{progresoPct}% completado</p>
-      </div>
 
       {/* Formulario nueva entrega */}
       {showForm && (
