@@ -329,37 +329,6 @@ function MaterialForm({
         </div>
       </div>
 
-      {/* Código: CodigoBuilder o manual */}
-      {!isEdit && (
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-foreground">Código *</label>
-          {usaSchema ? (
-            <CodigoBuilder schema={schema} onChange={handleCodigoChange} />
-          ) : (
-            <>
-              <div className="flex items-center gap-1.5">
-                {checkingCodigo && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
-              </div>
-              <div className={`rounded-lg bg-neu-base shadow-neu px-3 py-2 ${codigoDuplicado ? 'ring-1 ring-red-400' : ''}`}>
-                <input
-                  value={codigoManual}
-                  onChange={e => setCodigoManual(e.target.value.toUpperCase())}
-                  required
-                  placeholder="TEL-004"
-                  className="w-full bg-transparent text-body-sm font-mono text-foreground outline-none"
-                />
-              </div>
-              {codigoDuplicado && (
-                <div className="flex items-center gap-1 text-red-600">
-                  <AlertTriangle className="w-3 h-3 shrink-0" />
-                  <span className="text-[10px]">Código ya existe</span>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      )}
-
       {/* Row: Nombre + Unidad */}
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
@@ -501,6 +470,37 @@ function MaterialForm({
             />
           </div>
           <p className="text-[10px] text-muted-foreground">Metros por kilogramo</p>
+        </div>
+      )}
+
+      {/* Código: CodigoBuilder o manual */}
+      {!isEdit && (
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-foreground">Código *</label>
+          {usaSchema ? (
+            <CodigoBuilder schema={schema} onChange={handleCodigoChange} />
+          ) : (
+            <>
+              <div className="flex items-center gap-1.5">
+                {checkingCodigo && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+              </div>
+              <div className={`rounded-lg bg-neu-base shadow-neu px-3 py-2 ${codigoDuplicado ? 'ring-1 ring-red-400' : ''}`}>
+                <input
+                  value={codigoManual}
+                  onChange={e => setCodigoManual(e.target.value.toUpperCase())}
+                  required
+                  placeholder="TEL-004"
+                  className="w-full bg-transparent text-body-sm font-mono text-foreground outline-none"
+                />
+              </div>
+              {codigoDuplicado && (
+                <div className="flex items-center gap-1 text-red-600">
+                  <AlertTriangle className="w-3 h-3 shrink-0" />
+                  <span className="text-[10px]">Código ya existe</span>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 
