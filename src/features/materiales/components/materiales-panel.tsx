@@ -5,8 +5,11 @@ import { Plus, Edit2, Loader2, Package, AlertTriangle, RotateCcw } from 'lucide-
 import { createMaterial, updateMaterial } from '@/features/materiales/services/materiales-actions'
 import { useDuplicateCheck } from '@/shared/hooks/use-duplicate-check'
 import { CodigoBuilder } from '@/features/codigo-schema/components/codigo-builder'
+import { getAtributosMP, getAtributosPorTipoMP } from '@/features/materiales/services/atributo-actions'
 import type { CodigoSchema, SegmentoSeleccion } from '@/features/codigo-schema/types'
-import type { Material, UnidadMaterial } from '@/features/materiales/types'
+import type { Material, UnidadMaterial, TipoMP } from '@/features/materiales/types'
+import type { AtributoMP, TipoAtributoMP } from '@/features/materiales/types/atributos'
+import { TIPOS_ATRIBUTO_MP, LABELS_ATRIBUTO_MP } from '@/features/materiales/types/atributos'
 
 const UNIDADES: { value: UnidadMaterial; label: string }[] = [
   { value: 'metros',   label: 'Metros (m)' },
@@ -83,9 +86,10 @@ export function MaterialesPanel({ materiales, schema }: Props) {
           {/* Header */}
           <div className="grid grid-cols-12 gap-3 px-5 py-3 border-b border-black/5 bg-neu-base">
             <span className="col-span-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Código</span>
-            <span className="col-span-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Nombre</span>
+            <span className="col-span-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Nombre</span>
             <span className="col-span-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Unidad</span>
             <span className="col-span-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Costo unit.</span>
+            <span className="col-span-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide text-center">Tipo</span>
             <span className="col-span-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide text-center">Estado</span>
             <span className="col-span-1" />
           </div>
@@ -107,12 +111,17 @@ function MaterialRow({ material: m, onEdit }: { material: Material; onEdit: () =
   return (
     <div className={`grid grid-cols-12 gap-3 items-center px-5 py-3 ${!m.activo ? 'opacity-50' : ''}`}>
       <span className="col-span-2 font-mono text-body-sm font-semibold text-primary-700">{m.codigo}</span>
-      <div className="col-span-4">
+      <div className="col-span-3">
         <p className="text-body-sm font-medium text-foreground">{m.nombre}</p>
-        {m.descripcion && <p className="text-xs text-muted-foreground truncate">{m.descripcion}</p>}
+        {m.referencia_proveedor && <p className="text-xs text-muted-foreground truncate">{m.referencia_proveedor}</p>}
       </div>
       <span className="col-span-2 text-body-sm text-muted-foreground">{UNIDADES.find(u => u.value === m.unidad)?.label ?? m.unidad}</span>
       <span className="col-span-2 text-body-sm text-foreground text-right font-medium">{formatCop(m.costo_unit)}/{UNIDAD_LABEL[m.unidad]}</span>
+      <div className="col-span-1 flex justify-center">
+        <span className="text-xs font-semibold px-2 py-0.5 rounded-lg bg-blue-100 text-blue-700 capitalize">
+          {m.tipo_mp}
+        </span>
+      </div>
       <div className="col-span-1 flex justify-center">
         <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${m.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
           {m.activo ? 'Activo' : 'Inactivo'}
@@ -142,6 +151,7 @@ function MaterialForm({
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [activo, setActivo] = useState(material?.activo ?? true)
+  const [tipoMP, setTipoMP] = useState<TipoMP>(material?.tipo_mp ?? 'nacional')
   const [codigoManual, setCodigoManual] = useState(material?.codigo ?? '')
   const [codigoState, setCodigoState] = useState<{
     codigo: string
@@ -151,16 +161,30 @@ function MaterialForm({
   const [nombre, setNombre] = useState(material?.nombre ?? '')
   const [unidad, setUnidad] = useState<UnidadMaterial>(material?.unidad ?? 'metros')
   const [costoUnit, setCostoUnit] = useState(material?.costo_unit?.toString() ?? '')
-  const [descripcion, setDescripcion] = useState(material?.descripcion ?? '')
+  const [referenciaProveedor, setReferenciaProveedor] = useState(material?.referencia_proveedor ?? '')
+  const [partidaArancelaria, setPartidaArancelaria] = useState(material?.partida_arancelaria ?? '')
   const [rendimientoKg, setRendimientoKg] = useState(material?.rendimiento_kg?.toString() ?? '')
+  
+  // Atributos
+  const [atributosPorTipo, setAtributosPorTipo] = useState<Record<TipoAtributoMP, AtributoMP[]>>({
+    tipo: [],
+    subtipo: [],
+    color: [],
+    diseño: [],
+  })
+  const [atributosSeleccionados, setAtributosSeleccionados] = useState<Record<TipoAtributoMP, string>>({
+    tipo: '',
+    subtipo: '',
+    color: '',
+    diseño: '',
+  })
+
   const isEdit = !!material
   const usaSchema = !isEdit && !!schema
 
-  // Refs para saber si el usuario editó manualmente (y dejar de auto-rellenar)
   const nombreEditadoRef = useRef(isEdit)
-  const descripcionEditadaRef = useRef(isEdit)
+  const referenciaEditadaRef = useRef(isEdit)
 
-  // Texto auto-generado: concatenación de etiquetas de cada valor seleccionado
   const autoTexto = useMemo(() => {
     if (!schema || codigoState.selecciones.length === 0) return ''
     return codigoState.selecciones
@@ -173,11 +197,27 @@ function MaterialForm({
       .join(' ')
   }, [schema, codigoState.selecciones])
 
-  // Auto-rellenar nombre y descripción cuando cambian las selecciones
+  // Cargar atributos al montar
+  useEffect(() => {
+    const cargarAtributos = async () => {
+      const tipos = await Promise.all(
+        TIPOS_ATRIBUTO_MP.map(async (tipo) => ({
+          tipo,
+          atributos: await getAtributosPorTipoMP(tipo),
+        }))
+      )
+      const mapa = Object.fromEntries(
+        tipos.map(({ tipo, atributos }) => [tipo, atributos])
+      ) as Record<TipoAtributoMP, AtributoMP[]>
+      setAtributosPorTipo(mapa)
+    }
+    cargarAtributos()
+  }, [])
+
   useEffect(() => {
     if (!usaSchema || !autoTexto) return
     if (!nombreEditadoRef.current) setNombre(autoTexto)
-    if (!descripcionEditadaRef.current) setDescripcion(autoTexto)
+    if (!referenciaEditadaRef.current) setReferenciaProveedor(autoTexto)
   }, [autoTexto, usaSchema])
 
   const handleCodigoChange = useCallback(
@@ -220,6 +260,10 @@ function MaterialForm({
       setError('Completa el código antes de continuar')
       return
     }
+    if (!atributosSeleccionados.tipo || !atributosSeleccionados.subtipo || !atributosSeleccionados.color || !atributosSeleccionados.diseño) {
+      setError('Todos los atributos (tipo, subtipo, color, diseño) son requeridos')
+      return
+    }
 
     const autoRefs = codigoState.selecciones
       .filter(s => s.tipo === 'auto_ref')
@@ -229,14 +273,26 @@ function MaterialForm({
     startTransition(async () => {
       const rendimientoNum = rendimientoKg ? parseFloat(rendimientoKg) : null
       const res = isEdit
-        ? await updateMaterial(material.id, { nombre, unidad, costo_unit: costoNum, descripcion, activo, rendimiento_kg: rendimientoNum })
+        ? await updateMaterial(material.id, { 
+            nombre, 
+            unidad, 
+            costo_unit: costoNum, 
+            referencia_proveedor: referenciaProveedor || undefined,
+            partida_arancelaria: partidaArancelaria || undefined,
+            tipo_mp: tipoMP,
+            activo, 
+            rendimiento_kg: rendimientoNum 
+          })
         : await createMaterial({
             codigo: codigoEffectivo,
             nombre,
             unidad,
             costo_unit: costoNum,
-            descripcion,
+            referencia_proveedor: referenciaProveedor || undefined,
+            partida_arancelaria: partidaArancelaria || undefined,
+            tipo_mp: tipoMP,
             rendimiento_kg: rendimientoNum,
+            atributos: atributosSeleccionados,
             autoRefs: autoRefs.length > 0 ? autoRefs : undefined,
             schema_id: schema?.id,
           })
@@ -251,7 +307,29 @@ function MaterialForm({
         {isEdit ? `Editando ${material.codigo}` : 'Nuevo material'}
       </p>
 
-      {/* Código: CodigoBuilder si hay schema, campo manual si no */}
+      {/* Header: Tipo MP */}
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">Tipo *</label>
+        <div className="flex gap-2">
+          {(['nacional', 'importado'] as const).map(tipo => (
+            <button
+              key={tipo}
+              type="button"
+              onClick={() => setTipoMP(tipo)}
+              disabled={isEdit}
+              className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-all ${
+                tipoMP === tipo
+                  ? 'bg-primary-600 text-white font-semibold'
+                  : 'bg-neu-base text-muted-foreground hover:bg-neu-base/80'
+              } ${isEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {tipo === 'nacional' ? 'Nacional' : 'Importado'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Código: CodigoBuilder o manual */}
       {!isEdit && (
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-foreground">Código *</label>
@@ -282,9 +360,9 @@ function MaterialForm({
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* Nombre */}
-        <div className="space-y-1 sm:col-span-2">
+      {/* Row: Nombre + Unidad */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
           <div className="flex items-center gap-1.5">
             <label className="text-xs font-medium text-foreground">Nombre *</label>
             {checkingNombre && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
@@ -320,7 +398,6 @@ function MaterialForm({
           )}
         </div>
 
-        {/* Unidad */}
         <div className="space-y-1">
           <label className="text-xs font-medium text-foreground">Unidad</label>
           <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
@@ -337,8 +414,36 @@ function MaterialForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* Costo */}
+      {/* Row: Atributos (4 columnas: tipo, subtipo, color, diseño) */}
+      <div className="grid grid-cols-4 gap-2">
+        {TIPOS_ATRIBUTO_MP.map(tipoAtributo => (
+          <div key={tipoAtributo} className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground block truncate">
+              {LABELS_ATRIBUTO_MP[tipoAtributo]} *
+            </label>
+            <select
+              value={atributosSeleccionados[tipoAtributo]}
+              onChange={e =>
+                setAtributosSeleccionados(prev => ({
+                  ...prev,
+                  [tipoAtributo]: e.target.value,
+                }))
+              }
+              className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2 py-1.5 text-foreground outline-none"
+            >
+              <option value="">—</option>
+              {(atributosPorTipo[tipoAtributo] ?? []).map(attr => (
+                <option key={attr.id} value={attr.id}>
+                  {attr.valor}
+                </option>
+              ))}
+            </select>
+          </div>
+        ))}
+      </div>
+
+      {/* Row: Costo + Referencia Proveedor + Partida Arancelaria */}
+      <div className="grid grid-cols-3 gap-3">
         <div className="space-y-1">
           <label className="text-xs font-medium text-foreground">Costo/unidad (COP) *</label>
           <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
@@ -355,54 +460,49 @@ function MaterialForm({
           </div>
         </div>
 
-        {/* Rendimiento (m/kg) — solo para metros */}
-        {unidad === 'metros' && (
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-foreground">Rendimiento (m/kg)</label>
-            <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
-              <input
-                type="number"
-                min="0"
-                step="0.1"
-                value={rendimientoKg}
-                onChange={e => setRendimientoKg(e.target.value)}
-                placeholder="3.5"
-                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-              />
-            </div>
-            <p className="text-[10px] text-muted-foreground">Metros por kilogramo</p>
-          </div>
-        )}
-
-        {/* Descripción */}
-        <div className={`space-y-1 ${unidad === 'metros' ? 'sm:col-span-1' : 'sm:col-span-2'}`}>
-          <div className="flex items-center gap-1.5">
-            <label className="text-xs font-medium text-foreground">Descripción</label>
-            {usaSchema && autoTexto && descripcionEditadaRef.current && (
-              <button
-                type="button"
-                onClick={() => { descripcionEditadaRef.current = false; setDescripcion(autoTexto) }}
-                title="Restaurar descripción automática"
-                className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary-600 transition-colors"
-              >
-                <RotateCcw className="w-2.5 h-2.5" />
-                Auto
-              </button>
-            )}
-            {usaSchema && autoTexto && !descripcionEditadaRef.current && (
-              <span className="ml-auto text-[10px] text-primary-500 font-medium">Auto</span>
-            )}
-          </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-foreground">Ref. Proveedor</label>
           <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
             <input
-              value={descripcion}
-              onChange={e => { descripcionEditadaRef.current = true; setDescripcion(e.target.value) }}
-              placeholder="Especificación técnica..."
+              value={referenciaProveedor}
+              onChange={e => { referenciaEditadaRef.current = true; setReferenciaProveedor(e.target.value) }}
+              placeholder="SKU-PROV-123"
+              className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-foreground">Partida Arancelaria</label>
+          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+            <input
+              value={partidaArancelaria}
+              onChange={e => setPartidaArancelaria(e.target.value)}
+              placeholder="6204.62.20"
               className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
           </div>
         </div>
       </div>
+
+      {/* Rendimiento (m/kg) — solo para metros */}
+      {unidad === 'metros' && (
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-foreground">Rendimiento (m/kg)</label>
+          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={rendimientoKg}
+              onChange={e => setRendimientoKg(e.target.value)}
+              placeholder="3.5"
+              className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+          <p className="text-[10px] text-muted-foreground">Metros por kilogramo</p>
+        </div>
+      )}
 
       {/* Estado (solo edición) */}
       {isEdit && (
