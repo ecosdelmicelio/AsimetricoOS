@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Trash2, Plus, Loader2, Package, Wrench, Check } from 'lucide-react'
 import {
-  addBOMMaterial, addBOMServicio, deleteBOMLinea, updateBOMLinea, markBOMCompleted,
+  addBOMMaterial, addBOMServicio, deleteBOMLinea, updateBOMLinea, toggleBOMCompleted,
 } from '@/features/productos/services/bom-actions'
 import { formatCurrency } from '@/shared/lib/utils'
 import type {
@@ -46,7 +46,7 @@ export function BOMEditor({
 
   function handleMarkCompleted() {
     startTransition(async () => {
-      await markBOMCompleted(productoId)
+      await toggleBOMCompleted(productoId, !bomCompleto)
       onBOMCompleted?.()
     })
   }

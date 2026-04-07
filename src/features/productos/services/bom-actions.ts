@@ -233,3 +233,16 @@ export async function markBOMCompleted(producto_id: string): Promise<{ error?: s
   revalidatePath('/productos')
   return {}
 }
+
+export async function toggleBOMCompleted(producto_id: string, completado: boolean): Promise<{ error?: string }> {
+  const supabase = db(await createClient())
+
+  const { error } = await supabase
+    .from('productos')
+    .update({ bom_completo: completado })
+    .eq('id', producto_id) as { error: { message: string } | null }
+
+  if (error) return { error: error.message }
+  revalidatePath('/productos')
+  return {}
+}
