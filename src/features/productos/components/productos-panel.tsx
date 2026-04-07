@@ -20,23 +20,35 @@ interface Props {
 export function ProductosPanel({ productos, marcas, saldosPorProducto, catalogoMateriales, catalogoServicios }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [showInactivos, setShowInactivos] = useState(false)
+  const [filtroEstado, setFiltroEstado] = useState<'activo' | 'inactivo' | 'en_desarrollo'>('activo')
 
-  const visibles = showInactivos ? productos : productos.filter(p => p.estado === 'activo')
+  const visibles = productos.filter(p => p.estado === filtroEstado)
 
   return (
     <div className="space-y-4">
       {/* Header acciones */}
       <div className="flex items-center justify-between">
-        <label className="flex items-center gap-2 cursor-pointer">
+        <button
+          onClick={() => {
+            const ciclo: ('activo' | 'inactivo' | 'en_desarrollo')[] = ['activo', 'inactivo', 'en_desarrollo']
+            const siguiente = ciclo[(ciclo.indexOf(filtroEstado) + 1) % ciclo.length]
+            setFiltroEstado(siguiente)
+          }}
+          className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+        >
           <div
-            onClick={() => setShowInactivos(v => !v)}
-            className={`relative w-9 h-5 rounded-full transition-colors ${showInactivos ? 'bg-primary-500' : 'bg-neu-base shadow-neu-inset'}`}
+            className={`relative w-16 h-5 rounded-full transition-colors overflow-hidden ${
+              filtroEstado === 'activo' ? 'bg-green-500' : filtroEstado === 'inactivo' ? 'bg-gray-400' : 'bg-blue-500'
+            }`}
           >
-            <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${showInactivos ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            <span className={`absolute left-0 top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+              filtroEstado === 'activo' ? 'translate-x-0.5' : filtroEstado === 'inactivo' ? 'translate-x-5' : 'translate-x-10'
+            }`} />
           </div>
-          <span className="text-body-sm text-muted-foreground">Ver inactivos</span>
-        </label>
+          <span className="text-body-sm text-muted-foreground">
+            {filtroEstado === 'activo' ? 'Activos' : filtroEstado === 'inactivo' ? 'Inactivos' : 'En desarrollo'}
+          </span>
+        </button>
 
         {!showForm && (
           <button
