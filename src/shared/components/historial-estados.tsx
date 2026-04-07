@@ -1,3 +1,6 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import { History } from 'lucide-react'
 import type { HistorialEstado } from '@/features/ordenes-venta/types'
 
@@ -23,6 +26,7 @@ function label(estado: string | null) {
 }
 
 function formatRelative(iso: string): string {
+  if (!iso) return ''
   const date = new Date(iso)
   return new Intl.DateTimeFormat('es-CO', {
     day: '2-digit',
@@ -50,6 +54,12 @@ interface Props {
 }
 
 export function HistorialEstados({ historial, createdAt, createdBy }: Props) {
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 text-muted-foreground">
@@ -68,7 +78,7 @@ export function HistorialEstados({ historial, createdAt, createdBy }: Props) {
               dot="filled"
               label="Orden creada"
               sub={createdBy ?? 'Sistema'}
-              time={formatRelative(createdAt)}
+              time={isClient ? formatRelative(createdAt) : ''}
             />
 
             {/* Transiciones de estado */}
@@ -87,7 +97,7 @@ export function HistorialEstados({ historial, createdAt, createdBy }: Props) {
                     dot="ring"
                     label={`→ ${label(h.estado_nuevo)}`}
                     sub={h.profiles?.full_name ?? 'Desconocido'}
-                    time={formatRelative(h.timestamp_cambio)}
+                    time={isClient ? formatRelative(h.timestamp_cambio) : ''}
                   />
                 </div>
               )
@@ -133,10 +143,13 @@ function TimelineItem({
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <span className="text-body-sm font-semibold text-foreground">{itemLabel}</span>
-          <span className="text-xs text-muted-foreground shrink-0">{time}</span>
+          <span className="text-xs text-muted-foreground shrink-0" suppressHydrationWarning>
+            {time}
+          </span>
         </div>
         <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
       </div>
     </div>
   )
 }
+
