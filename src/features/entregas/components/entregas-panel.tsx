@@ -10,10 +10,10 @@ import { EntregaForm, type LineaOPSimple } from './entrega-form'
 import { formatDate, sortTallas } from '@/shared/lib/utils'
 
 const ESTADO_CONFIG = {
-  recibida:      { label: 'Recibida',      classes: 'bg-yellow-100 text-yellow-700' },
-  en_inspeccion: { label: 'En Inspección', classes: 'bg-blue-100 text-blue-700' },
-  aceptada:      { label: 'Aceptada ✓',   classes: 'bg-green-100 text-green-700' },
-  rechazada:     { label: 'Rechazada ✗',  classes: 'bg-red-100 text-red-700' },
+  recibida:      { label: 'Recibida',      classes: 'bg-yellow-50 text-yellow-700 border-yellow-100' },
+  en_inspeccion: { label: 'En Inspección', classes: 'bg-blue-50 text-blue-700 border-blue-100' },
+  aceptada:      { label: 'Aceptada',      classes: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+  rechazada:     { label: 'Rechazada',     classes: 'bg-red-50 text-red-700 border-red-100' },
 }
 
 
@@ -140,8 +140,8 @@ export function EntregasPanel({
 
       {/* Lista de entregas */}
       {entregas.length === 0 && !showForm && (
-        <div className="rounded-2xl bg-neu-base shadow-neu p-6 text-center">
-          <p className="text-muted-foreground text-body-sm">Aún no hay entregas registradas.</p>
+        <div className="rounded-xl bg-slate-50 border border-slate-100 p-6 text-center">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aún no hay entregas registradas.</p>
         </div>
       )}
 
@@ -162,60 +162,65 @@ export function EntregasPanel({
         }
 
         return (
-          <div key={entrega.id} className="rounded-2xl bg-neu-base shadow-neu overflow-hidden">
+          <div key={entrega.id} className="rounded-xl bg-slate-50 border border-slate-100 overflow-hidden">
             {/* Cabecera entrega */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
-              <div>
-                <p className="font-semibold text-foreground text-body-sm">
-                  Entrega #{entrega.numero_entrega}
-                  <span className="text-muted-foreground font-normal ml-2">{formatDate(entrega.fecha_entrega)}</span>
-                </p>
-                <div className="flex items-center gap-2 mt-0.5">
+            <div className="flex items-center gap-3 p-3 border-b border-slate-100">
+              <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400 shadow-sm flex-shrink-0">
+                <Package className="w-4 h-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-[10px] font-black text-slate-900 uppercase tracking-tighter">
+                    Entrega #{entrega.numero_entrega}
+                  </p>
+                  <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full border ${config.classes}`}>
+                    {config.label.toUpperCase()}
+                  </span>
                   {entrega.bin_codigo && (
-                    <span className="text-xs font-mono text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded">
+                    <span className="text-[8px] font-bold text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full border border-primary-100 font-mono">
                       {entrega.bin_codigo}
                     </span>
                   )}
-                  {entrega.notas && (
-                    <p className="text-xs text-muted-foreground">{entrega.notas}</p>
-                  )}
                 </div>
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                  {formatDate(entrega.fecha_entrega)}
+                  {entrega.notas && <span className="normal-case font-normal"> • {entrega.notas}</span>}
+                </p>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-body-sm font-semibold text-foreground">{totalEntregado} uds</span>
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${config.classes}`}>
-                  {config.label}
-                </span>
-              </div>
+              <p className="text-[10px] font-black text-slate-900 uppercase tracking-tighter flex-shrink-0">
+                {totalEntregado} uds
+              </p>
             </div>
 
             {/* Matriz color × talla */}
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className="w-full">
                 <thead>
-                  <tr className="border-b border-black/5">
-                    <th className="text-left px-4 py-2 font-medium text-muted-foreground">Referencia</th>
+                  <tr className="border-b border-slate-100">
+                    <th className="text-left px-3 py-1.5 text-[8px] font-black text-slate-400 uppercase tracking-widest">Referencia</th>
                     {tallasEntrega.map(t => (
-                      <th key={t} className="text-center px-2 py-2 font-medium text-muted-foreground min-w-10">{t}</th>
+                      <th key={t} className="text-center px-2 py-1.5 text-[8px] font-black text-slate-400 uppercase tracking-widest min-w-8">{t}</th>
                     ))}
-                    <th className="text-right px-4 py-2 font-medium text-muted-foreground">Total</th>
+                    <th className="text-right px-3 py-1.5 text-[8px] font-black text-slate-400 uppercase tracking-widest">Total</th>
                   </tr>
                 </thead>
                 <tbody>
                   {Array.from(filaMap.entries()).map(([key, fila]) => {
                     const totalFila = tallasEntrega.reduce((s, t) => s + (fila.cantidades[t] ?? 0), 0)
                     return (
-                      <tr key={key} className="border-b border-black/5 last:border-0">
-                        <td className="px-4 py-2">
-                          <p className="font-mono font-semibold text-primary-700 text-xs">{fila.ref}</p>
-                          {fila.nombre && <p className="text-muted-foreground text-[11px] leading-tight">{fila.nombre}</p>}
+                      <tr key={key} className="border-b border-slate-100 last:border-0">
+                        <td className="px-3 py-2">
+                          <p className="font-mono font-black text-primary-700 text-[9px] uppercase">{fila.ref}</p>
+                          {fila.nombre && <p className="text-slate-400 text-[8px] font-bold uppercase tracking-tight leading-tight">{fila.nombre}</p>}
                         </td>
                         {tallasEntrega.map(t => (
-                          <td key={t} className="px-2 py-2 text-center text-foreground">
-                            {fila.cantidades[t] ? <span className="font-semibold">{fila.cantidades[t]}</span> : <span className="text-muted-foreground/30">—</span>}
+                          <td key={t} className="px-2 py-2 text-center">
+                            {fila.cantidades[t]
+                              ? <span className="text-[9px] font-black text-slate-900">{fila.cantidades[t]}</span>
+                              : <span className="text-slate-200 text-[9px]">—</span>}
                           </td>
                         ))}
-                        <td className="px-4 py-2 text-right font-semibold text-foreground">{totalFila}</td>
+                        <td className="px-3 py-2 text-right text-[9px] font-black text-slate-900">{totalFila}</td>
                       </tr>
                     )
                   })}
@@ -225,22 +230,22 @@ export function EntregasPanel({
 
             {/* Botones FRI — solo para entregas recibidas y si OP en_entregas */}
             {entrega.estado === 'recibida' && ['en_terminado', 'entregada'].includes(estadoActual) && (
-              <div className="px-5 py-3 border-t border-black/5 flex items-center gap-3">
-                <p className="text-xs text-muted-foreground mr-auto">FRI:</p>
+              <div className="px-3 py-2.5 border-t border-slate-100 flex items-center gap-2">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mr-auto">FRI</p>
                 <button
                   onClick={() => handleFRI(entrega.id, 'rechazada')}
                   disabled={isFriPending}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neu-base shadow-neu text-red-500 hover:text-red-700 text-body-sm font-medium transition-all active:shadow-neu-inset disabled:opacity-40"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-red-500 hover:border-red-200 hover:bg-red-50 text-[8px] font-black uppercase tracking-widest transition-all disabled:opacity-40"
                 >
-                  <XCircle className="w-3.5 h-3.5" />
+                  <XCircle className="w-3 h-3" />
                   Rechazar
                 </button>
                 <button
                   onClick={() => handleFRI(entrega.id, 'aceptada')}
                   disabled={isFriPending}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neu-base shadow-neu text-green-600 hover:text-green-800 text-body-sm font-medium transition-all active:shadow-neu-inset disabled:opacity-40"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-green-600 hover:border-green-200 hover:bg-green-50 text-[8px] font-black uppercase tracking-widest transition-all disabled:opacity-40"
                 >
-                  <CheckCircle className="w-3.5 h-3.5" />
+                  <CheckCircle className="w-3 h-3" />
                   {isFriPending ? 'Procesando...' : 'Aceptar FRI'}
                 </button>
               </div>
@@ -248,21 +253,21 @@ export function EntregasPanel({
 
             {/* Liquidación — para entregas aceptadas */}
             {entrega.estado === 'aceptada' && (
-              <div className="px-5 py-3 border-t border-black/5 flex items-center gap-2">
-                <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
+              <div className="px-3 py-2.5 border-t border-slate-100 flex items-center gap-2">
+                <DollarSign className="w-3 h-3 text-slate-400" />
                 {liquidacionesPorEntrega[entrega.id] ? (
                   <Link
                     href={`/liquidacion/${liquidacionesPorEntrega[entrega.id]}`}
-                    className="text-xs text-primary-600 hover:underline font-medium"
+                    className="text-[8px] font-black text-primary-600 hover:text-primary-800 uppercase tracking-widest transition-colors"
                   >
-                    Ver liquidación →
+                    Ver Liquidación →
                   </Link>
                 ) : (
                   <Link
                     href={`/liquidacion/nueva?op=${opId}&entrega=${entrega.id}`}
-                    className="text-xs text-muted-foreground hover:text-foreground font-medium transition-colors"
+                    className="text-[8px] font-black text-slate-400 hover:text-slate-700 uppercase tracking-widest transition-colors"
                   >
-                    Crear liquidación parcial
+                    Crear Liquidación Parcial →
                   </Link>
                 )}
               </div>
