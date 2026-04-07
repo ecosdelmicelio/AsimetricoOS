@@ -16,6 +16,7 @@ export interface AtributoPT {
   id: string
   tipo: TipoAtributo
   valor: string
+  abreviacion?: string | null
   created_at: string
 }
 

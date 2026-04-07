@@ -12,6 +12,7 @@ export interface AtributoMP {
   id: string
   tipo: TipoAtributoMP
   valor: string
+  abreviacion?: string | null
   created_at: string
 }
 
