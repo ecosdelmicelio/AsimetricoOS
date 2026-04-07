@@ -84,4 +84,11 @@ export interface CreateReporteCorteInput {
     material_devuelto_kg: number
     referencias_cortadas: Array<{ referencia: string; color: string | null; bomMetros: number }>
   }>
+  // Detalle de unidades por talla para reporte_corte_linea (nuevo flujo)
+  referencias_cortadas_detalle?: Array<{
+    producto_id: string
+    talla: string
+    cantidad_cortada: number
+    color?: string | null
+  }>
 }

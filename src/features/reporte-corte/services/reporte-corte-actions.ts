@@ -20,6 +20,7 @@ export interface MaterialConsolidado {
     referencia: string
     color: string | null
     cantidad_asignada: number
+    cantidad_real_cortada?: number
     consumo_por_unidad: number
     consumo_total: number
   }>
@@ -134,7 +135,8 @@ export async function consolidarMaterialesDelCorte(
           matConsolidado.referencias_que_usan.push({
             referencia: ref.referencia,
             color: ref.color,
-            cantidad_asignada: ref.totalUds,
+            cantidad_asignada: ref.totalUds, // Esto ya es lo real cortado según el map
+            cantidad_real_cortada: ref.totalUds,
             consumo_por_unidad: consumoPorUnidad,
             consumo_total: consumoTotal,
           })
@@ -196,7 +198,7 @@ export async function createReporteCorte(input: CreateReporteCorteInput) {
       .update({ cantidad_total_cortada: input.cantidad_total_cortada })
       .eq('id', reporte.id)
 
-    // Insertar consumos de materiales (sin cantidad_cortada_total aquí)
+    // Insertar consumos de materiales
     const materialesInsert = input.consumo_materiales.map(m => ({
       reporte_id: reporte.id,
       material_id: m.material_id,
@@ -211,81 +213,114 @@ export async function createReporteCorte(input: CreateReporteCorteInput) {
 
     if (matError) return { error: `Error insertando materiales: ${matError.message}` }
 
+    // 2.1 Insertar detalle de prendas cortadas (reporte_corte_linea)
+    if (input.referencias_cortadas_detalle && input.referencias_cortadas_detalle.length > 0) {
+      // Primero crear un "tendido" ficticio o consolidado para el nuevo flujo para colgar las líneas
+      const { data: tendidoConsolidado, error: tcError } = await supabase
+        .from('reporte_corte_corte')
+        .insert({
+          reporte_id: reporte.id,
+          color: 'CONSOLIDADO',
+          metros_usados: input.consumo_materiales.reduce((sum, m) => sum + m.metros_usados, 0),
+          peso_desperdicio_kg: input.consumo_materiales.reduce((sum, m) => sum + m.desperdicio_kg, 0),
+        })
+        .select('id')
+        .single() as { data: { id: string } | null; error: { message: string } | null }
+
+      if (!tcError && tendidoConsolidado) {
+        const lineasDetalle = input.referencias_cortadas_detalle.map(d => ({
+          tendido_id: tendidoConsolidado.id,
+          producto_id: d.producto_id,
+          talla: d.talla,
+          cantidad_cortada: d.cantidad_cortada,
+          color: d.color ?? null,
+        }))
+
+        await supabase.from('reporte_corte_linea').insert(lineasDetalle)
+      }
+    }
+
     // 2b. Auto-Kardex: registrar movimientos SALIDA_CORTE y DEVOLUCION_CORTE
     try {
       // Obtener tipos de movimiento (bodega ya viene del input)
       const [{ data: tipoSalida }, { data: tipoDev }] = await Promise.all([
-        supabase.from('kardex_tipos_movimiento').select('id').eq('codigo', 'SALIDA_CORTE').limit(1).single(),
-        supabase.from('kardex_tipos_movimiento').select('id').eq('codigo', 'DEVOLUCION_CORTE').limit(1).single(),
+        supabase.from('kardex_tipos_movimiento').select('id').eq('codigo', 'SALIDA_CORTE').maybeSingle(),
+        supabase.from('kardex_tipos_movimiento').select('id').eq('codigo', 'DEVOLUCION_CORTE').maybeSingle(),
       ])
 
-      if (!tipoSalida?.id) return { error: 'Tipo movimiento SALIDA_CORTE no encontrado' }
-      if (!tipoDev?.id) return { error: 'Tipo movimiento DEVOLUCION_CORTE no encontrado' }
+      if (!tipoSalida?.id) {
+        console.error('Tipo movimiento SALIDA_CORTE no encontrado')
+      } else if (!tipoDev?.id) {
+        console.error('Tipo movimiento DEVOLUCION_CORTE no encontrado')
+      } else {
+        // Obtener materiales para unidades y rendimiento
+        const { data: materiales } = await supabase
+          .from('materiales')
+          .select('id, unidad, rendimiento_kg')
+          .in('id', input.consumo_materiales.map(m => m.material_id)) as { data: any[] | null }
 
-      // Obtener materiales para unidades y rendimiento
-      const { data: materiales } = await supabase
-        .from('materiales')
-        .select('id, unidad, rendimiento_kg')
-        .in('id', input.consumo_materiales.map(m => m.material_id)) as { data: any[] | null }
+        const matMap = materiales?.reduce((acc, m) => { acc[m.id] = m; return acc }, {}) || {}
 
-      const matMap = materiales?.reduce((acc, m) => { acc[m.id] = m; return acc }, {}) || {}
+        // Preparar movimientos kardex para inserts
+        const movimientosKardex = []
 
-      // Preparar movimientos kardex para inserts
-      const movimientosKardex = []
+        for (const consumo of input.consumo_materiales) {
+          const mat = matMap[consumo.material_id]
+          if (!mat) continue
 
-      for (const consumo of input.consumo_materiales) {
-        const mat = matMap[consumo.material_id]
-        if (!mat) continue
+          // SALIDA_CORTE: consumo de metros/kg
+          if (consumo.metros_usados > 0) {
+            let cantidadSalida = consumo.metros_usados
+            let unidadSalida = 'metros'
 
-        // SALIDA_CORTE: consumo de metros/kg
-        if (consumo.metros_usados > 0) {
-          let cantidadSalida = consumo.metros_usados
-          let unidadSalida = 'metros'
+            // Si es metros y hay rendimiento, convertir a kg
+            if (mat.unidad === 'metros' && mat.rendimiento_kg) {
+              cantidadSalida = consumo.metros_usados / mat.rendimiento_kg
+              unidadSalida = 'kg'
+            } else if (mat.unidad !== 'metros') {
+              unidadSalida = mat.unidad
+            }
 
-          // Si es metros y hay rendimiento, convertir a kg
-          if (mat.unidad === 'metros' && mat.rendimiento_kg) {
-            cantidadSalida = consumo.metros_usados / mat.rendimiento_kg
-            unidadSalida = 'kg'
-          } else if (mat.unidad !== 'metros') {
-            unidadSalida = mat.unidad
+            movimientosKardex.push({
+              material_id: consumo.material_id,
+              bodega_id: input.bodega_id,
+              tipo_movimiento_id: tipoSalida.id,
+              documento_tipo: 'corte',
+              documento_id: reporte.id,
+              cantidad: -Math.abs(cantidadSalida), // negativo para salida
+              unidad: unidadSalida,
+              fecha_movimiento: new Date().toISOString(),
+              registrado_por: user?.id ?? null,
+            })
           }
 
-          movimientosKardex.push({
-            material_id: consumo.material_id,
-            bodega_id: input.bodega_id,
-            tipo_movimiento_id: tipoSalida.id,
-            documento_tipo: 'corte',
-            documento_id: reporte.id,
-            cantidad: -Math.abs(cantidadSalida), // negativo para salida
-            unidad: unidadSalida,
-            fecha_movimiento: new Date().toISOString(),
-            registrado_por: user?.id ?? null,
-          })
+          // DEVOLUCION_CORTE: material devuelto
+          if (consumo.material_devuelto_kg > 0) {
+            movimientosKardex.push({
+              material_id: consumo.material_id,
+              bodega_id: input.bodega_id,
+              tipo_movimiento_id: tipoDev.id,
+              documento_tipo: 'corte',
+              documento_id: reporte.id,
+              cantidad: consumo.material_devuelto_kg, // positivo para entrada
+              unidad: 'kg',
+              fecha_movimiento: new Date().toISOString(),
+              registrado_por: user?.id ?? null,
+            })
+          }
         }
 
-        // DEVOLUCION_CORTE: material devuelto
-        if (consumo.material_devuelto_kg > 0) {
-          movimientosKardex.push({
-            material_id: consumo.material_id,
-            bodega_id: input.bodega_id,
-            tipo_movimiento_id: tipoDev.id,
-            documento_tipo: 'corte',
-            documento_id: reporte.id,
-            cantidad: consumo.material_devuelto_kg, // positivo para entrada
-            unidad: 'kg',
-            fecha_movimiento: new Date().toISOString(),
-            registrado_por: user?.id ?? null,
-          })
+        // Insertar todos los movimientos de una vez
+        if (movimientosKardex.length > 0) {
+          const { error: kardexError } = await supabase
+            .from('kardex')
+            .insert(movimientosKardex) as { error: { message: string } | null }
+
+          if (kardexError) {
+              console.error(`Error en kardex: ${kardexError.message}`)
+              // No retornamos error aquí para evitar bloquear la transición de estado de la OP
+          }
         }
-      }
-
-      // Insertar todos los movimientos de una vez
-      if (movimientosKardex.length > 0) {
-        const { error: kardexError } = await supabase
-          .from('kardex')
-          .insert(movimientosKardex) as { error: { message: string } | null }
-
-        if (kardexError) return { error: `Error en kardex: ${kardexError.message}` }
       }
     } catch (err) {
       // Log error pero continúa - no bloquear el corte por error de kardex
@@ -383,6 +418,85 @@ export async function updateReporteCorte(reporteId: string, input: CreateReporte
       .insert(materialesInsert) as { error: { message: string } | null }
 
     if (matError) return { error: `Error insertando nuevos materiales: ${matError.message}` }
+
+    // 2b. Auto-Kardex: registrar nuevos movimientos (los anteriores fueron borrados físicamente o deberían compensarse)
+    // En este caso, como borramos reporte_corte_material, lo ideal es que el kardex también sea consistente.
+    // Para simplificar y dado que el usuario quiere estabilidad, replicamos el registro de movimientos como en create.
+    if (input.bodega_id) {
+      try {
+        const [{ data: tipoSalida }, { data: tipoDev }] = await Promise.all([
+          supabase.from('kardex_tipos_movimiento').select('id').eq('codigo', 'SALIDA_CORTE').maybeSingle(),
+          supabase.from('kardex_tipos_movimiento').select('id').eq('codigo', 'DEVOLUCION_CORTE').maybeSingle(),
+        ])
+
+        if (tipoSalida?.id && tipoDev?.id) {
+          const { data: materiales } = await supabase
+            .from('materiales')
+            .select('id, unidad, rendimiento_kg')
+            .in('id', input.consumo_materiales.map(m => m.material_id)) as { data: any[] | null }
+
+          const matMap = materiales?.reduce((acc, m) => { acc[m.id] = m; return acc }, {}) || {}
+          const movimientosKardex = []
+
+          for (const consumo of input.consumo_materiales) {
+            const mat = matMap[consumo.material_id]
+            if (!mat) continue
+
+            if (consumo.metros_usados > 0) {
+              let cantidadSalida = consumo.metros_usados
+              let unidadSalida = 'metros'
+              if (mat.unidad === 'metros' && mat.rendimiento_kg) {
+                cantidadSalida = consumo.metros_usados / mat.rendimiento_kg
+                unidadSalida = 'kg'
+              } else if (mat.unidad !== 'metros') {
+                unidadSalida = mat.unidad
+              }
+
+              movimientosKardex.push({
+                material_id: consumo.material_id,
+                bodega_id: input.bodega_id,
+                tipo_movimiento_id: tipoSalida.id,
+                documento_tipo: 'corte',
+                documento_id: reporteId,
+                cantidad: -Math.abs(cantidadSalida),
+                unidad: unidadSalida,
+                fecha_movimiento: new Date().toISOString(),
+                registrado_por: user?.id ?? null,
+              })
+            }
+
+            if (consumo.material_devuelto_kg > 0) {
+              movimientosKardex.push({
+                material_id: consumo.material_id,
+                bodega_id: input.bodega_id,
+                tipo_movimiento_id: tipoDev.id,
+                documento_tipo: 'corte',
+                documento_id: reporteId,
+                cantidad: consumo.material_devuelto_kg,
+                unidad: 'kg',
+                fecha_movimiento: new Date().toISOString(),
+                registrado_por: user?.id ?? null,
+              })
+            }
+          }
+
+          if (movimientosKardex.length > 0) {
+            // Primero eliminamos movimientos previos de este documento en el kardex para evitar duplicidad al actualizar
+            await supabase.from('kardex').delete().eq('documento_id', reporteId).eq('documento_tipo', 'corte')
+            
+            const { error: kardexError } = await supabase
+              .from('kardex')
+              .insert(movimientosKardex) as { error: { message: string } | null }
+
+            if (kardexError) {
+              console.error(`Error en kardex (update): ${kardexError.message}`)
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error auto-kardex en update corte:', err)
+      }
+    }
   }
 
   revalidatePath(`/ordenes-produccion/${input.op_id}`)

@@ -51,7 +51,7 @@ export function OPDetailClient({
   serviciosBOM,
   taller_id,
 }: OPDetailClientProps) {
-  const [activeOverlay, setActiveOverlay] = useState<'corte' | 'insumos' | null>(null)
+  const [activeOverlay, setActiveOverlay] = useState<'corte' | 'insumos' | 'entregas' | null>(null)
   const [reporteEditandoId, setReporteEditandoId] = useState<string | null>(null)
 
   const id = op.id
@@ -180,7 +180,7 @@ export function OPDetailClient({
                 )}
 
                 <div className="pt-6 mt-6 border-t border-slate-100 -mx-6 px-6 relative min-h-[14rem] flex-1">
-                  <div className="grid grid-cols-1 gap-4 h-full items-stretch">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full items-stretch">
                     <div className="h-full relative">
                       <ReporteCortePanelClient
                         opId={id}
@@ -219,6 +219,26 @@ export function OPDetailClient({
                         />
                       </div>
                     )}
+
+                    <div className="h-full relative lg:col-span-2">
+                       <EntregasPanel
+                        opId={id}
+                        opCodigo={op.codigo}
+                        estadoActual={estadoOP}
+                        entregas={entregas ?? []}
+                        lineasOP={lineasOP}
+                        totalUnidadesOP={totalUnidades}
+                        liquidacionesPorEntrega={Object.fromEntries(
+                          liquidacionesOP.filter(l => l.entrega_id).map(l => [l.entrega_id!, l.id])
+                        )}
+                        bodegas={bodegas}
+                        bodegaDestinoId={bodegaDestino}
+                        puedeEntregar={hayReporteInsumos || estadoOP === 'entregada'}
+                        isEditing={activeOverlay === 'entregas'}
+                        onStartEdit={() => setActiveOverlay('entregas')}
+                        onEditComplete={() => setActiveOverlay(null)}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -241,21 +261,7 @@ export function OPDetailClient({
         </div>
       )}
 
-      {/* Entregas */}
-      <EntregasPanel
-        opId={id}
-        opCodigo={op.codigo}
-        estadoActual={estadoOP}
-        entregas={entregas ?? []}
-        lineasOP={lineasOP}
-        totalUnidadesOP={totalUnidades}
-        liquidacionesPorEntrega={Object.fromEntries(
-          liquidacionesOP.filter(l => l.entrega_id).map(l => [l.entrega_id!, l.id])
-        )}
-        bodegas={bodegas}
-        bodegaDestinoId={bodegaDestino}
-        puedeEntregar={hayReporteInsumos || estadoOP === 'entregada'}
-      />
+
 
       {/* Panel de Liquidación */}
       {ESTADOS_CON_LIQUIDACION.includes(estadoOP) && resumenLiquidacion && (

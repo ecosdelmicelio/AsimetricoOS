@@ -29,11 +29,28 @@ interface Props {
   bodegas: { id: string; nombre: string }[]
   bodegaDestinoId: string | null
   puedeEntregar?: boolean
+  isEditing?: boolean
+  onStartEdit?: () => void
+  onEditComplete?: () => void
 }
 
 const ESTADOS_ACTIVOS = ['en_terminado', 'entregada', 'liquidada']
 
-export function EntregasPanel({ opId, opCodigo, estadoActual, entregas, lineasOP, totalUnidadesOP, liquidacionesPorEntrega, bodegas, bodegaDestinoId, puedeEntregar = true }: Props) {
+export function EntregasPanel({ 
+  opId, 
+  opCodigo, 
+  estadoActual, 
+  entregas, 
+  lineasOP, 
+  totalUnidadesOP, 
+  liquidacionesPorEntrega, 
+  bodegas, 
+  bodegaDestinoId, 
+  puedeEntregar = true,
+  isEditing = false,
+  onStartEdit,
+  onEditComplete
+}: Props) {
   const router = useRouter()
   const [showForm, setShowForm] = useState(false)
   const [friPending, startFriTransition] = useTransition()
@@ -85,10 +102,10 @@ export function EntregasPanel({ opId, opCodigo, estadoActual, entregas, lineasOP
           <Package className="w-4 h-4 text-muted-foreground" />
           <h2 className="font-semibold text-foreground text-body-md">Entregas</h2>
         </div>
-        {puedeEntregar && (estadoActual === 'en_terminado' || estadoActual === 'entregada') && !showForm && (
+        {puedeEntregar && (estadoActual === 'en_terminado' || estadoActual === 'entregada') && !isEditing && (
           <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg"
+            onClick={() => onStartEdit?.()}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-[10px] uppercase tracking-widest transition-all hover:bg-primary-600 shadow-lg shadow-slate-200 active:scale-95"
           >
             <Plus className="w-4 h-4" />
             Nueva Entrega
@@ -160,16 +177,38 @@ export function EntregasPanel({ opId, opCodigo, estadoActual, entregas, lineasOP
         </div>
       )}
 
-      {/* Formulario nueva entrega */}
-      {showForm && (
-        <div className="rounded-2xl bg-neu-base shadow-neu p-5 space-y-4">
-          <p className="font-semibold text-foreground text-body-sm">Nueva Entrega</p>
-          <EntregaForm
-            opId={opId}
-            lineasOP={lineasOP}
-            onSuccess={() => { setShowForm(false); router.refresh() }}
-            onCancel={() => setShowForm(false)}
+      {/* Formulario nueva entrega OVERLAY */}
+      {isEditing && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-8 animate-in fade-in duration-200">
+          <div 
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" 
+            onClick={() => onEditComplete?.()}
           />
+          <div className="relative w-full max-w-5xl bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-6 lg:p-10 overflow-y-auto custom-scrollbar">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-black tracking-tighter text-slate-900 leading-none mb-2">Registrar Nueva Entrega</h2>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Orden de Producción: {opCodigo}</p>
+                </div>
+                <button 
+                  onClick={() => onEditComplete?.()}
+                  className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:text-red-500 transition-all border border-slate-100"
+                >
+                  <Plus className="w-5 h-5 rotate-45" />
+                </button>
+              </div>
+
+              <div className="bg-slate-50/50 rounded-[2rem] border border-slate-100 p-8 lg:p-10">
+                <EntregaForm
+                  opId={opId}
+                  lineasOP={lineasOP}
+                  onSuccess={() => { onEditComplete?.(); router.refresh() }}
+                  onCancel={onEditComplete}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

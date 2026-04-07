@@ -189,15 +189,15 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId, reporteAE
         // Inicializar consumos con el promedio del BOM para cada material
         const consumosIniciales: Record<string, ConsumoPorMaterial> = {}
         for (const material of resultado.materiales) {
-          // Calcular cantidad total de prendas que usan este material (con cantidades editadas)
-          const cantidadTotal = material.referencias_que_usan.reduce(
-            (sum, ref) => sum + ref.cantidad_asignada,
+          // Calcular cantidad total de prendas que usan este material (DE LAS QUE SE ESTÁN CORTANDO REALMENTE)
+          const cantidadTotalReal = material.referencias_que_usan.reduce(
+            (sum, ref) => sum + (ref.cantidad_real_cortada ?? 0),
             0
           )
 
           // El consumo promedio inicial es el estimado dividido por la cantidad total editada
-          const consumoPromedio = cantidadTotal > 0
-            ? material.consumo_estimado / cantidadTotal
+          const consumoPromedio = cantidadTotalReal > 0
+            ? material.consumo_estimado / cantidadTotalReal
             : 0
 
           consumosIniciales[material.material_id] = {
@@ -288,13 +288,23 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId, reporteAE
         notas: notas || undefined,
         bodega_id: bodegaTallerId,
         cantidad_total_cortada: totalCortado,
+        referencias_cortadas_detalle: gruposPorRefColor.flatMap(grupo => 
+          Object.entries(grupo.cantidadesCortadas)
+            .filter(([_, cant]) => cant > 0)
+            .map(([talla, cant]) => ({
+              producto_id: grupo.producto_id,
+              talla,
+              cantidad_cortada: cant,
+              color: grupo.color
+            }))
+        ),
         consumo_materiales: materialesConConsumo.map(m => {
           const consumo = consumosPorMaterial[m.material_id]
-          const cantidadTotal = m.referencias_que_usan.reduce(
-            (sum, ref) => sum + ref.cantidad_asignada,
+          const cantidadTotalActual = m.referencias_que_usan.reduce(
+            (sum, ref) => sum + (ref.cantidad_real_cortada ?? 0),
             0
           )
-          const metros_usados = consumo.consumo_promedio * cantidadTotal
+          const metros_usados = (consumo?.consumo_promedio ?? 0) * cantidadTotalActual
 
           return {
             material_id: m.material_id,
