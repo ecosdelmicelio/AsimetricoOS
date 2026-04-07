@@ -176,10 +176,11 @@ function MaterialesTab({
   const [materialId, setMaterialId] = useState('')
   const [cantidad, setCantidad] = useState('')
   const [notas, setNotas] = useState('')
+  const [reportableEnCorte, setReportableEnCorte] = useState(true)
 
   function handleAdd() {
     startTransition(async () => {
-      const res = await addBOMMaterial(productoId, materialId, parseFloat(cantidad), notas || undefined)
+      const res = await addBOMMaterial(productoId, materialId, parseFloat(cantidad), notas || undefined, reportableEnCorte)
       if (res.error) { setError(res.error); return }
       await onBOMChanged?.()
       setShowForm(false)
@@ -187,6 +188,7 @@ function MaterialesTab({
       setMaterialId('')
       setCantidad('')
       setNotas('')
+      setReportableEnCorte(true)
     })
   }
 
@@ -246,9 +248,25 @@ function MaterialesTab({
               className="flex-1 rounded-xl bg-neu-base shadow-neu px-3 py-2 text-body-sm text-foreground focus:outline-none"
             />
           </div>
+          <label className="flex items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              checked={reportableEnCorte}
+              onChange={e => setReportableEnCorte(e.target.checked)}
+              className="w-4 h-4 rounded border border-primary-600 bg-white"
+            />
+            <span className="text-foreground">Reportable en corte</span>
+          </label>
           {error && <p className="text-red-600 text-body-sm">{error}</p>}
           <div className="flex gap-2">
-            <button type="button" onClick={() => { setShowForm(false); setError(null) }}
+            <button type="button" onClick={() => {
+              setShowForm(false)
+              setError(null)
+              setMaterialId('')
+              setCantidad('')
+              setNotas('')
+              setReportableEnCorte(true)
+            }}
               className="flex-1 py-2 rounded-xl bg-neu-base shadow-neu text-body-sm text-muted-foreground">
               Cancelar
             </button>
@@ -260,7 +278,14 @@ function MaterialesTab({
           </div>
         </div>
       ) : (
-        <AddButton onClick={() => setShowForm(true)} label="Agregar material" disabled={disponibles.length === 0} />
+        <AddButton onClick={() => {
+          setShowForm(true)
+          setMaterialId('')
+          setCantidad('')
+          setNotas('')
+          setReportableEnCorte(true)
+          setError(null)
+        }} label="Agregar material" disabled={disponibles.length === 0} />
       )}
     </div>
   )
