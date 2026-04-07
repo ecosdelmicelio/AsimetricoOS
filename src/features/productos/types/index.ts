@@ -28,6 +28,7 @@ export interface CreateProductoInput {
   origen_usa?: boolean
   precio_base?: number
   tipo_producto?: TipoProducto
+  atributos?: Record<string, string>
   autoRefs?: AutoRefInput[]
   schema_id?: string
 }

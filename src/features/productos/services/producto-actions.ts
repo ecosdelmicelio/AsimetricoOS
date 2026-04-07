@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/shared/lib/supabase/server'
 import type { Producto, CreateProductoInput, UpdateProductoInput } from '@/features/productos/types'
+import { asociarAtributosAProducto } from '@/features/productos/services/atributo-actions'
+import type { TipoAtributo } from '@/features/productos/types/atributos'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function db(supabase: unknown): any { return supabase }
@@ -64,6 +66,17 @@ export async function createProducto(
     .single() as { data: Producto | null; error: { message: string } | null }
 
   if (error) return { data: null, error: error.message }
+
+  // Asociar atributos si fueron proporcionados
+  if (input.atributos && data) {
+    const attrError = await asociarAtributosAProducto(
+      data.id,
+      input.atributos as Record<TipoAtributo, string>,
+    )
+    if (attrError.error) {
+      return { data, error: `Producto creado pero error al asociar atributos: ${attrError.error}` }
+    }
+  }
 
   revalidatePath('/productos')
   return { data }

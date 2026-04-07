@@ -8,6 +8,8 @@ import { CodigoBuilder } from '@/features/codigo-schema/components/codigo-builde
 import { useDuplicateCheck } from '@/shared/hooks/use-duplicate-check'
 import type { CodigoSchema, SegmentoSeleccion } from '@/features/codigo-schema/types'
 import type { TipoProducto } from '@/features/productos/types'
+import type { AtributoPT, TipoAtributo } from '@/features/productos/types/atributos'
+import { TIPOS_ATRIBUTO, LABELS_ATRIBUTO } from '@/features/productos/types/atributos'
 
 interface CodigoState {
   codigo: string
@@ -17,9 +19,10 @@ interface CodigoState {
 
 interface Props {
   schema: CodigoSchema | null
+  atributos: Record<TipoAtributo, AtributoPT[]>
 }
 
-export function ProductoForm({ schema }: Props) {
+export function ProductoForm({ schema, atributos }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -34,6 +37,18 @@ export function ProductoForm({ schema }: Props) {
   })
   const [nombre, setNombre] = useState('')
   const [color, setColor] = useState('')
+
+  // Atributos seleccionados (tipo → atributo_id)
+  const [atributosSeleccionados, setAtributosSeleccionados] = useState<Record<TipoAtributo, string>>({
+    tipo: '',
+    fit: '',
+    superior: '',
+    inferior: '',
+    capsula: '',
+    diseno: '',
+    color: '',
+    genero: '',
+  })
 
   // Step 2
   const [precioBase, setPrecioBase] = useState('')
@@ -95,6 +110,7 @@ export function ProductoForm({ schema }: Props) {
         origen_usa: autoOrigenUsa,
         precio_base: precioBase ? parseFloat(precioBase) : undefined,
         tipo_producto: tipoProducto,
+        atributos: atributosSeleccionados,
         autoRefs: autoRefs.length > 0 ? autoRefs : undefined,
         schema_id: schema?.id,
       })
@@ -250,6 +266,46 @@ export function ProductoForm({ schema }: Props) {
             </div>
             <p className="text-xs text-muted-foreground">
               {autoColor ? 'Derivado del esquema de código. Puedes editarlo.' : 'Cada código de producto tiene un color fijo.'}
+            </p>
+          </div>
+
+          {/* Atributos */}
+          <div className="space-y-2">
+            <label className="text-body-sm text-muted-foreground font-medium">Atributos</label>
+            <div className="grid grid-cols-2 gap-3">
+              {TIPOS_ATRIBUTO.map(tipoAtributo => (
+                <div key={tipoAtributo} className={tipoAtributo === 'genero' ? 'col-span-2' : ''}>
+                  <label className="text-xs text-muted-foreground font-medium block mb-1">
+                    {LABELS_ATRIBUTO[tipoAtributo]}
+                  </label>
+                  <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
+                    <select
+                      value={atributosSeleccionados[tipoAtributo]}
+                      onChange={e =>
+                        setAtributosSeleccionados(prev => ({
+                          ...prev,
+                          [tipoAtributo]: e.target.value,
+                        }))
+                      }
+                      className="w-full bg-transparent text-body-sm text-foreground outline-none"
+                    >
+                      <option value="">— seleccionar —</option>
+                      {(atributos[tipoAtributo] ?? []).map(attr => (
+                        <option key={attr.id} value={attr.id}>
+                          {attr.valor}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Selecciona los atributos del producto. Se gestionan en{' '}
+              <a href="/configuracion" className="text-primary-600 hover:underline">
+                Configuración
+              </a>
+              .
             </p>
           </div>
 

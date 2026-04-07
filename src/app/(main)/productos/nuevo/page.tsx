@@ -2,9 +2,21 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { ProductoForm } from '@/features/productos/components/producto-form'
 import { getSchemaByEntidad } from '@/features/codigo-schema/services/schema-actions'
+import { getAtributosPT } from '@/features/productos/services/atributo-actions'
+import { TIPOS_ATRIBUTO } from '@/features/productos/types/atributos'
+import type { TipoAtributo } from '@/features/productos/types/atributos'
 
 export default async function NuevoProductoPage() {
-  const schema = await getSchemaByEntidad('producto')
+  const [schema, atributosList] = await Promise.all([
+    getSchemaByEntidad('producto'),
+    getAtributosPT(),
+  ])
+
+  // Agrupar atributos por tipo
+  const atributos: Record<TipoAtributo, typeof atributosList> = {} as any
+  TIPOS_ATRIBUTO.forEach(tipo => {
+    atributos[tipo] = atributosList.filter(a => a.tipo === tipo)
+  })
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
@@ -24,7 +36,7 @@ export default async function NuevoProductoPage() {
       </div>
 
       <div className="rounded-2xl bg-neu-base shadow-neu p-6">
-        <ProductoForm schema={schema} />
+        <ProductoForm schema={schema} atributos={atributos} />
       </div>
     </div>
   )

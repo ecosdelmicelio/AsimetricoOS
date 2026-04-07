@@ -5,16 +5,19 @@ import { Code2, AlertTriangle, ShieldCheck } from 'lucide-react'
 import { SchemaManager } from '@/features/codigo-schema/components/schema-manager'
 import { CalidadConfigForm } from '@/features/calidad/components/calidad-config-form'
 import { TiposMovimientoTab } from '@/features/configuracion/components/tipos-movimiento-tab'
+import { AtributosConfig } from '@/features/productos/components/atributos-config'
 import type { CodigoSchema } from '@/features/codigo-schema/types'
 import type { CalidadConfig } from '@/features/calidad/types'
 import type { TipoMovimiento } from '@/features/configuracion/services/tipos-movimiento-actions'
+import type { AtributoPT } from '@/features/productos/types/atributos'
 
-type Tab = 'pt' | 'mp' | 'servicio' | 'defectos' | 'calidad' | 'movimientos'
+type Tab = 'pt' | 'mp' | 'servicio' | 'defectos' | 'calidad' | 'movimientos' | 'atributos-pt'
 
 const TABS: { id: Tab; label: string; sub: string; icon: 'code' | 'shield' }[] = [
   { id: 'pt',       label: 'Esquema PT',      sub: 'Código de Producto Terminado', icon: 'code'  },
   { id: 'mp',       label: 'Esquema MP',       sub: 'Código de Materia Prima',      icon: 'code'  },
   { id: 'servicio', label: 'Esquema Servicio', sub: 'Código de Servicio',           icon: 'code'  },
+  { id: 'atributos-pt', label: 'Atributos PT', sub: 'Tipo, Fit, Color, etc.',       icon: 'code'  },
   { id: 'defectos', label: 'Tipos de Defecto', sub: 'Catálogo para calidad',        icon: 'code'  },
   { id: 'movimientos', label: 'Movimientos', sub: 'Tipos de movimiento kardex',    icon: 'code'  },
   { id: 'calidad',  label: 'Calidad',          sub: 'Parámetros de inspección',     icon: 'shield'},
@@ -27,6 +30,7 @@ interface Props {
   tiposDefecto: { id: string; codigo: string; nombre: string; categoria: string }[]
   tiposMovimiento: TipoMovimiento[]
   calidadConfig: CalidadConfig
+  atributosPT: AtributoPT[]
 }
 
 export function ConfiguracionTabs({
@@ -36,6 +40,7 @@ export function ConfiguracionTabs({
   tiposDefecto,
   tiposMovimiento,
   calidadConfig,
+  atributosPT,
 }: Props) {
   const [tab, setTab] = useState<Tab>('pt')
 
@@ -75,6 +80,7 @@ export function ConfiguracionTabs({
       {tab === 'pt'       && <SchemaManager entidad="producto" schema={schemaProducto} />}
       {tab === 'mp'       && <SchemaManager entidad="material" schema={schemaMaterial} />}
       {tab === 'servicio' && <SchemaManager entidad="servicio" schema={schemaServicio} />}
+      {tab === 'atributos-pt' && <AtributosConfig atributos={atributosPT} />}
       {tab === 'defectos' && <DefectosPanel tiposDefecto={tiposDefecto} />}
       {tab === 'movimientos' && <TiposMovimientoTab tiposMovimiento={tiposMovimiento} />}
       {tab === 'calidad'  && <CalidadConfigForm config={calidadConfig} />}
