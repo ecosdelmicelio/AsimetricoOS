@@ -69,13 +69,49 @@ export async function deleteAtributoPT(id: string): Promise<{ error?: string }> 
   return {}
 }
 
+export async function getAtributosProducto(
+  producto_id: string,
+): Promise<Record<TipoAtributo, string>> {
+  const supabase = db(await createClient())
+
+  const { data } = await supabase
+    .from('producto_atributos')
+    .select('tipo, atributo_id')
+    .eq('producto_id', producto_id) as { data: Array<{ tipo: TipoAtributo; atributo_id: string }> | null }
+
+  const result: Record<TipoAtributo, string> = {
+    tipo: '',
+    fit: '',
+    superior: '',
+    inferior: '',
+    capsula: '',
+    diseno: '',
+    color: '',
+    genero: '',
+  }
+
+  if (data) {
+    data.forEach(row => {
+      result[row.tipo] = row.atributo_id
+    })
+  }
+
+  return result
+}
+
 export async function asociarAtributosAProducto(
   producto_id: string,
   atributos: Record<TipoAtributo, string>,
 ): Promise<{ error?: string }> {
   const supabase = db(await createClient())
 
-  // Insertar relaciones
+  // Eliminar atributos anteriores
+  await supabase
+    .from('producto_atributos')
+    .delete()
+    .eq('producto_id', producto_id)
+
+  // Insertar nuevas relaciones
   const registros = Object.entries(atributos)
     .filter(([_, atributo_id]) => atributo_id) // Solo si hay valor
     .map(([tipo, atributo_id]) => ({

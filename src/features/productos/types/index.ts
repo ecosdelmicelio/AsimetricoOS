@@ -58,6 +58,7 @@ export interface UpdateProductoInput {
   tipo_producto?: TipoProducto
   marca_id?: string | null
   estado?: EstadoProducto
+  atributos?: Record<string, string>
 }
 
 // Categorías estándar textil

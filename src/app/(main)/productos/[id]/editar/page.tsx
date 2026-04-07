@@ -2,7 +2,10 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { getProductoById } from '@/features/productos/services/producto-actions'
+import { getAtributosPT, getAtributosProducto } from '@/features/productos/services/atributo-actions'
 import { ProductoEditForm } from '@/features/productos/components/producto-edit-form'
+import { TIPOS_ATRIBUTO } from '@/features/productos/types/atributos'
+import type { TipoAtributo } from '@/features/productos/types/atributos'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -10,9 +13,31 @@ interface Props {
 
 export default async function EditarProductoPage({ params }: Props) {
   const { id } = await params
-  const producto = await getProductoById(id)
+  const [producto, atributosPT, atributosProducto] = await Promise.all([
+    getProductoById(id),
+    getAtributosPT(),
+    getAtributosProducto(id),
+  ])
 
   if (!producto) notFound()
+
+  // Agrupar atributos por tipo
+  const atributosAgrupados: Record<TipoAtributo, typeof atributosPT> = {
+    tipo: [],
+    fit: [],
+    superior: [],
+    inferior: [],
+    capsula: [],
+    diseno: [],
+    color: [],
+    genero: [],
+  }
+
+  atributosPT.forEach(attr => {
+    if (TIPOS_ATRIBUTO.includes(attr.tipo as TipoAtributo)) {
+      atributosAgrupados[attr.tipo as TipoAtributo].push(attr)
+    }
+  })
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
@@ -30,7 +55,7 @@ export default async function EditarProductoPage({ params }: Props) {
       </div>
 
       <div className="rounded-2xl bg-neu-base shadow-neu p-6">
-        <ProductoEditForm producto={producto} />
+        <ProductoEditForm producto={producto} atributos={atributosAgrupados} atributosProducto={atributosProducto} />
       </div>
     </div>
   )

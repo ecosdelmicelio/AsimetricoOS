@@ -114,6 +114,18 @@ export async function updateProducto(
     .eq('id', id) as { error: { message: string } | null }
 
   if (error) return { error: error.message }
+
+  // Actualizar atributos si fueron proporcionados
+  if (input.atributos) {
+    const attrError = await asociarAtributosAProducto(
+      id,
+      input.atributos as Record<TipoAtributo, string>,
+    )
+    if (attrError.error) {
+      return { error: `Producto actualizado pero error al actualizar atributos: ${attrError.error}` }
+    }
+  }
+
   revalidatePath('/productos')
   revalidatePath(`/productos/${id}`)
   return {}

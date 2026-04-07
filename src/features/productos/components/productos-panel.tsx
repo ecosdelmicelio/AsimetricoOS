@@ -1,24 +1,28 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { flushSync } from 'react-dom'
 import { Plus, Edit2, Loader2, Package } from 'lucide-react'
 import { createProducto, updateProducto } from '@/features/productos/services/producto-actions'
+import { getAtributosPT, getAtributosProducto } from '@/features/productos/services/atributo-actions'
 import { getBOMProducto } from '@/features/productos/services/bom-actions'
 import { BOMEditor } from '@/features/productos/components/bom-editor'
 import type { Producto, TipoProducto, EstadoProducto } from '@/features/productos/types'
+import type { AtributoPT, TipoAtributo } from '@/features/productos/types/atributos'
+import { TIPOS_ATRIBUTO, LABELS_ATRIBUTO } from '@/features/productos/types/atributos'
 import type { MarcaConTercero } from '@/features/configuracion/services/marcas-actions'
 import type { Material, ServicioOperativo } from '@/features/productos/services/bom-actions'
 
 interface Props {
   productos: Producto[]
   marcas: MarcaConTercero[]
+  atributosPT: AtributoPT[]
   saldosPorProducto: Record<string, number>
   catalogoMateriales: Material[]
   catalogoServicios: ServicioOperativo[]
 }
 
-export function ProductosPanel({ productos, marcas, saldosPorProducto, catalogoMateriales, catalogoServicios }: Props) {
+export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProducto, catalogoMateriales, catalogoServicios }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [filtroEstado, setFiltroEstado] = useState<'en_desarrollo' | 'activo' | 'inactivo'>('activo')
@@ -66,6 +70,7 @@ export function ProductosPanel({ productos, marcas, saldosPorProducto, catalogoM
       {showForm && (
         <ProductForm
           marcas={marcas}
+          atributosPT={atributosPT}
           catalogoMateriales={catalogoMateriales}
           catalogoServicios={catalogoServicios}
           onDone={() => setShowForm(false)}
@@ -106,6 +111,7 @@ export function ProductosPanel({ productos, marcas, saldosPorProducto, catalogoM
                     key={p.id}
                     product={p}
                     marcas={marcas}
+                    atributosPT={atributosPT}
                     catalogoMateriales={catalogoMateriales}
                     catalogoServicios={catalogoServicios}
                     onDone={() => setEditingId(null)}
@@ -156,12 +162,14 @@ function ProductRow({ product: p, marcas, saldo, onEdit }: { product: Producto; 
 function ProductForm({
   product,
   marcas,
+  atributosPT,
   catalogoMateriales,
   catalogoServicios,
   onDone,
 }: {
   product?: Producto
   marcas: MarcaConTercero[]
+  atributosPT: AtributoPT[]
   catalogoMateriales: Material[]
   catalogoServicios: ServicioOperativo[]
   onDone: () => void
@@ -183,6 +191,12 @@ function ProductForm({
   const [bomData, setBomData] = useState<Awaited<ReturnType<typeof getBOMProducto>> | null>(null)
   const [bomLoading, setBomLoading] = useState(false)
   const [bomCompletadoLocal, setBomCompletadoLocal] = useState(product?.bom_completo ?? false)
+  const [atributosSeleccionados, setAtributosSeleccionados] = useState<Record<TipoAtributo, string>>(() => {
+    const defaultAttrs: Record<TipoAtributo, string> = {
+      tipo: '', fit: '', superior: '', inferior: '', capsula: '', diseno: '', color: '', genero: ''
+    }
+    return defaultAttrs
+  })
 
   // Cargar BOM cuando se abre el tab BOM
   const handleBomTabClick = async () => {
@@ -205,6 +219,15 @@ function ProductForm({
   }
 
   const isEdit = !!product
+
+  // Cargar atributos cuando se abre edición
+  useEffect(() => {
+    if (isEdit && product) {
+      getAtributosProducto(product.id).then(attrs => {
+        setAtributosSeleccionados(attrs)
+      })
+    }
+  }, [product, isEdit])
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -244,6 +267,7 @@ function ProductForm({
             precio_base: precioN1 ? parseFloat(precioN1) : null,
             precio_estandar: precioN2 ? parseFloat(precioN2) : null,
             precio_n3: precioN3 ? parseFloat(precioN3) : null,
+            atributos: atributosSeleccionados,
           })
         : await createProducto({
             referencia,
@@ -490,6 +514,42 @@ function ProductForm({
               </div>
             )}
           </div>
+
+          {/* Atributos - solo en edición */}
+          {isEdit && (
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Atributos</label>
+              <div className="grid grid-cols-2 gap-2">
+                {TIPOS_ATRIBUTO.map(tipoAtributo => {
+                  const atributosDelTipo = atributosPT.filter(a => a.tipo === tipoAtributo)
+                  return (
+                    <div key={tipoAtributo} className="space-y-0.5">
+                      <label className="text-xs font-medium text-muted-foreground block truncate">
+                        {LABELS_ATRIBUTO[tipoAtributo]}
+                      </label>
+                      <select
+                        value={atributosSeleccionados[tipoAtributo] ?? ''}
+                        onChange={e =>
+                          setAtributosSeleccionados(prev => ({
+                            ...prev,
+                            [tipoAtributo]: e.target.value,
+                          }))
+                        }
+                        className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2 py-1.5 text-foreground outline-none appearance-none"
+                      >
+                        <option value="">—</option>
+                        {atributosDelTipo.map(attr => (
+                          <option key={attr.id} value={attr.id}>
+                            {attr.valor}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {error && <p className="text-xs text-red-600">{error}</p>}
         </div>

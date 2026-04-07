@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { getProductos } from '@/features/productos/services/producto-actions'
+import { getAtributosPT } from '@/features/productos/services/atributo-actions'
 import { getSaldosTotalesPorProducto } from '@/features/kardex/services/kardex-actions'
 import { getMateriales as getBOMCatalogo, getServiciosOperativos } from '@/features/productos/services/bom-actions'
 import { getMateriales } from '@/features/materiales/services/materiales-actions'
@@ -10,10 +11,11 @@ import { MaterialesPanel } from '@/features/materiales/components/materiales-pan
 import { ProductosTabs } from '@/features/productos/components/productos-tabs'
 
 async function ProductosContent() {
-  const [productos, saldos, marcas, catalogoMateriales, catalogoServicios] = await Promise.all([
+  const [productos, saldos, marcas, atributosPT, catalogoMateriales, catalogoServicios] = await Promise.all([
     getProductos(),
     getSaldosTotalesPorProducto(),
     getMarcas(),
+    getAtributosPT(),
     getBOMCatalogo(),
     getServiciosOperativos(),
   ])
@@ -21,6 +23,7 @@ async function ProductosContent() {
     <ProductosPanel
       productos={productos}
       marcas={marcas}
+      atributosPT={atributosPT}
       saldosPorProducto={saldos}
       catalogoMateriales={catalogoMateriales}
       catalogoServicios={catalogoServicios}
