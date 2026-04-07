@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/shared/lib/supabase/server'
-import type { CreateOPInput, OrdenProduccion, OPConDetalle, EstadoOP } from '@/features/ordenes-produccion/types'
+import type { CreateOPInput, OrdenProduccion, OPConDetalle, EstadoOP, OPProgressLine } from '@/features/ordenes-produccion/types'
 import type { HistorialEstado } from '@/features/ordenes-venta/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -421,4 +421,76 @@ export async function getOVsConfirmadas() {
   return ovsConDisponibilidad.filter(ov =>
     ov.ov_detalle.some(linea => linea.cantidad_disponible > 0)
   )
+}
+
+export async function getOPProgressSummary(opId: string): Promise<OPProgressLine[]> {
+  const supabase = db(await createClient())
+
+  // 1. Programado (OP Detalle)
+  const { data: opDetalle } = await supabase
+    .from('op_detalle')
+    .select('*, productos(nombre, referencia, color)')
+    .eq('op_id', opId) as { data: any[] | null }
+
+  // 2. Cortado (Reporte de Corte)
+  // Nota: Actualmente el reporte de corte consolidado no guarda detalle por talla (se guarda en reporte_corte_linea si se usa el flujo antiguo)
+  // Para el flujo actual (SaaS Factory V3), vamos a buscar en reporte_corte_linea por si acaso, 
+  // o inferirlo si el estado de la OP es >= en_confeccion (aunque lo ideal es tener el dato real).
+  const { data: reportes } = await supabase
+    .from('reporte_corte')
+    .select('id')
+    .eq('op_id', opId) as { data: { id: string }[] | null }
+
+  let cortadoLines: any[] = []
+  if (reportes && reportes.length > 0) {
+    const { data } = await supabase
+      .from('reporte_corte_linea')
+      .select('producto_id, talla, cantidad_cortada, reporte_corte_corte!inner(reporte_id)')
+      .in('reporte_corte_corte.reporte_id', reportes.map(r => r.id))
+    cortadoLines = data ?? []
+  }
+
+  // 3. Entregado (Entregas Aceptadas)
+  const { data: entregas } = await supabase
+    .from('entregas')
+    .select('id')
+    .eq('op_id', opId)
+    .eq('estado', 'aceptada') as { data: { id: string }[] | null }
+
+  let entregadoLines: any[] = []
+  if (entregas && entregas.length > 0) {
+    const { data } = await supabase
+      .from('entrega_detalle')
+      .select('producto_id, talla, cantidad_entregada')
+      .in('entrega_id', entregas.map(e => e.id))
+    entregadoLines = data ?? []
+  }
+
+  // 4. Consolidar
+  const lines: OPProgressLine[] = (opDetalle || []).map(det => {
+    const cortado = cortadoLines
+      .filter(c => c.producto_id === det.producto_id && c.talla === det.talla)
+      .reduce((sum, c) => sum + (c.cantidad_cortada || 0), 0)
+
+    const entregado = entregadoLines
+      .filter(e => e.producto_id === det.producto_id && e.talla === det.talla)
+      .reduce((sum, e) => sum + (e.cantidad_entregada || 0), 0)
+
+    // Confeccionado: Por ahora lo asimilamos a Entregado o Cortado dependiendo del avance,
+    // pero en un sistema ideal tendríamos reportes de confección parcial.
+    // Usaremos Entregado como 'Confeccionado Finalizado'.
+    return {
+      producto_id: det.producto_id,
+      referencia: det.productos?.referencia || '',
+      nombre: det.productos?.nombre || '',
+      color: det.productos?.color || null,
+      talla: det.talla,
+      programado: det.cantidad_asignada,
+      cortado: cortado > 0 ? cortado : (entregado > 0 ? entregado : 0), // Fallback si no hay reportes de corte detallados
+      confeccionado: entregado, // Asumimos entregado como confección terminada
+      entregado: entregado
+    }
+  })
+
+  return lines
 }

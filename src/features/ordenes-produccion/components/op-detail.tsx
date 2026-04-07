@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import { ArrowLeft, Package, Calendar, Building2, FileText, ShieldCheck, Globe, Clock, TrendingUp, DollarSign, Factory } from 'lucide-react'
 import { createClient } from '@/shared/lib/supabase/server'
-import { getOrdenProduccionById, getHistorialOP } from '@/features/ordenes-produccion/services/op-actions'
+import { getOrdenProduccionById, getHistorialOP, getOPProgressSummary } from '@/features/ordenes-produccion/services/op-actions'
 import { OPStatusBadge } from './op-status-badge'
 import { OPActions, OPProgreso } from './op-actions'
 import { OPStepper } from './op-stepper'
+import { OPProgressMatrix } from './op-progress-matrix'
 import { HistorialEstados } from '@/shared/components/historial-estados'
 import { getReporteCortePorOP } from '@/features/reporte-corte/services/reporte-corte-actions'
 import { ReporteCorteePanel } from '@/features/reporte-corte/components/reporte-corte-panel'
@@ -27,13 +28,16 @@ export async function OPDetail({ id }: Props) {
   const supabase = await createClient()
 
   // Fetch paralelo base
-  const [{ data: op, error }, { data: historial }, reporteData, { data: entregas }, liquidacionesOP] = await Promise.all([
+  const [{ data: op, error }, { data: historial }, reporteData, { data: entregas }, liquidacionesOP, progressData] = await Promise.all([
     getOrdenProduccionById(id),
     getHistorialOP(id),
     getReporteCortePorOP(id),
     getEntregasByOP(id),
     getLiquidacionesByOP(id),
+    getOPProgressSummary(id),
   ])
+
+  const progressLines = progressData ?? []
 
   const { data: reporte, dataAll: reportes } = reporteData
 
@@ -222,65 +226,9 @@ export async function OPDetail({ id }: Props) {
         </div>
       )}
 
-      {/* Detalle por producto (Matriz) */}
-      <div className="space-y-3">
-        <h2 className="font-semibold text-foreground text-body-md">Detalle de Productos</h2>
-
-        <div className="rounded-2xl bg-neu-base shadow-neu overflow-hidden overflow-x-auto">
-          <table className="w-full text-xs text-left">
-            <thead>
-              <tr className="border-b border-black/5 bg-black/5">
-                <th className="px-4 py-3 font-medium text-muted-foreground w-32">Referencia</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">Producto</th>
-                {todasTallas.map(t => (
-                  <th key={t} className="text-center px-2 py-3 font-medium text-muted-foreground min-w-10">{t}</th>
-                ))}
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Uds</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(porProducto).map(([ref, { nombre, lineas }]) => {
-                const totalUds = lineas.reduce((s, l) => s + l.cantidad_asignada, 0)
-                const esUSA = lineas.some(l => l.productos?.origen_usa)
-
-                // Mapa de cantidad por talla para este producto
-                const cantPorTalla = lineas.reduce<Record<string, number>>((acc, l) => {
-                  acc[l.talla] = (acc[l.talla] ?? 0) + l.cantidad_asignada
-                  return acc
-                }, {})
-
-                return (
-                  <tr key={ref} className="border-b border-black/5 last:border-0 hover:bg-black/[0.02] transition-colors">
-                    <td className="px-4 py-3 align-top">
-                      <p className="font-mono font-semibold text-primary-700 text-xs">{ref}</p>
-                      {esUSA && (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-bold bg-blue-100 text-blue-700 px-1 py-0.5 rounded-full mt-1">
-                          <Globe className="w-2.5 h-2.5" />
-                          USA
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 align-top">
-                      <p className="text-foreground font-medium leading-tight">{nombre}</p>
-                    </td>
-                    {todasTallas.map(t => (
-                      <td key={t} className="px-2 py-3 text-center text-foreground align-top">
-                        {cantPorTalla[t] ? (
-                          <span className="font-semibold">{cantPorTalla[t]}</span>
-                        ) : (
-                          <span className="text-muted-foreground/20">—</span>
-                        )}
-                      </td>
-                    ))}
-                    <td className="px-4 py-3 text-right font-semibold text-foreground align-top">
-                      {totalUds}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+      {/* Matriz de Cumplimiento Logístico */}
+      <div className="bg-white rounded-[2rem] shadow-xl border border-slate-100 p-6 lg:p-8">
+        <OPProgressMatrix lines={progressLines} opEstado={estadoOP} />
       </div>
 
       {/* Reporte de Corte */}

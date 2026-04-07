@@ -83,3 +83,15 @@ export interface CreateOPInput {
   lineas: LineaOP[]
   servicios?: { servicio_id: string; tarifa_unitaria: number }[]
 }
+
+export interface OPProgressLine {
+  producto_id: string
+  referencia: string
+  nombre: string
+  color: string | null
+  talla: string
+  programado: number
+  cortado: number
+  confeccionado: number
+  entregado: number
+}
