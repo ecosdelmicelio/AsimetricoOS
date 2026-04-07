@@ -16,6 +16,7 @@ export interface Producto {
   estado: EstadoProducto
   tipo_producto: TipoProducto
   marca_id: string | null
+  bom_completo: boolean
   created_at: string
   updated_at: string
 }

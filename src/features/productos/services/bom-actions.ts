@@ -12,7 +12,6 @@ export interface Material {
   nombre: string
   unidad: string
   costo_unit: number
-  descripcion: string | null
   activo: boolean
 }
 
@@ -84,7 +83,7 @@ export async function getBOMProducto(producto_id: string): Promise<BOMResumen> {
     .from('bom')
     .select(`
       id, producto_id, tipo, material_id, servicio_id, cantidad, notas, reportable_en_corte, created_at,
-      materiales(id, codigo, nombre, unidad, costo_unit, descripcion, activo),
+      materiales(id, codigo, nombre, unidad, costo_unit, activo),
       servicios_operativos(id, codigo, nombre, tipo_proceso, tarifa_unitaria, descripcion, activo)
     `)
     .eq('producto_id', producto_id)
@@ -151,7 +150,7 @@ export async function addBOMMaterial(
     }) as { error: { message: string } | null }
 
   if (error) return { error: error.message }
-  revalidatePath(`/productos/${producto_id}`)
+  revalidatePath('/productos')
   return {}
 }
 
@@ -174,7 +173,7 @@ export async function addBOMServicio(
     }) as { error: { message: string } | null }
 
   if (error) return { error: error.message }
-  revalidatePath(`/productos/${producto_id}`)
+  revalidatePath('/productos')
   return {}
 }
 
@@ -202,7 +201,7 @@ export async function updateBOMLinea(
     .eq('id', linea_id) as { error: { message: string } | null }
 
   if (error) return { error: error.message }
-  revalidatePath(`/productos/${producto_id}`)
+  revalidatePath('/productos')
   return {}
 }
 
@@ -218,6 +217,19 @@ export async function deleteBOMLinea(
     .eq('id', linea_id) as { error: { message: string } | null }
 
   if (error) return { error: error.message }
-  revalidatePath(`/productos/${producto_id}`)
+  revalidatePath('/productos')
+  return {}
+}
+
+export async function markBOMCompleted(producto_id: string): Promise<{ error?: string }> {
+  const supabase = db(await createClient())
+
+  const { error } = await supabase
+    .from('productos')
+    .update({ bom_completo: true })
+    .eq('id', producto_id) as { error: { message: string } | null }
+
+  if (error) return { error: error.message }
+  revalidatePath('/productos')
   return {}
 }

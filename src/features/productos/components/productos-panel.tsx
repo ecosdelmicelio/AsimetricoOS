@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { flushSync } from 'react-dom'
 import { Plus, Edit2, Loader2, Package } from 'lucide-react'
 import { createProducto, updateProducto } from '@/features/productos/services/producto-actions'
 import { getBOMProducto } from '@/features/productos/services/bom-actions'
@@ -181,6 +182,7 @@ function ProductForm({
   const [tab, setTab] = useState<'detalles' | 'bom'>('detalles')
   const [bomData, setBomData] = useState<Awaited<ReturnType<typeof getBOMProducto>> | null>(null)
   const [bomLoading, setBomLoading] = useState(false)
+  const [bomCompletadoLocal, setBomCompletadoLocal] = useState(product?.bom_completo ?? false)
 
   // Cargar BOM cuando se abre el tab BOM
   const handleBomTabClick = async () => {
@@ -195,6 +197,13 @@ function ProductForm({
     setTab('bom')
   }
 
+  // Recargar BOM después de cambios
+  const handleBOMChanged = async () => {
+    if (!product) return
+    const bom = await getBOMProducto(product.id)
+    flushSync(() => setBomData(bom))
+  }
+
   const isEdit = !!product
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -206,8 +215,18 @@ function ProductForm({
 
     // Validar que no se pueda cambiar a activo sin BOM completo (productos fabricados)
     if (isEdit && product.tipo_producto === 'fabricado' && estado === 'activo' && product.estado !== 'activo') {
-      setError('Debes marcar el BOM como completado antes de activar el producto')
-      return
+      // Verificar que el BOM esté cargado y marcado como completado
+      const tieneItems = bomData && (bomData.materiales.length > 0 || bomData.servicios.length > 0)
+
+      if (!tieneItems) {
+        setError('Debes agregar materiales o servicios al BOM antes de activar el producto')
+        return
+      }
+
+      if (!bomCompletadoLocal) {
+        setError('Debes marcar el BOM como completado antes de activar el producto')
+        return
+      }
     }
 
     setError(null)
@@ -494,6 +513,9 @@ function ProductForm({
           costoTotal={bomData.costo_total}
           costoMateriales={bomData.costo_materiales}
           costoServicios={bomData.costo_servicios}
+          bomCompleto={bomCompletadoLocal}
+          onBOMCompleted={() => setBomCompletadoLocal(true)}
+          onBOMChanged={handleBOMChanged}
         />
       )}
 
