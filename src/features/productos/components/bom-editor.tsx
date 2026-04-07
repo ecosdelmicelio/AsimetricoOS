@@ -512,6 +512,7 @@ function TabButton({ active, onClick, icon, children }: {
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-body-sm font-semibold transition-all ${
         active
