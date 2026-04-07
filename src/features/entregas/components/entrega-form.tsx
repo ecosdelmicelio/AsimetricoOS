@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react'
 import { derivarNombreBase, extraerColorDelNombre } from '@/shared/lib/productos-utils'
 import { createEntrega } from '@/features/entregas/services/entregas-actions'
 import { MatrizProductos } from '@/shared/components/matriz-productos'
+import { sortTallas } from '@/shared/lib/utils'
 import type { ProductoEnMatriz } from '@/shared/components/matriz-productos'
 
 export interface LineaOPSimple {
@@ -45,7 +46,7 @@ export function EntregaForm({ opId, lineasOP, onSuccess, onCancel }: Props) {
     }
 
     const tallaSet = new Set(lineasOP.map(l => l.talla))
-    const tallasArray = Array.from(tallaSet).sort()
+    const tallasArray = sortTallas(Array.from(tallaSet))
 
     const maxCant: Record<string, number> = {}
     const productos: ProductoEnMatriz[] = []
@@ -96,11 +97,11 @@ export function EntregaForm({ opId, lineasOP, onSuccess, onCancel }: Props) {
     setError(null)
 
     const lineas = productosEnMatrizState.flatMap(producto =>
-      tallas.map(talla => ({
+      tallas.map((talla: string) => ({
         producto_id: producto.producto_id,
         talla,
         cantidad_entregada: producto.cantidades[talla] ?? 0,
-      })).filter(l => l.cantidad_entregada > 0)
+      })).filter((l: any) => l.cantidad_entregada > 0)
     )
 
     if (lineas.length === 0) {
