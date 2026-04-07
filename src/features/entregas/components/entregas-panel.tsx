@@ -62,6 +62,12 @@ export function EntregasPanel({
 
   const progresoPct = totalUnidadesOP > 0 ? Math.min(100, Math.round((unidadesAceptadas / totalUnidadesOP) * 100)) : 0
 
+  // Total entregado (sin rechazadas) — si llega al tope de la OP, no se puede crear nueva entrega
+  const totalUnidadesEntregadas = entregas
+    .filter(e => e.estado !== 'rechazada')
+    .reduce((s, e) => s + e.entrega_detalle.reduce((ss, d) => ss + d.cantidad_entregada, 0), 0)
+  const ordenCompleta = totalUnidadesOP > 0 && totalUnidadesEntregadas >= totalUnidadesOP
+
   function handleFRI(entregaId: string, resultado: 'aceptada' | 'rechazada') {
     setFriLoading(entregaId)
     startFriTransition(async () => {
@@ -81,8 +87,10 @@ export function EntregasPanel({
         </div>
         {puedeEntregar && (estadoActual === 'en_terminado' || estadoActual === 'entregada') && !isEditing && (
           <button
-            onClick={() => onStartEdit?.()}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-[10px] uppercase tracking-widest transition-all hover:bg-primary-600 shadow-lg shadow-slate-200 active:scale-95"
+            onClick={() => !ordenCompleta && onStartEdit?.()}
+            disabled={ordenCompleta}
+            title={ordenCompleta ? 'La orden ya fue entregada en su totalidad' : undefined}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-[10px] uppercase tracking-widest transition-all hover:bg-primary-600 shadow-lg shadow-slate-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
           >
             <Plus className="w-4 h-4" />
             Nueva Entrega
