@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowLeft, Package, Calendar, User, FileText, Factory, Globe, Pencil, Clock, CheckCircle2, TrendingUp, DollarSign } from 'lucide-react'
+import { ArrowLeft, Package, Calendar, User, FileText, Factory, Globe, Clock, TrendingUp, DollarSign } from 'lucide-react'
 import { getOrdenVentaById, getHistorialOV, getOVProgressSummary, getOVMilestones } from '@/features/ordenes-venta/services/ov-actions'
 import { getOPsByOV } from '@/features/ordenes-produccion/services/op-actions'
 import { getDespachosByOV, getBinesDisponiblesParaOV } from '@/features/ordenes-venta/services/despachos-actions'
@@ -134,21 +134,13 @@ export async function OVDetail({ id }: Props) {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-2 shrink-0">
-              {ov.estado === 'borrador' && (
-                <Link
-                  href={`/ordenes-venta/${id}/editar`}
-                  className="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest transition-all hover:bg-slate-50 shadow-sm"
-                >
-                  <Pencil className="w-3.5 h-3.5 inline mr-1" />
-                  Edit
-                </Link>
-              )}
-              <OVActions 
-                ovId={id} 
-                estadoActual={ov.estado} 
+            <div className="flex flex-col gap-2 shrink-0 w-full lg:w-auto">
+              <OVActions
+                ovId={id}
+                estadoActual={ov.estado}
                 unidadesProducidas={progress.reduce((s, d) => s + d.producido, 0)}
                 totalUnidades={totalUnidades}
+                editHref={ov.estado === 'borrador' ? `/ordenes-venta/${id}/editar` : undefined}
               />
             </div>
           </div>

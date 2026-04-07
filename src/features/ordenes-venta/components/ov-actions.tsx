@@ -2,9 +2,10 @@
 
 import { useTransition, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { updateEstadoOV, cancelOrdenVenta } from '@/features/ordenes-venta/services/ov-actions'
 import type { EstadoOV } from '@/features/ordenes-venta/types'
-import { XCircle } from 'lucide-react'
+import { XCircle, Pencil } from 'lucide-react'
 
 const TRANSICIONES: Record<EstadoOV, { label: string; siguiente: EstadoOV } | null> = {
   borrador:      { label: 'Confirmar Orden', siguiente: 'confirmada' },
@@ -22,9 +23,10 @@ interface Props {
   estadoActual: string
   unidadesProducidas: number
   totalUnidades: number
+  editHref?: string
 }
 
-export function OVActions({ ovId, estadoActual, unidadesProducidas, totalUnidades }: Props) {
+export function OVActions({ ovId, estadoActual, unidadesProducidas, totalUnidades, editHref }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -73,22 +75,45 @@ export function OVActions({ ovId, estadoActual, unidadesProducidas, totalUnidade
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-col gap-2 w-full">
+      {/* 1. Confirmar Orden (acción principal) */}
+      {!showConfirm && transicion && (
+        <button
+          onClick={handleTransicion}
+          disabled={isPending}
+          className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-black text-[10px] uppercase tracking-[0.1em] transition-all hover:bg-primary-600 hover:border-primary-500 active:scale-95 shadow-xl shadow-slate-200/50"
+        >
+          {isPending ? 'Procesando...' : transicion.label}
+        </button>
+      )}
+
+      {/* 2. Editar (solo en borrador) */}
+      {editHref && !showConfirm && (
+        <Link
+          href={editHref}
+          className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest transition-all hover:bg-slate-50 shadow-sm"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+          Edit
+        </Link>
+      )}
+
+      {/* 3. Cancelar */}
       {puedeCancelar && (
-        <div className="flex items-center gap-1">
+        <div>
           {showConfirm ? (
             <div className="flex items-center gap-1 bg-red-50 p-1 rounded-xl border border-red-100 animate-in fade-in zoom-in duration-200">
               <button
                 onClick={() => setShowConfirm(false)}
                 disabled={isPending}
-                className="px-3 py-2 rounded-lg bg-white border border-slate-200 text-slate-500 font-bold text-[9px] uppercase tracking-wider hover:bg-slate-50 transition-all"
+                className="flex-1 px-3 py-2 rounded-lg bg-white border border-slate-200 text-slate-500 font-bold text-[9px] uppercase tracking-wider hover:bg-slate-50 transition-all"
               >
                 Atrás
               </button>
               <button
                 onClick={handleCancelar}
                 disabled={isPending}
-                className="px-3 py-2 rounded-lg bg-red-600 text-white font-black text-[9px] uppercase tracking-wider hover:bg-red-700 transition-all shadow-sm flex items-center gap-1"
+                className="flex-1 px-3 py-2 rounded-lg bg-red-600 text-white font-black text-[9px] uppercase tracking-wider hover:bg-red-700 transition-all shadow-sm flex items-center justify-center gap-1"
               >
                 {isPending ? 'Cancelando...' : 'Confirmar Cancelación'}
               </button>
@@ -97,24 +122,14 @@ export function OVActions({ ovId, estadoActual, unidadesProducidas, totalUnidade
             <button
               onClick={() => setShowConfirm(true)}
               disabled={isPending}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-100 font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-sm"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-100 font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-sm"
               title="Cancelar Orden"
             >
               <XCircle className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Cancelar</span>
+              Cancelar
             </button>
           )}
         </div>
-      )}
-      
-      {!showConfirm && transicion && (
-        <button
-          onClick={handleTransicion}
-          disabled={isPending}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-black text-[10px] uppercase tracking-[0.1em] transition-all hover:bg-primary-600 hover:border-primary-500 active:scale-95 shadow-xl shadow-slate-200/50"
-        >
-          {isPending ? 'Procesando...' : transicion.label}
-        </button>
       )}
     </div>
   )
