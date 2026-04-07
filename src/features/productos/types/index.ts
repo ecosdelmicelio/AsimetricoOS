@@ -1,4 +1,4 @@
-export type EstadoProducto = 'activo' | 'descontinuado'
+export type EstadoProducto = 'activo' | 'inactivo' | 'en_desarrollo'
 export type TipoProducto = 'fabricado' | 'comercializado'
 
 export interface Producto {

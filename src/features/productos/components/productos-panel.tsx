@@ -5,7 +5,7 @@ import { Plus, Edit2, Loader2, Package } from 'lucide-react'
 import { createProducto, updateProducto } from '@/features/productos/services/producto-actions'
 import { getBOMProducto } from '@/features/productos/services/bom-actions'
 import { BOMEditor } from '@/features/productos/components/bom-editor'
-import type { Producto, TipoProducto } from '@/features/productos/types'
+import type { Producto, TipoProducto, EstadoProducto } from '@/features/productos/types'
 import type { MarcaConTercero } from '@/features/configuracion/services/marcas-actions'
 import type { Material, ServicioOperativo } from '@/features/productos/services/bom-actions'
 
@@ -111,7 +111,7 @@ function ProductRow({ product: p, marcas, saldo, onEdit }: { product: Producto; 
   const fechaFormato = new Date(p.created_at).toLocaleDateString('es-CO', { month: '2-digit', day: '2-digit', year: '2-digit' })
 
   return (
-    <div className={`grid grid-cols-12 gap-3 items-center px-5 py-3 ${p.estado === 'descontinuado' ? 'opacity-50' : ''}`}>
+    <div className={`grid grid-cols-12 gap-3 items-center px-5 py-3 ${p.estado !== 'activo' ? 'opacity-50' : ''}`}>
       <span className="col-span-1 text-body-sm text-muted-foreground">{fechaFormato}</span>
       <span className="col-span-1 font-mono text-body-sm font-semibold text-primary-700">{p.referencia}</span>
       <span className="col-span-1 text-body-sm text-foreground capitalize">{p.tipo_producto === 'fabricado' ? 'Fabricado' : 'Comercializado'}</span>
@@ -121,7 +121,7 @@ function ProductRow({ product: p, marcas, saldo, onEdit }: { product: Producto; 
       <span className="col-span-1 text-body-sm text-foreground text-right font-medium">{saldo} uds</span>
       <div className="col-span-1 flex justify-center">
         <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${p.estado === 'activo' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-          {p.estado === 'activo' ? 'Activo' : 'Descont.'}
+          {p.estado === 'activo' ? 'Activo' : p.estado === 'inactivo' ? 'Inactivo' : 'En desarrollo'}
         </span>
       </div>
       <div className="col-span-1 flex justify-end">
@@ -156,7 +156,7 @@ function ProductForm({
   const [tipo, setTipo] = useState<TipoProducto>(product?.tipo_producto ?? 'fabricado')
   const [referenciaCliente, setReferenciaCliente] = useState(product?.referencia_cliente ?? '')
   const [marcaId, setMarcaId] = useState(product?.marca_id ?? '')
-  const [estado, setEstado] = useState(product?.estado ?? 'activo')
+  const [estado, setEstado] = useState<EstadoProducto>(product?.estado ?? 'activo')
   const [color, setColor] = useState(product?.color ?? '')
   const [nombreComercial, setNombreComercial] = useState(product?.nombre_comercial ?? '')
   const [precioN1, setPrecioN1] = useState(product?.precio_base ? String(product.precio_base) : '')
@@ -181,7 +181,7 @@ function ProductForm({
 
   const isEdit = !!product
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement> | React.ChangeEvent<HTMLFormElement>) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!referencia.trim() || !nombre.trim()) {
       setError('Referencia y nombre son obligatorios')
@@ -195,11 +195,11 @@ function ProductForm({
             referencia,
             nombre,
             tipo_producto: tipo,
-            referencia_cliente: referenciaCliente || null,
-            marca_id: marcaId || null,
+            referencia_cliente: referenciaCliente ? referenciaCliente : null,
+            marca_id: marcaId ? marcaId : null,
             estado,
-            color: color || null,
-            nombre_comercial: nombreComercial || null,
+            color: color ? color : undefined,
+            nombre_comercial: nombreComercial ? nombreComercial : null,
             precio_base: precioN1 ? parseFloat(precioN1) : null,
             precio_estandar: precioN2 ? parseFloat(precioN2) : null,
             precio_n3: precioN3 ? parseFloat(precioN3) : null,
@@ -208,10 +208,10 @@ function ProductForm({
             referencia,
             nombre,
             tipo_producto: tipo,
-            referencia_cliente: referenciaCliente || null,
-            marca_id: marcaId || null,
-            color: color || null,
-            nombre_comercial: nombreComercial || null,
+            referencia_cliente: referenciaCliente ? referenciaCliente : null,
+            marca_id: marcaId ? marcaId : null,
+            color: color ? color : undefined,
+            nombre_comercial: nombreComercial ? nombreComercial : null,
             precio_base: precioN1 ? parseFloat(precioN1) : null,
             precio_estandar: precioN2 ? parseFloat(precioN2) : null,
             precio_n3: precioN3 ? parseFloat(precioN3) : null,
@@ -426,15 +426,20 @@ function ProductForm({
             </div>
 
             {isEdit && (
-              <label className="flex items-center gap-2 cursor-pointer justify-end pt-6">
-                <div
-                  onClick={() => setEstado(estado === 'activo' ? 'descontinuado' : 'activo')}
-                  className={`relative w-9 h-5 rounded-full transition-colors ${estado === 'activo' ? 'bg-primary-500' : 'bg-neu-base shadow-neu-inset'}`}
-                >
-                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${estado === 'activo' ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Estado</label>
+                <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+                  <select
+                    value={estado}
+                    onChange={e => setEstado(e.target.value as EstadoProducto)}
+                    className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none"
+                  >
+                    <option value="activo">Activo</option>
+                    <option value="inactivo">Inactivo</option>
+                    <option value="en_desarrollo">En desarrollo</option>
+                  </select>
                 </div>
-                <span className="text-body-sm text-foreground">{estado === 'activo' ? 'Activo' : 'Descont.'}</span>
-              </label>
+              </div>
             )}
           </div>
 
