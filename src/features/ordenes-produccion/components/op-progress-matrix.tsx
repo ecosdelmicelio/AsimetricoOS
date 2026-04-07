@@ -23,13 +23,6 @@ export function OPProgressMatrix({ lines, opEstado }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
-        <div className="flex flex-col">
-          <h3 className="text-body-md font-bold text-foreground flex items-center gap-2">
-            Matriz de Cumplimiento Industrial
-          </h3>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">Seguimiento por Talla / Etapa</p>
-        </div>
-        
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] uppercase font-bold tracking-tighter">
           <div className="flex items-center gap-1.5 text-slate-400">
             <span className="w-2 h-2 rounded-full bg-slate-300" /> Programado
@@ -46,16 +39,16 @@ export function OPProgressMatrix({ lines, opEstado }: Props) {
         </div>
       </div>
 
-      <div className="rounded-[1.5rem] bg-slate-50/50 overflow-hidden border border-slate-100 overflow-x-auto shadow-inner">
-        <table className="w-full text-[10px] text-left border-collapse">
+      <div className="rounded-[1.25rem] bg-slate-50/50 overflow-hidden border border-slate-100 shadow-inner">
+        <table className="w-full text-[10px] text-left border-collapse table-fixed">
           <thead>
-            <tr className="border-b border-slate-100 bg-slate-100/30 uppercase text-[9px] font-black tracking-widest text-slate-400">
-              <th className="px-4 py-3 w-40 min-w-[140px]">Referencia e Identificación</th>
-              <th className="px-4 py-3 w-32 border-l border-slate-100">Variante</th>
+            <tr className="border-b border-slate-100 bg-slate-100/30 uppercase text-[8px] font-black tracking-widest text-slate-400">
+              <th className="px-3 py-2.5 w-40 min-w-0">Referencia e ID</th>
+              <th className="px-3 py-2.5 w-24 border-l border-slate-100 min-w-0">Variante</th>
               {allTallas.map(t => (
-                <th key={t} className="text-center px-2 py-3 min-w-[60px] border-l border-slate-100">{t}</th>
+                <th key={t} className="text-center px-1.5 py-2.5 min-w-[50px] border-l border-slate-100">{t}</th>
               ))}
-              <th className="text-right px-4 py-3 border-l border-slate-100 w-28">Fulfillment</th>
+              <th className="text-right px-3 py-2.5 border-l border-slate-100 w-24">Estado</th>
             </tr>
           </thead>
           <tbody>
@@ -67,20 +60,20 @@ export function OPProgressMatrix({ lines, opEstado }: Props) {
 
               return (
                 <tr key={key} className="border-b border-slate-200/50 last:border-0 hover:bg-white transition-colors group">
-                  <td className="px-4 py-2 align-middle">
+                  <td className="px-3 py-2 align-middle">
                     <div className="flex flex-col">
-                      <span className="font-black text-slate-900 leading-none text-[11px] font-mono tracking-tighter">{first.referencia}</span>
-                      <span className="text-[9px] text-slate-400 font-bold uppercase truncate max-w-[140px] mt-1">{first.nombre}</span>
+                      <span className="font-black text-slate-900 leading-none text-[10px] font-mono tracking-tighter truncate">{first.referencia}</span>
+                      <span className="text-[8px] text-slate-400 font-bold uppercase truncate max-w-[100px] mt-0.5">{first.nombre}</span>
                     </div>
                   </td>
 
-                  <td className="px-4 py-2 align-middle border-l border-slate-100">
-                    <div className="flex items-center gap-2">
+                  <td className="px-2 py-2 align-middle border-l border-slate-100">
+                    <div className="flex items-center gap-1.5">
                       <div 
-                        className="w-3 h-3 rounded-full border border-slate-200 shadow-sm" 
+                        className="w-2.5 h-2.5 rounded-full border border-slate-200 shadow-sm shrink-0" 
                         style={{ backgroundColor: first.color?.toLowerCase() || '#e2e8f0' }} 
                       />
-                      <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter">
+                      <span className="text-[8px] font-black text-slate-600 uppercase tracking-tighter truncate max-w-[60px]">
                         {first.color || 'ESTÁNDAR'}
                       </span>
                     </div>
@@ -99,9 +92,9 @@ export function OPProgressMatrix({ lines, opEstado }: Props) {
                     return (
                       <td key={talla} className="px-2 py-2 border-l border-slate-100 transition-colors">
                         <div className="flex flex-col gap-1.5 items-center">
-                          <div className="flex items-center gap-1.5 text-[10px] font-black tracking-tight leading-none bg-white border border-slate-100 px-2 py-1 rounded-lg shadow-sm">
+                          <div className="flex items-center gap-1 text-[9px] font-black tracking-tighter leading-none bg-white border border-slate-100 px-1.5 py-0.5 rounded shadow-sm">
                             <span className="text-slate-300">{line.programado}</span>
-                            <span className="text-slate-200 scale-150">·</span>
+                            <span className="text-slate-200">/</span>
                             <span className={cn(
                               line.entregado >= line.programado ? "text-emerald-500" : "text-amber-500"
                             )}>
@@ -131,20 +124,19 @@ export function OPProgressMatrix({ lines, opEstado }: Props) {
                     )
                   })}
 
-                  <td className="px-4 py-2 text-right border-l border-slate-100 align-middle">
+                  <td className="px-3 py-2 text-right border-l border-slate-100 align-middle">
                     {isCompleted ? (
-                      <div className="flex items-center justify-end gap-1.5 text-emerald-600 font-black text-[9px] bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">
-                        <CheckCircle2 className="w-3 h-3" />
-                        COMPLETA
+                      <div className="flex items-center justify-end gap-1 text-emerald-600 font-extrabold text-[8px] bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-100">
+                        <CheckCircle2 className="w-2.5 h-2.5" />
+                        FIN
                       </div>
                     ) : (
-                      <div className="flex flex-col items-end gap-0.5">
-                        <div className="text-blue-600 font-black text-[9px] uppercase tracking-widest flex items-center gap-1">
-                          <Package className="w-2.5 h-2.5" />
+                      <div className="flex flex-col items-end gap-0">
+                        <div className="text-blue-600 font-black text-[9px] tracking-tighter flex items-center gap-1">
                           {Math.round((totalEntregado/totalProgramado)*100)}%
                         </div>
-                        <span className="text-[9px] font-bold text-slate-400">
-                          {totalProgramado - totalEntregado} PENDIENTES
+                        <span className="text-[7px] font-bold text-slate-400 leading-none">
+                          -{totalProgramado - totalEntregado} UDS
                         </span>
                       </div>
                     )}
@@ -156,12 +148,6 @@ export function OPProgressMatrix({ lines, opEstado }: Props) {
         </table>
       </div>
       
-      <div className="flex items-center gap-2 px-2 py-2 bg-blue-50/30 rounded-xl border border-blue-100/50">
-        <Info className="w-3 h-3 text-blue-500 shrink-0" />
-        <p className="text-[9px] font-bold text-blue-700 uppercase tracking-tight">
-          Info de Producción: Los porcentajes se calculan sobre la meta programada. Las barras muestran el avance en Corte, Confección y Entrega final.
-        </p>
-      </div>
     </div>
   )
 }

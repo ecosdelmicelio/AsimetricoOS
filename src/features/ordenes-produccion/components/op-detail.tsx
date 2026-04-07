@@ -118,14 +118,14 @@ export async function OPDetail({ id }: Props) {
 
   return (
     <div className="space-y-8 pb-20 max-w-[1400px] mx-auto">
-      
+
       {/* 🏭 INDUSTRIAL PRODUCTION COMMAND CENTER HEADER */}
       <div className="rounded-[2.5rem] bg-white shadow-2xl border border-slate-100 overflow-hidden">
         <div className="p-6 lg:px-8 lg:py-6">
-          
+
           {/* Row 1: Identification & Metrics */}
           <div className="flex flex-col lg:flex-row items-center justify-between gap-4 mb-6">
-            
+
             {/* Identification & Workshop */}
             <div className="flex items-center gap-3 bg-slate-50/50 px-4 py-3 rounded-[1.25rem] border border-slate-100 flex-1 min-w-0 self-stretch">
               <Link
@@ -160,19 +160,19 @@ export async function OPDetail({ id }: Props) {
 
             {/* Metrics Stripe */}
             <div className="grid grid-cols-3 gap-2 flex-[1.5] self-stretch">
-              <MetricStripe 
+              <MetricStripe
                 icon={<Clock className="w-3 h-3 text-amber-500" />}
                 label="Timeline / Aging"
                 value={`T+${daysPast}d`}
                 subValue={`Promesa: ${formatDate(op.fecha_promesa)}`}
               />
-              <MetricStripe 
+              <MetricStripe
                 icon={<TrendingUp className="w-3 h-3 text-primary-500" />}
                 label="Entregas / Fulfillment"
                 value={`${entregasTotales}/${totalUnidades}`}
-                subValue={`${Math.round((entregasTotales/totalUnidades)*100 || 0)}% Unidades`}
+                subValue={`${Math.round((entregasTotales / totalUnidades) * 100 || 0)}% Unidades`}
               />
-              <MetricStripe 
+              <MetricStripe
                 icon={<DollarSign className="w-3 h-3 text-emerald-500" />}
                 label="Costo Producción"
                 value={formatCurrency(costoTotal)}
@@ -182,7 +182,7 @@ export async function OPDetail({ id }: Props) {
 
             {/* Actions */}
             <div className="flex flex-col gap-2 shrink-0 w-full sm:w-40 self-start sticky top-4">
-               {op.estado === 'dupro_pendiente' && (
+              {op.estado === 'dupro_pendiente' && (
                 <Link
                   href={`/calidad/${id}`}
                   className="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest transition-all hover:bg-slate-50 shadow-sm"
@@ -195,10 +195,27 @@ export async function OPDetail({ id }: Props) {
             </div>
           </div>
 
-          {/* Row 2: OP Stepper */}
-          <div className="bg-slate-50/30 rounded-[2rem] border border-slate-100/50 p-4 lg:p-8 shadow-inner">
-            <div className="px-4 py-4">
-              <OPStepper currentStatus={estadoOP} historial={historial} />
+          {/* Consolidado Industrial: Stepper + Matriz */}
+          <div className="bg-slate-50/50 rounded-[2rem] border border-slate-100 shadow-inner overflow-hidden">
+            <div className="p-8 lg:p-10">
+              <div className="mb-14">
+                <OPStepper currentStatus={estadoOP} historial={historial} />
+              </div>
+              <div className="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 p-6 flex flex-col gap-6">
+                <OPProgressMatrix lines={progressLines} opEstado={estadoOP} />
+
+                {op.notas && (
+                  <div className="pt-6 border-t border-slate-100">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileText className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Notas de Producción</span>
+                    </div>
+                    <p className="text-body-sm text-slate-600 font-medium bg-slate-50/50 p-4 rounded-xl border border-slate-100 italic">
+                      &quot;{op.notas}&quot;
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -218,18 +235,6 @@ export async function OPDetail({ id }: Props) {
         </div>
       )}
 
-      {/* Notas */}
-      {op.notas && (
-        <div className="rounded-2xl bg-neu-base shadow-neu p-5">
-          <p className="text-body-sm font-medium text-muted-foreground mb-1">Notas al taller</p>
-          <p className="text-body-sm text-foreground">{op.notas}</p>
-        </div>
-      )}
-
-      {/* Matriz de Cumplimiento Logístico */}
-      <div className="bg-white rounded-[2rem] shadow-xl border border-slate-100 p-6 lg:p-8">
-        <OPProgressMatrix lines={progressLines} opEstado={estadoOP} />
-      </div>
 
       {/* Reporte de Corte */}
       <ReporteCorteePanel
