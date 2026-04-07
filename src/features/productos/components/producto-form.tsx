@@ -139,31 +139,24 @@ export function ProductoForm({ schema, atributos, marcas }: Props) {
         </div>
       )}
 
-      {/* Row 1: Tipo + Código */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Tipo *</label>
-          <div className="flex gap-2">
-            {(['fabricado', 'comercializado'] as const).map(tipo => (
-              <button
-                key={tipo}
-                type="button"
-                onClick={() => setTipoProducto(tipo)}
-                className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-all ${
-                  tipoProducto === tipo
-                    ? 'bg-primary-600 text-white font-semibold'
-                    : 'bg-neu-base text-muted-foreground hover:bg-neu-base/80'
-                }`}
-              >
-                {tipo === 'fabricado' ? 'Fabr.' : 'Com.'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="col-span-2 space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Código *</label>
-          <CodigoBuilder schema={schema} onChange={handleCodigoChange} />
+      {/* Header: Tipo */}
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">Tipo *</label>
+        <div className="flex gap-2">
+          {(['fabricado', 'comercializado'] as const).map(tipo => (
+            <button
+              key={tipo}
+              type="button"
+              onClick={() => setTipoProducto(tipo)}
+              className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-all ${
+                tipoProducto === tipo
+                  ? 'bg-primary-600 text-white font-semibold'
+                  : 'bg-neu-base text-muted-foreground hover:bg-neu-base/80'
+              }`}
+            >
+              {tipo === 'fabricado' ? 'Fabricado' : 'Comercializado'}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -332,6 +325,12 @@ export function ProductoForm({ schema, atributos, marcas }: Props) {
           <span className="text-xs font-medium text-blue-700">Origen USA 🇺🇸</span>
         </div>
       )}
+
+      {/* Código */}
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">Código *</label>
+        <CodigoBuilder schema={schema} onChange={handleCodigoChange} />
+      </div>
 
       {/* Actions */}
       <div className="flex gap-2 pt-2">
