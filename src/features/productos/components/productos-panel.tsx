@@ -20,7 +20,7 @@ interface Props {
 export function ProductosPanel({ productos, marcas, saldosPorProducto, catalogoMateriales, catalogoServicios }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [filtroEstado, setFiltroEstado] = useState<'activo' | 'inactivo' | 'en_desarrollo'>('activo')
+  const [filtroEstado, setFiltroEstado] = useState<'en_desarrollo' | 'activo' | 'inactivo'>('activo')
 
   const visibles = productos.filter(p => p.estado === filtroEstado)
 
@@ -30,7 +30,7 @@ export function ProductosPanel({ productos, marcas, saldosPorProducto, catalogoM
       <div className="flex items-center justify-between">
         <button
           onClick={() => {
-            const ciclo: ('activo' | 'inactivo' | 'en_desarrollo')[] = ['activo', 'inactivo', 'en_desarrollo']
+            const ciclo: ('en_desarrollo' | 'activo' | 'inactivo')[] = ['en_desarrollo', 'activo', 'inactivo']
             const siguiente = ciclo[(ciclo.indexOf(filtroEstado) + 1) % ciclo.length]
             setFiltroEstado(siguiente)
           }}
@@ -38,15 +38,15 @@ export function ProductosPanel({ productos, marcas, saldosPorProducto, catalogoM
         >
           <div
             className={`relative w-16 h-5 rounded-full transition-colors overflow-hidden ${
-              filtroEstado === 'activo' ? 'bg-green-500' : filtroEstado === 'inactivo' ? 'bg-gray-400' : 'bg-blue-500'
+              filtroEstado === 'en_desarrollo' ? 'bg-blue-500' : filtroEstado === 'activo' ? 'bg-green-500' : 'bg-gray-400'
             }`}
           >
             <span className={`absolute left-0 top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-              filtroEstado === 'activo' ? 'translate-x-0.5' : filtroEstado === 'inactivo' ? 'translate-x-5' : 'translate-x-10'
+              filtroEstado === 'en_desarrollo' ? 'translate-x-0.5' : filtroEstado === 'activo' ? 'translate-x-5' : 'translate-x-10'
             }`} />
           </div>
           <span className="text-body-sm text-muted-foreground">
-            {filtroEstado === 'activo' ? 'Activos' : filtroEstado === 'inactivo' ? 'Inactivos' : 'En desarrollo'}
+            {filtroEstado === 'en_desarrollo' ? 'En desarrollo' : filtroEstado === 'activo' ? 'Activos' : 'Inactivos'}
           </span>
         </button>
 
@@ -201,6 +201,12 @@ function ProductForm({
     e.preventDefault()
     if (!referencia.trim() || !nombre.trim()) {
       setError('Referencia y nombre son obligatorios')
+      return
+    }
+
+    // Validar que no se pueda cambiar a activo sin BOM completo (productos fabricados)
+    if (isEdit && product.tipo_producto === 'fabricado' && estado === 'activo' && product.estado !== 'activo') {
+      setError('Debes marcar el BOM como completado antes de activar el producto')
       return
     }
 
@@ -448,11 +454,18 @@ function ProductForm({
                   <select
                     value={estado}
                     onChange={e => setEstado(e.target.value as EstadoProducto)}
-                    className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none"
+                    disabled={estado === 'inactivo'}
+                    className={`w-full bg-transparent text-body-sm text-foreground outline-none appearance-none ${estado === 'inactivo' ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    <option value="activo">Activo</option>
-                    <option value="inactivo">Inactivo</option>
-                    <option value="en_desarrollo">En desarrollo</option>
+                    {estado === 'inactivo' ? (
+                      <option value="activo">Activo</option>
+                    ) : (
+                      <>
+                        <option value="activo">Activo</option>
+                        <option value="inactivo">Inactivo</option>
+                        <option value="en_desarrollo">En desarrollo</option>
+                      </>
+                    )}
                   </select>
                 </div>
               </div>
