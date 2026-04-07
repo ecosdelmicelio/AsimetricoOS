@@ -1,12 +1,11 @@
 'use client'
 
 import { useState, useTransition, useCallback, useMemo, useEffect, useRef } from 'react'
-import { Plus, Edit2, Loader2, Package, AlertTriangle, RotateCcw } from 'lucide-react'
+import { Plus, Edit2, Loader2, Package, AlertTriangle } from 'lucide-react'
 import { createMaterial, updateMaterial } from '@/features/materiales/services/materiales-actions'
 import { useDuplicateCheck } from '@/shared/hooks/use-duplicate-check'
-import { CodigoBuilder } from '@/features/codigo-schema/components/codigo-builder'
+import { CodigoPreviewMP } from '@/features/materiales/components/codigo-preview-mp'
 import { getAtributosMP, getAtributosPorTipoMP } from '@/features/materiales/services/atributo-actions'
-import type { CodigoSchema, SegmentoSeleccion } from '@/features/codigo-schema/types'
 import type { Material, UnidadMaterial, TipoMP } from '@/features/materiales/types'
 import type { AtributoMP, TipoAtributoMP } from '@/features/materiales/types/atributos'
 import { TIPOS_ATRIBUTO_MP, LABELS_ATRIBUTO_MP } from '@/features/materiales/types/atributos'
@@ -29,10 +28,9 @@ function formatCop(n: number) {
 
 interface Props {
   materiales: Material[]
-  schema: CodigoSchema | null
 }
 
-export function MaterialesPanel({ materiales, schema }: Props) {
+export function MaterialesPanel({ materiales }: Props) {
   const [showForm, setShowForm]   = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showInactivos, setShowInactivos] = useState(false)
@@ -66,7 +64,7 @@ export function MaterialesPanel({ materiales, schema }: Props) {
 
       {/* Form de creación */}
       {showForm && (
-        <MaterialForm schema={schema} onDone={() => setShowForm(false)} />
+        <MaterialForm onDone={() => setShowForm(false)} />
       )}
 
       {/* Lista vacía */}
@@ -97,7 +95,7 @@ export function MaterialesPanel({ materiales, schema }: Props) {
           <div className="divide-y divide-black/5">
             {visibles.map(m =>
               editingId === m.id
-                ? <MaterialForm key={m.id} schema={schema} material={m} onDone={() => setEditingId(null)} />
+                ? <MaterialForm key={m.id} material={m} onDone={() => setEditingId(null)} />
                 : <MaterialRow key={m.id} material={m} onEdit={() => setEditingId(m.id)} />
             )}
           </div>
@@ -141,23 +139,17 @@ function MaterialRow({ material: m, onEdit }: { material: Material; onEdit: () =
 
 function MaterialForm({
   material,
-  schema,
   onDone,
 }: {
   material?: Material
-  schema: CodigoSchema | null
   onDone: () => void
 }) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [activo, setActivo] = useState(material?.activo ?? true)
   const [tipoMP, setTipoMP] = useState<TipoMP>(material?.tipo_mp ?? 'nacional')
-  const [codigoManual, setCodigoManual] = useState(material?.codigo ?? '')
-  const [codigoState, setCodigoState] = useState<{
-    codigo: string
-    completo: boolean
-    selecciones: SegmentoSeleccion[]
-  }>({ codigo: '', completo: false, selecciones: [] })
+  const [codigo, setCodigo] = useState('')
+  const [codigoCompleto, setCodigoCompleto] = useState(false)
   const [nombre, setNombre] = useState(material?.nombre ?? '')
   const [unidad, setUnidad] = useState<UnidadMaterial>(material?.unidad ?? 'metros')
   const [costoUnit, setCostoUnit] = useState(material?.costo_unit?.toString() ?? '')
@@ -180,22 +172,6 @@ function MaterialForm({
   })
 
   const isEdit = !!material
-  const usaSchema = !isEdit && !!schema
-
-  const nombreEditadoRef = useRef(isEdit)
-  const referenciaEditadaRef = useRef(isEdit)
-
-  const autoTexto = useMemo(() => {
-    if (!schema || codigoState.selecciones.length === 0) return ''
-    return codigoState.selecciones
-      .filter(s => s.tipo === 'selector' && s.valor)
-      .map(s => {
-        const seg = schema.segmentos.find(sg => sg.id === s.segmento_id)
-        return seg?.valores.find(v => v.valor === s.valor)?.etiqueta ?? ''
-      })
-      .filter(Boolean)
-      .join(' ')
-  }, [schema, codigoState.selecciones])
 
   // Cargar atributos al montar
   useEffect(() => {
@@ -214,27 +190,17 @@ function MaterialForm({
     cargarAtributos()
   }, [])
 
-  useEffect(() => {
-    if (!usaSchema || !autoTexto) return
-    if (!nombreEditadoRef.current) setNombre(autoTexto)
-    if (!referenciaEditadaRef.current) setReferenciaProveedor(autoTexto)
-  }, [autoTexto, usaSchema])
-
-  const handleCodigoChange = useCallback(
-    (result: { codigo: string; completo: boolean; selecciones: SegmentoSeleccion[] }) => {
-      setCodigoState(result)
-    },
-    [],
-  )
-
-  const codigoEffectivo = usaSchema ? codigoState.codigo : codigoManual
+  const handleCodigoChange = useCallback((nuevoCodigo: string, completo: boolean) => {
+    setCodigo(nuevoCodigo)
+    setCodigoCompleto(completo)
+  }, [])
 
   const { isDuplicate: codigoDuplicado, checking: checkingCodigo } = useDuplicateCheck({
     table: 'materiales',
     field: 'codigo',
-    value: codigoEffectivo,
+    value: codigo,
     excludeId: material?.id,
-    enabled: !isEdit && codigoEffectivo.trim().length > 0 && (!usaSchema || codigoState.completo),
+    enabled: !isEdit && codigo.trim().length > 0 && codigoCompleto,
   })
 
   const { isDuplicate: nombreDuplicado, checking: checkingNombre } = useDuplicateCheck({
@@ -256,7 +222,7 @@ function MaterialForm({
       setError('Ya existe un material con ese código')
       return
     }
-    if (usaSchema && !codigoState.completo) {
+    if (!isEdit && !codigoCompleto) {
       setError('Completa el código antes de continuar')
       return
     }
@@ -265,26 +231,22 @@ function MaterialForm({
       return
     }
 
-    const autoRefs = codigoState.selecciones
-      .filter(s => s.tipo === 'auto_ref')
-      .map(s => ({ segmento_id: s.segmento_id, longitud: s.longitud }))
-
     setError(null)
     startTransition(async () => {
       const rendimientoNum = rendimientoKg ? parseFloat(rendimientoKg) : null
       const res = isEdit
-        ? await updateMaterial(material.id, { 
-            nombre, 
-            unidad, 
-            costo_unit: costoNum, 
+        ? await updateMaterial(material.id, {
+            nombre,
+            unidad,
+            costo_unit: costoNum,
             referencia_proveedor: referenciaProveedor || undefined,
             partida_arancelaria: partidaArancelaria || undefined,
             tipo_mp: tipoMP,
-            activo, 
-            rendimiento_kg: rendimientoNum 
+            activo,
+            rendimiento_kg: rendimientoNum
           })
         : await createMaterial({
-            codigo: codigoEffectivo,
+            codigo,
             nombre,
             unidad,
             costo_unit: costoNum,
@@ -293,8 +255,6 @@ function MaterialForm({
             tipo_mp: tipoMP,
             rendimiento_kg: rendimientoNum,
             atributos: atributosSeleccionados,
-            autoRefs: autoRefs.length > 0 ? autoRefs : undefined,
-            schema_id: schema?.id,
           })
       if (res.error) { setError(res.error); return }
       onDone()
@@ -434,7 +394,7 @@ function MaterialForm({
           <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
             <input
               value={referenciaProveedor}
-              onChange={e => { referenciaEditadaRef.current = true; setReferenciaProveedor(e.target.value) }}
+              onChange={e => setReferenciaProveedor(e.target.value)}
               placeholder="SKU-PROV-123"
               className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
@@ -473,33 +433,26 @@ function MaterialForm({
         </div>
       )}
 
-      {/* Código: CodigoBuilder o manual */}
+      {/* Código */}
       {!isEdit && (
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-foreground">Código *</label>
-          {usaSchema ? (
-            <CodigoBuilder schema={schema} onChange={handleCodigoChange} />
-          ) : (
-            <>
-              <div className="flex items-center gap-1.5">
-                {checkingCodigo && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
-              </div>
-              <div className={`rounded-lg bg-neu-base shadow-neu px-3 py-2 ${codigoDuplicado ? 'ring-1 ring-red-400' : ''}`}>
-                <input
-                  value={codigoManual}
-                  onChange={e => setCodigoManual(e.target.value.toUpperCase())}
-                  required
-                  placeholder="TEL-004"
-                  className="w-full bg-transparent text-body-sm font-mono text-foreground outline-none"
-                />
-              </div>
-              {codigoDuplicado && (
-                <div className="flex items-center gap-1 text-red-600">
-                  <AlertTriangle className="w-3 h-3 shrink-0" />
-                  <span className="text-[10px]">Código ya existe</span>
-                </div>
-              )}
-            </>
+          <CodigoPreviewMP
+            atributos={atributosPorTipo}
+            seleccionados={atributosSeleccionados}
+            onCodigoChange={handleCodigoChange}
+          />
+          {codigoDuplicado && (
+            <div className="flex items-center gap-1 text-red-600">
+              <AlertTriangle className="w-3 h-3 shrink-0" />
+              <span className="text-[10px]">Código ya existe</span>
+            </div>
+          )}
+          {checkingCodigo && (
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              <span className="text-xs">Verificando...</span>
+            </div>
           )}
         </div>
       )}
@@ -526,7 +479,7 @@ function MaterialForm({
         </button>
         <button
           type="submit"
-          disabled={pending || (!isEdit && codigoDuplicado) || (usaSchema && !codigoState.completo)}
+          disabled={pending || (!isEdit && codigoDuplicado) || (!isEdit && !codigoCompleto)}
           className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset disabled:opacity-60"
         >
           {pending && <Loader2 className="w-3 h-3 animate-spin" />}

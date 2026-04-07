@@ -4,38 +4,29 @@ import { useState, useTransition, useCallback, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, AlertTriangle, Globe } from 'lucide-react'
 import { createProducto } from '@/features/productos/services/producto-actions'
-import { CodigoBuilder } from '@/features/codigo-schema/components/codigo-builder'
+import { CodigoPreviewPT } from '@/features/productos/components/codigo-preview-pt'
 import { useDuplicateCheck } from '@/shared/hooks/use-duplicate-check'
-import type { CodigoSchema, SegmentoSeleccion } from '@/features/codigo-schema/types'
 import type { TipoProducto } from '@/features/productos/types'
 import type { AtributoPT, TipoAtributo } from '@/features/productos/types/atributos'
 import type { Marca } from '@/features/configuracion/services/marcas-actions'
 import { TIPOS_ATRIBUTO, LABELS_ATRIBUTO } from '@/features/productos/types/atributos'
 
-interface CodigoState {
-  codigo: string
-  completo: boolean
-  selecciones: SegmentoSeleccion[]
-}
-
 interface Props {
-  schema: CodigoSchema | null
   atributos: Record<TipoAtributo, AtributoPT[]>
   marcas: Marca[]
 }
 
-export function ProductoForm({ schema, atributos, marcas }: Props) {
+export function ProductoForm({ atributos, marcas }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
-  // Step 1
+  // Tipo y Código
   const [tipoProducto, setTipoProducto] = useState<TipoProducto>('fabricado')
-  const [codigoState, setCodigoState] = useState<CodigoState>({
-    codigo: '',
-    completo: false,
-    selecciones: [],
-  })
+  const [codigo, setCodigo] = useState('')
+  const [codigoCompleto, setCodigoCompleto] = useState(false)
+
+  // Básico
   const [nombre, setNombre] = useState('')
   const [color, setColor] = useState('')
 
@@ -60,39 +51,18 @@ export function ProductoForm({ schema, atributos, marcas }: Props) {
   const [referenciaCliente, setReferenciaCliente] = useState('')
   const [nombreComercial, setNombreComercial] = useState('')
 
-  // Auto-derivar color y origen del esquema de código
-  const autoColor = useMemo(() => {
-    if (!schema || codigoState.selecciones.length === 0) return ''
-    const seg = schema.segmentos.find(s => s.etiqueta.toLowerCase().includes('color'))
-    if (!seg) return ''
-    const sel = codigoState.selecciones.find(s => s.segmento_id === seg.id)
-    if (!sel?.valor) return ''
-    return seg.valores.find(v => v.valor === sel.valor)?.etiqueta ?? sel.valor
-  }, [schema, codigoState.selecciones])
-
-  const autoOrigenUsa = useMemo(() => {
-    if (!schema || codigoState.selecciones.length === 0) return false
-    const seg = schema.segmentos.find(s =>
-      s.etiqueta.toLowerCase().includes('origen') || s.etiqueta.toLowerCase().includes('origin')
-    )
-    if (!seg) return false
-    const sel = codigoState.selecciones.find(s => s.segmento_id === seg.id)
-    if (!sel?.valor) return false
-    const etiqueta = seg.valores.find(v => v.valor === sel.valor)?.etiqueta ?? ''
-    return etiqueta.toLowerCase().includes('usa') || etiqueta.toLowerCase().includes(' us') || sel.valor.toUpperCase() === 'US'
-  }, [schema, codigoState.selecciones])
-
-  // Auto-rellenar color cuando cambia la selección del código
+  // Auto-llenar referencia cuando código está completo
   useEffect(() => {
-    if (autoColor) setColor(autoColor)
-  }, [autoColor])
+    if (codigoCompleto && codigo) {
+      // Ya no auto-llenamos, dejamos que se especifique manualmente si es necesario
+      // pero podríamos auto-llenar si queremos
+    }
+  }, [codigoCompleto, codigo])
 
-  const handleCodigoChange = useCallback(
-    (result: { codigo: string; completo: boolean; selecciones: SegmentoSeleccion[] }) => {
-      setCodigoState(result)
-    },
-    [],
-  )
+  const handleCodigoChange = useCallback((nuevoCodigo: string, completo: boolean) => {
+    setCodigo(nuevoCodigo)
+    setCodigoCompleto(completo)
+  }, [])
 
   const { isDuplicate: nombreDuplicado, checking: checkingNombre } = useDuplicateCheck({
     table: 'productos',
@@ -101,20 +71,16 @@ export function ProductoForm({ schema, atributos, marcas }: Props) {
     enabled: nombre.trim().length > 2,
   })
 
-  const canAdvanceStep1 = codigoState.completo && nombre.trim().length > 0
+  const canAdvanceStep1 = codigoCompleto && nombre.trim().length > 0
 
   function handleSubmit() {
     setError(null)
-    const autoRefs = codigoState.selecciones
-      .filter(s => s.tipo === 'auto_ref')
-      .map(s => ({ segmento_id: s.segmento_id, longitud: s.longitud }))
 
     startTransition(async () => {
       const res = await createProducto({
-        referencia: codigoState.codigo,
+        referencia: codigo,
         nombre: nombre.trim(),
         color: color.trim() || undefined,
-        origen_usa: autoOrigenUsa,
         precio_base: precioN1 ? parseFloat(precioN1) : undefined,
         precio_estandar: precioN2 ? parseFloat(precioN2) : undefined,
         precio_n3: precioN3 ? parseFloat(precioN3) : undefined,
@@ -123,8 +89,6 @@ export function ProductoForm({ schema, atributos, marcas }: Props) {
         tipo_producto: tipoProducto,
         marca_id: marcaSeleccionada || undefined,
         atributos: atributosSeleccionados,
-        autoRefs: autoRefs.length > 0 ? autoRefs : undefined,
-        schema_id: schema?.id,
       })
       if (res.error) { setError(res.error); return }
       router.push(`/productos/${res.data!.id}`)
@@ -318,18 +282,14 @@ export function ProductoForm({ schema, atributos, marcas }: Props) {
         </div>
       </div>
 
-      {/* USA Origin alert */}
-      {autoOrigenUsa && (
-        <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2">
-          <Globe className="w-4 h-4 text-blue-600 shrink-0" />
-          <span className="text-xs font-medium text-blue-700">Origen USA 🇺🇸</span>
-        </div>
-      )}
-
       {/* Código */}
       <div className="space-y-1">
         <label className="text-xs font-medium text-muted-foreground">Código *</label>
-        <CodigoBuilder schema={schema} onChange={handleCodigoChange} />
+        <CodigoPreviewPT
+          atributos={atributos}
+          seleccionados={atributosSeleccionados}
+          onCodigoChange={handleCodigoChange}
+        />
       </div>
 
       {/* Actions */}
