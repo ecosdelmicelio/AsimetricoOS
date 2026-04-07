@@ -3,16 +3,21 @@
 import { useState, useTransition } from 'react'
 import { Plus, Edit2, Loader2, Package } from 'lucide-react'
 import { createProducto, updateProducto } from '@/features/productos/services/producto-actions'
+import { getBOMProducto } from '@/features/productos/services/bom-actions'
+import { BOMEditor } from '@/features/productos/components/bom-editor'
 import type { Producto, TipoProducto } from '@/features/productos/types'
 import type { MarcaConTercero } from '@/features/configuracion/services/marcas-actions'
+import type { Material, ServicioOperativo } from '@/features/productos/services/bom-actions'
 
 interface Props {
   productos: Producto[]
   marcas: MarcaConTercero[]
   saldosPorProducto: Record<string, number>
+  catalogoMateriales: Material[]
+  catalogoServicios: ServicioOperativo[]
 }
 
-export function ProductosPanel({ productos, marcas, saldosPorProducto }: Props) {
+export function ProductosPanel({ productos, marcas, saldosPorProducto, catalogoMateriales, catalogoServicios }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showInactivos, setShowInactivos] = useState(false)
@@ -46,7 +51,12 @@ export function ProductosPanel({ productos, marcas, saldosPorProducto }: Props) 
 
       {/* Form de creación */}
       {showForm && (
-        <ProductForm marcas={marcas} onDone={() => setShowForm(false)} />
+        <ProductForm
+          marcas={marcas}
+          catalogoMateriales={catalogoMateriales}
+          catalogoServicios={catalogoServicios}
+          onDone={() => setShowForm(false)}
+        />
       )}
 
       {/* Lista vacía */}
@@ -79,7 +89,14 @@ export function ProductosPanel({ productos, marcas, saldosPorProducto }: Props) 
           <div className="divide-y divide-black/5">
             {visibles.map(p =>
               editingId === p.id
-                ? <ProductForm key={p.id} product={p} marcas={marcas} onDone={() => setEditingId(null)} />
+                ? <ProductForm
+                    key={p.id}
+                    product={p}
+                    marcas={marcas}
+                    catalogoMateriales={catalogoMateriales}
+                    catalogoServicios={catalogoServicios}
+                    onDone={() => setEditingId(null)}
+                  />
                 : <ProductRow key={p.id} product={p} marcas={marcas} saldo={saldosPorProducto[p.id] ?? 0} onEdit={() => setEditingId(p.id)} />
             )}
           </div>
@@ -122,10 +139,14 @@ function ProductRow({ product: p, marcas, saldo, onEdit }: { product: Producto; 
 function ProductForm({
   product,
   marcas,
+  catalogoMateriales,
+  catalogoServicios,
   onDone,
 }: {
   product?: Producto
   marcas: MarcaConTercero[]
+  catalogoMateriales: Material[]
+  catalogoServicios: ServicioOperativo[]
   onDone: () => void
 }) {
   const [pending, startTransition] = useTransition()
@@ -133,9 +154,30 @@ function ProductForm({
   const [referencia, setReferencia] = useState(product?.referencia ?? '')
   const [nombre, setNombre] = useState(product?.nombre ?? '')
   const [tipo, setTipo] = useState<TipoProducto>(product?.tipo_producto ?? 'fabricado')
-  const [referenciaCliente, setReferenciaCliente] = useState(product?.referencia_cliente || '')
-  const [marcaId, setMarcaId] = useState(product?.marca_id || '')
+  const [referenciaCliente, setReferenciaCliente] = useState(product?.referencia_cliente ?? '')
+  const [marcaId, setMarcaId] = useState(product?.marca_id ?? '')
   const [estado, setEstado] = useState(product?.estado ?? 'activo')
+  const [color, setColor] = useState(product?.color ?? '')
+  const [nombreComercial, setNombreComercial] = useState(product?.nombre_comercial ?? '')
+  const [precioN1, setPrecioN1] = useState(product?.precio_base ? String(product.precio_base) : '')
+  const [precioN2, setPrecioN2] = useState(product?.precio_estandar ? String(product.precio_estandar) : '')
+  const [precioN3, setPrecioN3] = useState(product?.precio_n3 ? String(product.precio_n3) : '')
+  const [tab, setTab] = useState<'detalles' | 'bom'>('detalles')
+  const [bomData, setBomData] = useState<Awaited<ReturnType<typeof getBOMProducto>> | null>(null)
+  const [bomLoading, setBomLoading] = useState(false)
+
+  // Cargar BOM cuando se abre el tab BOM
+  const handleBomTabClick = async () => {
+    if (!product || bomData) {
+      setTab('bom')
+      return
+    }
+    setBomLoading(true)
+    const bom = await getBOMProducto(product.id)
+    setBomData(bom)
+    setBomLoading(false)
+    setTab('bom')
+  }
 
   const isEdit = !!product
 
@@ -156,6 +198,11 @@ function ProductForm({
             referencia_cliente: referenciaCliente || null,
             marca_id: marcaId || null,
             estado,
+            color: color || null,
+            nombre_comercial: nombreComercial || null,
+            precio_base: precioN1 ? parseFloat(precioN1) : null,
+            precio_estandar: precioN2 ? parseFloat(precioN2) : null,
+            precio_n3: precioN3 ? parseFloat(precioN3) : null,
           })
         : await createProducto({
             referencia,
@@ -163,6 +210,11 @@ function ProductForm({
             tipo_producto: tipo,
             referencia_cliente: referenciaCliente || null,
             marca_id: marcaId || null,
+            color: color || null,
+            nombre_comercial: nombreComercial || null,
+            precio_base: precioN1 ? parseFloat(precioN1) : null,
+            precio_estandar: precioN2 ? parseFloat(precioN2) : null,
+            precio_n3: precioN3 ? parseFloat(precioN3) : null,
           })
 
       if ('error' in res && res.error) {
@@ -179,103 +231,237 @@ function ProductForm({
         {isEdit ? `Editando ${product.referencia}` : 'Nuevo producto'}
       </p>
 
-      {/* Row: Referencia + Tipo */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-foreground">Referencia *</label>
-          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
-            <input
-              value={referencia}
-              onChange={e => setReferencia(e.target.value.toUpperCase())}
-              required
-              placeholder="PT-001"
-              className="w-full bg-transparent text-body-sm font-mono text-foreground outline-none placeholder:text-muted-foreground"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Tipo *</label>
-          <div className="flex gap-2">
-            {(['fabricado', 'comercializado'] as const).map(t => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTipo(t)}
-                disabled={isEdit}
-                className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-all ${
-                  tipo === t
-                    ? 'bg-primary-600 text-white font-semibold'
-                    : 'bg-neu-base text-muted-foreground hover:bg-neu-base/80'
-                } ${isEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {t === 'fabricado' ? 'Fabricado' : 'Comercializado'}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Row: Nombre + Ref Cliente */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-foreground">Nombre *</label>
-          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
-            <input
-              value={nombre}
-              onChange={e => setNombre(e.target.value)}
-              required
-              placeholder="Camiseta algodón"
-              className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Ref Cliente</label>
-          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
-            <input
-              value={referenciaCliente}
-              onChange={e => setReferenciaCliente(e.target.value)}
-              placeholder="SKU-CLIENTE-123"
-              className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Row: Marca + Estado (si edición) */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Marca</label>
-          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
-            <select
-              value={marcaId}
-              onChange={e => setMarcaId(e.target.value)}
-              className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none"
+      {/* Tabs */}
+      {isEdit && (
+        <div className="flex gap-1 rounded-lg bg-neu-base shadow-neu-inset p-1">
+          <button
+            type="button"
+            onClick={() => setTab('detalles')}
+            className={`flex-1 px-3 py-1.5 text-xs font-medium rounded transition-all ${
+              tab === 'detalles'
+                ? 'bg-neu-base shadow-neu text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Detalles
+          </button>
+          {tipo === 'fabricado' && (
+            <button
+              type="button"
+              onClick={handleBomTabClick}
+              className={`flex-1 px-3 py-1.5 text-xs font-medium rounded transition-all ${
+                tab === 'bom'
+                  ? 'bg-neu-base shadow-neu text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
             >
-              <option value="">—</option>
-              {marcas.map(m => (
-                <option key={m.id} value={m.id}>{m.nombre}</option>
-              ))}
-            </select>
-          </div>
+              BOM
+            </button>
+          )}
         </div>
+      )}
 
-        {isEdit && (
-          <label className="flex items-center gap-2 cursor-pointer justify-end pt-6">
-            <div
-              onClick={() => setEstado(estado === 'activo' ? 'descontinuado' : 'activo')}
-              className={`relative w-9 h-5 rounded-full transition-colors ${estado === 'activo' ? 'bg-primary-500' : 'bg-neu-base shadow-neu-inset'}`}
-            >
-              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${estado === 'activo' ? 'translate-x-4' : 'translate-x-0.5'}`} />
+      {/* Tab: Detalles */}
+      {tab === 'detalles' && (
+        <div className="space-y-3">
+          {/* Row: Referencia + Tipo */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Referencia *</label>
+              <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+                <input
+                  value={referencia}
+                  onChange={e => setReferencia(e.target.value.toUpperCase())}
+                  required
+                  placeholder="PT-001"
+                  className="w-full bg-transparent text-body-sm font-mono text-foreground outline-none placeholder:text-muted-foreground"
+                />
+              </div>
             </div>
-            <span className="text-body-sm text-foreground">{estado === 'activo' ? 'Activo' : 'Descont.'}</span>
-          </label>
-        )}
-      </div>
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Tipo *</label>
+              <div className="flex gap-2">
+                {(['fabricado', 'comercializado'] as const).map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setTipo(t)}
+                    disabled={isEdit}
+                    className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-all ${
+                      tipo === t
+                        ? 'bg-primary-600 text-white font-semibold'
+                        : 'bg-neu-base text-muted-foreground hover:bg-neu-base/80'
+                    } ${isEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {t === 'fabricado' ? 'Fabricado' : 'Comercializado'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Row: Nombre + Color */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Nombre *</label>
+              <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+                <input
+                  value={nombre}
+                  onChange={e => setNombre(e.target.value)}
+                  required
+                  placeholder="Camiseta algodón"
+                  className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Color</label>
+              <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+                <input
+                  value={color}
+                  onChange={e => setColor(e.target.value)}
+                  placeholder="Negro"
+                  className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Row: Precios N1, N2, N3 */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">N1 (COP)</label>
+              <div className="relative rounded-lg bg-neu-base shadow-neu">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={1000}
+                  value={precioN1}
+                  onChange={e => setPrecioN1(e.target.value)}
+                  placeholder="0"
+                  className="w-full bg-transparent pl-6 pr-2.5 py-2 text-body-sm text-foreground outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">N2 (COP)</label>
+              <div className="relative rounded-lg bg-neu-base shadow-neu">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={1000}
+                  value={precioN2}
+                  onChange={e => setPrecioN2(e.target.value)}
+                  placeholder="0"
+                  className="w-full bg-transparent pl-6 pr-2.5 py-2 text-body-sm text-foreground outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">N3 (COP)</label>
+              <div className="relative rounded-lg bg-neu-base shadow-neu">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={1000}
+                  value={precioN3}
+                  onChange={e => setPrecioN3(e.target.value)}
+                  placeholder="0"
+                  className="w-full bg-transparent pl-6 pr-2.5 py-2 text-body-sm text-foreground outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Row: Ref Cliente + Nombre Comercial */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Ref Cliente</label>
+              <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+                <input
+                  value={referenciaCliente}
+                  onChange={e => setReferenciaCliente(e.target.value)}
+                  placeholder="SKU-CLIENTE-123"
+                  className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Nombre Comercial</label>
+              <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+                <input
+                  value={nombreComercial}
+                  onChange={e => setNombreComercial(e.target.value)}
+                  placeholder="Premium, Ejecutivo"
+                  className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Row: Marca + Estado (si edición) */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Marca</label>
+              <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+                <select
+                  value={marcaId}
+                  onChange={e => setMarcaId(e.target.value)}
+                  className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none"
+                >
+                  <option value="">—</option>
+                  {marcas.map(m => (
+                    <option key={m.id} value={m.id}>{m.nombre}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {isEdit && (
+              <label className="flex items-center gap-2 cursor-pointer justify-end pt-6">
+                <div
+                  onClick={() => setEstado(estado === 'activo' ? 'descontinuado' : 'activo')}
+                  className={`relative w-9 h-5 rounded-full transition-colors ${estado === 'activo' ? 'bg-primary-500' : 'bg-neu-base shadow-neu-inset'}`}
+                >
+                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${estado === 'activo' ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </div>
+                <span className="text-body-sm text-foreground">{estado === 'activo' ? 'Activo' : 'Descont.'}</span>
+              </label>
+            )}
+          </div>
+
+          {error && <p className="text-xs text-red-600">{error}</p>}
+        </div>
+      )}
+
+      {/* Tab: BOM */}
+      {tab === 'bom' && isEdit && bomLoading && (
+        <div className="text-center py-6 text-muted-foreground flex items-center justify-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="text-sm">Cargando BOM...</span>
+        </div>
+      )}
+      {tab === 'bom' && isEdit && bomData && !bomLoading && (
+        <BOMEditor
+          productoId={product.id}
+          materiales={bomData.materiales}
+          servicios={bomData.servicios}
+          catalogoMateriales={catalogoMateriales}
+          catalogoServicios={catalogoServicios}
+          precioBase={product.precio_base}
+          costoTotal={bomData.costo_total}
+          costoMateriales={bomData.costo_materiales}
+          costoServicios={bomData.costo_servicios}
+        />
+      )}
 
       <div className="flex gap-2 justify-end">
         <button
