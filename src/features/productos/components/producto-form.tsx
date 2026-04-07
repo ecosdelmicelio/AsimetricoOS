@@ -53,9 +53,10 @@ export function ProductoForm({ schema, atributos, marcas }: Props) {
 
   const [marcaSeleccionada, setMarcaSeleccionada] = useState('')
 
-  // Step 2
-  const [precioBase, setPrecioBase] = useState('')
-  const [precioEstandar, setPrecioEstandar] = useState('')
+  // Precios
+  const [precioN1, setPrecioN1] = useState('')
+  const [precioN2, setPrecioN2] = useState('')
+  const [precioN3, setPrecioN3] = useState('')
   const [referenciaCliente, setReferenciaCliente] = useState('')
   const [nombreComercial, setNombreComercial] = useState('')
 
@@ -114,8 +115,9 @@ export function ProductoForm({ schema, atributos, marcas }: Props) {
         nombre: nombre.trim(),
         color: color.trim() || undefined,
         origen_usa: autoOrigenUsa,
-        precio_base: precioBase ? parseFloat(precioBase) : undefined,
-        precio_estandar: precioEstandar ? parseFloat(precioEstandar) : undefined,
+        precio_base: precioN1 ? parseFloat(precioN1) : undefined,
+        precio_estandar: precioN2 ? parseFloat(precioN2) : undefined,
+        precio_n3: precioN3 ? parseFloat(precioN3) : undefined,
         referencia_cliente: referenciaCliente.trim() || undefined,
         nombre_comercial: nombreComercial.trim() || undefined,
         tipo_producto: tipoProducto,
@@ -272,18 +274,18 @@ export function ProductoForm({ schema, atributos, marcas }: Props) {
         </div>
       </div>
 
-      {/* Row 5: Precios */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Row 5: Precios N1, N2, N3 */}
+      <div className="grid grid-cols-3 gap-3">
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Precio Techo (COP)</label>
+          <label className="text-xs font-medium text-muted-foreground">N1 (COP)</label>
           <div className="relative rounded-lg bg-neu-base shadow-neu-inset">
             <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
             <input
               type="number"
               min={0}
               step={1000}
-              value={precioBase}
-              onChange={e => setPrecioBase(e.target.value)}
+              value={precioN1}
+              onChange={e => setPrecioN1(e.target.value)}
               placeholder="0"
               className="w-full bg-transparent pl-6 pr-2.5 py-1.5 text-sm text-foreground outline-none"
             />
@@ -291,15 +293,31 @@ export function ProductoForm({ schema, atributos, marcas }: Props) {
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Precio Estándar (COP)</label>
+          <label className="text-xs font-medium text-muted-foreground">N2 (COP)</label>
           <div className="relative rounded-lg bg-neu-base shadow-neu-inset">
             <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
             <input
               type="number"
               min={0}
               step={1000}
-              value={precioEstandar}
-              onChange={e => setPrecioEstandar(e.target.value)}
+              value={precioN2}
+              onChange={e => setPrecioN2(e.target.value)}
+              placeholder="0"
+              className="w-full bg-transparent pl-6 pr-2.5 py-1.5 text-sm text-foreground outline-none"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">N3 (COP)</label>
+          <div className="relative rounded-lg bg-neu-base shadow-neu-inset">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
+            <input
+              type="number"
+              min={0}
+              step={1000}
+              value={precioN3}
+              onChange={e => setPrecioN3(e.target.value)}
               placeholder="0"
               className="w-full bg-transparent pl-6 pr-2.5 py-1.5 text-sm text-foreground outline-none"
             />

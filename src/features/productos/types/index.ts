@@ -10,6 +10,7 @@ export interface Producto {
   origen_usa: boolean
   precio_base: number | null
   precio_estandar: number | null
+  precio_n3: number | null
   referencia_cliente: string | null
   nombre_comercial: string | null
   estado: EstadoProducto
@@ -32,6 +33,7 @@ export interface CreateProductoInput {
   origen_usa?: boolean
   precio_base?: number
   precio_estandar?: number
+  precio_n3?: number
   referencia_cliente?: string
   nombre_comercial?: string
   tipo_producto?: TipoProducto
@@ -49,6 +51,7 @@ export interface UpdateProductoInput {
   origen_usa?: boolean
   precio_base?: number
   precio_estandar?: number | null
+  precio_n3?: number | null
   referencia_cliente?: string | null
   nombre_comercial?: string | null
   tipo_producto?: TipoProducto

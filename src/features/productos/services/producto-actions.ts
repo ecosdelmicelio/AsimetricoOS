@@ -59,6 +59,7 @@ export async function createProducto(
       origen_usa: input.origen_usa ?? false,
       precio_base: input.precio_base ?? null,
       precio_estandar: input.precio_estandar ?? null,
+      precio_n3: input.precio_n3 ?? null,
       referencia_cliente: input.referencia_cliente ?? null,
       nombre_comercial: input.nombre_comercial ?? null,
       estado: 'activo',
@@ -98,6 +99,7 @@ export async function updateProducto(
   if (input.categoria !== undefined) payload.categoria = input.categoria
   if (input.precio_base !== undefined) payload.precio_base = input.precio_base
   if (input.precio_estandar !== undefined) payload.precio_estandar = input.precio_estandar || null
+  if (input.precio_n3 !== undefined) payload.precio_n3 = input.precio_n3 || null
   if (input.referencia_cliente !== undefined) payload.referencia_cliente = input.referencia_cliente || null
   if (input.nombre_comercial !== undefined) payload.nombre_comercial = input.nombre_comercial || null
   if (input.estado !== undefined) payload.estado = input.estado
