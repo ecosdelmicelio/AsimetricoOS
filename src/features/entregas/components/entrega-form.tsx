@@ -118,37 +118,36 @@ export function EntregaForm({ opId, lineasOP, onSuccess, onCancel }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <label className="text-body-sm font-medium text-foreground">
-            Fecha de Entrega <span className="text-red-500">*</span>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:gap-8">
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+            Fecha de Entrega
           </label>
-          <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
-            <input
-              type="date"
-              value={fecha}
-              onChange={e => setFecha(e.target.value)}
-              required
-              className="w-full bg-transparent text-body-sm text-foreground outline-none"
-            />
-          </div>
+          <input
+            type="date"
+            value={fecha}
+            onChange={e => setFecha(e.target.value)}
+            required
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-[14px] font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-100 focus:bg-white transition-all shadow-inner"
+          />
         </div>
-        <div className="space-y-1.5">
-          <label className="text-body-sm font-medium text-foreground">Notas (opcional)</label>
-          <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
-            <input
-              value={notas}
-              onChange={e => setNotas(e.target.value)}
-              placeholder="Observaciones..."
-              className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-            />
-          </div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+            Observaciones Adicionales
+          </label>
+          <input
+            type="text"
+            value={notas}
+            onChange={e => setNotas(e.target.value)}
+            placeholder="Sin observaciones..."
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-[14px] font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-100 focus:bg-white transition-all shadow-inner placeholder:text-slate-300"
+          />
         </div>
       </div>
 
       {/* Matriz de entregas */}
-      <div className="space-y-2">
-        <p className="text-body-sm font-medium text-foreground">Unidades a entregar</p>
+      <div className="space-y-3 pt-6 border-t border-slate-100">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Matriz de Unidades A Entregar</p>
         <MatrizProductos
           productos={productosEnMatrizState}
           tallas={tallas}
@@ -159,23 +158,24 @@ export function EntregaForm({ opId, lineasOP, onSuccess, onCancel }: Props) {
         />
       </div>
 
-      {error && <p className="text-red-600 text-body-sm">{error}</p>}
+      {error && <p className="text-red-600 text-[11px] font-bold uppercase">{error}</p>}
 
-      <div className="flex gap-3">
+      <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row gap-3">
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 py-2.5 rounded-xl bg-neu-base shadow-neu text-body-sm text-muted-foreground hover:text-foreground transition-all"
+          disabled={isPending}
+          className="flex-1 py-4 rounded-2xl bg-white border-2 border-slate-200 text-slate-500 font-black text-[12px] uppercase tracking-[0.2em] hover:bg-slate-50 hover:text-slate-900 transition-all active:scale-95 flex items-center justify-center"
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={isPending}
-          className="flex-1 py-2.5 rounded-xl bg-primary-600 text-white font-semibold text-body-sm hover:bg-primary-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          className="flex-[2] py-4 rounded-2xl bg-slate-900 text-white font-black text-[12px] uppercase tracking-[0.2em] hover:bg-black transition-all disabled:opacity-50 flex items-center justify-center gap-3 shadow-xl active:scale-95"
         >
-          {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-          Registrar Entrega
+          {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+          {isPending ? 'REGISTRANDO...' : 'CONFIRMAR ENTREGA'}
         </button>
       </div>
     </form>

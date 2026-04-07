@@ -2,11 +2,10 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Package, Plus, CheckCircle, XCircle, DollarSign, Warehouse } from 'lucide-react'
+import { Package, Plus, CheckCircle, XCircle, DollarSign } from 'lucide-react'
 import Link from 'next/link'
 import type { EntregaConDetalle } from '@/features/entregas/types'
 import { resolverFRI } from '@/features/entregas/services/entregas-actions'
-import { guardarBodegaDestino } from '@/features/liquidacion/services/liquidacion-actions'
 import { EntregaForm, type LineaOPSimple } from './entrega-form'
 import { formatDate, sortTallas } from '@/shared/lib/utils'
 
@@ -26,8 +25,6 @@ interface Props {
   lineasOP: LineaOPSimple[]
   totalUnidadesOP: number
   liquidacionesPorEntrega: Record<string, string>  // entregaId → liquidacionId
-  bodegas: { id: string; nombre: string }[]
-  bodegaDestinoId: string | null
   puedeEntregar?: boolean
   isEditing?: boolean
   onStartEdit?: () => void
@@ -43,9 +40,7 @@ export function EntregasPanel({
   entregas, 
   lineasOP, 
   totalUnidadesOP, 
-  liquidacionesPorEntrega, 
-  bodegas, 
-  bodegaDestinoId, 
+  liquidacionesPorEntrega,
   puedeEntregar = true,
   isEditing = false,
   onStartEdit,
@@ -55,24 +50,6 @@ export function EntregasPanel({
   const [showForm, setShowForm] = useState(false)
   const [friPending, startFriTransition] = useTransition()
   const [friLoading, setFriLoading] = useState<string | null>(null)
-  const [bodegaSeleccionada, setBodegaSeleccionada] = useState(bodegaDestinoId ?? '')
-  const [guardandoBodega, startBodegaTransition] = useTransition()
-  const [bodegaError, setBodegaError] = useState<string | null>(null)
-  const [editandoBodega, setEditandoBodega] = useState(false)
-
-  function handleGuardarBodega() {
-    if (!bodegaSeleccionada) return
-    setBodegaError(null)
-    startBodegaTransition(async () => {
-      const result = await guardarBodegaDestino(opId, bodegaSeleccionada, opCodigo)
-      if (result.error) {
-        setBodegaError(result.error)
-      } else {
-        setEditandoBodega(false)
-        router.refresh()
-      }
-    })
-  }
 
   if (!ESTADOS_ACTIVOS.includes(estadoActual) && entregas.length === 0) {
     return null
@@ -113,98 +90,39 @@ export function EntregasPanel({
         )}
       </div>
 
-      {/* Selector bodega destino — visible en estados finales (entregada/liquidada) */}
-      {['entregada', 'liquidada'].includes(estadoActual) && (
-        <div className="rounded-2xl bg-neu-base shadow-neu p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Warehouse className="w-4 h-4 text-muted-foreground" />
-              <p className="font-semibold text-foreground text-body-sm">Bodega de Destino</p>
-            </div>
-            {bodegaDestinoId && !editandoBodega && (
-              <button
-                onClick={() => setEditandoBodega(true)}
-                className="text-xs text-primary-600 hover:underline font-medium"
-              >
-                Cambiar
-              </button>
-            )}
-          </div>
-          {bodegaDestinoId && !editandoBodega ? (
-            <div className="flex items-center justify-between">
-              <p className="text-body-sm text-foreground font-medium">
-                {bodegas.find(b => b.id === bodegaDestinoId)?.nombre ?? 'Bodega seleccionada'}
-              </p>
-              <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold">✓ Configurada</span>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-body-sm text-muted-foreground">
-                Selecciona la bodega donde ingresarán los productos terminados.
-              </p>
-              <div className="flex gap-3">
-                <div className="flex-1 rounded-xl bg-neu-base shadow-neu-inset px-3 py-2">
-                  <select
-                    value={bodegaSeleccionada}
-                    onChange={e => setBodegaSeleccionada(e.target.value)}
-                    className="w-full bg-transparent text-body-sm text-foreground outline-none"
-                  >
-                    <option value="">Selecciona una bodega...</option>
-                    {bodegas.map(b => (
-                      <option key={b.id} value={b.id}>{b.nombre}</option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  onClick={handleGuardarBodega}
-                  disabled={!bodegaSeleccionada || guardandoBodega}
-                  className="px-4 py-2 rounded-xl bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset disabled:opacity-40"
-                >
-                  {guardandoBodega ? 'Guardando...' : 'Guardar'}
-                </button>
-                {editandoBodega && (
-                  <button
-                    onClick={() => setEditandoBodega(false)}
-                    className="px-3 py-2 rounded-xl bg-neu-base shadow-neu text-muted-foreground text-body-sm transition-all active:shadow-neu-inset"
-                  >
-                    Cancelar
-                  </button>
-                )}
-              </div>
-              {bodegaError && <p className="text-xs text-red-600">{bodegaError}</p>}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Formulario nueva entrega OVERLAY */}
       {isEditing && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-8 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 md:p-10 lg:p-14 animate-in fade-in duration-200">
           <div 
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" 
             onClick={() => onEditComplete?.()}
           />
-          <div className="relative w-full max-w-5xl bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-6 lg:p-10 overflow-y-auto custom-scrollbar">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h2 className="text-2xl font-black tracking-tighter text-slate-900 leading-none mb-2">Registrar Nueva Entrega</h2>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Orden de Producción: {opCodigo}</p>
+          <div className="relative w-full max-w-5xl h-full max-h-[90vh] bg-white rounded-[2.5rem] overflow-hidden flex flex-col border border-white/20 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] scale-in-center">
+            <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-white/80 backdrop-blur-sm z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center shadow-inner">
+                  <Package className="w-5 h-5" />
                 </div>
-                <button 
-                  onClick={() => onEditComplete?.()}
-                  className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:text-red-500 transition-all border border-slate-100"
-                >
-                  <Plus className="w-5 h-5 rotate-45" />
-                </button>
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 leading-none">Registrar Nueva Entrega</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1.5">Orden de Producción: {opCodigo}</p>
+                </div>
               </div>
+              <button 
+                onClick={() => onEditComplete?.()}
+                className="w-11 h-11 rounded-2xl hover:bg-slate-100 flex items-center justify-center text-slate-400 transition-all hover:rotate-90 hover:text-red-500"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
 
-              <div className="bg-slate-50/50 rounded-[2rem] border border-slate-100 p-8 lg:p-10">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-8 bg-slate-50/30">
+              <div className="bg-white rounded-[2rem] border border-slate-100 p-8 lg:p-10 shadow-sm">
                 <EntregaForm
                   opId={opId}
                   lineasOP={lineasOP}
                   onSuccess={() => { onEditComplete?.(); router.refresh() }}
-                  onCancel={onEditComplete}
+                  onCancel={() => onEditComplete?.()}
                 />
               </div>
             </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, FileText, Globe, Clock, TrendingUp, DollarSign, Factory } from 'lucide-react'
 import { OPStatusBadge } from './op-status-badge'
@@ -32,7 +32,7 @@ interface OPDetailClientProps {
   bodegaDestino: string | null
   serviciosRef: ServicioRef[]
   serviciosBOM: any[]
-  taller_id: string | null
+  bodegaTallerId: string | null
 }
 
 export function OPDetailClient({
@@ -49,10 +49,21 @@ export function OPDetailClient({
   bodegaDestino,
   serviciosRef,
   serviciosBOM,
-  taller_id,
+  bodegaTallerId,
 }: OPDetailClientProps) {
   const [activeOverlay, setActiveOverlay] = useState<'corte' | 'insumos' | 'entregas' | null>(null)
   const [reporteEditandoId, setReporteEditandoId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActiveOverlay(null)
+        setReporteEditandoId(null)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const id = op.id
   const estadoOP = op.estado as EstadoOP
@@ -186,9 +197,9 @@ export function OPDetailClient({
                         opId={id}
                         estadoActual={op.estado}
                         reporte={null}
-                        reportes={reportes}
+                        reportes={reporteData.dataAll ?? (reporteData.data ? [reporteData.data] : [])}
                         lineasOP={lineasOP}
-                        bodegaTallerId={taller_id}
+                        bodegaTallerId={bodegaTallerId}
                         isEditing={activeOverlay === 'corte'}
                         reporteEnEdicion={reporteEnEdicion ?? null}
                         onStartEdit={(id) => {
@@ -231,8 +242,6 @@ export function OPDetailClient({
                         liquidacionesPorEntrega={Object.fromEntries(
                           liquidacionesOP.filter(l => l.entrega_id).map(l => [l.entrega_id!, l.id])
                         )}
-                        bodegas={bodegas}
-                        bodegaDestinoId={bodegaDestino}
                         puedeEntregar={hayReporteInsumos || estadoOP === 'entregada'}
                         isEditing={activeOverlay === 'entregas'}
                         onStartEdit={() => setActiveOverlay('entregas')}

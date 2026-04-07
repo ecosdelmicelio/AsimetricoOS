@@ -83,7 +83,7 @@ export async function OPDetail({ id }: Props) {
       bodegaDestino={bodegaDestino}
       serviciosRef={serviciosRef}
       serviciosBOM={serviciosBOM}
-      taller_id={op.taller_id}
+      bodegaTallerId={op.bodega_taller_id}
     />
   )
 }
