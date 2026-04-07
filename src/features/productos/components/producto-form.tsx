@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useCallback, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Package, ShoppingBag, ChevronRight, ChevronLeft, AlertTriangle, Globe } from 'lucide-react'
+import { Loader2, AlertTriangle, Globe } from 'lucide-react'
 import { createProducto } from '@/features/productos/services/producto-actions'
 import { CodigoBuilder } from '@/features/codigo-schema/components/codigo-builder'
 import { useDuplicateCheck } from '@/shared/hooks/use-duplicate-check'
@@ -28,7 +28,6 @@ export function ProductoForm({ schema, atributos, marcas }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  const [step, setStep] = useState(1)
 
   // Step 1
   const [tipoProducto, setTipoProducto] = useState<TipoProducto>('fabricado')
@@ -131,388 +130,209 @@ export function ProductoForm({ schema, atributos, marcas }: Props) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Step indicator */}
-      <div className="flex items-center gap-2">
-        {(['Identidad', 'Precio'] as const).map((label, i) => {
-          const s = i + 1
-          return (
-            <div key={s} className="flex items-center gap-2">
-              <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                  step === s
-                    ? 'bg-primary-600 text-white'
-                    : step > s
-                    ? 'bg-green-500 text-white'
-                    : 'bg-neu-base shadow-neu text-muted-foreground'
+    <form onSubmit={e => { e.preventDefault(); handleSubmit() }} className="space-y-3">
+      {error && (
+        <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2">
+          <p className="text-red-700 text-sm">{error}</p>
+        </div>
+      )}
+
+      {/* Row 1: Tipo + Código */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Tipo *</label>
+          <div className="flex gap-2">
+            {(['fabricado', 'comercializado'] as const).map(tipo => (
+              <button
+                key={tipo}
+                type="button"
+                onClick={() => setTipoProducto(tipo)}
+                className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-all ${
+                  tipoProducto === tipo
+                    ? 'bg-primary-600 text-white font-semibold'
+                    : 'bg-neu-base text-muted-foreground hover:bg-neu-base/80'
                 }`}
               >
-                {step > s ? '✓' : s}
-              </div>
-              <span
-                className={`text-body-sm ${
-                  step === s ? 'text-foreground font-medium' : 'text-muted-foreground'
-                }`}
-              >
-                {label}
-              </span>
-              {s < 2 && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-            </div>
-          )
-        })}
+                {tipo === 'fabricado' ? 'Fabr.' : 'Com.'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="col-span-2 space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Código *</label>
+          <CodigoBuilder schema={schema} onChange={handleCodigoChange} />
+        </div>
       </div>
 
-      {/* ── Step 1: Identidad ── */}
-      {step === 1 && (
-        <div className="space-y-5">
-          {/* Tipo de producto */}
-          <div className="space-y-2">
-            <label className="text-body-sm text-muted-foreground font-medium">
-              Tipo de Producto *
-            </label>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setTipoProducto('fabricado')}
-                className={`flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-left transition-all ${
-                  tipoProducto === 'fabricado'
-                    ? 'border-primary-400 bg-primary-50 shadow-neu-inset'
-                    : 'border-transparent bg-neu-base shadow-neu hover:shadow-neu-lg'
-                }`}
-              >
-                <Package
-                  className={`w-4 h-4 shrink-0 ${
-                    tipoProducto === 'fabricado' ? 'text-primary-600' : 'text-muted-foreground'
-                  }`}
-                />
-                <div>
-                  <p
-                    className={`text-body-sm font-semibold ${
-                      tipoProducto === 'fabricado' ? 'text-primary-700' : 'text-foreground'
-                    }`}
-                  >
-                    Fabricado
-                  </p>
-                  <p className="text-xs text-muted-foreground">Requiere BOM</p>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setTipoProducto('comercializado')}
-                className={`flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-left transition-all ${
-                  tipoProducto === 'comercializado'
-                    ? 'border-primary-400 bg-primary-50 shadow-neu-inset'
-                    : 'border-transparent bg-neu-base shadow-neu hover:shadow-neu-lg'
-                }`}
-              >
-                <ShoppingBag
-                  className={`w-4 h-4 shrink-0 ${
-                    tipoProducto === 'comercializado' ? 'text-primary-600' : 'text-muted-foreground'
-                  }`}
-                />
-                <div>
-                  <p
-                    className={`text-body-sm font-semibold ${
-                      tipoProducto === 'comercializado' ? 'text-primary-700' : 'text-foreground'
-                    }`}
-                  >
-                    Comercializado
-                  </p>
-                  <p className="text-xs text-muted-foreground">Sin BOM</p>
-                </div>
-              </button>
-            </div>
+      {/* Row 2: Nombre + Color */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Nombre *</label>
+            {checkingNombre && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
           </div>
-
-          {/* Código */}
-          <div className="space-y-2">
-            <label className="text-body-sm text-muted-foreground font-medium">
-              Código de referencia *
-            </label>
-            <CodigoBuilder schema={schema} onChange={handleCodigoChange} />
+          <div className={`rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5 ${nombreDuplicado ? 'ring-1 ring-amber-400' : ''}`}>
+            <input
+              value={nombre}
+              onChange={e => setNombre(e.target.value)}
+              placeholder="Nombre"
+              className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
           </div>
-
-          {/* Nombre */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <label className="text-body-sm text-muted-foreground font-medium">
-                Nombre del producto *
-              </label>
-              {checkingNombre && (
-                <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
-              )}
-            </div>
-            <div className={`rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5 ${nombreDuplicado ? 'ring-1 ring-amber-400' : ''}`}>
-              <input
-                value={nombre}
-                onChange={e => setNombre(e.target.value)}
-                placeholder="Ej: Blusa Manga Larga Body"
-                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-              />
-            </div>
-            {nombreDuplicado && (
-              <div className="flex items-center gap-1.5 text-amber-600">
-                <AlertTriangle className="w-3 h-3 shrink-0" />
-                <span className="text-xs">Ya existe un producto con este nombre</span>
-              </div>
-            )}
-          </div>
-
-          {/* Color */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <label className="text-body-sm text-muted-foreground font-medium">Color</label>
-              {autoColor && (
-                <span className="text-[10px] text-primary-500 font-medium">Auto</span>
-              )}
-            </div>
-            <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
-              <input
-                value={color}
-                onChange={e => setColor(e.target.value)}
-                placeholder="Ej: Rojo Vino, Azul Navy, Negro"
-                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {autoColor ? 'Derivado del esquema de código. Puedes editarlo.' : 'Cada código de producto tiene un color fijo.'}
-            </p>
-          </div>
-
-          {/* Atributos */}
-          <div className="space-y-2">
-            <label className="text-body-sm text-muted-foreground font-medium">Atributos</label>
-            <div className="grid grid-cols-2 gap-3">
-              {TIPOS_ATRIBUTO.map(tipoAtributo => (
-                <div key={tipoAtributo} className={tipoAtributo === 'genero' ? 'col-span-2' : ''}>
-                  <label className="text-xs text-muted-foreground font-medium block mb-1">
-                    {LABELS_ATRIBUTO[tipoAtributo]}
-                  </label>
-                  <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
-                    <select
-                      value={atributosSeleccionados[tipoAtributo]}
-                      onChange={e =>
-                        setAtributosSeleccionados(prev => ({
-                          ...prev,
-                          [tipoAtributo]: e.target.value,
-                        }))
-                      }
-                      className="w-full bg-transparent text-body-sm text-foreground outline-none"
-                    >
-                      <option value="">— seleccionar —</option>
-                      {(atributos[tipoAtributo] ?? []).map(attr => (
-                        <option key={attr.id} value={attr.id}>
-                          {attr.valor}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Selecciona los atributos del producto. Se gestionan en{' '}
-              <a href="/configuracion" className="text-primary-600 hover:underline">
-                Configuración
-              </a>
-              .
-            </p>
-          </div>
-
-          {/* Referencia del cliente */}
-          <div className="space-y-1.5">
-            <label className="text-body-sm text-muted-foreground font-medium">
-              Referencia del cliente
-            </label>
-            <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
-              <input
-                type="text"
-                value={referenciaCliente}
-                onChange={e => setReferenciaCliente(e.target.value)}
-                placeholder="Ej: SKU-123456, REF-ABC"
-                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Código o referencia asignado por el cliente para este producto.
-            </p>
-          </div>
-
-          {/* Nombre comercial */}
-          <div className="space-y-1.5">
-            <label className="text-body-sm text-muted-foreground font-medium">
-              Nombre comercial
-            </label>
-            <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
-              <input
-                type="text"
-                value={nombreComercial}
-                onChange={e => setNombreComercial(e.target.value)}
-                placeholder="Ej: Blusa Premium, Pantalón Ejecutivo"
-                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Nombre comercial o nombre de venta del producto.
-            </p>
-          </div>
-
-          {/* Marca */}
-          <div className="space-y-1.5">
-            <label className="text-body-sm text-muted-foreground font-medium">Marca</label>
-            <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
-              <select
-                value={marcaSeleccionada}
-                onChange={e => setMarcaSeleccionada(e.target.value)}
-                className="w-full bg-transparent text-body-sm text-foreground outline-none"
-              >
-                <option value="">— seleccionar —</option>
-                {marcas.map(marca => (
-                  <option key={marca.id} value={marca.id}>
-                    {marca.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Asocia el producto a una marca. Se gestionan en{' '}
-              <a href="/configuracion" className="text-primary-600 hover:underline">
-                Configuración
-              </a>
-              .
-            </p>
-          </div>
-
-          {/* Origen USA — solo si el esquema tiene un segmento de origen */}
-          {autoOrigenUsa && (
-            <div className="flex items-center gap-3 rounded-xl bg-blue-50 border border-blue-200 px-4 py-3">
-              <Globe className="w-4 h-4 text-blue-600 shrink-0" />
-              <div>
-                <p className="text-body-sm font-semibold text-blue-700">Origen USA 🇺🇸</p>
-                <p className="text-xs text-blue-600">Derivado del esquema de código. Requiere etiquetado especial.</p>
-              </div>
+          {nombreDuplicado && (
+            <div className="flex items-center gap-1 text-amber-600">
+              <AlertTriangle className="w-3 h-3 shrink-0" />
+              <span className="text-xs">Duplicado</span>
             </div>
           )}
+        </div>
 
-          <div className="flex gap-3 pt-1">
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="flex-1 py-2.5 rounded-xl bg-neu-base shadow-neu text-body-sm text-muted-foreground hover:text-foreground transition-all"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={() => setStep(2)}
-              disabled={!canAdvanceStep1}
-              className="flex-1 py-2.5 rounded-xl bg-primary-600 text-white font-semibold text-body-sm hover:bg-primary-700 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-            >
-              Continuar
-              <ChevronRight className="w-4 h-4" />
-            </button>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            Color {autoColor && <span className="text-primary-500">Auto</span>}
+          </label>
+          <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+            <input
+              value={color}
+              onChange={e => setColor(e.target.value)}
+              placeholder="Color"
+              className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
           </div>
+        </div>
+      </div>
+
+      {/* Row 3: Atributos grid (8 campos) */}
+      <div className="grid grid-cols-4 gap-2">
+        {TIPOS_ATRIBUTO.map(tipoAtributo => (
+          <div key={tipoAtributo} className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground block truncate">
+              {LABELS_ATRIBUTO[tipoAtributo]}
+            </label>
+            <select
+              value={atributosSeleccionados[tipoAtributo]}
+              onChange={e =>
+                setAtributosSeleccionados(prev => ({
+                  ...prev,
+                  [tipoAtributo]: e.target.value,
+                }))
+              }
+              className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2 py-1.5 text-foreground outline-none"
+            >
+              <option value="">—</option>
+              {(atributos[tipoAtributo] ?? []).map(attr => (
+                <option key={attr.id} value={attr.id}>
+                  {attr.valor}
+                </option>
+              ))}
+            </select>
+          </div>
+        ))}
+      </div>
+
+      {/* Row 4: Marca + Referencias */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Marca</label>
+          <select
+            value={marcaSeleccionada}
+            onChange={e => setMarcaSeleccionada(e.target.value)}
+            className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5 text-foreground outline-none"
+          >
+            <option value="">— seleccionar —</option>
+            {marcas.map(marca => (
+              <option key={marca.id} value={marca.id}>
+                {marca.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Ref. Cliente</label>
+          <input
+            type="text"
+            value={referenciaCliente}
+            onChange={e => setReferenciaCliente(e.target.value)}
+            placeholder="SKU-123"
+            className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5 text-foreground outline-none placeholder:text-muted-foreground"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Nombre Comercial</label>
+          <input
+            type="text"
+            value={nombreComercial}
+            onChange={e => setNombreComercial(e.target.value)}
+            placeholder="Premium, Ejecutivo"
+            className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5 text-foreground outline-none placeholder:text-muted-foreground"
+          />
+        </div>
+      </div>
+
+      {/* Row 5: Precios */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Precio Techo (COP)</label>
+          <div className="relative rounded-lg bg-neu-base shadow-neu-inset">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
+            <input
+              type="number"
+              min={0}
+              step={1000}
+              value={precioBase}
+              onChange={e => setPrecioBase(e.target.value)}
+              placeholder="0"
+              className="w-full bg-transparent pl-6 pr-2.5 py-1.5 text-sm text-foreground outline-none"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Precio Estándar (COP)</label>
+          <div className="relative rounded-lg bg-neu-base shadow-neu-inset">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
+            <input
+              type="number"
+              min={0}
+              step={1000}
+              value={precioEstandar}
+              onChange={e => setPrecioEstandar(e.target.value)}
+              placeholder="0"
+              className="w-full bg-transparent pl-6 pr-2.5 py-1.5 text-sm text-foreground outline-none"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* USA Origin alert */}
+      {autoOrigenUsa && (
+        <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2">
+          <Globe className="w-4 h-4 text-blue-600 shrink-0" />
+          <span className="text-xs font-medium text-blue-700">Origen USA 🇺🇸</span>
         </div>
       )}
 
-      {/* ── Step 2: Precio ── */}
-      {step === 2 && (
-        <div className="space-y-5">
-          {/* Resumen */}
-          <div className="rounded-xl bg-neu-base shadow-neu-inset px-4 py-3 space-y-1.5">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
-              Resumen
-            </p>
-            <p className="font-mono text-body-sm font-bold text-primary-700 tracking-widest">
-              {codigoState.codigo}
-            </p>
-            <p className="text-body-sm text-foreground">{nombre}</p>
-            {color && (
-              <p className="text-xs text-muted-foreground">Color: <span className="font-medium text-foreground">{color}</span></p>
-            )}
-            <span
-              className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${
-                tipoProducto === 'fabricado'
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-emerald-100 text-emerald-700'
-              }`}
-            >
-              {tipoProducto === 'fabricado' ? 'Fabricado' : 'Comercializado'}
-            </span>
-          </div>
-
-          {/* Precio techo */}
-          <div className="space-y-1.5">
-            <label className="text-body-sm text-muted-foreground font-medium">
-              Precio techo (COP)
-            </label>
-            <div className="relative rounded-xl bg-neu-base shadow-neu-inset">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-body-sm">
-                $
-              </span>
-              <input
-                type="number"
-                min={0}
-                step={1000}
-                value={precioBase}
-                onChange={e => setPrecioBase(e.target.value)}
-                placeholder="0"
-                className="w-full bg-transparent pl-7 pr-3 py-2.5 text-body-sm text-foreground outline-none"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Precio de venta máximo. El BOM calculará el costo real de producción.
-            </p>
-          </div>
-
-          {/* Precio estándar */}
-          <div className="space-y-1.5">
-            <label className="text-body-sm text-muted-foreground font-medium">
-              Precio estándar (COP)
-            </label>
-            <div className="relative rounded-xl bg-neu-base shadow-neu-inset">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-body-sm">
-                $
-              </span>
-              <input
-                type="number"
-                min={0}
-                step={1000}
-                value={precioEstandar}
-                onChange={e => setPrecioEstandar(e.target.value)}
-                placeholder="0"
-                className="w-full bg-transparent pl-7 pr-3 py-2.5 text-body-sm text-foreground outline-none"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Precio de referencia para cotizaciones estándar.
-            </p>
-          </div>
-
-          {error && <p className="text-red-600 text-body-sm">{error}</p>}
-
-          <div className="flex gap-3 pt-1">
-            <button
-              type="button"
-              onClick={() => setStep(1)}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-neu-base shadow-neu text-body-sm text-muted-foreground hover:text-foreground transition-all"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Volver
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={pending}
-              className="flex-1 py-2.5 rounded-xl bg-primary-600 text-white font-semibold text-body-sm hover:bg-primary-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {pending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              Crear producto
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+      {/* Actions */}
+      <div className="flex gap-2 pt-2">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="flex-1 py-2 rounded-lg bg-neu-base shadow-neu text-sm text-muted-foreground hover:text-foreground transition-all"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          disabled={!canAdvanceStep1 || pending}
+          className="flex-1 py-2 rounded-lg bg-primary-600 text-white font-semibold text-sm hover:bg-primary-700 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+        >
+          {pending && <Loader2 className="w-4 h-4 animate-spin" />}
+          Crear
+        </button>
+      </div>
+    </form>
   )
 }
