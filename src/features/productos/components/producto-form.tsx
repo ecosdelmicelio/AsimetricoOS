@@ -9,6 +9,7 @@ import { useDuplicateCheck } from '@/shared/hooks/use-duplicate-check'
 import type { CodigoSchema, SegmentoSeleccion } from '@/features/codigo-schema/types'
 import type { TipoProducto } from '@/features/productos/types'
 import type { AtributoPT, TipoAtributo } from '@/features/productos/types/atributos'
+import type { Marca } from '@/features/configuracion/services/marcas-actions'
 import { TIPOS_ATRIBUTO, LABELS_ATRIBUTO } from '@/features/productos/types/atributos'
 
 interface CodigoState {
@@ -20,9 +21,10 @@ interface CodigoState {
 interface Props {
   schema: CodigoSchema | null
   atributos: Record<TipoAtributo, AtributoPT[]>
+  marcas: Marca[]
 }
 
-export function ProductoForm({ schema, atributos }: Props) {
+export function ProductoForm({ schema, atributos, marcas }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -49,6 +51,8 @@ export function ProductoForm({ schema, atributos }: Props) {
     color: '',
     genero: '',
   })
+
+  const [marcaSeleccionada, setMarcaSeleccionada] = useState('')
 
   // Step 2
   const [precioBase, setPrecioBase] = useState('')
@@ -110,6 +114,7 @@ export function ProductoForm({ schema, atributos }: Props) {
         origen_usa: autoOrigenUsa,
         precio_base: precioBase ? parseFloat(precioBase) : undefined,
         tipo_producto: tipoProducto,
+        marca_id: marcaSeleccionada || undefined,
         atributos: atributosSeleccionados,
         autoRefs: autoRefs.length > 0 ? autoRefs : undefined,
         schema_id: schema?.id,
@@ -302,6 +307,32 @@ export function ProductoForm({ schema, atributos }: Props) {
             </div>
             <p className="text-xs text-muted-foreground">
               Selecciona los atributos del producto. Se gestionan en{' '}
+              <a href="/configuracion" className="text-primary-600 hover:underline">
+                Configuración
+              </a>
+              .
+            </p>
+          </div>
+
+          {/* Marca */}
+          <div className="space-y-1.5">
+            <label className="text-body-sm text-muted-foreground font-medium">Marca</label>
+            <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
+              <select
+                value={marcaSeleccionada}
+                onChange={e => setMarcaSeleccionada(e.target.value)}
+                className="w-full bg-transparent text-body-sm text-foreground outline-none"
+              >
+                <option value="">— seleccionar —</option>
+                {marcas.map(marca => (
+                  <option key={marca.id} value={marca.id}>
+                    {marca.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Asocia el producto a una marca. Se gestionan en{' '}
               <a href="/configuracion" className="text-primary-600 hover:underline">
                 Configuración
               </a>

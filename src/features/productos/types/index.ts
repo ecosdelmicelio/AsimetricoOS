@@ -11,6 +11,7 @@ export interface Producto {
   precio_base: number | null
   estado: EstadoProducto
   tipo_producto: TipoProducto
+  marca_id: string | null
   created_at: string
   updated_at: string
 }
@@ -28,6 +29,7 @@ export interface CreateProductoInput {
   origen_usa?: boolean
   precio_base?: number
   tipo_producto?: TipoProducto
+  marca_id?: string
   atributos?: Record<string, string>
   autoRefs?: AutoRefInput[]
   schema_id?: string
@@ -41,6 +43,7 @@ export interface UpdateProductoInput {
   origen_usa?: boolean
   precio_base?: number
   tipo_producto?: TipoProducto
+  marca_id?: string | null
   estado?: EstadoProducto
 }
 

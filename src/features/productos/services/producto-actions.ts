@@ -60,6 +60,7 @@ export async function createProducto(
       precio_base: input.precio_base ?? null,
       estado: 'activo',
       tipo_producto: input.tipo_producto ?? 'fabricado',
+      marca_id: input.marca_id ?? null,
       schema_id: input.schema_id ?? null,
     })
     .select()
@@ -97,6 +98,7 @@ export async function updateProducto(
   if (input.tipo_producto !== undefined) payload.tipo_producto = input.tipo_producto
   if (input.color !== undefined) payload.color = input.color || null
   if (input.origen_usa !== undefined) payload.origen_usa = input.origen_usa
+  if (input.marca_id !== undefined) payload.marca_id = input.marca_id || null
 
   const { error } = await supabase
     .from('productos')

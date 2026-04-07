@@ -3,13 +3,15 @@ import { ArrowLeft } from 'lucide-react'
 import { ProductoForm } from '@/features/productos/components/producto-form'
 import { getSchemaByEntidad } from '@/features/codigo-schema/services/schema-actions'
 import { getAtributosPT } from '@/features/productos/services/atributo-actions'
+import { getMarcas } from '@/features/configuracion/services/marcas-actions'
 import { TIPOS_ATRIBUTO } from '@/features/productos/types/atributos'
 import type { TipoAtributo } from '@/features/productos/types/atributos'
 
 export default async function NuevoProductoPage() {
-  const [schema, atributosList] = await Promise.all([
+  const [schema, atributosList, marcas] = await Promise.all([
     getSchemaByEntidad('producto'),
     getAtributosPT(),
+    getMarcas(),
   ])
 
   // Agrupar atributos por tipo
@@ -36,7 +38,7 @@ export default async function NuevoProductoPage() {
       </div>
 
       <div className="rounded-2xl bg-neu-base shadow-neu p-6">
-        <ProductoForm schema={schema} atributos={atributos} />
+        <ProductoForm schema={schema} atributos={atributos} marcas={marcas} />
       </div>
     </div>
   )
