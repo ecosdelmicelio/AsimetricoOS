@@ -573,6 +573,19 @@ export async function aprobarLiquidacion(opId: string, bodegaId: string): Promis
       }[] | null
     }
 
+  // Resolver bin_codigo → bin_id para todas las entregas que tengan bin
+  const binesCodigos = [...new Set((entregasData ?? []).map(e => e.bin_codigo).filter(Boolean))] as string[]
+  const binIdMap = new Map<string, string>()
+  if (binesCodigos.length > 0) {
+    const { data: binesData } = await supabase
+      .from('bines')
+      .select('id, codigo')
+      .in('codigo', binesCodigos)
+    for (const b of binesData ?? []) {
+      binIdMap.set(b.codigo, b.id)
+    }
+  }
+
   const bodegaDestino = bodegaId
 
   const tipoEntrada = tiposMovimiento?.find(t => t.codigo === 'ENTRADA_CONFECCION')?.id
@@ -584,10 +597,12 @@ export async function aprobarLiquidacion(opId: string, bodegaId: string): Promis
 
   // Ingresar PT al kardex (agrupado por entrega + producto + talla)
   const cppMap = new Map(resumen.cpp_por_producto.map(c => [c.producto_id, c.cpp]))
-  
+
   if (entregasData) {
     for (const entrega of entregasData) {
       if (entrega.entrega_detalle.length === 0) continue
+
+      const binId = entrega.bin_codigo ? (binIdMap.get(entrega.bin_codigo) ?? null) : null
 
       const ptMovimientos = entrega.entrega_detalle.map(d => {
         const costoUnit = cppMap.get(d.producto_id) ?? 0
@@ -604,6 +619,7 @@ export async function aprobarLiquidacion(opId: string, bodegaId: string): Promis
           costo_total: d.cantidad_entregada * costoUnit,
           fecha_movimiento: now,
           registrado_por: user.id,
+          bin_id: binId,
           notas: `Entrada PT - Entrega #${entrega.numero_entrega}${entrega.bin_codigo ? ` (BIN: ${entrega.bin_codigo})` : ''}`,
         }
       })
