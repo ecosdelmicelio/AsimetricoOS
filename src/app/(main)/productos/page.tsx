@@ -1,11 +1,21 @@
 import { Suspense } from 'react'
-import Link from 'next/link'
-import { Plus } from 'lucide-react'
-import { ProductoList } from '@/features/productos/components/producto-list'
-import { MaterialesPanel } from '@/features/materiales/components/materiales-panel'
+import { getProductos } from '@/features/productos/services/producto-actions'
+import { getSaldosTotalesPorProducto } from '@/features/kardex/services/kardex-actions'
 import { getMateriales } from '@/features/materiales/services/materiales-actions'
 import { getSchemaByEntidad } from '@/features/codigo-schema/services/schema-actions'
+import { getMarcas } from '@/features/configuracion/services/marcas-actions'
+import { ProductosPanel } from '@/features/productos/components/productos-panel'
+import { MaterialesPanel } from '@/features/materiales/components/materiales-panel'
 import { ProductosTabs } from '@/features/productos/components/productos-tabs'
+
+async function ProductosContent() {
+  const [productos, saldos, marcas] = await Promise.all([
+    getProductos(),
+    getSaldosTotalesPorProducto(),
+    getMarcas(),
+  ])
+  return <ProductosPanel productos={productos} marcas={marcas} saldosPorProducto={saldos} />
+}
 
 async function MaterialesContent() {
   const [materiales, schema] = await Promise.all([
@@ -30,20 +40,9 @@ export default function ProductosPage() {
     <div className="space-y-6">
       <ProductosTabs
         productosContent={
-          <>
-            <div className="flex justify-end">
-              <Link
-                href="/productos/nuevo"
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Nuevo producto
-              </Link>
-            </div>
-            <Suspense fallback={<Skeleton />}>
-              <ProductoList />
-            </Suspense>
-          </>
+          <Suspense fallback={<Skeleton />}>
+            <ProductosContent />
+          </Suspense>
         }
         materialesContent={
           <Suspense fallback={<Skeleton />}>
