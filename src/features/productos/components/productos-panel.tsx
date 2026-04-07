@@ -123,7 +123,7 @@ function ProductRow({ product: p, marcas, saldo, onEdit }: { product: Producto; 
   const fechaFormato = new Date(p.created_at).toLocaleDateString('es-CO', { month: '2-digit', day: '2-digit', year: '2-digit' })
 
   return (
-    <div className={`grid grid-cols-12 gap-3 items-center px-5 py-3 ${p.estado !== 'activo' ? 'opacity-50' : ''}`}>
+    <div className={`grid grid-cols-12 gap-3 items-center px-5 py-3 ${p.estado === 'inactivo' ? 'opacity-50' : ''}`}>
       <span className="col-span-1 text-body-sm text-muted-foreground">{fechaFormato}</span>
       <span className="col-span-1 font-mono text-body-sm font-semibold text-primary-700">{p.referencia}</span>
       <span className="col-span-1 text-body-sm text-foreground capitalize">{p.tipo_producto === 'fabricado' ? 'Fabricado' : 'Comercializado'}</span>
@@ -132,7 +132,11 @@ function ProductRow({ product: p, marcas, saldo, onEdit }: { product: Producto; 
       <span className="col-span-2 text-body-sm text-muted-foreground">{marca}</span>
       <span className="col-span-1 text-body-sm text-foreground text-right font-medium">{saldo} uds</span>
       <div className="col-span-1 flex justify-center">
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${p.estado === 'activo' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${
+          p.estado === 'activo' ? 'bg-green-100 text-green-700' :
+          p.estado === 'inactivo' ? 'bg-gray-100 text-gray-500' :
+          'bg-blue-100 text-blue-700'
+        }`}>
           {p.estado === 'activo' ? 'Activo' : p.estado === 'inactivo' ? 'Inactivo' : 'En desarrollo'}
         </span>
       </div>
