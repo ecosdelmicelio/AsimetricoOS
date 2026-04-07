@@ -160,8 +160,8 @@ export async function updateEstadoOP(id: string, estado: EstadoOP) {
 
   if (error) return { error: error.message }
 
-  // Check if OV should be updated automatically
-  if (estado === 'completada' && op?.ov_id) {
+  // Check if OV should be updated automatically when all its OPs are liquidada
+  if (estado === 'liquidada' && op?.ov_id) {
     const { data: ov } = await supabase
       .from('ordenes_venta')
       .select('estado, ov_detalle(cantidad)')
@@ -178,12 +178,12 @@ export async function updateEstadoOP(id: string, estado: EstadoOP) {
         .neq('estado', 'cancelada') as { data: { estado: string; op_detalle: { cantidad_asignada: number }[] }[] | null }
 
       if (ops && ops.length > 0) {
-        const allCompleted = ops.every(o => o.estado === 'completada')
+        const allLiquidadas = ops.every(o => o.estado === 'liquidada')
         const totalOpUnits = ops.reduce((sum, o) => {
           return sum + o.op_detalle.reduce((s, d) => s + d.cantidad_asignada, 0)
         }, 0)
 
-        if (allCompleted && totalOpUnits >= ovUnits) {
+        if (allLiquidadas && totalOpUnits >= ovUnits) {
           await supabase.from('ordenes_venta').update({ estado: 'completada' }).eq('id', op.ov_id)
           revalidatePath('/ordenes-venta')
           revalidatePath(`/ordenes-venta/${op.ov_id}`)

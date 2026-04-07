@@ -117,8 +117,12 @@ export function LiquidacionPanel({ opId, resumenInicial, serviciosRefIniciales, 
     }
     setError(null)
     startTransition(async () => {
-      const result = await aprobarLiquidacion(opId)
-      if (result.error) setError(result.error)
+      const result = await aprobarLiquidacion(opId, bodegaSeleccionada)
+      if (result.error) {
+        setError(result.error)
+      } else {
+        router.refresh()
+      }
     })
   }
 

@@ -118,6 +118,13 @@ export async function createEntrega(input: CreateEntregaInput & { reporte_corte_
 
   if (detError) return { error: detError.message }
 
+  // Transición: en_terminado → entregada al registrar la primera entrega
+  await supabase
+    .from('ordenes_produccion')
+    .update({ estado: 'entregada' })
+    .eq('id', input.op_id)
+    .eq('estado', 'en_terminado')
+
   revalidatePath(`/ordenes-produccion/${input.op_id}`)
   return { data: { id: entrega.id, numero_entrega: entrega.numero_entrega } }
 }

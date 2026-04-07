@@ -6,6 +6,16 @@ import { updateEstadoOP, cancelOrdenProduccion } from '@/features/ordenes-produc
 import { iniciarDupro } from '@/features/calidad/services/calidad-actions'
 import type { EstadoOP } from '@/features/ordenes-produccion/types'
 import { SECUENCIA_ESTADOS } from '@/features/ordenes-produccion/types'
+
+const STEP_LABELS: Partial<Record<EstadoOP, string>> = {
+  programada:     'Programada',
+  en_corte:       'En Corte',
+  en_confeccion:  'En Confección',
+  dupro_pendiente:'DuPro en Proceso',
+  en_terminado:   'En Terminado',
+  entregada:      'Entregada',
+  liquidada:      'Liquidada',
+}
 import { XCircle } from 'lucide-react'
 
 // en_corte → en_confeccion es automático al guardar reporte de corte.
@@ -13,29 +23,26 @@ import { XCircle } from 'lucide-react'
 // dupro_pendiente → en_terminado ocurre al cerrar la inspección DUPRO en /calidad.
 // en_terminado → en_entregas es automático al guardar insumos.
 const SIGUIENTE: Partial<Record<EstadoOP, EstadoOP>> = {
-  programada:   'en_corte',
-  en_terminado: 'entregada', // fallback si no hay insumos
+  programada: 'en_corte',
 }
 
 const LABELS_ACCION: Partial<Record<EstadoOP, string>> = {
   programada:    'Iniciar Corte',
-  en_confeccion: 'Enviar a DUPRO',
-  en_terminado:  'Iniciar Entregas',
+  en_confeccion: 'Iniciar DuPro',
 }
 
 interface Props {
   opId: string
   estadoActual: string
-  tieneReporteCorte?: boolean
 }
-export function OPActions({ opId, estadoActual, tieneReporteCorte = false }: Props) {
+export function OPActions({ opId, estadoActual }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   const estado = estadoActual as EstadoOP
   const siguienteEstado = SIGUIENTE[estado]
   const labelAccion = LABELS_ACCION[estado]
-  const puedeCancelar = estado !== 'completada' && estado !== 'cancelada'
+  const puedeCancelar = estado !== 'liquidada' && estado !== 'cancelada'
 
   // en_confeccion tiene su propia acción
   const esEnviarDupro = estado === 'en_confeccion'
@@ -97,7 +104,7 @@ export function OPProgreso({ estadoActual }: { estadoActual: string }) {
         {SECUENCIA_ESTADOS.map((e, i) => {
           const isPast = i < idxActual
           const isCurrent = i === idxActual
-          const label = e.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+          const label = STEP_LABELS[e] ?? e.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 
           return (
             <div key={e} className="flex items-center gap-1.5 shrink-0">

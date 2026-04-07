@@ -9,7 +9,6 @@ const CONFIG: Record<EstadoOP, { label: string; classes: string }> = {
   en_terminado:    { label: 'Terminado',        classes: 'bg-blue-50 text-blue-600 border-blue-100' },
   entregada:       { label: 'Entregada',         classes: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
   liquidada:       { label: 'Liquidada',         classes: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
-  completada:      { label: 'Completada',        classes: 'bg-emerald-500 text-white border-transparent' },
   cancelada:       { label: 'Cancelada',         classes: 'bg-red-50 text-red-600 border-red-100' },
 }
 

@@ -10,6 +10,16 @@ interface Props {
   historial?: any[]
 }
 
+const STEP_LABELS: Partial<Record<EstadoOP, string>> = {
+  programada:     'Programada',
+  en_corte:       'En Corte',
+  en_confeccion:  'En Confección',
+  dupro_pendiente:'DuPro en Proceso',
+  en_terminado:   'En Terminado',
+  entregada:      'Entregada',
+  liquidada:      'Liquidada',
+}
+
 export function OPStepper({ currentStatus, historial = [] }: Props) {
   const currentIndex = SECUENCIA_ESTADOS.indexOf(currentStatus as EstadoOP)
   
@@ -50,7 +60,7 @@ export function OPStepper({ currentStatus, historial = [] }: Props) {
                 'text-[8px] font-black uppercase tracking-widest text-center whitespace-nowrap mb-0.5',
                 isCurrent ? 'text-slate-900' : 'text-slate-400'
               )}>
-                {step.replace('_', ' ')}
+                {STEP_LABELS[step] ?? step.replace(/_/g, ' ')}
               </span>
               {dateStr && (
                 <span className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">

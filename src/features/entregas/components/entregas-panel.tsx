@@ -28,11 +28,12 @@ interface Props {
   liquidacionesPorEntrega: Record<string, string>  // entregaId → liquidacionId
   bodegas: { id: string; nombre: string }[]
   bodegaDestinoId: string | null
+  puedeEntregar?: boolean
 }
 
-const ESTADOS_ACTIVOS = ['entregada', 'liquidada']
+const ESTADOS_ACTIVOS = ['en_terminado', 'entregada', 'liquidada']
 
-export function EntregasPanel({ opId, opCodigo, estadoActual, entregas, lineasOP, totalUnidadesOP, liquidacionesPorEntrega, bodegas, bodegaDestinoId }: Props) {
+export function EntregasPanel({ opId, opCodigo, estadoActual, entregas, lineasOP, totalUnidadesOP, liquidacionesPorEntrega, bodegas, bodegaDestinoId, puedeEntregar = true }: Props) {
   const router = useRouter()
   const [showForm, setShowForm] = useState(false)
   const [friPending, startFriTransition] = useTransition()
@@ -84,12 +85,12 @@ export function EntregasPanel({ opId, opCodigo, estadoActual, entregas, lineasOP
           <Package className="w-4 h-4 text-muted-foreground" />
           <h2 className="font-semibold text-foreground text-body-md">Entregas</h2>
         </div>
-        {(estadoActual === 'entregada') && !showForm && (
+        {puedeEntregar && (estadoActual === 'en_terminado' || estadoActual === 'entregada') && !showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neu-base shadow-neu text-muted-foreground hover:text-foreground text-body-sm font-medium transition-all active:shadow-neu-inset"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-4 h-4" />
             Nueva Entrega
           </button>
         )}
@@ -275,7 +276,7 @@ export function EntregasPanel({ opId, opCodigo, estadoActual, entregas, lineasOP
             </div>
 
             {/* Botones FRI — solo para entregas recibidas y si OP en_entregas */}
-            {entrega.estado === 'recibida' && estadoActual === 'entregada' && (
+            {entrega.estado === 'recibida' && ['en_terminado', 'entregada'].includes(estadoActual) && (
               <div className="px-5 py-3 border-t border-black/5 flex items-center gap-3">
                 <p className="text-xs text-muted-foreground mr-auto">FRI:</p>
                 <button

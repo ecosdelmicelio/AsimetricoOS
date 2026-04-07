@@ -105,13 +105,6 @@ export async function upsertReporteInsumos(
     if (error) return { error: error.message }
   }
 
-  // Transición automática: en_terminado → en_entregas
-  await supabase
-    .from('ordenes_produccion')
-    .update({ estado: 'en_entregas' })
-    .eq('id', opId)
-    .eq('estado', 'en_terminado')
-
   revalidatePath(`/ordenes-produccion/${opId}`)
   return {}
 }
@@ -441,7 +434,7 @@ export async function calcularResumenLiquidacion(opId: string): Promise<ResumenL
   }
 }
 
-export async function aprobarLiquidacion(opId: string): Promise<{ error?: string }> {
+export async function aprobarLiquidacion(opId: string, bodegaId: string): Promise<{ error?: string }> {
   const supabase = db(await createClient())
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
@@ -569,58 +562,61 @@ export async function aprobarLiquidacion(opId: string): Promise<{ error?: string
   }
 
   // 4. Ingresar PT al kardex en bodega destino y registrar desperdicios
-  const opData = await supabase
-    .from('ordenes_produccion')
-    .select('bodega_destino_id, bin_destino_codigo, op_detalle(producto_id, cantidad_asignada, talla, productos(costo_unit))')
-    .eq('id', opId)
-    .single() as {
+  const { data: entregasData } = await supabase
+    .from('entregas')
+    .select('id, numero_entrega, bin_codigo, entrega_detalle(producto_id, cantidad_entregada, talla)')
+    .eq('op_id', opId)
+    .eq('estado', 'aceptada') as {
       data: {
-        bodega_destino_id: string | null
-        bin_destino_codigo: string | null
-        op_detalle: {
+        id: string
+        numero_entrega: number
+        bin_codigo: string | null
+        entrega_detalle: {
           producto_id: string
-          cantidad_asignada: number
+          cantidad_entregada: number
           talla: string
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          productos: { costo_unit: number } | null
         }[]
-      } | null
+      }[] | null
     }
 
-  const bodegaDestino = opData.data?.bodega_destino_id
-  const binCodigo = opData.data?.bin_destino_codigo
-
-  if (!bodegaDestino) {
-    return { error: 'La OP no tiene bodega de destino configurada' }
-  }
+  const bodegaDestino = bodegaId
 
   const tipoEntrada = tiposMovimiento?.find(t => t.codigo === 'ENTRADA_CONFECCION')?.id
   const tipoDesp = tiposMovimiento?.find(t => t.codigo === 'DESPERDICIO_CORTE')?.id
 
-  // Ingresar PT al kardex (agrupado por producto + talla)
-  const cppMap = new Map(resumen.cpp_por_producto.map(c => [c.producto_id, c.cpp]))
-  if (tipoEntrada && opData.data?.op_detalle) {
-    const ptMovimientos = opData.data.op_detalle.map(d => {
-      const costoUnit = cppMap.get(d.producto_id) ?? d.productos?.costo_unit ?? 0
-      return {
-        producto_id: d.producto_id,
-        bodega_id: bodegaDestino,
-        tipo_movimiento_id: tipoEntrada,
-        documento_tipo: 'op',
-        documento_id: opId,
-        cantidad: d.cantidad_asignada,
-        unidad: 'ud',
-        talla: d.talla,
-        costo_unitario: costoUnit,
-        costo_total: d.cantidad_asignada * costoUnit,
-        fecha_movimiento: now,
-        registrado_por: user.id,
-        notas: `Entrada por confección OP${binCodigo ? ` · BIN: ${binCodigo}` : ''}`,
-      }
-    })
+  if (!tipoEntrada || !tipoDesp) {
+    return { error: 'No se encontraron tipos de movimiento (ENTRADA_CONFECCION o DESPERDICIO_CORTE). Verifique configuración de Kardex.' }
+  }
 
-    const { error: ptError } = await supabase.from('kardex').insert(ptMovimientos) as { error: { message: string } | null }
-    if (ptError) return { error: `Kardex PT: ${ptError.message}` }
+  // Ingresar PT al kardex (agrupado por entrega + producto + talla)
+  const cppMap = new Map(resumen.cpp_por_producto.map(c => [c.producto_id, c.cpp]))
+  
+  if (entregasData) {
+    for (const entrega of entregasData) {
+      if (entrega.entrega_detalle.length === 0) continue
+
+      const ptMovimientos = entrega.entrega_detalle.map(d => {
+        const costoUnit = cppMap.get(d.producto_id) ?? 0
+        return {
+          producto_id: d.producto_id,
+          bodega_id: bodegaDestino,
+          tipo_movimiento_id: tipoEntrada,
+          documento_tipo: 'op',
+          documento_id: opId,
+          cantidad: d.cantidad_entregada,
+          unidad: 'ud',
+          talla: d.talla,
+          costo_unitario: costoUnit,
+          costo_total: d.cantidad_entregada * costoUnit,
+          fecha_movimiento: now,
+          registrado_por: user.id,
+          notas: `Entrada PT - Entrega #${entrega.numero_entrega}${entrega.bin_codigo ? ` (BIN: ${entrega.bin_codigo})` : ''}`,
+        }
+      })
+
+      const { error: ptError } = await supabase.from('kardex').insert(ptMovimientos) as { error: { message: string } | null }
+      if (ptError) return { error: `Kardex PT (Entrega #${entrega.numero_entrega}): ${ptError.message}` }
+    }
   }
 
   // Registrar desperdicios al kardex (de reporte_corte_material.desperdicio_kg)

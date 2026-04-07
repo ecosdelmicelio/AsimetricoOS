@@ -59,7 +59,7 @@ export async function OPDetail({ id }: Props) {
     ESTADOS_CON_INSUMOS.includes(estadoOP) ? getInsumosParaReporte(id) : Promise.resolve([]),
     ESTADOS_CON_LIQUIDACION.includes(estadoOP) ? calcularResumenLiquidacion(id) : Promise.resolve(null),
     ESTADOS_CON_LIQUIDACION.includes(estadoOP) ? getLiquidacionOP(id) : Promise.resolve(null),
-    ['entregada', 'liquidada', 'completada'].includes(estadoOP)
+    ['en_terminado', 'entregada', 'liquidada'].includes(estadoOP)
       ? supabase.from('bodegas').select('id, nombre').eq('activo', true).order('nombre')
       : Promise.resolve({ data: [] }),
     ESTADOS_CON_LIQUIDACION.includes(estadoOP) ? getServiciosRef(id) : Promise.resolve([]),
@@ -69,7 +69,7 @@ export async function OPDetail({ id }: Props) {
   const bodegas = (bodegasData?.data ?? []) as { id: string; nombre: string }[]
   const bodegaDestino = (op as unknown as Record<string, string | null>).bodega_destino_id ?? null
 
-  const hayReporteInsumos = insumosParaReporte.length === 0 || insumosParaReporte.some(i => i.ya_reportado)
+  const hayReporteInsumos = insumosParaReporte.length > 0 && insumosParaReporte.every(i => i.ya_reportado)
 
   const totalUnidades = detalles.reduce((s, d) => s + d.cantidad_asignada, 0)
 
@@ -187,7 +187,7 @@ export async function OPDetail({ id }: Props) {
                   Inspección
                 </Link>
               )}
-              <OPActions opId={id} estadoActual={op.estado} tieneReporteCorte={!!reporte} />
+              <OPActions opId={id} estadoActual={op.estado} />
             </div>
           </div>
 
@@ -305,6 +305,7 @@ export async function OPDetail({ id }: Props) {
         )}
         bodegas={bodegas}
         bodegaDestinoId={bodegaDestino}
+        puedeEntregar={hayReporteInsumos || estadoOP === 'entregada'}
       />
 
       {/* Reporte de Insumos (en_terminado en adelante) */}

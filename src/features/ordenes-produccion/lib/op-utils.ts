@@ -35,8 +35,6 @@ export function getOPStatusLabel(op: OPStatusPayload): string {
       return 'Entregada'
     case 'liquidada':
       return 'Liquidada'
-    case 'completada':
-      return 'Completada'
     case 'cancelada':
       return 'Cancelada'
     default:

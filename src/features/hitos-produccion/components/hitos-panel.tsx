@@ -47,7 +47,7 @@ export function HitosPanel({ opId, estadoActual, hitos: hitosIniciales, lineas }
   const [error, setError] = useState<string | null>(null)
 
   const visible = showAll ? hitos : hitos.slice(0, 4)
-  const canReport = estadoActual !== 'completada' && estadoActual !== 'cancelada'
+  const canReport = estadoActual !== 'liquidada' && estadoActual !== 'cancelada'
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
