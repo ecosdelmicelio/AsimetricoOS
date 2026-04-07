@@ -149,18 +149,6 @@ export function CerrarInspeccionForm({
         </div>
       )}
 
-      {/* Prendas revisadas */}
-      <div className="space-y-1.5">
-        <label className="text-body-sm text-muted-foreground">Prendas revisadas</label>
-        <input
-          type="number"
-          name="muestra_revisada"
-          min={0}
-          placeholder={`${muestraSugerida}`}
-          className="w-full rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5 text-body-sm text-foreground focus:outline-none"
-        />
-      </div>
-
       {/* Notas */}
       <div className="space-y-1.5">
         <label className="text-body-sm text-muted-foreground">Notas de cierre</label>

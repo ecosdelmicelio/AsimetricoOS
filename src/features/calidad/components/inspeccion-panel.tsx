@@ -266,8 +266,8 @@ export async function InspeccionPanel({ op_id }: Props) {
                   </p>
                   <p className="text-muted-foreground text-xs mt-0.5">
                     {h.timestamp_cierre ? formatDate(h.timestamp_cierre) : '—'}
-                    {h.muestra_revisada && ` · ${h.muestra_revisada} prendas revisadas`}
-                    {h.cantidad_segundas && ` · ${h.cantidad_segundas} segundas`}
+                    {h.muestra_revisada && h.muestra_revisada > 0 ? ` · ${h.muestra_revisada} prendas revisadas` : ''}
+                    {h.cantidad_segundas && h.cantidad_segundas > 0 ? ` · ${h.cantidad_segundas} segundas` : ''}
                   </p>
                 </div>
                 <CalidadStatusBadge resultado={h.resultado} />

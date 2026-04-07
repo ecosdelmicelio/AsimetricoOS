@@ -325,7 +325,7 @@ export async function closeInspeccion(formData: FormData): Promise<{ error?: str
   const op_id            = formData.get('op_id') as string
   const estado_op        = formData.get('estado_op') as string
   const resultado        = formData.get('resultado') as ResultadoInspeccion
-  const muestra_revisada = parseInt(formData.get('muestra_revisada') as string, 10) || null
+  const muestra_revisada = parseInt(formData.get('muestra_revisada') as string, 10) || 0
   const notas            = (formData.get('notas') as string) || null
   const cantidad_segundas = resultado === 'segundas'
     ? (parseInt(formData.get('cantidad_segundas') as string, 10) || null)
