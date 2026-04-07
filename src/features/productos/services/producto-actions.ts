@@ -58,6 +58,9 @@ export async function createProducto(
       color: input.color ?? null,
       origen_usa: input.origen_usa ?? false,
       precio_base: input.precio_base ?? null,
+      precio_estandar: input.precio_estandar ?? null,
+      referencia_cliente: input.referencia_cliente ?? null,
+      nombre_comercial: input.nombre_comercial ?? null,
       estado: 'activo',
       tipo_producto: input.tipo_producto ?? 'fabricado',
       marca_id: input.marca_id ?? null,
@@ -94,6 +97,9 @@ export async function updateProducto(
   if (input.nombre !== undefined) payload.nombre = input.nombre.trim()
   if (input.categoria !== undefined) payload.categoria = input.categoria
   if (input.precio_base !== undefined) payload.precio_base = input.precio_base
+  if (input.precio_estandar !== undefined) payload.precio_estandar = input.precio_estandar || null
+  if (input.referencia_cliente !== undefined) payload.referencia_cliente = input.referencia_cliente || null
+  if (input.nombre_comercial !== undefined) payload.nombre_comercial = input.nombre_comercial || null
   if (input.estado !== undefined) payload.estado = input.estado
   if (input.tipo_producto !== undefined) payload.tipo_producto = input.tipo_producto
   if (input.color !== undefined) payload.color = input.color || null

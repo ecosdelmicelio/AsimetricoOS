@@ -56,6 +56,9 @@ export function ProductoForm({ schema, atributos, marcas }: Props) {
 
   // Step 2
   const [precioBase, setPrecioBase] = useState('')
+  const [precioEstandar, setPrecioEstandar] = useState('')
+  const [referenciaCliente, setReferenciaCliente] = useState('')
+  const [nombreComercial, setNombreComercial] = useState('')
 
   // Auto-derivar color y origen del esquema de código
   const autoColor = useMemo(() => {
@@ -113,6 +116,9 @@ export function ProductoForm({ schema, atributos, marcas }: Props) {
         color: color.trim() || undefined,
         origen_usa: autoOrigenUsa,
         precio_base: precioBase ? parseFloat(precioBase) : undefined,
+        precio_estandar: precioEstandar ? parseFloat(precioEstandar) : undefined,
+        referencia_cliente: referenciaCliente.trim() || undefined,
+        nombre_comercial: nombreComercial.trim() || undefined,
         tipo_producto: tipoProducto,
         marca_id: marcaSeleccionada || undefined,
         atributos: atributosSeleccionados,
@@ -314,6 +320,44 @@ export function ProductoForm({ schema, atributos, marcas }: Props) {
             </p>
           </div>
 
+          {/* Referencia del cliente */}
+          <div className="space-y-1.5">
+            <label className="text-body-sm text-muted-foreground font-medium">
+              Referencia del cliente
+            </label>
+            <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
+              <input
+                type="text"
+                value={referenciaCliente}
+                onChange={e => setReferenciaCliente(e.target.value)}
+                placeholder="Ej: SKU-123456, REF-ABC"
+                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Código o referencia asignado por el cliente para este producto.
+            </p>
+          </div>
+
+          {/* Nombre comercial */}
+          <div className="space-y-1.5">
+            <label className="text-body-sm text-muted-foreground font-medium">
+              Nombre comercial
+            </label>
+            <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
+              <input
+                type="text"
+                value={nombreComercial}
+                onChange={e => setNombreComercial(e.target.value)}
+                placeholder="Ej: Blusa Premium, Pantalón Ejecutivo"
+                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Nombre comercial o nombre de venta del producto.
+            </p>
+          </div>
+
           {/* Marca */}
           <div className="space-y-1.5">
             <label className="text-body-sm text-muted-foreground font-medium">Marca</label>
@@ -419,6 +463,30 @@ export function ProductoForm({ schema, atributos, marcas }: Props) {
             </div>
             <p className="text-xs text-muted-foreground">
               Precio de venta máximo. El BOM calculará el costo real de producción.
+            </p>
+          </div>
+
+          {/* Precio estándar */}
+          <div className="space-y-1.5">
+            <label className="text-body-sm text-muted-foreground font-medium">
+              Precio estándar (COP)
+            </label>
+            <div className="relative rounded-xl bg-neu-base shadow-neu-inset">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-body-sm">
+                $
+              </span>
+              <input
+                type="number"
+                min={0}
+                step={1000}
+                value={precioEstandar}
+                onChange={e => setPrecioEstandar(e.target.value)}
+                placeholder="0"
+                className="w-full bg-transparent pl-7 pr-3 py-2.5 text-body-sm text-foreground outline-none"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Precio de referencia para cotizaciones estándar.
             </p>
           </div>
 

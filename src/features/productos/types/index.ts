@@ -9,6 +9,9 @@ export interface Producto {
   color: string | null
   origen_usa: boolean
   precio_base: number | null
+  precio_estandar: number | null
+  referencia_cliente: string | null
+  nombre_comercial: string | null
   estado: EstadoProducto
   tipo_producto: TipoProducto
   marca_id: string | null
@@ -28,6 +31,9 @@ export interface CreateProductoInput {
   color?: string
   origen_usa?: boolean
   precio_base?: number
+  precio_estandar?: number
+  referencia_cliente?: string
+  nombre_comercial?: string
   tipo_producto?: TipoProducto
   marca_id?: string
   atributos?: Record<string, string>
@@ -42,6 +48,9 @@ export interface UpdateProductoInput {
   color?: string
   origen_usa?: boolean
   precio_base?: number
+  precio_estandar?: number | null
+  referencia_cliente?: string | null
+  nombre_comercial?: string | null
   tipo_producto?: TipoProducto
   marca_id?: string | null
   estado?: EstadoProducto
