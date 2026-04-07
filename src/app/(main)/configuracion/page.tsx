@@ -2,6 +2,7 @@ import { getSchemaByEntidad } from '@/features/codigo-schema/services/schema-act
 import { getCalidadConfig } from '@/features/calidad/services/calidad-config-actions'
 import { getTiposMovimiento } from '@/features/configuracion/services/tipos-movimiento-actions'
 import { getAtributosPT } from '@/features/productos/services/atributo-actions'
+import { getAtributosMP } from '@/features/materiales/services/atributo-actions'
 import { ConfiguracionTabs } from '@/features/configuracion/components/configuracion-tabs'
 import { createClient } from '@/shared/lib/supabase/server'
 
@@ -18,7 +19,7 @@ async function getTiposDefecto() {
 }
 
 export default async function ConfiguracionPage() {
-  const [schemaProducto, schemaMaterial, schemaServicio, tiposDefecto, tiposMovimiento, calidadConfig, atributosPT] =
+  const [schemaProducto, schemaMaterial, schemaServicio, tiposDefecto, tiposMovimiento, calidadConfig, atributosPT, atributosMP] =
     await Promise.all([
       getSchemaByEntidad('producto'),
       getSchemaByEntidad('material'),
@@ -27,6 +28,7 @@ export default async function ConfiguracionPage() {
       getTiposMovimiento(),
       getCalidadConfig(),
       getAtributosPT(),
+      getAtributosMP(),
     ])
 
   return (
@@ -46,6 +48,7 @@ export default async function ConfiguracionPage() {
         tiposMovimiento={tiposMovimiento}
         calidadConfig={calidadConfig}
         atributosPT={atributosPT}
+        atributosMP={atributosMP}
       />
     </div>
   )
