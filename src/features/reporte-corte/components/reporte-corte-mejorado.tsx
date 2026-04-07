@@ -46,6 +46,7 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId, reporteAE
   const [isPending, startTransition] = useTransition()
   const [isLoadingMateriales, setIsLoadingMateriales] = useState(false)
   const [isLoadingProgreso, setIsLoadingProgreso] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fecha, setFecha] = useState(reporteAEditar?.fecha ?? new Date().toISOString().split('T')[0])
   const [notas, setNotas] = useState(reporteAEditar?.notas ?? '')
@@ -237,6 +238,7 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId, reporteAE
   }
 
   const handleGuardar = () => {
+    if (isSaving) return;
     setError(null)
 
     if (!fecha.trim()) {
@@ -281,6 +283,7 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId, reporteAE
     }
 
     // Construir datos para server action
+    setIsSaving(true)
     startTransition(async () => {
       const input = {
         op_id: opId,
@@ -327,6 +330,7 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId, reporteAE
 
       if (res.error) {
         setError(res.error)
+        setIsSaving(false)
         return
       }
 
@@ -339,6 +343,8 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId, reporteAE
         setConsumosPorMaterial({})
         setCantidadesCortadas({})
       }
+
+      setIsSaving(false)
     })
   }
 
@@ -542,11 +548,11 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId, reporteAE
 
       <button
         onClick={handleGuardar}
-        disabled={isPending || isLoadingMateriales}
+        disabled={isSaving || isPending || isLoadingMateriales}
         className="w-full py-4 rounded-2xl bg-slate-900 text-white font-black text-[12px] uppercase tracking-[0.2em] hover:bg-black transition-all disabled:opacity-50 flex items-center justify-center gap-3 shadow-xl active:scale-95"
       >
-        {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-        {reporteAEditar ? (isPending ? 'Guardando...' : 'Actualizar Reporte') : (isPending ? 'Enviando...' : 'Confirmar Reporte de Corte')}
+        {(isSaving || isPending) && <Loader2 className="w-4 h-4 animate-spin" />}
+        {reporteAEditar ? ((isSaving || isPending) ? 'Guardando...' : 'Actualizar Reporte') : ((isSaving || isPending) ? 'Enviando...' : 'Confirmar Reporte de Corte')}
       </button>
     </div>
   )

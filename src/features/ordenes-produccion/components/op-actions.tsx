@@ -29,6 +29,7 @@ const SIGUIENTE: Partial<Record<EstadoOP, EstadoOP>> = {
 const LABELS_ACCION: Partial<Record<EstadoOP, string>> = {
   programada:    'Iniciar Corte',
   en_confeccion: 'Iniciar DuPro',
+  dupro_pendiente: 'Realizar Inspección',
 }
 
 interface Props {
@@ -46,8 +47,14 @@ export function OPActions({ opId, estadoActual }: Props) {
 
   // en_confeccion tiene su propia acción
   const esEnviarDupro = estado === 'en_confeccion'
+  const esRealizarDupro = estado === 'dupro_pendiente'
 
   function handleAvanzar() {
+    if (esRealizarDupro) {
+      router.push(`/calidad/${opId}`)
+      return
+    }
+    
     startTransition(async () => {
       if (esEnviarDupro) {
         await iniciarDupro(opId)
@@ -68,13 +75,13 @@ export function OPActions({ opId, estadoActual }: Props) {
 
   return (
     <div className="flex flex-col gap-2 w-full">
-      {(esEnviarDupro || (siguienteEstado && labelAccion)) && (
+      {(esEnviarDupro || esRealizarDupro || (siguienteEstado && labelAccion)) && (
         <button
           onClick={handleAvanzar}
           disabled={isPending}
           className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg disabled:opacity-40 disabled:pointer-events-none w-full shrink-0"
         >
-          {isPending ? 'Actualizando...' : (LABELS_ACCION[estado] ?? 'Enviar a DUPRO')}
+          {isPending && !esRealizarDupro ? 'Actualizando...' : (LABELS_ACCION[estado] ?? 'Acción')}
         </button>
       )}
 
