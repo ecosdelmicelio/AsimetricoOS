@@ -37,7 +37,7 @@ export function MaterialesPanel({ materiales, schema }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showInactivos, setShowInactivos] = useState(false)
 
-  const visibles = showInactivos ? materiales : materiales.filter(m => m.activo)
+  const visibles = showInactivos ? materiales.filter(m => !m.activo) : materiales.filter(m => m.activo)
 
   return (
     <div className="space-y-4">

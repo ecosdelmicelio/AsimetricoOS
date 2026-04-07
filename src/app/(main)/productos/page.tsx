@@ -1,7 +1,8 @@
 import { Suspense } from 'react'
 import { getProductos } from '@/features/productos/services/producto-actions'
 import { getSaldosTotalesPorProducto } from '@/features/kardex/services/kardex-actions'
-import { getMateriales, getServiciosOperativos } from '@/features/productos/services/bom-actions'
+import { getMateriales as getBOMCatalogo, getServiciosOperativos } from '@/features/productos/services/bom-actions'
+import { getMateriales } from '@/features/materiales/services/materiales-actions'
 import { getSchemaByEntidad } from '@/features/codigo-schema/services/schema-actions'
 import { getMarcas } from '@/features/configuracion/services/marcas-actions'
 import { ProductosPanel } from '@/features/productos/components/productos-panel'
@@ -13,7 +14,7 @@ async function ProductosContent() {
     getProductos(),
     getSaldosTotalesPorProducto(),
     getMarcas(),
-    getMateriales(),
+    getBOMCatalogo(),
     getServiciosOperativos(),
   ])
   return (
