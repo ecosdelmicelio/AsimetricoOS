@@ -462,13 +462,7 @@ export async function aprobarLiquidacion(opId: string, bodegaId: string): Promis
   if (liqError) return { error: `Liquidación: ${liqError.message}` }
 
   // 3. Generar movimientos de kardex (descarga de inventario)
-  const bodegaTallerData = await supabase
-    .from('ordenes_produccion')
-    .select('bodega_taller_id')
-    .eq('id', opId)
-    .single() as { data: { bodega_taller_id: string | null } | null }
-
-  const bodega_id = bodegaTallerData.data?.bodega_taller_id
+  const bodega_id = bodegaId
   if (!bodega_id) return { error: 'La OP no tiene bodega de taller asociada' }
 
   // Obtener tipo_movimiento ids

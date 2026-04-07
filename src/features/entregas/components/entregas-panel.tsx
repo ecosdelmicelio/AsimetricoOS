@@ -251,25 +251,16 @@ export function EntregasPanel({
               </div>
             )}
 
-            {/* Liquidación — para entregas aceptadas */}
-            {entrega.estado === 'aceptada' && (
+            {/* Liquidación — solo si ya existe */}
+            {entrega.estado === 'aceptada' && liquidacionesPorEntrega[entrega.id] && (
               <div className="px-3 py-2.5 border-t border-slate-100 flex items-center gap-2">
                 <DollarSign className="w-3 h-3 text-slate-400" />
-                {liquidacionesPorEntrega[entrega.id] ? (
-                  <Link
-                    href={`/liquidacion/${liquidacionesPorEntrega[entrega.id]}`}
-                    className="text-[8px] font-black text-primary-600 hover:text-primary-800 uppercase tracking-widest transition-colors"
-                  >
-                    Ver Liquidación →
-                  </Link>
-                ) : (
-                  <Link
-                    href={`/liquidacion/nueva?op=${opId}&entrega=${entrega.id}`}
-                    className="text-[8px] font-black text-slate-400 hover:text-slate-700 uppercase tracking-widest transition-colors"
-                  >
-                    Crear Liquidación Parcial →
-                  </Link>
-                )}
+                <Link
+                  href={`/liquidacion/${liquidacionesPorEntrega[entrega.id]}`}
+                  className="text-[8px] font-black text-primary-600 hover:text-primary-800 uppercase tracking-widest transition-colors"
+                >
+                  Ver Liquidación →
+                </Link>
               </div>
             )}
           </div>
