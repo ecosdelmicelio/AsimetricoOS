@@ -105,6 +105,7 @@ export function OVDespachos({ ovId, despachos, binesDisponibles, detallesOV, est
   const [showForm, setShowForm] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [expandedBin, setExpandedBin] = useState<string | null>(null)
+  const [showConfirmEntregada, setShowConfirmEntregada] = useState(false)
   
   // Estado del formulario
   const [form, setForm] = useState({
@@ -141,13 +142,12 @@ export function OVDespachos({ ovId, despachos, binesDisponibles, detallesOV, est
     }
   }).filter(d => d.cantidad_pendiente > 0), [detallesOV, despachos])
 
-  const handleFinalizarEntrega = async () => {
-    if (confirm('¿Estás seguro de marcar esta orden como Entregada? Esto significa que la operación comercial ha finalizado y se ha completado la entrega de los despachos.')) {
-      startTransition(async () => {
-        const res = await updateEstadoOV(ovId, 'entregada')
-        if (res.error) alert(res.error)
-      })
-    }
+  const handleFinalizarEntrega = () => {
+    startTransition(async () => {
+      const res = await updateEstadoOV(ovId, 'entregada')
+      if (res.error) alert(res.error)
+      else setShowConfirmEntregada(false)
+    })
   }
 
   const handleCreate = async () => {
@@ -394,8 +394,8 @@ export function OVDespachos({ ovId, despachos, binesDisponibles, detallesOV, est
           <div className="flex items-center gap-3">
             <Badge variant="secondary" className="font-bold text-[10px]">{despachos.length} REGISTROS</Badge>
             {estado && !['entregada', 'cancelada'].includes(estado) && (
-              <Button 
-                onClick={handleFinalizarEntrega} 
+              <Button
+                onClick={() => setShowConfirmEntregada(true)}
                 disabled={isPending}
                 size="sm"
                 className="bg-green-600 hover:bg-green-700 text-white font-bold text-[10px] tracking-wider uppercase shadow-lg shadow-green-200"
@@ -541,6 +541,41 @@ export function OVDespachos({ ovId, despachos, binesDisponibles, detallesOV, est
           </div>
         )}
       </div>
+
+      {/* Modal confirmación Entregada */}
+      {showConfirmEntregada && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowConfirmEntregada(false)} />
+          <div className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full space-y-5 border border-white/20">
+            <div className="w-14 h-14 rounded-2xl bg-green-50 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-7 h-7 text-green-600" />
+            </div>
+            <div className="text-center space-y-2">
+              <h3 className="font-black text-slate-900 text-base uppercase tracking-tight">¿Marcar como Entregada?</h3>
+              <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                Esto indica que la operación comercial ha finalizado y todos los despachos fueron completados.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmEntregada(false)}
+                disabled={isPending}
+                className="flex-1 py-3 rounded-xl bg-slate-100 text-slate-600 font-black text-[11px] uppercase tracking-widest hover:bg-slate-200 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleFinalizarEntrega}
+                disabled={isPending}
+                className="flex-1 py-3 rounded-xl bg-green-600 text-white font-black text-[11px] uppercase tracking-widest hover:bg-green-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isPending && <CheckCircle2 className="w-3.5 h-3.5 animate-pulse" />}
+                {isPending ? 'Guardando...' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
