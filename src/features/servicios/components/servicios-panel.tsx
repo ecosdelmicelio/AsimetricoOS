@@ -220,51 +220,53 @@ export function ServiciosPanel({ servicios, tipos, subtipos, detalles, ejecutore
       {/* Tabla */}
       {visibles.length > 0 && (
         <div className="rounded-2xl bg-neu-base shadow-neu overflow-hidden">
-          {/* Header */}
-          <div className="grid grid-cols-12 gap-3 px-5 py-3 border-b border-black/5 bg-neu-base">
-            <span className="col-span-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Código</span>
-            <span className="col-span-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Nombre</span>
-            <span className="col-span-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ejecutor</span>
-            <span className="col-span-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Tarifa</span>
-            <span className="col-span-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide text-center">Estado</span>
-            <span className="col-span-1" />
-          </div>
-
-          <div className="divide-y divide-black/5">
-            {visibles.map(srv =>
-              editingId === srv.id
-                ? <ServicioRow
-                  key={srv.id}
-                  servicio={srv}
-                  ejecutores={ejecutores}
-                  isEditing
-                  editingNombre={editingNombre}
-                  editingTarifa={editingTarifa}
-                  editingEjecutorId={editingEjecutorId}
-                  onEditingNombreChange={setEditingNombre}
-                  onEditingTarifaChange={setEditingTarifa}
-                  onEditingEjecutorChange={setEditingEjecutorId}
-                  onSave={() => handleEditarGuardar(srv.id)}
-                  onCancel={() => setEditingId(null)}
-                  pending={pending}
-                />
-                : <ServicioRow
-                  key={srv.id}
-                  servicio={srv}
-                  ejecutores={ejecutores}
-                  onEdit={() => {
-                    setEditingId(srv.id)
-                    setEditingNombre(srv.nombre)
-                    setEditingTarifa(srv.tarifa_unitaria.toString())
-                    setEditingDescripcion(srv.descripcion || '')
-                    setEditingEjecutorId(srv.ejecutor_id || null)
-                  }}
-                  onDelete={() => handleEliminar(srv.id)}
-                  onToggleActivo={() => handleToggleActivo(srv.id)}
-                  pending={pending}
-                />
-            )}
-          </div>
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-black/5 bg-neu-base">
+                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Código</th>
+                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Nombre</th>
+                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Ejecutor</th>
+                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right px-5 py-3">Tarifa</th>
+                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-center px-5 py-3">Estado</th>
+                <th className="px-5 py-3 w-20" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/5">
+              {visibles.map(srv =>
+                editingId === srv.id
+                  ? <ServicioRow
+                    key={srv.id}
+                    servicio={srv}
+                    ejecutores={ejecutores}
+                    isEditing
+                    editingNombre={editingNombre}
+                    editingTarifa={editingTarifa}
+                    editingEjecutorId={editingEjecutorId}
+                    onEditingNombreChange={setEditingNombre}
+                    onEditingTarifaChange={setEditingTarifa}
+                    onEditingEjecutorChange={setEditingEjecutorId}
+                    onSave={() => handleEditarGuardar(srv.id)}
+                    onCancel={() => setEditingId(null)}
+                    pending={pending}
+                  />
+                  : <ServicioRow
+                    key={srv.id}
+                    servicio={srv}
+                    ejecutores={ejecutores}
+                    onEdit={() => {
+                      setEditingId(srv.id)
+                      setEditingNombre(srv.nombre)
+                      setEditingTarifa(srv.tarifa_unitaria.toString())
+                      setEditingDescripcion(srv.descripcion || '')
+                      setEditingEjecutorId(srv.ejecutor_id || null)
+                    }}
+                    onDelete={() => handleEliminar(srv.id)}
+                    onToggleActivo={() => handleToggleActivo(srv.id)}
+                    pending={pending}
+                  />
+              )}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
@@ -530,24 +532,22 @@ function ServicioRow({
 
   if (isEditing && editingNombre !== undefined) {
     return (
-      <div className={`grid grid-cols-12 gap-3 items-center px-5 py-3 ${!srv.activo ? 'opacity-50' : ''}`}>
-        <span className="col-span-2 font-mono text-body-sm font-semibold text-primary-700">{srv.codigo}</span>
-
-        <div className="col-span-3">
+      <tr className={!srv.activo ? 'opacity-50' : ''}>
+        <td className="px-5 py-3"><span className="font-mono text-body-sm font-semibold text-primary-700">{srv.codigo}</span></td>
+        <td className="px-5 py-3">
           <input
             type="text"
             value={editingNombre}
             onChange={e => onEditingNombreChange?.(e.target.value)}
-            className="w-full px-2 py-1.5 rounded-lg bg-neu-base shadow-neu text-body-sm text-foreground outline-none"
+            className="px-2 py-1.5 rounded-lg bg-neu-base shadow-neu text-body-sm text-foreground outline-none"
             autoFocus
           />
-        </div>
-
-        <div className="col-span-2">
+        </td>
+        <td className="px-5 py-3">
           <select
             value={editingEjecutorId || ''}
             onChange={e => onEditingEjecutorChange?.(e.target.value || null)}
-            className="w-full px-2 py-1.5 rounded-lg bg-neu-base shadow-neu text-body-sm text-foreground outline-none appearance-none"
+            className="px-2 py-1.5 rounded-lg bg-neu-base shadow-neu text-body-sm text-foreground outline-none appearance-none"
           >
             <option value="">Sin asignar</option>
             {ejecutores.map(ejecutor => (
@@ -556,48 +556,47 @@ function ServicioRow({
               </option>
             ))}
           </select>
-        </div>
-
-        <div className="col-span-2">
+        </td>
+        <td className="px-5 py-3 text-right">
           <input
             type="number"
             min="0"
             value={editingTarifa}
             onChange={e => onEditingTarifaChange?.(e.target.value)}
-            className="w-full px-2 py-1.5 rounded-lg bg-neu-base shadow-neu text-body-sm text-foreground text-right outline-none"
+            className="px-2 py-1.5 rounded-lg bg-neu-base shadow-neu text-body-sm text-foreground text-right outline-none"
           />
-        </div>
-
-        <div className="col-span-1" />
-
-        <div className="col-span-1 flex justify-end gap-1">
-          <button
-            onClick={onSave}
-            disabled={pending}
-            className="w-7 h-7 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-green-600 hover:text-green-700 transition-colors disabled:opacity-50"
-            title="Guardar"
-          >
-            ✓
-          </button>
-          <button
-            onClick={onCancel}
-            className="w-7 h-7 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-red-600 hover:text-red-700 transition-colors"
-            title="Cancelar"
-          >
-            ✕
-          </button>
-        </div>
-      </div>
+        </td>
+        <td className="px-5 py-3 text-center" />
+        <td className="px-5 py-3 text-right">
+          <div className="flex justify-end gap-1">
+            <button
+              onClick={onSave}
+              disabled={pending}
+              className="w-7 h-7 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-green-600 hover:text-green-700 transition-colors disabled:opacity-50"
+              title="Guardar"
+            >
+              ✓
+            </button>
+            <button
+              onClick={onCancel}
+              className="w-7 h-7 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-red-600 hover:text-red-700 transition-colors"
+              title="Cancelar"
+            >
+              ✕
+            </button>
+          </div>
+        </td>
+      </tr>
     )
   }
 
   return (
-    <div className={`grid grid-cols-12 gap-3 items-center px-5 py-3 ${!srv.activo ? 'opacity-50' : ''}`}>
-      <span className="col-span-2 font-mono text-body-sm font-semibold text-primary-700">{srv.codigo}</span>
-      <span className="col-span-3 text-body-sm text-foreground">{srv.nombre}</span>
-      <span className="col-span-2 text-body-sm text-muted-foreground">{getEjecutorNombre(srv.ejecutor_id)}</span>
-      <span className="col-span-2 text-body-sm text-foreground text-right font-mono">${srv.tarifa_unitaria.toLocaleString('es-CO')}</span>
-      <div className="col-span-1 flex justify-center">
+    <tr className={!srv.activo ? 'opacity-50' : ''}>
+      <td className="px-5 py-3"><span className="font-mono text-body-sm font-semibold text-primary-700">{srv.codigo}</span></td>
+      <td className="px-5 py-3"><span className="text-body-sm text-foreground">{srv.nombre}</span></td>
+      <td className="px-5 py-3"><span className="text-body-sm text-muted-foreground">{getEjecutorNombre(srv.ejecutor_id)}</span></td>
+      <td className="px-5 py-3 text-right"><span className="text-body-sm text-foreground font-mono">${srv.tarifa_unitaria.toLocaleString('es-CO')}</span></td>
+      <td className="px-5 py-3 text-center">
         <button
           onClick={onToggleActivo}
           disabled={pending}
@@ -607,25 +606,27 @@ function ServicioRow({
         >
           {srv.activo ? 'Activo' : 'Inactivo'}
         </button>
-      </div>
-      <div className="col-span-1 flex justify-end gap-1">
-        <button
-          onClick={onEdit}
-          disabled={pending}
-          className="w-7 h-7 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-          title="Editar"
-        >
-          <Edit2 className="w-3 h-3" />
-        </button>
-        <button
-          onClick={onDelete}
-          disabled={pending}
-          className="w-7 h-7 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
-          title="Eliminar"
-        >
-          <Trash2 className="w-3 h-3" />
-        </button>
-      </div>
-    </div>
+      </td>
+      <td className="px-5 py-3 text-right">
+        <div className="flex justify-end gap-1">
+          <button
+            onClick={onEdit}
+            disabled={pending}
+            className="w-7 h-7 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+            title="Editar"
+          >
+            <Edit2 className="w-3 h-3" />
+          </button>
+          <button
+            onClick={onDelete}
+            disabled={pending}
+            className="w-7 h-7 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
+            title="Eliminar"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        </div>
+      </td>
+    </tr>
   )
 }

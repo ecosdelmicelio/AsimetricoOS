@@ -91,34 +91,36 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
       {/* Tabla */}
       {visibles.length > 0 && (
         <div className="rounded-2xl bg-neu-base shadow-neu overflow-hidden">
-          {/* Header */}
-          <div className="grid grid-cols-12 gap-3 px-5 py-3 border-b border-black/5 bg-neu-base">
-            <span className="col-span-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Fecha</span>
-            <span className="col-span-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Código</span>
-            <span className="col-span-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tipo</span>
-            <span className="col-span-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Nombre</span>
-            <span className="col-span-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ref Cliente</span>
-            <span className="col-span-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Marca</span>
-            <span className="col-span-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Stock</span>
-            <span className="col-span-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide text-center">Estado</span>
-            <span className="col-span-1" />
-          </div>
-
-          <div className="divide-y divide-black/5">
-            {visibles.map(p =>
-              editingId === p.id
-                ? <ProductForm
-                    key={p.id}
-                    product={p}
-                    marcas={marcas}
-                    atributosPT={atributosPT}
-                    catalogoMateriales={catalogoMateriales}
-                    catalogoServicios={catalogoServicios}
-                    onDone={() => setEditingId(null)}
-                  />
-                : <ProductRow key={p.id} product={p} marcas={marcas} saldo={saldosPorProducto[p.id] ?? 0} onEdit={() => setEditingId(p.id)} />
-            )}
-          </div>
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-black/5 bg-neu-base">
+                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Fecha</th>
+                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Código</th>
+                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Tipo</th>
+                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Nombre</th>
+                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Ref Cliente</th>
+                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Marca</th>
+                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right px-5 py-3">Stock</th>
+                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-center px-5 py-3">Estado</th>
+                <th className="px-5 py-3 w-12" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/5">
+              {visibles.map(p =>
+                editingId === p.id
+                  ? <ProductForm
+                      key={p.id}
+                      product={p}
+                      marcas={marcas}
+                      atributosPT={atributosPT}
+                      catalogoMateriales={catalogoMateriales}
+                      catalogoServicios={catalogoServicios}
+                      onDone={() => setEditingId(null)}
+                    />
+                  : <ProductRow key={p.id} product={p} marcas={marcas} saldo={saldosPorProducto[p.id] ?? 0} onEdit={() => setEditingId(p.id)} />
+              )}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
@@ -130,15 +132,15 @@ function ProductRow({ product: p, marcas, saldo, onEdit }: { product: Producto; 
   const fechaFormato = new Date(p.created_at).toLocaleDateString('es-CO', { month: '2-digit', day: '2-digit', year: '2-digit' })
 
   return (
-    <div className={`grid grid-cols-12 gap-3 items-center px-5 py-3 ${p.estado === 'inactivo' ? 'opacity-50' : ''}`}>
-      <span className="col-span-1 text-body-sm text-muted-foreground">{fechaFormato}</span>
-      <span className="col-span-1 font-mono text-body-sm font-semibold text-primary-700">{p.referencia}</span>
-      <span className="col-span-1 text-body-sm text-foreground capitalize">{p.tipo_producto === 'fabricado' ? 'Fabricado' : 'Comercializado'}</span>
-      <p className="col-span-2 text-body-sm font-medium text-foreground truncate">{p.nombre}</p>
-      <span className="col-span-2 text-body-sm text-muted-foreground">{p.referencia_cliente ?? '—'}</span>
-      <span className="col-span-2 text-body-sm text-muted-foreground">{marca}</span>
-      <span className="col-span-1 text-body-sm text-foreground text-right font-medium">{saldo} uds</span>
-      <div className="col-span-1 flex justify-center">
+    <tr className={p.estado === 'inactivo' ? 'opacity-50' : ''}>
+      <td className="px-5 py-3"><span className="text-body-sm text-muted-foreground">{fechaFormato}</span></td>
+      <td className="px-5 py-3"><span className="font-mono text-body-sm font-semibold text-primary-700">{p.referencia}</span></td>
+      <td className="px-5 py-3"><span className="text-body-sm text-foreground capitalize">{p.tipo_producto === 'fabricado' ? 'Fabricado' : 'Comercializado'}</span></td>
+      <td className="px-5 py-3"><p className="text-body-sm font-medium text-foreground truncate">{p.nombre}</p></td>
+      <td className="px-5 py-3"><span className="text-body-sm text-muted-foreground">{p.referencia_cliente ?? '—'}</span></td>
+      <td className="px-5 py-3"><span className="text-body-sm text-muted-foreground">{marca}</span></td>
+      <td className="px-5 py-3 text-right"><span className="text-body-sm text-foreground font-medium">{saldo} uds</span></td>
+      <td className="px-5 py-3 text-center">
         <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${
           p.estado === 'activo' ? 'bg-green-100 text-green-700' :
           p.estado === 'inactivo' ? 'bg-gray-100 text-gray-500' :
@@ -146,16 +148,16 @@ function ProductRow({ product: p, marcas, saldo, onEdit }: { product: Producto; 
         }`}>
           {p.estado === 'activo' ? 'Activo' : p.estado === 'inactivo' ? 'Inactivo' : 'En desarrollo'}
         </span>
-      </div>
-      <div className="col-span-1 flex justify-end">
+      </td>
+      <td className="px-5 py-3 text-right">
         <button
           onClick={onEdit}
           className="w-7 h-7 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
         >
           <Edit2 className="w-3 h-3" />
         </button>
-      </div>
-    </div>
+      </td>
+    </tr>
   )
 }
 
