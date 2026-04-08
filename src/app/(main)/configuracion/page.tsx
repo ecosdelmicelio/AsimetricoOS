@@ -3,6 +3,7 @@ import { getCalidadConfig } from '@/features/calidad/services/calidad-config-act
 import { getTiposMovimiento } from '@/features/configuracion/services/tipos-movimiento-actions'
 import { getAtributosPT } from '@/features/productos/services/atributo-actions'
 import { getAtributosMP } from '@/features/materiales/services/atributo-actions'
+import { getServiciosOperativos } from '@/features/servicios/services/servicios-actions'
 import { ConfiguracionTabs } from '@/features/configuracion/components/configuracion-tabs'
 import { createClient } from '@/shared/lib/supabase/server'
 
@@ -19,16 +20,16 @@ async function getTiposDefecto() {
 }
 
 export default async function ConfiguracionPage() {
-  const [schemaProducto, schemaMaterial, schemaServicio, tiposDefecto, tiposMovimiento, calidadConfig, atributosPT, atributosMP] =
+  const [schemaProducto, schemaMaterial, tiposDefecto, tiposMovimiento, calidadConfig, atributosPT, atributosMP, servicios] =
     await Promise.all([
       getSchemaByEntidad('producto'),
       getSchemaByEntidad('material'),
-      getSchemaByEntidad('servicio'),
       getTiposDefecto(),
       getTiposMovimiento(),
       getCalidadConfig(),
       getAtributosPT(),
       getAtributosMP(),
+      getServiciosOperativos(),
     ])
 
   return (
@@ -43,12 +44,12 @@ export default async function ConfiguracionPage() {
       <ConfiguracionTabs
         schemaProducto={schemaProducto}
         schemaMaterial={schemaMaterial}
-        schemaServicio={schemaServicio}
         tiposDefecto={tiposDefecto}
         tiposMovimiento={tiposMovimiento}
         calidadConfig={calidadConfig}
         atributosPT={atributosPT}
         atributosMP={atributosMP}
+        servicios={servicios}
       />
     </div>
   )

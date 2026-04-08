@@ -4,7 +4,6 @@ import { getAtributosPT } from '@/features/productos/services/atributo-actions'
 import { getSaldosTotalesPorProducto } from '@/features/kardex/services/kardex-actions'
 import { getMateriales as getBOMCatalogo, getServiciosOperativos } from '@/features/productos/services/bom-actions'
 import { getMateriales } from '@/features/materiales/services/materiales-actions'
-import { getSchemaByEntidad } from '@/features/codigo-schema/services/schema-actions'
 import { getMarcas } from '@/features/configuracion/services/marcas-actions'
 import { ProductosPanel } from '@/features/productos/components/productos-panel'
 import { MaterialesPanel } from '@/features/materiales/components/materiales-panel'
@@ -32,11 +31,8 @@ async function ProductosContent() {
 }
 
 async function MaterialesContent() {
-  const [materiales, schema] = await Promise.all([
-    getMateriales(),
-    getSchemaByEntidad('material'),
-  ])
-  return <MaterialesPanel materiales={materiales} schema={schema} />
+  const materiales = await getMateriales()
+  return <MaterialesPanel materiales={materiales} />
 }
 
 function Skeleton() {
