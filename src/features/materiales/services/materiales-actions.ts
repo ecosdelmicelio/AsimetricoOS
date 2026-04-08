@@ -69,7 +69,7 @@ export async function createMaterial(input: CreateMaterialInput & {
     }
   }
 
-  revalidatePath('/productos')
+  revalidatePath('/catalogo')
   return { data }
 }
 
@@ -92,7 +92,7 @@ export async function updateMaterial(
     })
     .eq('id', id) as { error: { message: string } | null }
   if (error) return { error: error.message }
-  revalidatePath('/productos')
+  revalidatePath('/catalogo')
   return {}
 }
 
@@ -118,6 +118,6 @@ export async function toggleMaterialActivo(id: string): Promise<{ error?: string
     return { error: error.message }
   }
 
-  revalidatePath('/productos')
+  revalidatePath('/catalogo')
   return {}
 }

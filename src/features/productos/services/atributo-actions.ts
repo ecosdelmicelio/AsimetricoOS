@@ -71,7 +71,7 @@ export async function createAtributoPT(
   }
 
   revalidatePath('/configuracion')
-  revalidatePath('/productos/nuevo')
+  revalidatePath('/catalogo/nuevo')
   return { data }
 }
 
@@ -85,7 +85,7 @@ export async function deleteAtributoPT(id: string): Promise<{ error?: string }> 
 
   if (error) return { error: error.message }
   revalidatePath('/configuracion')
-  revalidatePath('/productos/nuevo')
+  revalidatePath('/catalogo/nuevo')
   return {}
 }
 
@@ -207,7 +207,7 @@ export async function updateAbreviacionPT(
   }
 
   revalidatePath('/configuracion')
-  revalidatePath('/productos/nuevo')
+  revalidatePath('/catalogo/nuevo')
   return {}
 }
 
@@ -246,6 +246,6 @@ export async function toggleAtributoPTActivo(id: string): Promise<{ error?: stri
   if (error) return { error: error.message }
 
   revalidatePath('/configuracion')
-  revalidatePath('/productos/nuevo')
+  revalidatePath('/catalogo/nuevo')
   return {}
 }

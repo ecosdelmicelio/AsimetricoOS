@@ -50,6 +50,21 @@ export function ProductoForm({ atributos, marcas }: Props) {
   const [precioN3, setPrecioN3] = useState('')
   const [referenciaCliente, setReferenciaCliente] = useState('')
   const [nombreComercial, setNombreComercial] = useState('')
+  const [autoColor, setAutoColor] = useState(false)
+
+  // Auto-llenar color cuando se selecciona el atributo color
+  useEffect(() => {
+    const attrColorId = atributosSeleccionados.color
+    if (attrColorId) {
+      const attr = (atributos.color ?? []).find(a => a.id === attrColorId)
+      if (attr) {
+        setColor(attr.valor)
+        setAutoColor(true)
+      }
+    } else {
+      setAutoColor(false)
+    }
+  }, [atributosSeleccionados.color, atributos.color])
 
   // Auto-llenar referencia cuando código está completo
   useEffect(() => {
@@ -91,7 +106,7 @@ export function ProductoForm({ atributos, marcas }: Props) {
         atributos: atributosSeleccionados,
       })
       if (res.error) { setError(res.error); return }
-      router.push(`/productos/${res.data!.id}`)
+      router.push(`/catalogo/${res.data!.id}`)
     })
   }
 

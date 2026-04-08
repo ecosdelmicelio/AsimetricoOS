@@ -83,7 +83,7 @@ export async function createProducto(
     }
   }
 
-  revalidatePath('/productos')
+  revalidatePath('/catalogo')
   return { data }
 }
 
@@ -126,8 +126,8 @@ export async function updateProducto(
     }
   }
 
-  revalidatePath('/productos')
-  revalidatePath(`/productos/${id}`)
+  revalidatePath('/catalogo')
+  revalidatePath(`/catalogo/${id}`)
   return {}
 }
 
@@ -155,6 +155,6 @@ export async function toggleProductoActivo(id: string): Promise<{ error?: string
     return { error: error.message }
   }
 
-  revalidatePath('/productos')
+  revalidatePath('/catalogo')
   return {}
 }

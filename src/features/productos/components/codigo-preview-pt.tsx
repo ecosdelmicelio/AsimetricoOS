@@ -3,35 +3,30 @@
 import { useEffect, useMemo } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { generarCodigoPT, recomendarNombre, esCodigoCompleto } from '@/shared/lib/code-generator'
-import type { AtributoPT } from '@/features/productos/types/atributos'
+import type { AtributoPT, TipoAtributo } from '@/features/productos/types/atributos'
 
 interface Props {
-  atributos: AtributoPT[]
-  generoId: string | null
-  tipoId: string | null
-  fitId: string | null
-  colorId: string | null
-  disenoId: string | null
+  atributos: Record<TipoAtributo, AtributoPT[]>
+  seleccionados: Record<TipoAtributo, string>
   onCodigoChange: (codigo: string, completo: boolean) => void
   onNombreRecomendado?: (nombre: string) => void
 }
 
 export function CodigoPreviewPT({
   atributos,
-  generoId,
-  tipoId,
-  fitId,
-  colorId,
-  disenoId,
+  seleccionados,
   onCodigoChange,
   onNombreRecomendado,
 }: Props) {
   const preview = useMemo(() => {
-    const atributoGenero = atributos.find(a => a.id === generoId)
-    const atributoTipo = atributos.find(a => a.id === tipoId)
-    const atributoFit = atributos.find(a => a.id === fitId)
-    const atributoColor = atributos.find(a => a.id === colorId)
-    const atributoDiseño = atributos.find(a => a.id === disenoId)
+    const getAttr = (tipo: TipoAtributo) => 
+      (atributos[tipo] ?? []).find(a => a.id === seleccionados[tipo])
+
+    const atributoGenero = getAttr('genero')
+    const atributoTipo = getAttr('tipo')
+    const atributoFit = getAttr('fit')
+    const atributoColor = getAttr('color')
+    const atributoDiseño = getAttr('diseno')
 
     // Genera código inteligente
     const codigo = generarCodigoPT(
@@ -67,7 +62,7 @@ export function CodigoPreviewPT({
       atributoDiseño,
       nombreRecomendado,
     }
-  }, [generoId, tipoId, fitId, colorId, disenoId, atributos])
+  }, [seleccionados, atributos])
 
   // Notify changes without causing setState-during-render
   useEffect(() => {

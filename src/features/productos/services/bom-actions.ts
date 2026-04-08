@@ -150,7 +150,7 @@ export async function addBOMMaterial(
     }) as { error: { message: string } | null }
 
   if (error) return { error: error.message }
-  revalidatePath('/productos')
+  revalidatePath('/catalogo')
   return {}
 }
 
@@ -173,7 +173,7 @@ export async function addBOMServicio(
     }) as { error: { message: string } | null }
 
   if (error) return { error: error.message }
-  revalidatePath('/productos')
+  revalidatePath('/catalogo')
   return {}
 }
 
@@ -201,7 +201,7 @@ export async function updateBOMLinea(
     .eq('id', linea_id) as { error: { message: string } | null }
 
   if (error) return { error: error.message }
-  revalidatePath('/productos')
+  revalidatePath('/catalogo')
   return {}
 }
 
@@ -217,7 +217,7 @@ export async function deleteBOMLinea(
     .eq('id', linea_id) as { error: { message: string } | null }
 
   if (error) return { error: error.message }
-  revalidatePath('/productos')
+  revalidatePath('/catalogo')
   return {}
 }
 
@@ -230,7 +230,7 @@ export async function markBOMCompleted(producto_id: string): Promise<{ error?: s
     .eq('id', producto_id) as { error: { message: string } | null }
 
   if (error) return { error: error.message }
-  revalidatePath('/productos')
+  revalidatePath('/catalogo')
   return {}
 }
 
@@ -243,6 +243,6 @@ export async function toggleBOMCompleted(producto_id: string, completado: boolea
     .eq('id', producto_id) as { error: { message: string } | null }
 
   if (error) return { error: error.message }
-  revalidatePath('/productos')
+  revalidatePath('/catalogo')
   return {}
 }

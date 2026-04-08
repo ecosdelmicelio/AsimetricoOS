@@ -25,7 +25,7 @@ const NAV_ITEMS: { href: string; label: string; icon: React.ElementType; roles: 
   { href: '/ordenes-produccion',  label: 'Producción',       icon: Factory,         roles: ['orquestador', 'jefe_piso'] },
   { href: '/calidad',             label: 'Calidad',          icon: ShieldCheck,     roles: ['orquestador', 'inspector'] },
   { href: '/liquidacion',         label: 'Liquidación',      icon: DollarSign,      roles: ['orquestador'] },
-  { href: '/productos',           label: 'Productos',        icon: Package,         roles: ['orquestador'] },
+  { href: '/catalogo',            label: 'Catálogo',         icon: Package,         roles: ['orquestador'] },
   { href: '/compras',             label: 'Compras',          icon: ShoppingCart,    roles: ['orquestador'] },
   { href: '/terceros',            label: 'Terceros',         icon: Users,           roles: ['orquestador'] },
   { href: '/configuracion',       label: 'Configuración',    icon: Settings2,       roles: ['orquestador'] },

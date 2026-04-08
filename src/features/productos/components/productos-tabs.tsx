@@ -39,7 +39,7 @@ export function ProductosTabs({
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-display-xs font-heading text-foreground font-bold">ADN de Productos</h1>
+        <h1 className="text-display-xs font-heading text-foreground font-bold">Catálogo</h1>
         <p className="text-muted-foreground text-body-sm mt-1">Catálogo de referencias, materiales, insumos y servicios</p>
       </div>
 

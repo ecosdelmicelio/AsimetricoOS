@@ -43,13 +43,13 @@ export default async function EditarProductoPage({ params }: Props) {
     <div className="max-w-xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <Link
-          href={`/productos/${id}`}
+          href={`/catalogo/${id}`}
           className="w-9 h-9 rounded-xl bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors active:shadow-neu-inset"
         >
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <div>
-          <h1 className="text-display-xs font-heading font-bold text-foreground">Editar Producto</h1>
+          <h1 className="text-display-xs font-heading font-bold text-foreground">Editar Item de Catálogo</h1>
           <p className="text-muted-foreground text-body-sm mt-0.5">{producto.referencia} — {producto.nombre}</p>
         </div>
       </div>

@@ -5,8 +5,10 @@
 
 interface Atributo {
   id: string
-  nombre: string
+  nombre?: string
+  valor?: string
   abreviatura?: string
+  abreviacion?: string | null
 }
 
 /**

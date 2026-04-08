@@ -42,7 +42,7 @@ export function ProductoEditForm({ producto, atributos, atributosProducto }: Pro
         atributos: atributosSeleccionados,
       })
       if (res.error) { setError(res.error); return }
-      router.push(`/productos/${producto.id}`)
+      router.push(`/catalogo/${producto.id}`)
     })
   }
 
