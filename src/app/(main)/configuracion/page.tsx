@@ -1,4 +1,3 @@
-import { getSchemaByEntidad } from '@/features/codigo-schema/services/schema-actions'
 import { getCalidadConfig } from '@/features/calidad/services/calidad-config-actions'
 import { getTiposMovimiento } from '@/features/configuracion/services/tipos-movimiento-actions'
 import { getAtributosPT } from '@/features/productos/services/atributo-actions'
@@ -20,10 +19,8 @@ async function getTiposDefecto() {
 }
 
 export default async function ConfiguracionPage() {
-  const [schemaProducto, schemaMaterial, tiposDefecto, tiposMovimiento, calidadConfig, atributosPT, atributosMP, servicios] =
+  const [tiposDefecto, tiposMovimiento, calidadConfig, atributosPT, atributosMP, servicios] =
     await Promise.all([
-      getSchemaByEntidad('producto'),
-      getSchemaByEntidad('material'),
       getTiposDefecto(),
       getTiposMovimiento(),
       getCalidadConfig(),
@@ -42,8 +39,6 @@ export default async function ConfiguracionPage() {
       </div>
 
       <ConfiguracionTabs
-        schemaProducto={schemaProducto}
-        schemaMaterial={schemaMaterial}
         tiposDefecto={tiposDefecto}
         tiposMovimiento={tiposMovimiento}
         calidadConfig={calidadConfig}

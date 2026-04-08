@@ -2,24 +2,20 @@
 
 import { useState } from 'react'
 import { Code2, AlertTriangle, ShieldCheck } from 'lucide-react'
-import { SchemaManager } from '@/features/codigo-schema/components/schema-manager'
 import { CalidadConfigForm } from '@/features/calidad/components/calidad-config-form'
 import { TiposMovimientoTab } from '@/features/configuracion/components/tipos-movimiento-tab'
 import { AtributosConfig } from '@/features/productos/components/atributos-config'
 import { AtributosConfigMP } from '@/features/materiales/components/atributos-config'
 import { ServiciosPanel } from '@/features/servicios/components/servicios-panel'
-import type { CodigoSchema } from '@/features/codigo-schema/types'
 import type { CalidadConfig } from '@/features/calidad/types'
 import type { TipoMovimiento } from '@/features/configuracion/services/tipos-movimiento-actions'
 import type { AtributoPT } from '@/features/productos/types/atributos'
 import type { AtributoMP } from '@/features/materiales/types/atributos'
 import type { ServicioOperativo } from '@/features/servicios/types/servicios'
 
-type Tab = 'pt' | 'mp' | 'servicios' | 'defectos' | 'calidad' | 'movimientos' | 'atributos-pt' | 'atributos-mp'
+type Tab = 'servicios' | 'defectos' | 'calidad' | 'movimientos' | 'atributos-pt' | 'atributos-mp'
 
 const TABS: { id: Tab; label: string; sub: string; icon: 'code' | 'shield' }[] = [
-  { id: 'pt',       label: 'Esquema PT',      sub: 'Código de Producto Terminado', icon: 'code'  },
-  { id: 'mp',       label: 'Esquema MP',       sub: 'Código de Materia Prima',      icon: 'code'  },
   { id: 'atributos-pt', label: 'Atributos PT', sub: 'Tipo, Fit, Color, etc.',       icon: 'code'  },
   { id: 'atributos-mp', label: 'Atributos MP', sub: 'Tipo, Subtipo, Color, etc.',   icon: 'code'  },
   { id: 'servicios', label: 'Servicios',      sub: 'Procesos operativos',          icon: 'code'  },
@@ -29,8 +25,6 @@ const TABS: { id: Tab; label: string; sub: string; icon: 'code' | 'shield' }[] =
 ]
 
 interface Props {
-  schemaProducto: CodigoSchema | null
-  schemaMaterial: CodigoSchema | null
   tiposDefecto: { id: string; codigo: string; nombre: string; categoria: string }[]
   tiposMovimiento: TipoMovimiento[]
   calidadConfig: CalidadConfig
@@ -40,8 +34,6 @@ interface Props {
 }
 
 export function ConfiguracionTabs({
-  schemaProducto,
-  schemaMaterial,
   tiposDefecto,
   tiposMovimiento,
   calidadConfig,
@@ -84,8 +76,6 @@ export function ConfiguracionTabs({
       </div>
 
       {/* Content */}
-      {tab === 'pt'       && <SchemaManager entidad="producto" schema={schemaProducto} />}
-      {tab === 'mp'       && <SchemaManager entidad="material" schema={schemaMaterial} />}
       {tab === 'atributos-pt' && <AtributosConfig atributos={atributosPT} />}
       {tab === 'atributos-mp' && <AtributosConfigMP atributos={atributosMP} />}
       {tab === 'servicios' && <ServiciosPanel servicios={servicios} />}
