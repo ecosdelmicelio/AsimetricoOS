@@ -28,6 +28,7 @@ export function ServiciosPanel({ servicios, tipos, subtipos, detalles, ejecutore
   // Form
   const [atributo1Id, setAtributo1Id] = useState<string | null>(null)
   const [atributo2Id, setAtributo2Id] = useState<string | null>(null)
+  const [atributo3Id, setAtributo3Id] = useState<string | null>(null)
   const [nombre, setNombre] = useState('')
   const [tarifa, setTarifa] = useState('')
   const [descripcion, setDescripcion] = useState('')
@@ -89,6 +90,7 @@ export function ServiciosPanel({ servicios, tipos, subtipos, detalles, ejecutore
 
       setAtributo1Id(null)
       setAtributo2Id(null)
+      setAtributo3Id(null)
       setNombre('')
       setTarifa('')
       setDescripcion('')
@@ -181,6 +183,7 @@ export function ServiciosPanel({ servicios, tipos, subtipos, detalles, ejecutore
           detallesFiltrados={detallesFiltrados}
           atributo1Id={atributo1Id}
           atributo2Id={atributo2Id}
+          atributo3Id={atributo3Id}
           nombre={nombre}
           tarifa={tarifa}
           descripcion={descripcion}
@@ -192,8 +195,13 @@ export function ServiciosPanel({ servicios, tipos, subtipos, detalles, ejecutore
           onAtributo1Change={(id) => {
             setAtributo1Id(id)
             setAtributo2Id(null)
+            setAtributo3Id(null)
           }}
-          onAtributo2Change={setAtributo2Id}
+          onAtributo2Change={(id) => {
+            setAtributo2Id(id)
+            setAtributo3Id(null)
+          }}
+          onAtributo3Change={setAtributo3Id}
           onNombreChange={setNombre}
           onTarifaChange={setTarifa}
           onDescripcionChange={setDescripcion}
@@ -281,6 +289,7 @@ interface ServicioFormProps {
   detallesFiltrados: TipoServicioAtributo[]
   atributo1Id: string | null
   atributo2Id: string | null
+  atributo3Id: string | null
   nombre: string
   tarifa: string
   descripcion: string
@@ -291,6 +300,7 @@ interface ServicioFormProps {
   error: string | null
   onAtributo1Change: (id: string | null) => void
   onAtributo2Change: (id: string | null) => void
+  onAtributo3Change: (id: string | null) => void
   onNombreChange: (nombre: string) => void
   onTarifaChange: (tarifa: string) => void
   onDescripcionChange: (descripcion: string) => void
@@ -308,6 +318,7 @@ function ServicioForm({
   detallesFiltrados,
   atributo1Id,
   atributo2Id,
+  atributo3Id,
   nombre,
   tarifa,
   descripcion,
@@ -318,6 +329,7 @@ function ServicioForm({
   error,
   onAtributo1Change,
   onAtributo2Change,
+  onAtributo3Change,
   onNombreChange,
   onTarifaChange,
   onDescripcionChange,
@@ -375,8 +387,8 @@ function ServicioForm({
           <label className="text-xs font-medium text-foreground">Detalle</label>
           <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
             <select
-              value=""
-              onChange={() => {}}
+              value={atributo3Id || ''}
+              onChange={e => onAtributo3Change(e.target.value || null)}
               disabled={!atributo2Id || detallesFiltrados.length === 0}
               className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none disabled:opacity-50"
             >
