@@ -130,3 +130,31 @@ export async function updateProducto(
   revalidatePath(`/productos/${id}`)
   return {}
 }
+
+export async function toggleProductoActivo(id: string): Promise<{ error?: string }> {
+  const supabase = db(await createClient())
+
+  const { data: producto } = await supabase
+    .from('productos')
+    .select('estado')
+    .eq('id', id)
+    .single() as { data: { estado: string } | null }
+
+  if (!producto) {
+    return { error: 'Producto no encontrado' }
+  }
+
+  const nuevoEstado = producto.estado === 'activo' ? 'inactivo' : 'activo'
+
+  const { error } = await supabase
+    .from('productos')
+    .update({ estado: nuevoEstado })
+    .eq('id', id) as { error: { message: string } | null }
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/productos')
+  return {}
+}

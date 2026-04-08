@@ -95,3 +95,29 @@ export async function updateMaterial(
   revalidatePath('/productos')
   return {}
 }
+
+export async function toggleMaterialActivo(id: string): Promise<{ error?: string }> {
+  const supabase = db(await createClient())
+
+  const { data: material } = await supabase
+    .from('materiales')
+    .select('activo')
+    .eq('id', id)
+    .single() as { data: { activo: boolean } | null }
+
+  if (!material) {
+    return { error: 'Material no encontrado' }
+  }
+
+  const { error } = await supabase
+    .from('materiales')
+    .update({ activo: !material.activo })
+    .eq('id', id) as { error: { message: string } | null }
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/productos')
+  return {}
+}

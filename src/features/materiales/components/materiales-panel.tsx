@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useCallback, useMemo, useEffect, useRef } from 'react'
 import { Plus, Edit2, Loader2, Package, AlertTriangle } from 'lucide-react'
-import { createMaterial, updateMaterial } from '@/features/materiales/services/materiales-actions'
+import { createMaterial, updateMaterial, toggleMaterialActivo } from '@/features/materiales/services/materiales-actions'
 import { useDuplicateCheck } from '@/shared/hooks/use-duplicate-check'
 import { CodigoPreviewMP } from '@/features/materiales/components/codigo-preview-mp'
 import { getAtributosMP, getAtributosPorTipoMP } from '@/features/materiales/services/atributo-actions'
@@ -97,7 +97,9 @@ export function MaterialesPanel({ materiales }: Props) {
               {visibles.map(m =>
                 editingId === m.id
                   ? <MaterialForm key={m.id} material={m} onDone={() => setEditingId(null)} />
-                  : <MaterialRow key={m.id} material={m} onEdit={() => setEditingId(m.id)} />
+                  : <MaterialRow key={m.id} material={m} onEdit={() => setEditingId(m.id)} onToggleActivo={async () => {
+                      await toggleMaterialActivo(m.id)
+                    }} />
               )}
             </tbody>
           </table>
@@ -107,7 +109,7 @@ export function MaterialesPanel({ materiales }: Props) {
   )
 }
 
-function MaterialRow({ material: m, onEdit }: { material: Material; onEdit: () => void }) {
+function MaterialRow({ material: m, onEdit, onToggleActivo }: { material: Material; onEdit: () => void; onToggleActivo: () => void }) {
   return (
     <tr className={!m.activo ? 'opacity-50' : ''}>
       <td className="px-5 py-3"><span className="font-mono text-body-sm font-semibold text-primary-700">{m.codigo}</span></td>
@@ -123,9 +125,14 @@ function MaterialRow({ material: m, onEdit }: { material: Material; onEdit: () =
         </span>
       </td>
       <td className="px-5 py-3 text-center">
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${m.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+        <button
+          onClick={onToggleActivo}
+          className={`text-xs font-semibold px-2 py-0.5 rounded-lg transition-colors ${
+            m.activo ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+          }`}
+        >
           {m.activo ? 'Activo' : 'Inactivo'}
-        </span>
+        </button>
       </td>
       <td className="px-5 py-3 text-right">
         <button

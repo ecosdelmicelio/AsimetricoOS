@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect } from 'react'
 import { flushSync } from 'react-dom'
 import { Plus, Edit2, Loader2, Package } from 'lucide-react'
-import { createProducto, updateProducto } from '@/features/productos/services/producto-actions'
+import { createProducto, updateProducto, toggleProductoActivo } from '@/features/productos/services/producto-actions'
 import { getAtributosPT, getAtributosProducto } from '@/features/productos/services/atributo-actions'
 import { getBOMProducto } from '@/features/productos/services/bom-actions'
 import { BOMEditor } from '@/features/productos/components/bom-editor'
@@ -96,8 +96,8 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
               <tr className="border-b border-black/5 bg-neu-base">
                 <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Fecha</th>
                 <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Código</th>
+                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Descripción</th>
                 <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Tipo</th>
-                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Nombre</th>
                 <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Ref Cliente</th>
                 <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Marca</th>
                 <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right px-5 py-3">Stock</th>
@@ -117,7 +117,9 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
                       catalogoServicios={catalogoServicios}
                       onDone={() => setEditingId(null)}
                     />
-                  : <ProductRow key={p.id} product={p} marcas={marcas} saldo={saldosPorProducto[p.id] ?? 0} onEdit={() => setEditingId(p.id)} />
+                  : <ProductRow key={p.id} product={p} onEdit={() => setEditingId(p.id)} onToggleActivo={async () => {
+                      await toggleProductoActivo(p.id)
+                    }} saldo={saldosPorProducto[p.id]} />
               )}
             </tbody>
           </table>
@@ -127,27 +129,27 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
   )
 }
 
-function ProductRow({ product: p, marcas, saldo, onEdit }: { product: Producto; marcas: MarcaConTercero[]; saldo: number; onEdit: () => void }) {
-  const marca = marcas.find(m => m.id === p.marca_id)?.nombre ?? '—'
-  const fechaFormato = new Date(p.created_at).toLocaleDateString('es-CO', { month: '2-digit', day: '2-digit', year: '2-digit' })
-
+function ProductRow({ product: p, onEdit, onToggleActivo, saldo }: { product: Producto; onEdit: () => void; onToggleActivo: () => void; saldo?: number }) {
   return (
     <tr className={p.estado === 'inactivo' ? 'opacity-50' : ''}>
-      <td className="px-5 py-3"><span className="text-body-sm text-muted-foreground">{fechaFormato}</span></td>
+      <td className="px-5 py-3"><span className="text-body-sm text-muted-foreground">{p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}</span></td>
       <td className="px-5 py-3"><span className="font-mono text-body-sm font-semibold text-primary-700">{p.referencia}</span></td>
-      <td className="px-5 py-3"><span className="text-body-sm text-foreground capitalize">{p.tipo_producto === 'fabricado' ? 'Fabricado' : 'Comercializado'}</span></td>
       <td className="px-5 py-3"><p className="text-body-sm font-medium text-foreground truncate">{p.nombre}</p></td>
-      <td className="px-5 py-3"><span className="text-body-sm text-muted-foreground">{p.referencia_cliente ?? '—'}</span></td>
-      <td className="px-5 py-3"><span className="text-body-sm text-muted-foreground">{marca}</span></td>
-      <td className="px-5 py-3 text-right"><span className="text-body-sm text-foreground font-medium">{saldo} uds</span></td>
+      <td className="px-5 py-3"><span className="text-body-sm text-foreground capitalize">{p.tipo_producto === 'fabricado' ? 'Fabricado' : 'Comercializado'}</span></td>
+      <td className="px-5 py-3"><span className="text-body-sm text-muted-foreground truncate">{p.referencia_cliente || '—'}</span></td>
+      <td className="px-5 py-3"><span className="text-body-sm text-muted-foreground truncate">{p.marca_id ? 'Con marca' : '—'}</span></td>
+      <td className="px-5 py-3 text-right"><span className="text-body-sm font-mono text-foreground">{saldo ?? 0}</span></td>
       <td className="px-5 py-3 text-center">
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${
-          p.estado === 'activo' ? 'bg-green-100 text-green-700' :
-          p.estado === 'inactivo' ? 'bg-gray-100 text-gray-500' :
-          'bg-blue-100 text-blue-700'
-        }`}>
+        <button
+          onClick={onToggleActivo}
+          className={`text-xs font-semibold px-2 py-0.5 rounded-lg transition-colors ${
+            p.estado === 'activo' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
+            p.estado === 'inactivo' ? 'bg-gray-100 text-gray-500 hover:bg-gray-200' :
+            'bg-blue-100 text-blue-700 hover:bg-blue-200'
+          }`}
+        >
           {p.estado === 'activo' ? 'Activo' : p.estado === 'inactivo' ? 'Inactivo' : 'En desarrollo'}
-        </span>
+        </button>
       </td>
       <td className="px-5 py-3 text-right">
         <button

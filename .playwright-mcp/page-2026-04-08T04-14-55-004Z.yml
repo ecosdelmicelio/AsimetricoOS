@@ -1,0 +1,280 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]: Asimétrico OS
+          - generic [ref=e8]:
+            - link "Torre de Control" [ref=e9] [cursor=pointer]:
+              - /url: /torre-control
+              - img [ref=e10]
+              - generic [ref=e15]: Torre de Control
+            - link "Órdenes de Venta" [ref=e16] [cursor=pointer]:
+              - /url: /ordenes-venta
+              - img [ref=e17]
+              - generic [ref=e20]: Órdenes de Venta
+            - link "Producción" [ref=e21] [cursor=pointer]:
+              - /url: /ordenes-produccion
+              - img [ref=e22]
+              - generic [ref=e24]: Producción
+            - link "Calidad" [ref=e25] [cursor=pointer]:
+              - /url: /calidad
+              - img [ref=e26]
+              - generic [ref=e29]: Calidad
+            - link "Liquidación" [ref=e30] [cursor=pointer]:
+              - /url: /liquidacion
+              - img [ref=e31]
+              - generic [ref=e33]: Liquidación
+            - link "Productos" [ref=e34] [cursor=pointer]:
+              - /url: /productos
+              - img [ref=e35]
+              - generic [ref=e39]: Productos
+            - link "Compras" [ref=e40] [cursor=pointer]:
+              - /url: /compras
+              - img [ref=e41]
+              - generic [ref=e45]: Compras
+            - link "Terceros" [ref=e46] [cursor=pointer]:
+              - /url: /terceros
+              - img [ref=e47]
+              - generic [ref=e52]: Terceros
+            - link "Configuración" [ref=e53] [cursor=pointer]:
+              - /url: /configuracion
+              - img [ref=e54]
+              - generic [ref=e57]: Configuración
+            - link "Mi Taller" [ref=e58] [cursor=pointer]:
+              - /url: /taller
+              - img [ref=e59]
+              - generic [ref=e61]: Mi Taller
+        - button "Salir" [ref=e63] [cursor=pointer]:
+          - img [ref=e64]
+          - generic [ref=e67]: Salir
+    - main [ref=e68]:
+      - generic [ref=e70]:
+        - generic [ref=e71]:
+          - heading "ADN de Productos" [level=1] [ref=e72]
+          - paragraph [ref=e73]: Catálogo de referencias, materiales, insumos y servicios
+        - generic [ref=e74]:
+          - button "Productos terminados PT — Referencias y BOM" [ref=e75] [cursor=pointer]:
+            - img [ref=e77]
+            - generic [ref=e80]:
+              - paragraph [ref=e81]: Productos terminados
+              - paragraph [ref=e82]: PT — Referencias y BOM
+          - button "Materiales e insumos MP — Telas, hilos, accesorios" [ref=e83] [cursor=pointer]:
+            - img [ref=e85]
+            - generic [ref=e89]:
+              - paragraph [ref=e90]: Materiales e insumos
+              - paragraph [ref=e91]: MP — Telas, hilos, accesorios
+          - button "Servicios Procesos operativos" [ref=e92] [cursor=pointer]:
+            - img [ref=e94]
+            - generic [ref=e96]:
+              - paragraph [ref=e97]: Servicios
+              - paragraph [ref=e98]: Procesos operativos
+        - generic [ref=e100]:
+          - generic [ref=e101]:
+            - button "Activos" [ref=e102] [cursor=pointer]:
+              - generic [ref=e105]: Activos
+            - button "Nuevo producto" [ref=e106] [cursor=pointer]:
+              - img [ref=e107]
+              - text: Nuevo producto
+          - table [ref=e109]:
+            - rowgroup [ref=e110]:
+              - row "Código Descripción Tipo Estado" [ref=e111]:
+                - columnheader "Código" [ref=e112]
+                - columnheader "Descripción" [ref=e113]
+                - columnheader "Tipo" [ref=e114]
+                - columnheader "Estado" [ref=e115]
+                - columnheader [ref=e116]
+            - rowgroup [ref=e117]:
+              - row "ASMBOSEPR001SPSLNEN Body Seamless R01 Negro Fabricado Activo" [ref=e118]:
+                - cell "ASMBOSEPR001SPSLNEN" [ref=e119]
+                - cell "Body Seamless R01 Negro" [ref=e120]:
+                  - paragraph [ref=e121]: Body Seamless R01 Negro
+                - cell "Fabricado" [ref=e122]
+                - cell "Activo" [ref=e123]:
+                  - button "Activo" [ref=e124] [cursor=pointer]
+                - cell [ref=e125]:
+                  - button [ref=e126] [cursor=pointer]:
+                    - img [ref=e127]
+              - row "ASMBOSHRP001PNSLBEN Body Shapewear R01 Beige Fabricado Activo" [ref=e129]:
+                - cell "ASMBOSHRP001PNSLBEN" [ref=e130]
+                - cell "Body Shapewear R01 Beige" [ref=e131]:
+                  - paragraph [ref=e132]: Body Shapewear R01 Beige
+                - cell "Fabricado" [ref=e133]
+                - cell "Activo" [ref=e134]:
+                  - button "Activo" [ref=e135] [cursor=pointer]
+                - cell [ref=e136]:
+                  - button [ref=e137] [cursor=pointer]:
+                    - img [ref=e138]
+              - row "ASMBOSHRP001PNSLNEN Body Shapewear R01 Negro Fabricado Activo" [ref=e140]:
+                - cell "ASMBOSHRP001PNSLNEN" [ref=e141]
+                - cell "Body Shapewear R01 Negro" [ref=e142]:
+                  - paragraph [ref=e143]: Body Shapewear R01 Negro
+                - cell "Fabricado" [ref=e144]
+                - cell "Activo" [ref=e145]:
+                  - button "Activo" [ref=e146] [cursor=pointer]
+                - cell [ref=e147]:
+                  - button [ref=e148] [cursor=pointer]:
+                    - img [ref=e149]
+              - row "ASMBOSWR0001SPSLBEN Body Softwear R01 Beige Fabricado Activo" [ref=e151]:
+                - cell "ASMBOSWR0001SPSLBEN" [ref=e152]
+                - cell "Body Softwear R01 Beige" [ref=e153]:
+                  - paragraph [ref=e154]: Body Softwear R01 Beige
+                - cell "Fabricado" [ref=e155]
+                - cell "Activo" [ref=e156]:
+                  - button "Activo" [ref=e157] [cursor=pointer]
+                - cell [ref=e158]:
+                  - button [ref=e159] [cursor=pointer]:
+                    - img [ref=e160]
+              - row "ASMBOSWR0001SPSLNEN Body Softwear R01 Negro Fabricado Activo" [ref=e162]:
+                - cell "ASMBOSWR0001SPSLNEN" [ref=e163]
+                - cell "Body Softwear R01 Negro" [ref=e164]:
+                  - paragraph [ref=e165]: Body Softwear R01 Negro
+                - cell "Fabricado" [ref=e166]
+                - cell "Activo" [ref=e167]:
+                  - button "Activo" [ref=e168] [cursor=pointer]
+                - cell [ref=e169]:
+                  - button [ref=e170] [cursor=pointer]:
+                    - img [ref=e171]
+              - row "ASMFASHRP001PNSLBEN Faja Shapewear R01 Beige Fabricado Activo" [ref=e173]:
+                - cell "ASMFASHRP001PNSLBEN" [ref=e174]
+                - cell "Faja Shapewear R01 Beige" [ref=e175]:
+                  - paragraph [ref=e176]: Faja Shapewear R01 Beige
+                - cell "Fabricado" [ref=e177]
+                - cell "Activo" [ref=e178]:
+                  - button "Activo" [ref=e179] [cursor=pointer]
+                - cell [ref=e180]:
+                  - button [ref=e181] [cursor=pointer]:
+                    - img [ref=e182]
+              - row "ASMFASHRP001PNSLNEN Faja Shapewear R01 Negro Fabricado Activo" [ref=e184]:
+                - cell "ASMFASHRP001PNSLNEN" [ref=e185]
+                - cell "Faja Shapewear R01 Negro" [ref=e186]:
+                  - paragraph [ref=e187]: Faja Shapewear R01 Negro
+                - cell "Fabricado" [ref=e188]
+                - cell "Activo" [ref=e189]:
+                  - button "Activo" [ref=e190] [cursor=pointer]
+                - cell [ref=e191]:
+                  - button [ref=e192] [cursor=pointer]:
+                    - img [ref=e193]
+              - row "MLANVER adsasd Fabricado Activo" [ref=e195]:
+                - cell "MLANVER" [ref=e196]
+                - cell "adsasd" [ref=e197]:
+                  - paragraph [ref=e198]: adsasd
+                - cell "Fabricado" [ref=e199]
+                - cell "Activo" [ref=e200]:
+                  - button "Activo" [ref=e201] [cursor=pointer]
+                - cell [ref=e202]:
+                  - button [ref=e203] [cursor=pointer]:
+                    - img [ref=e204]
+              - row "MLASVER Blusa ML c Comercializado Activo" [ref=e206]:
+                - cell "MLASVER" [ref=e207]
+                - cell "Blusa ML c" [ref=e208]:
+                  - paragraph [ref=e209]: Blusa ML c
+                - cell "Comercializado" [ref=e210]
+                - cell "Activo" [ref=e211]:
+                  - button "Activo" [ref=e212] [cursor=pointer]
+                - cell [ref=e213]:
+                  - button [ref=e214] [cursor=pointer]:
+                    - img [ref=e215]
+              - row "REF-001 Camisa Clásica Fabricado Activo" [ref=e217]:
+                - cell "REF-001" [ref=e218]
+                - cell "Camisa Clásica" [ref=e219]:
+                  - paragraph [ref=e220]: Camisa Clásica
+                - cell "Fabricado" [ref=e221]
+                - cell "Activo" [ref=e222]:
+                  - button "Activo" [ref=e223] [cursor=pointer]
+                - cell [ref=e224]:
+                  - button [ref=e225] [cursor=pointer]:
+                    - img [ref=e226]
+              - row "REF-002 Pantalón Casual Fabricado Activo" [ref=e228]:
+                - cell "REF-002" [ref=e229]
+                - cell "Pantalón Casual" [ref=e230]:
+                  - paragraph [ref=e231]: Pantalón Casual
+                - cell "Fabricado" [ref=e232]
+                - cell "Activo" [ref=e233]:
+                  - button "Activo" [ref=e234] [cursor=pointer]
+                - cell [ref=e235]:
+                  - button [ref=e236] [cursor=pointer]:
+                    - img [ref=e237]
+              - row "REF-003 Blusa Elegante Fabricado Activo" [ref=e239]:
+                - cell "REF-003" [ref=e240]
+                - cell "Blusa Elegante" [ref=e241]:
+                  - paragraph [ref=e242]: Blusa Elegante
+                - cell "Fabricado" [ref=e243]
+                - cell "Activo" [ref=e244]:
+                  - button "Activo" [ref=e245] [cursor=pointer]
+                - cell [ref=e246]:
+                  - button [ref=e247] [cursor=pointer]:
+                    - img [ref=e248]
+              - row "REF-004 Chaqueta Deportiva Fabricado Activo" [ref=e250]:
+                - cell "REF-004" [ref=e251]
+                - cell "Chaqueta Deportiva" [ref=e252]:
+                  - paragraph [ref=e253]: Chaqueta Deportiva
+                - cell "Fabricado" [ref=e254]
+                - cell "Activo" [ref=e255]:
+                  - button "Activo" [ref=e256] [cursor=pointer]
+                - cell [ref=e257]:
+                  - button [ref=e258] [cursor=pointer]:
+                    - img [ref=e259]
+              - row "REF-005 Vestido Social Fabricado Activo" [ref=e261]:
+                - cell "REF-005" [ref=e262]
+                - cell "Vestido Social" [ref=e263]:
+                  - paragraph [ref=e264]: Vestido Social
+                - cell "Fabricado" [ref=e265]
+                - cell "Activo" [ref=e266]:
+                  - button "Activo" [ref=e267] [cursor=pointer]
+                - cell [ref=e268]:
+                  - button [ref=e269] [cursor=pointer]:
+                    - img [ref=e270]
+              - row "SALBOSWRP001SPSLBEN Body Softwear Salomé P01 Beige Fabricado Activo" [ref=e272]:
+                - cell "SALBOSWRP001SPSLBEN" [ref=e273]
+                - cell "Body Softwear Salomé P01 Beige" [ref=e274]:
+                  - paragraph [ref=e275]: Body Softwear Salomé P01 Beige
+                - cell "Fabricado" [ref=e276]
+                - cell "Activo" [ref=e277]:
+                  - button "Activo" [ref=e278] [cursor=pointer]
+                - cell [ref=e279]:
+                  - button [ref=e280] [cursor=pointer]:
+                    - img [ref=e281]
+              - row "SALBOSWRP001SPSLNEN Body Softwear Salomé P01 Negro Fabricado Activo" [ref=e283]:
+                - cell "SALBOSWRP001SPSLNEN" [ref=e284]
+                - cell "Body Softwear Salomé P01 Negro" [ref=e285]:
+                  - paragraph [ref=e286]: Body Softwear Salomé P01 Negro
+                - cell "Fabricado" [ref=e287]
+                - cell "Activo" [ref=e288]:
+                  - button "Activo" [ref=e289] [cursor=pointer]
+                - cell [ref=e290]:
+                  - button [ref=e291] [cursor=pointer]:
+                    - img [ref=e292]
+              - row "SNABOEWRP001CPSLNEN Body Easywear Snatched P01 Negro Fabricado Activo" [ref=e294]:
+                - cell "SNABOEWRP001CPSLNEN" [ref=e295]
+                - cell "Body Easywear Snatched P01 Negro" [ref=e296]:
+                  - paragraph [ref=e297]: Body Easywear Snatched P01 Negro
+                - cell "Fabricado" [ref=e298]
+                - cell "Activo" [ref=e299]:
+                  - button "Activo" [ref=e300] [cursor=pointer]
+                - cell [ref=e301]:
+                  - button [ref=e302] [cursor=pointer]:
+                    - img [ref=e303]
+              - row "SNAFASHRP001PNSLNEN Faja Shapewear Snatched P01 Negro Fabricado Activo" [ref=e305]:
+                - cell "SNAFASHRP001PNSLNEN" [ref=e306]
+                - cell "Faja Shapewear Snatched P01 Negro" [ref=e307]:
+                  - paragraph [ref=e308]: Faja Shapewear Snatched P01 Negro
+                - cell "Fabricado" [ref=e309]
+                - cell "Activo" [ref=e310]:
+                  - button "Activo" [ref=e311] [cursor=pointer]
+                - cell [ref=e312]:
+                  - button [ref=e313] [cursor=pointer]:
+                    - img [ref=e314]
+              - row "SNRBOSHRP001PNSLNEN Body Shapewear Sonryse P01 Negro Fabricado Activo" [ref=e316]:
+                - cell "SNRBOSHRP001PNSLNEN" [ref=e317]
+                - cell "Body Shapewear Sonryse P01 Negro" [ref=e318]:
+                  - paragraph [ref=e319]: Body Shapewear Sonryse P01 Negro
+                - cell "Fabricado" [ref=e320]
+                - cell "Activo" [ref=e321]:
+                  - button "Activo" [ref=e322] [cursor=pointer]
+                - cell [ref=e323]:
+                  - button [ref=e324] [cursor=pointer]:
+                    - img [ref=e325]
+  - button "Open Next.js Dev Tools" [ref=e332] [cursor=pointer]:
+    - img [ref=e333]
+  - alert [ref=e336]
