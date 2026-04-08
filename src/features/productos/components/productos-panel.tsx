@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition, useEffect, useCallback, useRef } from 'react'
 import { flushSync } from 'react-dom'
 import { Plus, Edit2, Loader2, Package } from 'lucide-react'
 import { createProducto, updateProducto, toggleProductoActivo } from '@/features/productos/services/producto-actions'
 import { getAtributosPT, getAtributosProducto } from '@/features/productos/services/atributo-actions'
 import { getBOMProducto } from '@/features/productos/services/bom-actions'
 import { BOMEditor } from '@/features/productos/components/bom-editor'
+import { CodigoPreviewPT } from '@/features/productos/components/codigo-preview-pt'
 import type { Producto, TipoProducto, EstadoProducto } from '@/features/productos/types'
 import type { AtributoPT, TipoAtributo } from '@/features/productos/types/atributos'
 import { TIPOS_ATRIBUTO, LABELS_ATRIBUTO } from '@/features/productos/types/atributos'
@@ -211,6 +212,22 @@ function ProductForm({
     }
     return defaultAttrs
   })
+  const [codigoPT, setCodigoPT] = useState('')
+  const [codigoCompleto, setCodigoCompleto] = useState(false)
+
+  const nombreEditadoRef = useRef(false)
+
+  // Callbacks para CodigoPreviewPT
+  const handleCodigoChange = useCallback((codigo: string, completo: boolean) => {
+    setCodigoPT(codigo)
+    setCodigoCompleto(completo)
+  }, [])
+
+  const handleNombreRecomendado = useCallback((nombreRecomendado: string) => {
+    if (nombreRecomendado.trim() && !nombreEditadoRef.current) {
+      setNombre(nombreRecomendado)
+    }
+  }, [])
 
   // Cargar BOM cuando se abre el tab BOM
   const handleBomTabClick = async () => {
@@ -294,6 +311,7 @@ function ProductForm({
             precio_base: precioN1 ? parseFloat(precioN1) : null,
             precio_estandar: precioN2 ? parseFloat(precioN2) : null,
             precio_n3: precioN3 ? parseFloat(precioN3) : null,
+            atributos: atributosSeleccionados,
           })
 
       if ('error' in res && res.error) {
@@ -387,7 +405,7 @@ function ProductForm({
               <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
                 <input
                   value={nombre}
-                  onChange={e => setNombre(e.target.value)}
+                  onChange={e => { nombreEditadoRef.current = true; setNombre(e.target.value) }}
                   required
                   placeholder="Camiseta algodón"
                   className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
@@ -529,41 +547,51 @@ function ProductForm({
             )}
           </div>
 
-          {/* Atributos - solo en edición */}
-          {isEdit && (
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Atributos</label>
-              <div className="grid grid-cols-2 gap-2">
-                {TIPOS_ATRIBUTO.map(tipoAtributo => {
-                  const atributosDelTipo = atributosPT.filter(a => a.tipo === tipoAtributo)
-                  return (
-                    <div key={tipoAtributo} className="space-y-0.5">
-                      <label className="text-xs font-medium text-muted-foreground block truncate">
-                        {LABELS_ATRIBUTO[tipoAtributo]}
-                      </label>
-                      <select
-                        value={atributosSeleccionados[tipoAtributo] ?? ''}
-                        onChange={e =>
-                          setAtributosSeleccionados(prev => ({
-                            ...prev,
-                            [tipoAtributo]: e.target.value,
-                          }))
-                        }
-                        className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2 py-1.5 text-foreground outline-none appearance-none"
-                      >
-                        <option value="">—</option>
-                        {atributosDelTipo.map(attr => (
-                          <option key={attr.id} value={attr.id}>
-                            {attr.valor}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )
-                })}
-              </div>
+          {/* Atributos - creación y edición */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Atributos</label>
+            <div className="grid grid-cols-2 gap-2">
+              {TIPOS_ATRIBUTO.map(tipoAtributo => {
+                const atributosDelTipo = atributosPT.filter(a => a.tipo === tipoAtributo)
+                return (
+                  <div key={tipoAtributo} className="space-y-0.5">
+                    <label className="text-xs font-medium text-muted-foreground block truncate">
+                      {LABELS_ATRIBUTO[tipoAtributo]}
+                    </label>
+                    <select
+                      value={atributosSeleccionados[tipoAtributo] ?? ''}
+                      onChange={e =>
+                        setAtributosSeleccionados(prev => ({
+                          ...prev,
+                          [tipoAtributo]: e.target.value,
+                        }))
+                      }
+                      className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2 py-1.5 text-foreground outline-none appearance-none"
+                    >
+                      <option value="">—</option>
+                      {atributosDelTipo.map(attr => (
+                        <option key={attr.id} value={attr.id}>
+                          {attr.valor}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )
+              })}
             </div>
-          )}
+          </div>
+
+          {/* Código inteligente - en creación y edición */}
+          <CodigoPreviewPT
+            atributos={atributosPT}
+            generoId={atributosSeleccionados.genero || null}
+            tipoId={atributosSeleccionados.tipo || null}
+            fitId={atributosSeleccionados.fit || null}
+            colorId={atributosSeleccionados.color || null}
+            disenoId={atributosSeleccionados.diseno || null}
+            onCodigoChange={handleCodigoChange}
+            onNombreRecomendado={handleNombreRecomendado}
+          />
 
           {error && <p className="text-xs text-red-600">{error}</p>}
         </div>

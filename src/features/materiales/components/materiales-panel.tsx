@@ -176,7 +176,7 @@ function MaterialForm({
   const [referenciaProveedor, setReferenciaProveedor] = useState(material?.referencia_proveedor ?? '')
   const [partidaArancelaria, setPartidaArancelaria] = useState(material?.partida_arancelaria ?? '')
   const [rendimientoKg, setRendimientoKg] = useState(material?.rendimiento_kg?.toString() ?? '')
-  
+
   // Atributos
   const [atributosPorTipo, setAtributosPorTipo] = useState<Record<TipoAtributoMP, AtributoMP[]>>({
     tipo: [],
@@ -190,6 +190,8 @@ function MaterialForm({
     color: '',
     diseño: '',
   })
+
+  const nombreEditadoRef = useRef(false)
 
   const isEdit = !!material
 
@@ -315,20 +317,6 @@ function MaterialForm({
           <div className="flex items-center gap-1.5">
             <label className="text-xs font-medium text-foreground">Nombre *</label>
             {checkingNombre && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
-            {usaSchema && autoTexto && nombreEditadoRef.current && (
-              <button
-                type="button"
-                onClick={() => { nombreEditadoRef.current = false; setNombre(autoTexto) }}
-                title="Restaurar nombre automático"
-                className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary-600 transition-colors"
-              >
-                <RotateCcw className="w-2.5 h-2.5" />
-                Auto
-              </button>
-            )}
-            {usaSchema && autoTexto && !nombreEditadoRef.current && (
-              <span className="ml-auto text-[10px] text-primary-500 font-medium">Auto</span>
-            )}
           </div>
           <div className={`rounded-lg bg-neu-base shadow-neu px-3 py-2 ${nombreDuplicado ? 'ring-1 ring-amber-400' : ''}`}>
             <input
@@ -458,9 +446,20 @@ function MaterialForm({
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-foreground">Código *</label>
           <CodigoPreviewMP
-            atributos={atributosPorTipo}
-            seleccionados={atributosSeleccionados}
+            atributos={[
+              ...(atributosPorTipo.tipo || []),
+              ...(atributosPorTipo.subtipo || []),
+              ...(atributosPorTipo.color || []),
+              ...(atributosPorTipo.diseño || []),
+            ]}
+            tipoId={atributosSeleccionados.tipo || null}
+            subtipoId={atributosSeleccionados.subtipo || null}
+            colorId={atributosSeleccionados.color || null}
+            disenoId={atributosSeleccionados.diseño || null}
             onCodigoChange={handleCodigoChange}
+            onNombreRecomendado={(nombre) => {
+              if (nombre.trim() && !nombreEditadoRef.current) setNombre(nombre)
+            }}
           />
           {codigoDuplicado && (
             <div className="flex items-center gap-1 text-red-600">

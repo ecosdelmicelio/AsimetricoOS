@@ -478,7 +478,12 @@ function ServicioForm({
           detalles={detallesFiltrados}
           atributo1Id={atributo1Id}
           atributo2Id={atributo2Id}
+          atributo3Id={atributo3Id}
+          descripcion={descripcion}
           onCodigoChange={onCodigoChange}
+          onNombreRecomendado={(nombre) => {
+            if (nombre.trim()) onNombreChange(nombre)
+          }}
         />
       )}
 
