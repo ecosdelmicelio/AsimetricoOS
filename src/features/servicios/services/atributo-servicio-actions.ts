@@ -168,3 +168,14 @@ export async function toggleTipoServicioAtributoActivo(id: string): Promise<{ er
   revalidatePath('/configuracion')
   return {}
 }
+
+export async function getTipoServicioAtributoUsos(id: string): Promise<number> {
+  const supabase = db(await createClient())
+
+  const { count } = await supabase
+    .from('servicios_operativos')
+    .select('*', { count: 'exact', head: true })
+    .or(`atributo1_id.eq.${id},atributo2_id.eq.${id}`) as { count: number | null }
+
+  return count ?? 0
+}

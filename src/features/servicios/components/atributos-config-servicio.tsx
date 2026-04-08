@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useMemo, useEffect } from 'react'
 import { Plus, Trash2, Edit2, Loader2, Lightbulb } from 'lucide-react'
 import {
   createTipoServicioAtributo,
   updateTipoServicioAtributo,
   deleteTipoServicioAtributo,
   toggleTipoServicioAtributoActivo,
+  getTipoServicioAtributoUsos,
 } from '@/features/servicios/services/atributo-servicio-actions'
 import { generarSugestionAbreviatura } from '@/features/servicios/lib/abreviatura-utils'
 import type { TipoServicioAtributo } from '@/features/servicios/types/servicios'
@@ -19,6 +20,22 @@ export function AtributosConfigServicio({ atributos }: Props) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  const [usos, setUsos] = useState<Record<string, number>>({})
+  const [loadingUsos, setLoadingUsos] = useState(true)
+
+  // Cargar usos de cada atributo
+  useEffect(() => {
+    const cargarUsos = async () => {
+      setLoadingUsos(true)
+      const usosMap: Record<string, number> = {}
+      for (const atributo of atributos) {
+        usosMap[atributo.id] = await getTipoServicioAtributoUsos(atributo.id)
+      }
+      setUsos(usosMap)
+      setLoadingUsos(false)
+    }
+    cargarUsos()
+  }, [atributos])
 
   // Formulario Tipo
   const [showFormTipo, setShowFormTipo] = useState(false)
@@ -211,6 +228,13 @@ export function AtributosConfigServicio({ atributos }: Props) {
   }
 
   const handleEliminar = (id: string) => {
+    const usosCount = usos[id] ?? 0
+    if (usosCount > 0) {
+      setError(`No se puede eliminar este atributo. Está siendo usado en ${usosCount} servicio${usosCount > 1 ? 's' : ''}.`)
+      setTimeout(() => setError(null), 5000)
+      return
+    }
+
     if (!confirm('¿Eliminar este atributo?')) return
     startTransition(async () => {
       const res = await deleteTipoServicioAtributo(id)
@@ -395,8 +419,9 @@ export function AtributosConfigServicio({ atributos }: Props) {
                           </button>
                           <button
                             onClick={() => handleEliminar(tipo.id)}
-                            disabled={pending}
-                            className="text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
+                            disabled={pending || (usos[tipo.id] ?? 0) > 0}
+                            title={(usos[tipo.id] ?? 0) > 0 ? `No se puede eliminar. Usado en ${usos[tipo.id]} servicio${(usos[tipo.id] ?? 0) > 1 ? 's' : ''}` : 'Eliminar'}
+                            className="text-red-600 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -596,8 +621,9 @@ export function AtributosConfigServicio({ atributos }: Props) {
                             </button>
                             <button
                               onClick={() => handleEliminar(subtipo.id)}
-                              disabled={pending}
-                              className="text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
+                              disabled={pending || (usos[subtipo.id] ?? 0) > 0}
+                              title={(usos[subtipo.id] ?? 0) > 0 ? `No se puede eliminar. Usado en ${usos[subtipo.id]} servicio${(usos[subtipo.id] ?? 0) > 1 ? 's' : ''}` : 'Eliminar'}
+                              className="text-red-600 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -798,8 +824,9 @@ export function AtributosConfigServicio({ atributos }: Props) {
                             </button>
                             <button
                               onClick={() => handleEliminar(detalle.id)}
-                              disabled={pending}
-                              className="text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
+                              disabled={pending || (usos[detalle.id] ?? 0) > 0}
+                              title={(usos[detalle.id] ?? 0) > 0 ? `No se puede eliminar. Usado en ${usos[detalle.id]} servicio${(usos[detalle.id] ?? 0) > 1 ? 's' : ''}` : 'Eliminar'}
+                              className="text-red-600 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
