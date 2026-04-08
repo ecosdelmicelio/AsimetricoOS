@@ -115,15 +115,16 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
               {visibles.map(p => {
                 const saldo = saldoMap.get(p.id)
                 return editingId === p.id
-                  ? <ProductForm
-                      key={p.id}
-                      product={p}
-                      marcas={marcas}
-                      atributosPT={atributosPT}
-                      catalogoMateriales={catalogoMateriales}
-                      catalogoServicios={catalogoServicios}
-                      onDone={() => setEditingId(null)}
-                    />
+                  ? <tr key={p.id}><td colSpan={11} className="px-0 py-0">
+                      <ProductForm
+                        product={p}
+                        marcas={marcas}
+                        atributosPT={atributosPT}
+                        catalogoMateriales={catalogoMateriales}
+                        catalogoServicios={catalogoServicios}
+                        onDone={() => setEditingId(null)}
+                      />
+                    </td></tr>
                   : <ProductRow key={p.id} product={p} onEdit={() => setEditingId(p.id)} onToggleActivo={async () => {
                       await toggleProductoActivo(p.id)
                     }} saldo={saldo} />
@@ -139,7 +140,7 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
 function ProductRow({ product: p, onEdit, onToggleActivo, saldo }: { product: Producto; onEdit: () => void; onToggleActivo: () => void; saldo?: SaldoTotalPT }) {
   return (
     <tr className={p.estado === 'inactivo' ? 'opacity-50' : ''}>
-      <td className="px-3 py-2"><span className="text-xs text-muted-foreground">{p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}</span></td>
+      <td className="px-3 py-2"><span className="text-xs text-muted-foreground">{p.created_at ? new Date(p.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span></td>
       <td className="px-3 py-2"><span className="font-mono text-xs font-semibold text-primary-700">{p.referencia}</span></td>
       <td className="px-3 py-2"><p className="text-xs font-medium text-foreground line-clamp-2">{p.nombre}</p></td>
       <td className="px-3 py-2"><span className="text-xs text-foreground capitalize">{p.tipo_producto === 'fabricado' ? 'Fabricado' : 'Comercializado'}</span></td>
