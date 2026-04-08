@@ -1,12 +1,13 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import type { TipoServicioAtributo } from '@/features/servicios/types/servicios'
 
 interface Props {
   tipos: TipoServicioAtributo[]
   subtipos: TipoServicioAtributo[]
+  detalles: TipoServicioAtributo[]
   atributo1Id: string | null
   atributo2Id: string | null
   onCodigoChange: (codigo: string, completo: boolean) => void
@@ -15,6 +16,7 @@ interface Props {
 export function CodigoPreviewServicio({
   tipos,
   subtipos,
+  detalles,
   atributo1Id,
   atributo2Id,
   onCodigoChange,
@@ -28,9 +30,6 @@ export function CodigoPreviewServicio({
     const codigo = `${abr1}-${abr2}-001`
     const completo = !!atributo1 && !!atributo2
 
-    // Notificar cambio
-    onCodigoChange(codigo, completo)
-
     const tieneAbreviacion1 = !atributo1 || !!atributo1.abreviatura
     const tieneAbreviacion2 = !atributo2 || !!atributo2.abreviatura
 
@@ -42,7 +41,12 @@ export function CodigoPreviewServicio({
       atributo1,
       atributo2,
     }
-  }, [atributo1Id, atributo2Id, tipos, subtipos, onCodigoChange])
+  }, [atributo1Id, atributo2Id, tipos, subtipos, detalles])
+
+  // Notify changes without causing setState-during-render
+  useEffect(() => {
+    onCodigoChange(preview.codigo, preview.completo)
+  }, [preview.codigo, preview.completo, onCodigoChange])
 
   return (
     <div className="space-y-3">

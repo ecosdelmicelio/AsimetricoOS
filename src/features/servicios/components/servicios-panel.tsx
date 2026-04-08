@@ -17,10 +17,11 @@ interface Props {
   servicios: ServicioOperativo[]
   tipos: TipoServicioAtributo[]
   subtipos: TipoServicioAtributo[]
+  detalles: TipoServicioAtributo[]
   ejecutores: Array<{ id: string; nombre: string }>
 }
 
-export function ServiciosPanel({ servicios, tipos, subtipos, ejecutores }: Props) {
+export function ServiciosPanel({ servicios, tipos, subtipos, detalles, ejecutores }: Props) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
@@ -48,6 +49,12 @@ export function ServiciosPanel({ servicios, tipos, subtipos, ejecutores }: Props
     if (!atributo1Id) return []
     return subtipos.filter(s => s.tipo_padre_id === atributo1Id)
   }, [atributo1Id, subtipos])
+
+  // Detalles filtrados según subtipo seleccionado
+  const detallesFiltrados = useMemo(() => {
+    if (!atributo2Id) return []
+    return detalles.filter(d => d.subtipo_padre_id === atributo2Id)
+  }, [atributo2Id, detalles])
 
   // Agrupar servicios por tipo
   const serviciosPorTipo = useMemo(() => {
@@ -162,7 +169,7 @@ export function ServiciosPanel({ servicios, tipos, subtipos, ejecutores }: Props
       <div className="rounded-2xl bg-neu-base shadow-neu p-6 space-y-4">
         <h3 className="text-body-sm font-semibold text-foreground">Agregar nuevo servicio</h3>
         <form onSubmit={handleAgregar} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground font-medium">Tipo *</label>
               <select
@@ -194,6 +201,24 @@ export function ServiciosPanel({ servicios, tipos, subtipos, ejecutores }: Props
                 {subtiposFiltrados.map(subtipo => (
                   <option key={subtipo.id} value={subtipo.id}>
                     {subtipo.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground font-medium">Detalle</label>
+              <select
+                value={''}
+                onChange={() => {}}
+                disabled={!atributo2Id || detallesFiltrados.length === 0}
+                className="w-full px-3 py-2.5 rounded-xl bg-neu text-body-sm text-foreground outline-none border border-neu-stroke disabled:opacity-50"
+              >
+                <option value="">
+                  {detallesFiltrados.length === 0 ? 'Sin detalles disponibles' : 'Seleccionar detalle...'}
+                </option>
+                {detallesFiltrados.map(detalle => (
+                  <option key={detalle.id} value={detalle.id}>
+                    {detalle.nombre}
                   </option>
                 ))}
               </select>
@@ -257,6 +282,7 @@ export function ServiciosPanel({ servicios, tipos, subtipos, ejecutores }: Props
             <CodigoPreviewServicio
               tipos={tipos}
               subtipos={subtipos}
+              detalles={detalles}
               atributo1Id={atributo1Id}
               atributo2Id={atributo2Id}
               onCodigoChange={(codigo, completo) => {

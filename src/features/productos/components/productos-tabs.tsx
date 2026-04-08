@@ -12,6 +12,7 @@ interface Props {
   atributosServicio?: TipoServicioAtributo[]
   tipos?: TipoServicioAtributo[]
   subtipos?: TipoServicioAtributo[]
+  detalles?: TipoServicioAtributo[]
   ejecutoresServicios?: Array<{ id: string; nombre: string }>
 }
 
@@ -29,6 +30,7 @@ export function ProductosTabs({
   servicios = [],
   tipos = [],
   subtipos = [],
+  detalles = [],
   ejecutoresServicios = [],
 }: Props) {
   const [tab, setTab] = useState<Tab>('pt')
@@ -77,6 +79,7 @@ export function ProductosTabs({
             servicios={servicios}
             tipos={tipos}
             subtipos={subtipos}
+            detalles={detalles}
             ejecutores={ejecutoresServicios}
           />
         )}

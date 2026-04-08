@@ -48,6 +48,7 @@ async function ServiciosContent() {
     servicios,
     tipos: atributosServicio.filter(a => a.atributo_tipo === 'tipo'),
     subtipos: atributosServicio.filter(a => a.atributo_tipo === 'subtipo'),
+    detalles: atributosServicio.filter(a => a.atributo_tipo === 'detalle'),
     ejecutores: ejecutoresServicios,
   }
 }
@@ -79,9 +80,10 @@ export default async function ProductosPage() {
           </Suspense>
         }
         servicios={serviciosData.servicios}
-        atributosServicio={serviciosData.tipos.concat(serviciosData.subtipos)}
+        atributosServicio={serviciosData.tipos.concat(serviciosData.subtipos).concat(serviciosData.detalles)}
         tipos={serviciosData.tipos}
         subtipos={serviciosData.subtipos}
+        detalles={serviciosData.detalles}
         ejecutoresServicios={serviciosData.ejecutores}
       />
     </div>
