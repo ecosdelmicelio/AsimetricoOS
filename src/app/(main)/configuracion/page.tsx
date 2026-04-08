@@ -2,7 +2,8 @@ import { getCalidadConfig } from '@/features/calidad/services/calidad-config-act
 import { getTiposMovimiento } from '@/features/configuracion/services/tipos-movimiento-actions'
 import { getAtributosPT } from '@/features/productos/services/atributo-actions'
 import { getAtributosMP } from '@/features/materiales/services/atributo-actions'
-import { getServiciosOperativos } from '@/features/servicios/services/servicios-actions'
+import { getTipoServicioAtributos } from '@/features/servicios/services/atributo-servicio-actions'
+import { getServiciosOperativos, getServiciosEjecutores } from '@/features/servicios/services/servicios-actions'
 import { ConfiguracionTabs } from '@/features/configuracion/components/configuracion-tabs'
 import { createClient } from '@/shared/lib/supabase/server'
 
@@ -19,14 +20,16 @@ async function getTiposDefecto() {
 }
 
 export default async function ConfiguracionPage() {
-  const [tiposDefecto, tiposMovimiento, calidadConfig, atributosPT, atributosMP, servicios] =
+  const [tiposDefecto, tiposMovimiento, calidadConfig, atributosPT, atributosMP, atributosServicio, servicios, ejecutoresServicios] =
     await Promise.all([
       getTiposDefecto(),
       getTiposMovimiento(),
       getCalidadConfig(),
       getAtributosPT(),
       getAtributosMP(),
+      getTipoServicioAtributos(),
       getServiciosOperativos(),
+      getServiciosEjecutores(),
     ])
 
   return (
@@ -44,7 +47,9 @@ export default async function ConfiguracionPage() {
         calidadConfig={calidadConfig}
         atributosPT={atributosPT}
         atributosMP={atributosMP}
+        atributosServicio={atributosServicio}
         servicios={servicios}
+        ejecutoresServicios={ejecutoresServicios}
       />
     </div>
   )

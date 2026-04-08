@@ -2,8 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/shared/lib/supabase/server'
-import type { ServicioOperativo, TipoProceso } from '@/features/servicios/types/servicios'
-import { ABREVIATURAS_TIPO_PROCESO } from '@/features/servicios/types/servicios'
+import type { ServicioOperativo, TipoServicioAtributo } from '@/features/servicios/types/servicios'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function db(supabase: unknown): any { return supabase }
@@ -12,33 +11,36 @@ export async function getServiciosOperativos(): Promise<ServicioOperativo[]> {
   const supabase = db(await createClient())
   const { data } = await supabase
     .from('servicios_operativos')
-    .select('*')
-    .order('tipo_proceso', { ascending: true })
+    .select(`
+      *,
+      atributo1:atributo1_id(*),
+      atributo2:atributo2_id(*)
+    `)
     .order('codigo', { ascending: true }) as { data: ServicioOperativo[] | null }
   return data ?? []
 }
 
-export async function getServiciosPorTipo(tipo: TipoProceso): Promise<ServicioOperativo[]> {
+export async function getServiciosEjecutores() {
   const supabase = db(await createClient())
   const { data } = await supabase
-    .from('servicios_operativos')
-    .select('*')
-    .eq('tipo_proceso', tipo)
-    .order('codigo', { ascending: true }) as { data: ServicioOperativo[] | null }
+    .from('terceros')
+    .select('id, nombre')
+    .in('tipos', [['proveedor_mp', 'satelite']])
+    .eq('estado', 'activo')
+    .order('nombre', { ascending: true }) as { data: Array<{ id: string; nombre: string }> | null }
   return data ?? []
 }
 
 /**
- * Genera el próximo número consecutivo para un tipo de proceso
+ * Genera el próximo número consecutivo para un tipo de servicio
  */
-async function getProximoConsecutivo(tipo: TipoProceso): Promise<number> {
+async function getProximoConsecutivo(atributo1_id: string): Promise<number> {
   const supabase = db(await createClient())
-  const abr = ABREVIATURAS_TIPO_PROCESO[tipo]
 
   const { data, error } = await supabase
     .from('servicios_operativos')
     .select('codigo')
-    .eq('tipo_proceso', tipo)
+    .eq('atributo1_id', atributo1_id)
     .order('codigo', { ascending: false })
     .limit(1) as { data: Array<{ codigo: string }> | null; error: any }
 
@@ -46,44 +48,63 @@ async function getProximoConsecutivo(tipo: TipoProceso): Promise<number> {
     return 1
   }
 
-  // Extraer número del código (ej: CO-001 → 001 → 1)
+  // Extraer número del código (ej: CO-RCT-001 → 001 → 1)
   const ultimoCodigo = data[0].codigo
-  const numStr = ultimoCodigo.split('-')[1] ?? '000'
+  const partes = ultimoCodigo.split('-')
+  const numStr = partes[partes.length - 1] ?? '000'
   const num = parseInt(numStr, 10)
   return num + 1
 }
 
 /**
- * Genera un código como TP-NNN (tipo + 3 dígitos)
+ * Genera un código como ABR1-ABR2-NNN (abreviaturas + 3 dígitos)
  */
-function generarCodigo(tipo: TipoProceso, consecutivo: number): string {
-  const abr = ABREVIATURAS_TIPO_PROCESO[tipo]
+function generarCodigo(abr1: string, abr2: string, consecutivo: number): string {
   const numStr = String(consecutivo).padStart(3, '0')
-  return `${abr}-${numStr}`
+  return `${abr1.toUpperCase()}-${abr2.toUpperCase()}-${numStr}`
 }
 
 export async function createServicioOperativo(
-  tipo: TipoProceso,
+  atributo1_id: string,
+  atributo2_id: string,
   nombre: string,
   tarifaUnitaria: number,
   descripcion?: string,
-  ejecutor?: string,
+  ejecutor_id?: string,
 ): Promise<{ data: ServicioOperativo | null; error?: string }> {
   const supabase = db(await createClient())
 
+  // Obtener abreviaturas de los atributos
+  const { data: atributos } = await supabase
+    .from('tipo_servicio_atributos')
+    .select('*')
+    .in('id', [atributo1_id, atributo2_id]) as { data: TipoServicioAtributo[] | null }
+
+  if (!atributos || atributos.length !== 2) {
+    return { data: null, error: 'Atributos inválidos' }
+  }
+
+  const atributo1 = atributos.find(a => a.id === atributo1_id)
+  const atributo2 = atributos.find(a => a.id === atributo2_id)
+
+  if (!atributo1 || !atributo2) {
+    return { data: null, error: 'Atributos inválidos' }
+  }
+
   // Generar código automáticamente
-  const consecutivo = await getProximoConsecutivo(tipo)
-  const codigo = generarCodigo(tipo, consecutivo)
+  const consecutivo = await getProximoConsecutivo(atributo1_id)
+  const codigo = generarCodigo(atributo1.abreviatura, atributo2.abreviatura, consecutivo)
 
   const { data, error } = await supabase
     .from('servicios_operativos')
     .insert({
       codigo,
       nombre: nombre.trim(),
-      tipo_proceso: tipo,
+      atributo1_id,
+      atributo2_id,
       tarifa_unitaria: tarifaUnitaria,
       descripcion: descripcion?.trim() || null,
-      ejecutor: ejecutor?.trim() || null,
+      ejecutor_id: ejecutor_id || null,
       activo: true,
     })
     .select()
@@ -103,7 +124,7 @@ export async function updateServicioOperativo(
     nombre?: string
     tarifa_unitaria?: number
     descripcion?: string | null
-    ejecutor?: string | null
+    ejecutor_id?: string | null
     activo?: boolean
   },
 ): Promise<{ error?: string }> {
@@ -113,7 +134,7 @@ export async function updateServicioOperativo(
   if (updates.nombre !== undefined) payload.nombre = updates.nombre.trim()
   if (updates.tarifa_unitaria !== undefined) payload.tarifa_unitaria = updates.tarifa_unitaria
   if (updates.descripcion !== undefined) payload.descripcion = updates.descripcion?.trim() || null
-  if (updates.ejecutor !== undefined) payload.ejecutor = updates.ejecutor?.trim() || null
+  if (updates.ejecutor_id !== undefined) payload.ejecutor_id = updates.ejecutor_id || null
   if (updates.activo !== undefined) payload.activo = updates.activo
 
   const { error } = await supabase
@@ -148,20 +169,19 @@ export async function deleteServicioOperativo(id: string): Promise<{ error?: str
 export async function toggleServicioActivo(id: string): Promise<{ error?: string }> {
   const supabase = db(await createClient())
 
-  // Obtener estado actual
-  const { data: servicios } = await supabase
+  const { data: servicio } = await supabase
     .from('servicios_operativos')
     .select('activo')
     .eq('id', id)
     .single() as { data: { activo: boolean } | null }
 
-  if (!servicios) {
+  if (!servicio) {
     return { error: 'Servicio no encontrado' }
   }
 
   const { error } = await supabase
     .from('servicios_operativos')
-    .update({ activo: !servicios.activo })
+    .update({ activo: !servicio.activo })
     .eq('id', id) as { error: { message: string } | null }
 
   if (error) {

@@ -1,53 +1,72 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { Plus, Trash2, Edit2, Loader2, Toggle2, AlertTriangle } from 'lucide-react'
+import { useState, useTransition, useMemo } from 'react'
+import { Plus, Trash2, Edit2, Loader2, AlertTriangle } from 'lucide-react'
 import {
   createServicioOperativo,
   updateServicioOperativo,
   deleteServicioOperativo,
   toggleServicioActivo,
+  getServiciosEjecutores,
 } from '@/features/servicios/services/servicios-actions'
-import type { ServicioOperativo, TipoProceso } from '@/features/servicios/types/servicios'
-import { TIPOS_PROCESO, LABELS_TIPO_PROCESO } from '@/features/servicios/types/servicios'
+import { CodigoPreviewServicio } from '@/features/servicios/components/codigo-preview-servicio'
+import type { ServicioOperativo, TipoServicioAtributo } from '@/features/servicios/types/servicios'
+import type { Tercero } from '@/features/terceros/types'
 
 interface Props {
   servicios: ServicioOperativo[]
+  tipos: TipoServicioAtributo[]
+  subtipos: TipoServicioAtributo[]
+  ejecutores: Array<{ id: string; nombre: string }>
 }
 
-export function ServiciosPanel({ servicios }: Props) {
+export function ServiciosPanel({ servicios, tipos, subtipos, ejecutores }: Props) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
   // Form
   const [showForm, setShowForm] = useState(false)
-  const [tipoSeleccionado, setTipoSeleccionado] = useState<TipoProceso>('corte')
+  const [atributo1Id, setAtributo1Id] = useState<string | null>(null)
+  const [atributo2Id, setAtributo2Id] = useState<string | null>(null)
   const [nombre, setNombre] = useState('')
   const [tarifa, setTarifa] = useState('')
   const [descripcion, setDescripcion] = useState('')
-  const [ejecutor, setEjecutor] = useState('')
+  const [ejecutorId, setEjecutorId] = useState<string | null>(null)
+  const [codigoGenerado, setCodigoGenerado] = useState('')
+  const [codigoCompleto, setCodigoCompleto] = useState(false)
 
   // Edición
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingNombre, setEditingNombre] = useState('')
   const [editingTarifa, setEditingTarifa] = useState('')
   const [editingDescripcion, setEditingDescripcion] = useState('')
-  const [editingEjecutor, setEditingEjecutor] = useState('')
+  const [editingEjecutorId, setEditingEjecutorId] = useState<string | null>(null)
 
-  // Agrupar por tipo
-  const serviciosPorTipo = TIPOS_PROCESO.reduce(
-    (acc, tipo) => {
-      acc[tipo] = servicios.filter(s => s.tipo_proceso === tipo)
-      return acc
-    },
-    {} as Record<TipoProceso, ServicioOperativo[]>,
-  )
+  // Subtipos filtrados según tipo seleccionado
+  const subtiposFiltrados = useMemo(() => {
+    if (!atributo1Id) return []
+    return subtipos.filter(s => s.tipo_padre_id === atributo1Id)
+  }, [atributo1Id, subtipos])
+
+  // Agrupar servicios por tipo
+  const serviciosPorTipo = useMemo(() => {
+    const grupos: Record<string, ServicioOperativo[]> = {}
+    tipos.forEach(tipo => {
+      grupos[tipo.id] = servicios.filter(s => s.atributo1_id === tipo.id)
+    })
+    return grupos
+  }, [servicios, tipos])
 
   const handleAgregar = (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setSuccessMsg(null)
+
+    if (!atributo1Id || !atributo2Id) {
+      setError('Debe seleccionar tipo y subtipo')
+      return
+    }
 
     if (!nombre.trim() || !tarifa) {
       setError('Nombre y tarifa son obligatorios')
@@ -62,23 +81,27 @@ export function ServiciosPanel({ servicios }: Props) {
 
     startTransition(async () => {
       const res = await createServicioOperativo(
-        tipoSeleccionado,
+        atributo1Id,
+        atributo2Id,
         nombre,
         tarifaNum,
         descripcion || undefined,
-        ejecutor || undefined,
+        ejecutorId || undefined,
       )
       if (res.error) {
         setError(res.error)
         return
       }
 
+      setAtributo1Id(null)
+      setAtributo2Id(null)
       setNombre('')
       setTarifa('')
       setDescripcion('')
-      setEjecutor('')
+      setEjecutorId(null)
+      setCodigoGenerado('')
       setShowForm(false)
-      setSuccessMsg(`"${nombre}" agregado a ${LABELS_TIPO_PROCESO[tipoSeleccionado]}`)
+      setSuccessMsg(`"${nombre}" agregado`)
       setTimeout(() => setSuccessMsg(null), 3000)
     })
   }
@@ -96,7 +119,7 @@ export function ServiciosPanel({ servicios }: Props) {
         nombre: editingNombre,
         tarifa_unitaria: tarifaNum,
         descripcion: editingDescripcion || null,
-        ejecutor: editingEjecutor || null,
+        ejecutor_id: editingEjecutorId || null,
       })
       if (res.error) {
         setError(res.error)
@@ -128,6 +151,11 @@ export function ServiciosPanel({ servicios }: Props) {
     })
   }
 
+  const getEjecutorNombre = (ejecutor_id: string | null) => {
+    if (!ejecutor_id) return '—'
+    return ejecutores.find(e => e.id === ejecutor_id)?.nombre || '—'
+  }
+
   return (
     <div className="space-y-6">
       {/* Formulario para agregar */}
@@ -138,30 +166,69 @@ export function ServiciosPanel({ servicios }: Props) {
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground font-medium">Tipo *</label>
               <select
-                value={tipoSeleccionado}
-                onChange={e => setTipoSeleccionado(e.target.value as TipoProceso)}
+                value={atributo1Id || ''}
+                onChange={e => {
+                  const newId = e.target.value || null
+                  setAtributo1Id(newId)
+                  setAtributo2Id(null) // Reset subtipo
+                }}
                 className="w-full px-3 py-2.5 rounded-xl bg-neu text-body-sm text-foreground outline-none border border-neu-stroke"
               >
-                {TIPOS_PROCESO.map(tipo => (
-                  <option key={tipo} value={tipo}>
-                    {LABELS_TIPO_PROCESO[tipo]}
+                <option value="">Seleccionar tipo...</option>
+                {tipos.map(tipo => (
+                  <option key={tipo.id} value={tipo.id}>
+                    {tipo.nombre}
                   </option>
                 ))}
               </select>
             </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground font-medium">Subtipo *</label>
+              <select
+                value={atributo2Id || ''}
+                onChange={e => setAtributo2Id(e.target.value || null)}
+                disabled={!atributo1Id}
+                className="w-full px-3 py-2.5 rounded-xl bg-neu text-body-sm text-foreground outline-none border border-neu-stroke disabled:opacity-50"
+              >
+                <option value="">Seleccionar subtipo...</option>
+                {subtiposFiltrados.map(subtipo => (
+                  <option key={subtipo.id} value={subtipo.id}>
+                    {subtipo.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground font-medium">Nombre *</label>
               <input
                 type="text"
                 value={nombre}
                 onChange={e => setNombre(e.target.value)}
-                placeholder="Ej: Corte recto"
+                placeholder="Ej: Corte recto estándar"
                 className="w-full px-3 py-2.5 rounded-xl bg-neu text-body-sm text-foreground outline-none border border-neu-stroke placeholder:text-muted-foreground"
               />
             </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground font-medium">Ejecutor</label>
+              <select
+                value={ejecutorId || ''}
+                onChange={e => setEjecutorId(e.target.value || null)}
+                className="w-full px-3 py-2.5 rounded-xl bg-neu text-body-sm text-foreground outline-none border border-neu-stroke"
+              >
+                <option value="">Sin asignar</option>
+                {ejecutores.map(ejecutor => (
+                  <option key={ejecutor.id} value={ejecutor.id}>
+                    {ejecutor.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground font-medium">Tarifa (COP) *</label>
               <input
@@ -171,16 +238,6 @@ export function ServiciosPanel({ servicios }: Props) {
                 value={tarifa}
                 onChange={e => setTarifa(e.target.value)}
                 placeholder="5000"
-                className="w-full px-3 py-2.5 rounded-xl bg-neu text-body-sm text-foreground outline-none border border-neu-stroke placeholder:text-muted-foreground"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground font-medium">Ejecutor</label>
-              <input
-                type="text"
-                value={ejecutor}
-                onChange={e => setEjecutor(e.target.value)}
-                placeholder="Ej: Juan Pérez"
                 className="w-full px-3 py-2.5 rounded-xl bg-neu text-body-sm text-foreground outline-none border border-neu-stroke placeholder:text-muted-foreground"
               />
             </div>
@@ -196,9 +253,22 @@ export function ServiciosPanel({ servicios }: Props) {
             </div>
           </div>
 
+          {atributo1Id && atributo2Id && (
+            <CodigoPreviewServicio
+              tipos={tipos}
+              subtipos={subtipos}
+              atributo1Id={atributo1Id}
+              atributo2Id={atributo2Id}
+              onCodigoChange={(codigo, completo) => {
+                setCodigoGenerado(codigo)
+                setCodigoCompleto(completo)
+              }}
+            />
+          )}
+
           <button
             type="submit"
-            disabled={pending}
+            disabled={pending || !codigoCompleto}
             className="px-4 py-2.5 rounded-xl bg-primary-600 text-white font-semibold text-body-sm hover:bg-primary-700 transition-all disabled:opacity-50 flex items-center gap-2"
           >
             {pending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
@@ -207,19 +277,19 @@ export function ServiciosPanel({ servicios }: Props) {
           </button>
         </form>
 
-        {error && <div className="text-red-600 text-body-sm">{error}</div>}
-        {successMsg && <div className="text-green-600 text-body-sm">{successMsg}</div>}
+        {error && <div className="text-red-600 text-body-sm rounded-xl bg-red-50 p-3">{error}</div>}
+        {successMsg && <div className="text-green-600 text-body-sm rounded-xl bg-green-50 p-3">{successMsg}</div>}
       </div>
 
       {/* Lista por tipo */}
       <div className="space-y-4">
-        {TIPOS_PROCESO.map(tipo => (
-          <div key={tipo} className="rounded-2xl bg-neu-base shadow-neu p-6">
+        {tipos.map(tipo => (
+          <div key={tipo.id} className="rounded-2xl bg-neu-base shadow-neu p-6">
             <h3 className="text-body-sm font-semibold text-foreground mb-4">
-              {LABELS_TIPO_PROCESO[tipo]}
+              {tipo.nombre}
             </h3>
 
-            {serviciosPorTipo[tipo].length === 0 ? (
+            {serviciosPorTipo[tipo.id].length === 0 ? (
               <p className="text-muted-foreground text-body-sm">Sin servicios agregados</p>
             ) : (
               <div className="overflow-x-auto">
@@ -235,7 +305,7 @@ export function ServiciosPanel({ servicios }: Props) {
                     </tr>
                   </thead>
                   <tbody>
-                    {serviciosPorTipo[tipo].map(srv => (
+                    {serviciosPorTipo[tipo.id].map(srv => (
                       <tr key={srv.id} className="border-b border-neu-stroke hover:bg-neu-hover transition-colors">
                         <td className="py-2.5 px-3 font-mono text-foreground font-medium">{srv.codigo}</td>
                         <td className="py-2.5 px-3">
@@ -253,14 +323,20 @@ export function ServiciosPanel({ servicios }: Props) {
                         </td>
                         <td className="py-2.5 px-3">
                           {editingId === srv.id ? (
-                            <input
-                              type="text"
-                              value={editingEjecutor}
-                              onChange={e => setEditingEjecutor(e.target.value)}
+                            <select
+                              value={editingEjecutorId || ''}
+                              onChange={e => setEditingEjecutorId(e.target.value || null)}
                               className="w-full px-2 py-1 rounded bg-white border border-neu-stroke text-body-sm"
-                            />
+                            >
+                              <option value="">Sin asignar</option>
+                              {ejecutores.map(ejecutor => (
+                                <option key={ejecutor.id} value={ejecutor.id}>
+                                  {ejecutor.nombre}
+                                </option>
+                              ))}
+                            </select>
                           ) : (
-                            <span className="text-foreground text-xs">{srv.ejecutor || '—'}</span>
+                            <span className="text-foreground text-xs">{getEjecutorNombre(srv.ejecutor_id)}</span>
                           )}
                         </td>
                         <td className="py-2.5 px-3 text-right">
@@ -318,7 +394,7 @@ export function ServiciosPanel({ servicios }: Props) {
                                   setEditingNombre(srv.nombre)
                                   setEditingTarifa(srv.tarifa_unitaria.toString())
                                   setEditingDescripcion(srv.descripcion || '')
-                                  setEditingEjecutor(srv.ejecutor || '')
+                                  setEditingEjecutorId(srv.ejecutor_id || null)
                                 }}
                                 disabled={pending}
                                 className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
