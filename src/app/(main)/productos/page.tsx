@@ -2,9 +2,11 @@ import { Suspense } from 'react'
 import { getProductos } from '@/features/productos/services/producto-actions'
 import { getAtributosPT } from '@/features/productos/services/atributo-actions'
 import { getSaldosTotalesPorProducto } from '@/features/kardex/services/kardex-actions'
-import { getMateriales as getBOMCatalogo, getServiciosOperativos } from '@/features/productos/services/bom-actions'
+import { getMateriales as getBOMCatalogo, getServiciosOperativos as getBOMServicios } from '@/features/productos/services/bom-actions'
 import { getMateriales } from '@/features/materiales/services/materiales-actions'
 import { getMarcas } from '@/features/configuracion/services/marcas-actions'
+import { getTipoServicioAtributos } from '@/features/servicios/services/atributo-servicio-actions'
+import { getServiciosOperativos, getServiciosEjecutores } from '@/features/servicios/services/servicios-actions'
 import { ProductosPanel } from '@/features/productos/components/productos-panel'
 import { MaterialesPanel } from '@/features/materiales/components/materiales-panel'
 import { ProductosTabs } from '@/features/productos/components/productos-tabs'
@@ -16,7 +18,7 @@ async function ProductosContent() {
     getMarcas(),
     getAtributosPT(),
     getBOMCatalogo(),
-    getServiciosOperativos(),
+    getBOMServicios(),
   ])
   return (
     <ProductosPanel
@@ -35,6 +37,21 @@ async function MaterialesContent() {
   return <MaterialesPanel materiales={materiales} />
 }
 
+async function ServiciosContent() {
+  const [servicios, atributosServicio, ejecutoresServicios] = await Promise.all([
+    getServiciosOperativos(),
+    getTipoServicioAtributos(),
+    getServiciosEjecutores(),
+  ])
+
+  return {
+    servicios,
+    tipos: atributosServicio.filter(a => a.atributo_tipo === 'tipo'),
+    subtipos: atributosServicio.filter(a => a.atributo_tipo === 'subtipo'),
+    ejecutores: ejecutoresServicios,
+  }
+}
+
 function Skeleton() {
   return (
     <div className="space-y-2">
@@ -45,7 +62,9 @@ function Skeleton() {
   )
 }
 
-export default function ProductosPage() {
+export default async function ProductosPage() {
+  const serviciosData = await ServiciosContent()
+
   return (
     <div className="space-y-6">
       <ProductosTabs
@@ -59,6 +78,11 @@ export default function ProductosPage() {
             <MaterialesContent />
           </Suspense>
         }
+        servicios={serviciosData.servicios}
+        atributosServicio={serviciosData.tipos.concat(serviciosData.subtipos)}
+        tipos={serviciosData.tipos}
+        subtipos={serviciosData.subtipos}
+        ejecutoresServicios={serviciosData.ejecutores}
       />
     </div>
   )

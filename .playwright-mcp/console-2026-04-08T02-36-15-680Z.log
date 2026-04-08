@@ -24,3 +24,121 @@
 [ 1836342ms] [LOG] [Fast Refresh] done in 293ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
 [ 1837651ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
 [ 1837710ms] [LOG] [Fast Refresh] done in 159ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 2195293ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 2196373ms] [ERROR] ./src/app/(main)/productos/page.tsx:8:1
+Export getTipoServicioAtributos doesn't exist in target module
+   6 | import { getMateriales } from '@/features/materiales/services/materiales-actions'
+   7 | import { getMarcas } from '@/features/configuracion/services/marcas-actions'
+>  8 | import { getTipoServicioAtributos, getServiciosEjecutores } from '@/features/servicios/services/servicios-actions'
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   9 | import { ProductosPanel } from '@/features/productos/components/productos-panel'
+  10 | import { MaterialesPanel } from '@/features/materiales/components/materiales-panel'
+  11 | import { ProductosTabs } from '@/features/productos/components/productos-tabs'
+
+The export getTipoServicioAtributos was not found in module [project]/src/features/servicios/services/servicios-actions.ts [app-rsc] (ecmascript).
+Did you mean to import getServiciosOperativos?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[ 2201436ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 2201441ms] [ERROR] ./src/app/(main)/productos/page.tsx:8:1
+Export getTipoServicioAtributos doesn't exist in target module
+   6 | import { getMateriales } from '@/features/materiales/services/materiales-actions'
+   7 | import { getMarcas } from '@/features/configuracion/services/marcas-actions'
+>  8 | import { getTipoServicioAtributos, getServiciosEjecutores } from '@/features/servicios/services/servicios-actions'
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   9 | import { ProductosPanel } from '@/features/productos/components/productos-panel'
+  10 | import { MaterialesPanel } from '@/features/materiales/components/materiales-panel'
+  11 | import { ProductosTabs } from '@/features/productos/components/productos-tabs'
+
+The export getTipoServicioAtributos was not found in module [project]/src/features/servicios/services/servicios-actions.ts [app-rsc] (ecmascript).
+Did you mean to import getServiciosOperativos?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[ 2208050ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 2208256ms] [ERROR] ./src/app/(main)/productos/page.tsx:8:1
+Export getTipoServicioAtributos doesn't exist in target module
+   6 | import { getMateriales } from '@/features/materiales/services/materiales-actions'
+   7 | import { getMarcas } from '@/features/configuracion/services/marcas-actions'
+>  8 | import { getTipoServicioAtributos, getServiciosEjecutores } from '@/features/servicios/services/servicios-actions'
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   9 | import { ProductosPanel } from '@/features/productos/components/productos-panel'
+  10 | import { MaterialesPanel } from '@/features/materiales/components/materiales-panel'
+  11 | import { ProductosTabs } from '@/features/productos/components/productos-tabs'
+
+The export getTipoServicioAtributos was not found in module [project]/src/features/servicios/services/servicios-actions.ts [app-rsc] (ecmascript).
+Did you mean to import getServiciosOperativos?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[ 2216217ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 2216347ms] [ERROR] ./src/app/(main)/productos/page.tsx:8:1
+Export getTipoServicioAtributos doesn't exist in target module
+   6 | import { getMateriales } from '@/features/materiales/services/materiales-actions'
+   7 | import { getMarcas } from '@/features/configuracion/services/marcas-actions'
+>  8 | import { getTipoServicioAtributos, getServiciosEjecutores } from '@/features/servicios/services/servicios-actions'
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   9 | import { ProductosPanel } from '@/features/productos/components/productos-panel'
+  10 | import { MaterialesPanel } from '@/features/materiales/components/materiales-panel'
+  11 | import { ProductosTabs } from '@/features/productos/components/productos-tabs'
+
+The export getTipoServicioAtributos was not found in module [project]/src/features/servicios/services/servicios-actions.ts [app-rsc] (ecmascript).
+Did you mean to import getServiciosOperativos?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[ 2225890ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 2225937ms] [ERROR] ./src/app/(main)/productos/page.tsx:8:1
+Export getTipoServicioAtributos doesn't exist in target module
+   6 | import { getMateriales } from '@/features/materiales/services/materiales-actions'
+   7 | import { getMarcas } from '@/features/configuracion/services/marcas-actions'
+>  8 | import { getTipoServicioAtributos, getServiciosEjecutores } from '@/features/servicios/services/servicios-actions'
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   9 | import { ProductosPanel } from '@/features/productos/components/productos-panel'
+  10 | import { MaterialesPanel } from '@/features/materiales/components/materiales-panel'
+  11 | import { ProductosTabs } from '@/features/productos/components/productos-tabs'
+
+The export getTipoServicioAtributos was not found in module [project]/src/features/servicios/services/servicios-actions.ts [app-rsc] (ecmascript).
+Did you mean to import getServiciosOperativos?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[ 2236136ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 2236226ms] [ERROR] ./src/app/(main)/productos/page.tsx:8:1
+Export getTipoServicioAtributos doesn't exist in target module
+   6 | import { getMateriales } from '@/features/materiales/services/materiales-actions'
+   7 | import { getMarcas } from '@/features/configuracion/services/marcas-actions'
+>  8 | import { getTipoServicioAtributos, getServiciosEjecutores } from '@/features/servicios/services/servicios-actions'
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   9 | import { ProductosPanel } from '@/features/productos/components/productos-panel'
+  10 | import { MaterialesPanel } from '@/features/materiales/components/materiales-panel'
+  11 | import { ProductosTabs } from '@/features/productos/components/productos-tabs'
+
+The export getTipoServicioAtributos was not found in module [project]/src/features/servicios/services/servicios-actions.ts [app-rsc] (ecmascript).
+Did you mean to import getServiciosOperativos?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[ 2245834ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 2245956ms] [ERROR] ./src/app/(main)/productos/page.tsx:8:1
+Export getTipoServicioAtributos doesn't exist in target module
+   6 | import { getMateriales } from '@/features/materiales/services/materiales-actions'
+   7 | import { getMarcas } from '@/features/configuracion/services/marcas-actions'
+>  8 | import { getTipoServicioAtributos, getServiciosEjecutores } from '@/features/servicios/services/servicios-actions'
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   9 | import { ProductosPanel } from '@/features/productos/components/productos-panel'
+  10 | import { MaterialesPanel } from '@/features/materiales/components/materiales-panel'
+  11 | import { ProductosTabs } from '@/features/productos/components/productos-tabs'
+
+The export getTipoServicioAtributos was not found in module [project]/src/features/servicios/services/servicios-actions.ts [app-rsc] (ecmascript).
+Did you mean to import getServiciosOperativos?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[ 2260904ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 2260997ms] [ERROR] ./src/app/(main)/productos/page.tsx:9:10
+Ecmascript file had an error
+   7 | import { getMarcas } from '@/features/configuracion/services/marcas-actions'
+   8 | import { getTipoServicioAtributos } from '@/features/servicios/services/atributo-servicio-actions'
+>  9 | import { getServiciosOperativos, getServiciosEjecutores } from '@/features/servicios/services/servicios-actions'
+     |          ^^^^^^^^^^^^^^^^^^^^^^
+  10 | import { ProductosPanel } from '@/features/productos/components/productos-panel'
+  11 | import { MaterialesPanel } from '@/features/materiales/components/materiales-panel'
+  12 | import { ProductosTabs } from '@/features/productos/components/productos-tabs'
+
+the name `getServiciosOperativos` is defined multiple times @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[ 2267813ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 2267957ms] [LOG] [Fast Refresh] done in 177ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 2269508ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 2269640ms] [LOG] [Fast Refresh] done in 234ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 2269974ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 2270012ms] [LOG] [Fast Refresh] done in 138ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 2273027ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 2273057ms] [LOG] [Fast Refresh] done in 82ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297

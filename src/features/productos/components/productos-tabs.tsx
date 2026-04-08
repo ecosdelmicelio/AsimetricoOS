@@ -1,21 +1,36 @@
 'use client'
 
 import { useState } from 'react'
-import { ShoppingBag, Layers } from 'lucide-react'
+import { ShoppingBag, Layers, Wrench } from 'lucide-react'
+import { ServiciosPanel } from '@/features/servicios/components/servicios-panel'
+import type { ServicioOperativo, TipoServicioAtributo } from '@/features/servicios/types/servicios'
 
 interface Props {
   productosContent: React.ReactNode
   materialesContent: React.ReactNode
+  servicios?: ServicioOperativo[]
+  atributosServicio?: TipoServicioAtributo[]
+  tipos?: TipoServicioAtributo[]
+  subtipos?: TipoServicioAtributo[]
+  ejecutoresServicios?: Array<{ id: string; nombre: string }>
 }
 
-type Tab = 'pt' | 'mp'
+type Tab = 'pt' | 'mp' | 'servicios'
 
 const TABS: { id: Tab; label: string; sub: string; Icon: React.ElementType }[] = [
   { id: 'pt', label: 'Productos terminados',  sub: 'PT — Referencias y BOM', Icon: ShoppingBag },
   { id: 'mp', label: 'Materiales e insumos', sub: 'MP — Telas, hilos, accesorios', Icon: Layers },
+  { id: 'servicios', label: 'Servicios', sub: 'Procesos operativos', Icon: Wrench },
 ]
 
-export function ProductosTabs({ productosContent, materialesContent }: Props) {
+export function ProductosTabs({
+  productosContent,
+  materialesContent,
+  servicios = [],
+  tipos = [],
+  subtipos = [],
+  ejecutoresServicios = [],
+}: Props) {
   const [tab, setTab] = useState<Tab>('pt')
 
   return (
@@ -23,7 +38,7 @@ export function ProductosTabs({ productosContent, materialesContent }: Props) {
       {/* Header */}
       <div>
         <h1 className="text-display-xs font-heading text-foreground font-bold">ADN de Productos</h1>
-        <p className="text-muted-foreground text-body-sm mt-1">Catálogo de referencias, materiales e insumos</p>
+        <p className="text-muted-foreground text-body-sm mt-1">Catálogo de referencias, materiales, insumos y servicios</p>
       </div>
 
       {/* Tabs */}
@@ -57,6 +72,14 @@ export function ProductosTabs({ productosContent, materialesContent }: Props) {
       <div>
         {tab === 'pt' && productosContent}
         {tab === 'mp' && materialesContent}
+        {tab === 'servicios' && (
+          <ServiciosPanel
+            servicios={servicios}
+            tipos={tipos}
+            subtipos={subtipos}
+            ejecutores={ejecutoresServicios}
+          />
+        )}
       </div>
     </div>
   )
