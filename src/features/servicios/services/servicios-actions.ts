@@ -25,7 +25,7 @@ export async function getServiciosEjecutores() {
   const { data } = await supabase
     .from('terceros')
     .select('id, nombre')
-    .in('tipos', [['proveedor_mp', 'satelite']])
+    .in('tipo', ['proveedor_mp', 'satelite'])
     .eq('estado', 'activo')
     .order('nombre', { ascending: true }) as { data: Array<{ id: string; nombre: string }> | null }
   return data ?? []
