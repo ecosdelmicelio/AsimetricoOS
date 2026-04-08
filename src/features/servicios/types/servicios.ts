@@ -1,4 +1,4 @@
-export type AtributoTipoServicio = 'tipo' | 'subtipo'
+export type AtributoTipoServicio = 'tipo' | 'subtipo' | 'detalle'
 
 export interface TipoServicioAtributo {
   id: string
@@ -6,6 +6,7 @@ export interface TipoServicioAtributo {
   abreviatura: string
   atributo_tipo: AtributoTipoServicio
   tipo_padre_id: string | null
+  subtipo_padre_id: string | null
   activo: boolean
   created_at: string
 }

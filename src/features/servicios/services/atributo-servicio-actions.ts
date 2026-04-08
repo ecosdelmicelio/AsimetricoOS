@@ -41,11 +41,24 @@ export async function getSubtiposPorTipo(tipo_padre_id: string): Promise<TipoSer
   return data ?? []
 }
 
+export async function getDetallesPorSubtipo(subtipo_padre_id: string): Promise<TipoServicioAtributo[]> {
+  const supabase = db(await createClient())
+  const { data } = await supabase
+    .from('tipo_servicio_atributos')
+    .select('*')
+    .eq('atributo_tipo', 'detalle')
+    .eq('subtipo_padre_id', subtipo_padre_id)
+    .eq('activo', true)
+    .order('nombre', { ascending: true }) as { data: TipoServicioAtributo[] | null }
+  return data ?? []
+}
+
 export async function createTipoServicioAtributo(
-  atributo_tipo: 'tipo' | 'subtipo',
+  atributo_tipo: 'tipo' | 'subtipo' | 'detalle',
   nombre: string,
   abreviatura: string,
   tipo_padre_id?: string,
+  subtipo_padre_id?: string,
 ): Promise<{ data: TipoServicioAtributo | null; error?: string }> {
   const supabase = db(await createClient())
 
@@ -61,6 +74,10 @@ export async function createTipoServicioAtributo(
     return { data: null, error: 'El tipo padre es obligatorio para subtipos' }
   }
 
+  if (atributo_tipo === 'detalle' && !subtipo_padre_id) {
+    return { data: null, error: 'El subtipo padre es obligatorio para detalles' }
+  }
+
   const { data, error } = await supabase
     .from('tipo_servicio_atributos')
     .insert({
@@ -68,6 +85,7 @@ export async function createTipoServicioAtributo(
       nombre: nombre.trim(),
       abreviatura: abreviatura.trim().toUpperCase(),
       tipo_padre_id: tipo_padre_id || null,
+      subtipo_padre_id: subtipo_padre_id || null,
       activo: true,
     })
     .select()
