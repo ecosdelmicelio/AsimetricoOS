@@ -210,3 +210,42 @@ export async function updateAbreviacionPT(
   revalidatePath('/productos/nuevo')
   return {}
 }
+
+/**
+ * Cuenta cuántos productos usan un atributo PT específico
+ */
+export async function getAtributoPTUsos(atributoId: string): Promise<number> {
+  const supabase = db(await createClient())
+  const { count } = await supabase
+    .from('producto_atributos')
+    .select('*', { count: 'exact', head: true })
+    .eq('atributo_id', atributoId) as { count: number | null }
+  return count ?? 0
+}
+
+/**
+ * Toggle el estado activo de un atributo PT
+ */
+export async function toggleAtributoPTActivo(id: string): Promise<{ error?: string }> {
+  const supabase = db(await createClient())
+
+  // Obtener el estado actual
+  const { data: current } = await supabase
+    .from('atributos_pt')
+    .select('activo')
+    .eq('id', id)
+    .single() as { data: { activo: boolean } | null }
+
+  const nuevoEstado = !current?.activo
+
+  const { error } = await supabase
+    .from('atributos_pt')
+    .update({ activo: nuevoEstado })
+    .eq('id', id) as { error: { message: string } | null }
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/configuracion')
+  revalidatePath('/productos/nuevo')
+  return {}
+}

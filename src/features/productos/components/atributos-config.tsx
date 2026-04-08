@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { Loader2, Trash2, Plus, Check, AlertCircle, Edit2 } from 'lucide-react'
-import { createAtributoPT, deleteAtributoPT, validateAbreviacionPT, updateAbreviacionPT } from '@/features/productos/services/atributo-actions'
+import { useState, useTransition, useEffect } from 'react'
+import { Loader2, Trash2, Plus, Check, AlertCircle, Edit2, Lock } from 'lucide-react'
+import { createAtributoPT, deleteAtributoPT, validateAbreviacionPT, updateAbreviacionPT, getAtributoPTUsos, toggleAtributoPTActivo } from '@/features/productos/services/atributo-actions'
 import { generarAbreviacion } from '@/shared/lib/abreviacion-utils'
 import type { AtributoPT, TipoAtributo } from '@/features/productos/types/atributos'
 import { TIPOS_ATRIBUTO, LABELS_ATRIBUTO } from '@/features/productos/types/atributos'
@@ -34,6 +34,22 @@ export function AtributosConfig({ atributos }: Props) {
   const [editingAbreviacion, setEditingAbreviacion] = useState('')
   const [validationStatus, setValidationStatus] = useState<Record<string, 'valid' | 'invalid' | 'pending'>>({})
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  const [usos, setUsos] = useState<Record<string, number>>({})
+  const [loadingUsos, setLoadingUsos] = useState(true)
+
+  // Cargar usos de cada atributo
+  useEffect(() => {
+    const cargarUsos = async () => {
+      setLoadingUsos(true)
+      const usosMap: Record<string, number> = {}
+      for (const atributo of atributos) {
+        usosMap[atributo.id] = await getAtributoPTUsos(atributo.id)
+      }
+      setUsos(usosMap)
+      setLoadingUsos(false)
+    }
+    cargarUsos()
+  }, [atributos])
 
   const atributosPorTipo = TIPOS_ATRIBUTO.reduce(
     (acc, tipo) => {
@@ -102,6 +118,14 @@ export function AtributosConfig({ atributos }: Props) {
   }
 
   const handleEliminar = (id: string) => {
+    const usosCount = usos[id] ?? 0
+    if (usosCount > 0) {
+      setError(`No se puede eliminar este atributo. Se usa en ${usosCount} producto${usosCount > 1 ? 's' : ''}.`)
+      setTimeout(() => setError(null), 5000)
+      return
+    }
+
+    if (!confirm('¿Eliminar este atributo?')) return
     startTransition(async () => {
       const res = await deleteAtributoPT(id)
       if (res.error) {
@@ -110,7 +134,22 @@ export function AtributosConfig({ atributos }: Props) {
     })
   }
 
+  const handleToggleActivo = (id: string) => {
+    startTransition(async () => {
+      const res = await toggleAtributoPTActivo(id)
+      if (res.error) {
+        setError(res.error)
+      }
+    })
+  }
+
   const handleEditarAbreviacion = (id: string, valorActual: string) => {
+    const usosCount = usos[id] ?? 0
+    if (usosCount > 0) {
+      setError(`No se puede editar este atributo. Se usa en ${usosCount} producto${usosCount > 1 ? 's' : ''}.`)
+      setTimeout(() => setError(null), 5000)
+      return
+    }
     setEditingId(id)
     setEditingAbreviacion(valorActual || '')
   }
@@ -226,7 +265,8 @@ export function AtributosConfig({ atributos }: Props) {
                     <tr className="border-b border-neu-stroke">
                       <th className="text-left py-2 px-3 font-semibold text-foreground">Valor</th>
                       <th className="text-left py-2 px-3 font-semibold text-foreground w-24">Abr.</th>
-                      <th className="text-right py-2 px-3 font-semibold text-foreground w-12"></th>
+                      <th className="text-center py-2 px-3 font-semibold text-foreground w-20">Estado</th>
+                      <th className="text-right py-2 px-3 font-semibold text-foreground w-24"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -275,14 +315,48 @@ export function AtributosConfig({ atributos }: Props) {
                             </div>
                           )}
                         </td>
-                        <td className="py-2.5 px-3 text-right">
-                          <button
-                            onClick={() => handleEliminar(attr.id)}
-                            disabled={pending}
-                            className="text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                        <td className="py-2.5 px-3 text-center">
+                          {editingId !== attr.id && (
+                            <div className="flex items-center justify-center gap-1">
+                              {(usos[attr.id] ?? 0) > 0 && (
+                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                                  {usos[attr.id]} uso{usos[attr.id] !== 1 ? 's' : ''}
+                                </span>
+                              )}
+                              <button
+                                onClick={() => handleToggleActivo(attr.id)}
+                                disabled={pending}
+                                className={`text-xs font-semibold px-2 py-1 rounded transition-colors disabled:opacity-50 ${
+                                  attr.activo
+                                    ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                }`}
+                              >
+                                {attr.activo ? 'Activo' : 'Inactivo'}
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3 text-right flex justify-end gap-1">
+                          {editingId !== attr.id && (
+                            <>
+                              {(usos[attr.id] ?? 0) === 0 && (
+                                <button
+                                  onClick={() => handleEliminar(attr.id)}
+                                  disabled={pending}
+                                  className="text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
+                                  title="Eliminar"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                              {(usos[attr.id] ?? 0) > 0 && (
+                                <div className="text-muted-foreground" title="No se puede eliminar: en uso">
+                                  <Lock className="w-4 h-4" />
+                                </div>
+                              )}
+                            </>
+                          )}
                         </td>
                       </tr>
                     ))}

@@ -6,16 +6,19 @@ import { CalidadConfigForm } from '@/features/calidad/components/calidad-config-
 import { TiposMovimientoTab } from '@/features/configuracion/components/tipos-movimiento-tab'
 import { AtributosConfig } from '@/features/productos/components/atributos-config'
 import { AtributosConfigMP } from '@/features/materiales/components/atributos-config'
+import { AtributosConfigServicio } from '@/features/servicios/components/atributos-config-servicio'
 import type { CalidadConfig } from '@/features/calidad/types'
 import type { TipoMovimiento } from '@/features/configuracion/services/tipos-movimiento-actions'
 import type { AtributoPT } from '@/features/productos/types/atributos'
 import type { AtributoMP } from '@/features/materiales/types/atributos'
+import type { TipoServicioAtributo } from '@/features/servicios/types/servicios'
 
-type Tab = 'defectos' | 'calidad' | 'movimientos' | 'atributos-pt' | 'atributos-mp'
+type Tab = 'defectos' | 'calidad' | 'movimientos' | 'atributos-pt' | 'atributos-mp' | 'atributos-servicios'
 
 const TABS: { id: Tab; label: string; sub: string; icon: 'code' | 'shield' }[] = [
   { id: 'atributos-pt', label: 'Atributos PT', sub: 'Tipo, Fit, Color, etc.',       icon: 'code'  },
   { id: 'atributos-mp', label: 'Atributos MP', sub: 'Tipo, Subtipo, Color, etc.',   icon: 'code'  },
+  { id: 'atributos-servicios', label: 'Atributos Servicios', sub: 'Tipo, Subtipo',   icon: 'code'  },
   { id: 'defectos', label: 'Tipos de Defecto', sub: 'Catálogo para calidad',        icon: 'code'  },
   { id: 'movimientos', label: 'Movimientos', sub: 'Tipos de movimiento kardex',    icon: 'code'  },
   { id: 'calidad',  label: 'Calidad',          sub: 'Parámetros de inspección',     icon: 'shield'},
@@ -27,6 +30,7 @@ interface Props {
   calidadConfig: CalidadConfig
   atributosPT: AtributoPT[]
   atributosMP: AtributoMP[]
+  atributosServicios: TipoServicioAtributo[]
 }
 
 export function ConfiguracionTabs({
@@ -35,6 +39,7 @@ export function ConfiguracionTabs({
   calidadConfig,
   atributosPT,
   atributosMP,
+  atributosServicios,
 }: Props) {
   const [tab, setTab] = useState<Tab>('atributos-pt')
 
@@ -73,6 +78,7 @@ export function ConfiguracionTabs({
       {/* Content */}
       {tab === 'atributos-pt' && <AtributosConfig atributos={atributosPT} />}
       {tab === 'atributos-mp' && <AtributosConfigMP atributos={atributosMP} />}
+      {tab === 'atributos-servicios' && <AtributosConfigServicio atributos={atributosServicios} />}
       {tab === 'defectos' && <DefectosPanel tiposDefecto={tiposDefecto} />}
       {tab === 'movimientos' && <TiposMovimientoTab tiposMovimiento={tiposMovimiento} />}
       {tab === 'calidad'  && <CalidadConfigForm config={calidadConfig} />}

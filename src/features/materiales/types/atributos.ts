@@ -14,6 +14,7 @@ export interface AtributoMP {
   valor: string
   abreviacion?: string | null
   created_at: string
+  activo?: boolean
 }
 
 export interface MaterialAtributo {

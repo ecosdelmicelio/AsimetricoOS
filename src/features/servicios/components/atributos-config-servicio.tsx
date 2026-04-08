@@ -374,17 +374,24 @@ export function AtributosConfigServicio({ atributos }: Props) {
                     </td>
                     <td className="py-2.5 px-3 text-center">
                       {editingId !== tipo.id && (
-                        <button
-                          onClick={() => handleToggleActivo(tipo.id)}
-                          disabled={pending}
-                          className={`text-xs font-semibold px-2 py-1 rounded-lg transition-colors disabled:opacity-50 ${
-                            tipo.activo
-                              ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                              : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                          }`}
-                        >
-                          {tipo.activo ? 'Activo' : 'Inactivo'}
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          {(usos[tipo.id] ?? 0) > 0 && (
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                              {usos[tipo.id]} uso{usos[tipo.id] !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                          <button
+                            onClick={() => handleToggleActivo(tipo.id)}
+                            disabled={pending}
+                            className={`text-xs font-semibold px-2 py-1 rounded-lg transition-colors disabled:opacity-50 ${
+                              tipo.activo
+                                ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                            }`}
+                          >
+                            {tipo.activo ? 'Activo' : 'Inactivo'}
+                          </button>
+                        </div>
                       )}
                     </td>
                     <td className="py-2.5 px-3 text-right flex justify-end gap-1">
@@ -408,23 +415,37 @@ export function AtributosConfigServicio({ atributos }: Props) {
                         <>
                           <button
                             onClick={() => {
+                              const usosCount = usos[tipo.id] ?? 0
+                              if (usosCount > 0) {
+                                setError(`No se puede editar este atributo. Se usa en ${usosCount} servicio${usosCount > 1 ? 's' : ''}.`)
+                                setTimeout(() => setError(null), 5000)
+                                return
+                              }
                               setEditingId(tipo.id)
                               setEditingNombre(tipo.nombre)
                               setEditingAbreviatura(tipo.abreviatura)
                             }}
                             disabled={pending}
                             className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                            title={(usos[tipo.id] ?? 0) > 0 ? `No se puede editar. Usado en ${usos[tipo.id]} servicio${(usos[tipo.id] ?? 0) > 1 ? 's' : ''}` : 'Editar'}
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
-                          <button
-                            onClick={() => handleEliminar(tipo.id)}
-                            disabled={pending || (usos[tipo.id] ?? 0) > 0}
-                            title={(usos[tipo.id] ?? 0) > 0 ? `No se puede eliminar. Usado en ${usos[tipo.id]} servicio${(usos[tipo.id] ?? 0) > 1 ? 's' : ''}` : 'Eliminar'}
-                            className="text-red-600 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {(usos[tipo.id] ?? 0) === 0 && (
+                            <button
+                              onClick={() => handleEliminar(tipo.id)}
+                              disabled={pending}
+                              className="text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
+                              title="Eliminar"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {(usos[tipo.id] ?? 0) > 0 && (
+                            <div className="text-muted-foreground" title={`No se puede eliminar. Usado en ${usos[tipo.id]} servicio${(usos[tipo.id] ?? 0) > 1 ? 's' : ''}`}>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </div>
+                          )}
                         </>
                       )}
                     </td>
@@ -576,17 +597,24 @@ export function AtributosConfigServicio({ atributos }: Props) {
                       </td>
                       <td className="py-2.5 px-3 text-center">
                         {editingId !== subtipo.id && (
-                          <button
-                            onClick={() => handleToggleActivo(subtipo.id)}
-                            disabled={pending}
-                            className={`text-xs font-semibold px-2 py-1 rounded-lg transition-colors disabled:opacity-50 ${
-                              subtipo.activo
-                                ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                            }`}
-                          >
-                            {subtipo.activo ? 'Activo' : 'Inactivo'}
-                          </button>
+                          <div className="flex items-center justify-center gap-1">
+                            {(usos[subtipo.id] ?? 0) > 0 && (
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                                {usos[subtipo.id]} uso{usos[subtipo.id] !== 1 ? 's' : ''}
+                              </span>
+                            )}
+                            <button
+                              onClick={() => handleToggleActivo(subtipo.id)}
+                              disabled={pending}
+                              className={`text-xs font-semibold px-2 py-1 rounded-lg transition-colors disabled:opacity-50 ${
+                                subtipo.activo
+                                  ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                              }`}
+                            >
+                              {subtipo.activo ? 'Activo' : 'Inactivo'}
+                            </button>
+                          </div>
                         )}
                       </td>
                       <td className="py-2.5 px-3 text-right flex justify-end gap-1">
@@ -610,23 +638,37 @@ export function AtributosConfigServicio({ atributos }: Props) {
                           <>
                             <button
                               onClick={() => {
+                                const usosCount = usos[subtipo.id] ?? 0
+                                if (usosCount > 0) {
+                                  setError(`No se puede editar este atributo. Se usa en ${usosCount} servicio${usosCount > 1 ? 's' : ''}.`)
+                                  setTimeout(() => setError(null), 5000)
+                                  return
+                                }
                                 setEditingId(subtipo.id)
                                 setEditingNombre(subtipo.nombre)
                                 setEditingAbreviatura(subtipo.abreviatura)
                               }}
                               disabled={pending}
                               className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                              title={(usos[subtipo.id] ?? 0) > 0 ? `No se puede editar. Usado en ${usos[subtipo.id]} servicio${(usos[subtipo.id] ?? 0) > 1 ? 's' : ''}` : 'Editar'}
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
-                            <button
-                              onClick={() => handleEliminar(subtipo.id)}
-                              disabled={pending || (usos[subtipo.id] ?? 0) > 0}
-                              title={(usos[subtipo.id] ?? 0) > 0 ? `No se puede eliminar. Usado en ${usos[subtipo.id]} servicio${(usos[subtipo.id] ?? 0) > 1 ? 's' : ''}` : 'Eliminar'}
-                              className="text-red-600 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {(usos[subtipo.id] ?? 0) === 0 && (
+                              <button
+                                onClick={() => handleEliminar(subtipo.id)}
+                                disabled={pending}
+                                className="text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
+                                title="Eliminar"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            {(usos[subtipo.id] ?? 0) > 0 && (
+                              <div className="text-muted-foreground" title={`No se puede eliminar. Usado en ${usos[subtipo.id]} servicio${(usos[subtipo.id] ?? 0) > 1 ? 's' : ''}`}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </div>
+                            )}
                           </>
                         )}
                       </td>
@@ -779,17 +821,24 @@ export function AtributosConfigServicio({ atributos }: Props) {
                       </td>
                       <td className="py-2.5 px-3 text-center">
                         {editingId !== detalle.id && (
-                          <button
-                            onClick={() => handleToggleActivo(detalle.id)}
-                            disabled={pending}
-                            className={`text-xs font-semibold px-2 py-1 rounded-lg transition-colors disabled:opacity-50 ${
-                              detalle.activo
-                                ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                            }`}
-                          >
-                            {detalle.activo ? 'Activo' : 'Inactivo'}
-                          </button>
+                          <div className="flex items-center justify-center gap-1">
+                            {(usos[detalle.id] ?? 0) > 0 && (
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                                {usos[detalle.id]} uso{usos[detalle.id] !== 1 ? 's' : ''}
+                              </span>
+                            )}
+                            <button
+                              onClick={() => handleToggleActivo(detalle.id)}
+                              disabled={pending}
+                              className={`text-xs font-semibold px-2 py-1 rounded-lg transition-colors disabled:opacity-50 ${
+                                detalle.activo
+                                  ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                              }`}
+                            >
+                              {detalle.activo ? 'Activo' : 'Inactivo'}
+                            </button>
+                          </div>
                         )}
                       </td>
                       <td className="py-2.5 px-3 text-right flex justify-end gap-1">
@@ -813,23 +862,37 @@ export function AtributosConfigServicio({ atributos }: Props) {
                           <>
                             <button
                               onClick={() => {
+                                const usosCount = usos[detalle.id] ?? 0
+                                if (usosCount > 0) {
+                                  setError(`No se puede editar este atributo. Se usa en ${usosCount} servicio${usosCount > 1 ? 's' : ''}.`)
+                                  setTimeout(() => setError(null), 5000)
+                                  return
+                                }
                                 setEditingId(detalle.id)
                                 setEditingNombre(detalle.nombre)
                                 setEditingAbreviatura(detalle.abreviatura)
                               }}
                               disabled={pending}
                               className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                              title={(usos[detalle.id] ?? 0) > 0 ? `No se puede editar. Usado en ${usos[detalle.id]} servicio${(usos[detalle.id] ?? 0) > 1 ? 's' : ''}` : 'Editar'}
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
-                            <button
-                              onClick={() => handleEliminar(detalle.id)}
-                              disabled={pending || (usos[detalle.id] ?? 0) > 0}
-                              title={(usos[detalle.id] ?? 0) > 0 ? `No se puede eliminar. Usado en ${usos[detalle.id]} servicio${(usos[detalle.id] ?? 0) > 1 ? 's' : ''}` : 'Eliminar'}
-                              className="text-red-600 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {(usos[detalle.id] ?? 0) === 0 && (
+                              <button
+                                onClick={() => handleEliminar(detalle.id)}
+                                disabled={pending}
+                                className="text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
+                                title="Eliminar"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            {(usos[detalle.id] ?? 0) > 0 && (
+                              <div className="text-muted-foreground" title={`No se puede eliminar. Usado en ${usos[detalle.id]} servicio${(usos[detalle.id] ?? 0) > 1 ? 's' : ''}`}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </div>
+                            )}
                           </>
                         )}
                       </td>

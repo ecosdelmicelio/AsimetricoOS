@@ -168,3 +168,42 @@ export async function updateAbreviacionMP(
   revalidatePath('/materiales')
   return {}
 }
+
+/**
+ * Cuenta cuántos materiales usan un atributo MP específico
+ */
+export async function getAtributoMPUsos(atributoId: string): Promise<number> {
+  const supabase = db(await createClient())
+  const { count } = await supabase
+    .from('material_atributos')
+    .select('*', { count: 'exact', head: true })
+    .eq('atributo_id', atributoId) as { count: number | null }
+  return count ?? 0
+}
+
+/**
+ * Toggle el estado activo de un atributo MP
+ */
+export async function toggleAtributoMPActivo(id: string): Promise<{ error?: string }> {
+  const supabase = db(await createClient())
+
+  // Obtener el estado actual
+  const { data: current } = await supabase
+    .from('atributos_mp')
+    .select('activo')
+    .eq('id', id)
+    .single() as { data: { activo: boolean } | null }
+
+  const nuevoEstado = !current?.activo
+
+  const { error } = await supabase
+    .from('atributos_mp')
+    .update({ activo: nuevoEstado })
+    .eq('id', id) as { error: { message: string } | null }
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/configuracion')
+  revalidatePath('/materiales')
+  return {}
+}

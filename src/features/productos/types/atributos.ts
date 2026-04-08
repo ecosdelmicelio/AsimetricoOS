@@ -18,6 +18,7 @@ export interface AtributoPT {
   valor: string
   abreviacion?: string | null
   created_at: string
+  activo?: boolean
 }
 
 export interface ProductoAtributo {
