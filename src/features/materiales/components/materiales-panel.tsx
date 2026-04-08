@@ -9,6 +9,7 @@ import { getAtributosMP, getAtributosPorTipoMP } from '@/features/materiales/ser
 import type { Material, UnidadMaterial, TipoMP } from '@/features/materiales/types'
 import type { AtributoMP, TipoAtributoMP } from '@/features/materiales/types/atributos'
 import { TIPOS_ATRIBUTO_MP, LABELS_ATRIBUTO_MP } from '@/features/materiales/types/atributos'
+import type { SaldoTotalMP } from '@/features/kardex/services/kardex-actions'
 
 const UNIDADES: { value: UnidadMaterial; label: string }[] = [
   { value: 'metros',   label: 'Metros (m)' },
@@ -28,12 +29,16 @@ function formatCop(n: number) {
 
 interface Props {
   materiales: Material[]
+  saldosPorMaterial?: SaldoTotalMP[]
 }
 
-export function MaterialesPanel({ materiales }: Props) {
+export function MaterialesPanel({ materiales, saldosPorMaterial = [] }: Props) {
   const [showForm, setShowForm]   = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showInactivos, setShowInactivos] = useState(false)
+
+  // Crear índice de saldos por material_id para acceso O(1)
+  const saldoMap = new Map(saldosPorMaterial.map(s => [s.material_id, s]))
 
   const visibles = showInactivos ? materiales.filter(m => !m.activo) : materiales.filter(m => m.activo)
 
@@ -84,23 +89,27 @@ export function MaterialesPanel({ materiales }: Props) {
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-black/5 bg-neu-base">
-                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Código</th>
-                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Nombre</th>
-                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Unidad</th>
-                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right px-5 py-3">Costo unit.</th>
-                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-center px-5 py-3">Tipo</th>
-                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-center px-5 py-3">Estado</th>
-                <th className="px-5 py-3 w-12" />
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Creación</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Código</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Nombre</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Unidad</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2">Stock</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2">Costo Unit.</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2">Costo Total</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-center px-3 py-2">Tipo</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-center px-3 py-2">Estado</th>
+                <th className="px-3 py-2 w-10" />
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5">
-              {visibles.map(m =>
-                editingId === m.id
+              {visibles.map(m => {
+                const saldo = saldoMap.get(m.id)
+                return editingId === m.id
                   ? <MaterialForm key={m.id} material={m} onDone={() => setEditingId(null)} />
                   : <MaterialRow key={m.id} material={m} onEdit={() => setEditingId(m.id)} onToggleActivo={async () => {
                       await toggleMaterialActivo(m.id)
-                    }} />
-              )}
+                    }} saldo={saldo} />
+              })}
             </tbody>
           </table>
         </div>
@@ -109,35 +118,37 @@ export function MaterialesPanel({ materiales }: Props) {
   )
 }
 
-function MaterialRow({ material: m, onEdit, onToggleActivo }: { material: Material; onEdit: () => void; onToggleActivo: () => void }) {
+function MaterialRow({ material: m, onEdit, onToggleActivo, saldo }: { material: Material; onEdit: () => void; onToggleActivo: () => void; saldo?: SaldoTotalMP }) {
   return (
     <tr className={!m.activo ? 'opacity-50' : ''}>
-      <td className="px-5 py-3"><span className="font-mono text-body-sm font-semibold text-primary-700">{m.codigo}</span></td>
-      <td className="px-5 py-3">
-        <p className="text-body-sm font-medium text-foreground">{m.nombre}</p>
-        {m.referencia_proveedor && <p className="text-xs text-muted-foreground truncate">{m.referencia_proveedor}</p>}
+      <td className="px-3 py-2"><span className="text-xs text-muted-foreground">{m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}</span></td>
+      <td className="px-3 py-2"><span className="font-mono text-xs font-semibold text-primary-700">{m.codigo}</span></td>
+      <td className="px-3 py-2">
+        <p className="text-xs font-medium text-foreground line-clamp-2">{m.nombre}</p>
       </td>
-      <td className="px-5 py-3"><span className="text-body-sm text-muted-foreground">{UNIDADES.find(u => u.value === m.unidad)?.label ?? m.unidad}</span></td>
-      <td className="px-5 py-3 text-right"><span className="text-body-sm text-foreground font-medium">{formatCop(m.costo_unit)}/{UNIDAD_LABEL[m.unidad]}</span></td>
-      <td className="px-5 py-3 text-center">
-        <span className="text-xs font-semibold px-2 py-0.5 rounded-lg bg-blue-100 text-blue-700 capitalize">
+      <td className="px-3 py-2"><span className="text-xs text-muted-foreground">{UNIDADES.find(u => u.value === m.unidad)?.label ?? m.unidad}</span></td>
+      <td className="px-3 py-2 text-right"><span className="text-xs font-mono text-foreground">{saldo?.saldo_total ?? 0}</span></td>
+      <td className="px-3 py-2 text-right"><span className="text-xs text-foreground font-medium">{formatCop(saldo?.costo_promedio ?? m.costo_unit)}/{UNIDAD_LABEL[m.unidad]}</span></td>
+      <td className="px-3 py-2 text-right"><span className="text-xs font-mono text-foreground font-semibold">{formatCop(saldo?.valor_total ?? 0)}</span></td>
+      <td className="px-3 py-2 text-center">
+        <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-lg bg-blue-100 text-blue-700 capitalize">
           {m.tipo_mp}
         </span>
       </td>
-      <td className="px-5 py-3 text-center">
+      <td className="px-3 py-2 text-center">
         <button
           onClick={onToggleActivo}
-          className={`text-xs font-semibold px-2 py-0.5 rounded-lg transition-colors ${
+          className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-lg transition-colors ${
             m.activo ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
           }`}
         >
           {m.activo ? 'Activo' : 'Inactivo'}
         </button>
       </td>
-      <td className="px-5 py-3 text-right">
+      <td className="px-3 py-2 text-right">
         <button
           onClick={onEdit}
-          className="w-7 h-7 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+          className="w-6 h-6 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
         >
           <Edit2 className="w-3 h-3" />
         </button>

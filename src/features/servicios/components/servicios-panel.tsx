@@ -223,12 +223,12 @@ export function ServiciosPanel({ servicios, tipos, subtipos, detalles, ejecutore
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-black/5 bg-neu-base">
-                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Código</th>
-                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Nombre</th>
-                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-left px-5 py-3">Ejecutor</th>
-                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right px-5 py-3">Tarifa</th>
-                <th className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-center px-5 py-3">Estado</th>
-                <th className="px-5 py-3 w-20" />
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Código</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Nombre</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Ejecutor</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2">Tarifa</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-center px-3 py-2">Estado</th>
+                <th className="px-3 py-2 w-16" />
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5">
@@ -533,21 +533,21 @@ function ServicioRow({
   if (isEditing && editingNombre !== undefined) {
     return (
       <tr className={!srv.activo ? 'opacity-50' : ''}>
-        <td className="px-5 py-3"><span className="font-mono text-body-sm font-semibold text-primary-700">{srv.codigo}</span></td>
-        <td className="px-5 py-3">
+        <td className="px-3 py-2"><span className="font-mono text-xs font-semibold text-primary-700">{srv.codigo}</span></td>
+        <td className="px-3 py-2">
           <input
             type="text"
             value={editingNombre}
             onChange={e => onEditingNombreChange?.(e.target.value)}
-            className="px-2 py-1.5 rounded-lg bg-neu-base shadow-neu text-body-sm text-foreground outline-none"
+            className="px-2 py-1 rounded-lg bg-neu-base shadow-neu text-xs text-foreground outline-none"
             autoFocus
           />
         </td>
-        <td className="px-5 py-3">
+        <td className="px-3 py-2">
           <select
             value={editingEjecutorId || ''}
             onChange={e => onEditingEjecutorChange?.(e.target.value || null)}
-            className="px-2 py-1.5 rounded-lg bg-neu-base shadow-neu text-body-sm text-foreground outline-none appearance-none"
+            className="px-2 py-1 rounded-lg bg-neu-base shadow-neu text-xs text-foreground outline-none appearance-none"
           >
             <option value="">Sin asignar</option>
             {ejecutores.map(ejecutor => (
@@ -557,29 +557,29 @@ function ServicioRow({
             ))}
           </select>
         </td>
-        <td className="px-5 py-3 text-right">
+        <td className="px-3 py-2 text-right">
           <input
             type="number"
             min="0"
             value={editingTarifa}
             onChange={e => onEditingTarifaChange?.(e.target.value)}
-            className="px-2 py-1.5 rounded-lg bg-neu-base shadow-neu text-body-sm text-foreground text-right outline-none"
+            className="px-2 py-1 rounded-lg bg-neu-base shadow-neu text-xs text-foreground text-right outline-none"
           />
         </td>
-        <td className="px-5 py-3 text-center" />
-        <td className="px-5 py-3 text-right">
+        <td className="px-3 py-2 text-center" />
+        <td className="px-3 py-2 text-right">
           <div className="flex justify-end gap-1">
             <button
               onClick={onSave}
               disabled={pending}
-              className="w-7 h-7 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-green-600 hover:text-green-700 transition-colors disabled:opacity-50"
+              className="w-6 h-6 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-green-600 hover:text-green-700 transition-colors disabled:opacity-50 text-xs"
               title="Guardar"
             >
               ✓
             </button>
             <button
               onClick={onCancel}
-              className="w-7 h-7 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-red-600 hover:text-red-700 transition-colors"
+              className="w-6 h-6 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-red-600 hover:text-red-700 transition-colors text-xs"
               title="Cancelar"
             >
               ✕
@@ -592,27 +592,27 @@ function ServicioRow({
 
   return (
     <tr className={!srv.activo ? 'opacity-50' : ''}>
-      <td className="px-5 py-3"><span className="font-mono text-body-sm font-semibold text-primary-700">{srv.codigo}</span></td>
-      <td className="px-5 py-3"><span className="text-body-sm text-foreground">{srv.nombre}</span></td>
-      <td className="px-5 py-3"><span className="text-body-sm text-muted-foreground">{getEjecutorNombre(srv.ejecutor_id)}</span></td>
-      <td className="px-5 py-3 text-right"><span className="text-body-sm text-foreground font-mono">${srv.tarifa_unitaria.toLocaleString('es-CO')}</span></td>
-      <td className="px-5 py-3 text-center">
+      <td className="px-3 py-2"><span className="font-mono text-xs font-semibold text-primary-700">{srv.codigo}</span></td>
+      <td className="px-3 py-2"><span className="text-xs text-foreground">{srv.nombre}</span></td>
+      <td className="px-3 py-2"><span className="text-xs text-muted-foreground">{getEjecutorNombre(srv.ejecutor_id)}</span></td>
+      <td className="px-3 py-2 text-right"><span className="text-xs text-foreground font-mono">${srv.tarifa_unitaria.toLocaleString('es-CO')}</span></td>
+      <td className="px-3 py-2 text-center">
         <button
           onClick={onToggleActivo}
           disabled={pending}
-          className={`text-xs font-semibold px-2 py-0.5 rounded-lg transition-all disabled:opacity-50 ${
+          className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-lg transition-all disabled:opacity-50 ${
             srv.activo ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
           }`}
         >
           {srv.activo ? 'Activo' : 'Inactivo'}
         </button>
       </td>
-      <td className="px-5 py-3 text-right">
+      <td className="px-3 py-2 text-right">
         <div className="flex justify-end gap-1">
           <button
             onClick={onEdit}
             disabled={pending}
-            className="w-7 h-7 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+            className="w-6 h-6 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
             title="Editar"
           >
             <Edit2 className="w-3 h-3" />
@@ -620,7 +620,7 @@ function ServicioRow({
           <button
             onClick={onDelete}
             disabled={pending}
-            className="w-7 h-7 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
+            className="w-6 h-6 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
             title="Eliminar"
           >
             <Trash2 className="w-3 h-3" />
