@@ -179,16 +179,34 @@ function MaterialesTab({
   const [reportableEnCorte, setReportableEnCorte] = useState(true)
 
   function handleAdd() {
+    if (!materialId || !cantidad) {
+      setError('Debes seleccionar un material y definir la cantidad')
+      return
+    }
+    setError(null)
     startTransition(async () => {
-      const res = await addBOMMaterial(productoId, materialId, parseFloat(cantidad), notas || undefined, reportableEnCorte)
-      if (res.error) { setError(res.error); return }
-      await onBOMChanged?.()
-      setShowForm(false)
-      setError(null)
-      setMaterialId('')
-      setCantidad('')
-      setNotas('')
-      setReportableEnCorte(true)
+      try {
+        const res = await addBOMMaterial(productoId, materialId, parseFloat(cantidad), notas || undefined, reportableEnCorte)
+        if (res.error) { 
+          setError(`Error al guardar: ${res.error}`)
+          return 
+        }
+        
+        // Limpiar formulario antes de cerrar
+        setMaterialId('')
+        setCantidad('')
+        setNotas('')
+        setReportableEnCorte(true)
+        setShowForm(false)
+        
+        // Notificar cambio y esperar a que los datos se refresquen
+        if (onBOMChanged) {
+          await onBOMChanged()
+        }
+      } catch (err) {
+        setError('Error inesperado al intentar guardar el material')
+        console.error(err)
+      }
     })
   }
 

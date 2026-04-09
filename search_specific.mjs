@@ -1,0 +1,23 @@
+import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+
+const env = fs.readFileSync('.env.local', 'utf-8');
+let supabaseUrl = '';
+let supabaseKey = '';
+
+env.split('\n').forEach(line => {
+  if (line.startsWith('NEXT_PUBLIC_SUPABASE_URL=')) supabaseUrl = line.split('=')[1].trim();
+  if (line.startsWith('NEXT_PUBLIC_SUPABASE_ANON_KEY=')) supabaseKey = line.split('=')[1].trim();
+});
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+async function run() {
+  const resId = await supabase.from('productos').select('*').eq('id', 'ASMBOSHRP001PNSLBEN');
+  const resRef = await supabase.from('productos').select('*').eq('referencia', 'ASMBOSHRP001PNSLBEN');
+    
+  console.log("Search by ID result:", JSON.stringify(resId, null, 2));
+  console.log("Search by Ref result:", JSON.stringify(resRef, null, 2));
+}
+
+run();
