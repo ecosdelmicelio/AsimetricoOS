@@ -106,18 +106,18 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
 
       {/* Tabla */}
       {visibles.length > 0 && (
-        <div className="rounded-2xl bg-neu-base shadow-neu overflow-hidden">
+        <div className="rounded-2xl bg-neu-base shadow-neu overflow-x-auto w-full">
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-black/5 bg-neu-base">
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 w-20">Creación</th>
+                <th className="hidden lg:table-cell text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 w-20">Creación</th>
                 <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 whitespace-nowrap">Código</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 min-w-[200px]">Descripción</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 w-20">Marca</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 w-24 whitespace-nowrap">Ref Cliente</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 min-w-[150px]">Descripción</th>
+                <th className="hidden xl:table-cell text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 w-20">Marca</th>
+                <th className="hidden lg:table-cell text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 w-24 whitespace-nowrap">Ref Cliente</th>
                 <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 w-16">Stock</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 w-28 whitespace-nowrap">Costo Unit.</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 w-32 whitespace-nowrap">Valor Total</th>
+                <th className="hidden sm:table-cell text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 w-28 whitespace-nowrap">Costo Unit.</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 w-28 whitespace-nowrap">Valor Total</th>
                 <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-center px-3 py-2 w-20">Estado</th>
                 <th className="px-3 py-2 w-10" />
               </tr>
@@ -173,22 +173,22 @@ function ProductRow({
 
   return (
     <tr className={p.estado === 'inactivo' ? 'opacity-50' : ''}>
-      <td className="px-3 py-2"><span className="text-xs text-muted-foreground">{p.created_at ? new Date(p.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span></td>
+      <td className="hidden lg:table-cell px-3 py-2"><span className="text-xs text-muted-foreground">{p.created_at ? new Date(p.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span></td>
       <td className="px-3 py-2 whitespace-nowrap"><span className="font-mono text-xs font-semibold text-primary-700">{p.referencia}</span></td>
-      <td className="px-3 py-2 min-w-[200px]">
+      <td className="px-3 py-2 min-w-[150px]">
         <div className="flex items-center gap-2">
           {p.tipo_producto === 'fabricado' ? (
             <Wrench className="w-3 h-3 text-primary-500 shrink-0" title="Fabricado" />
           ) : (
             <Package className="w-3 h-3 text-amber-500 shrink-0" title="Comercializado" />
           )}
-          <p className="text-xs font-medium text-foreground truncate">{p.nombre}</p>
+          <p className="text-xs font-medium text-foreground truncate max-w-[150px] sm:max-w-[250px]">{p.nombre}</p>
         </div>
       </td>
-      <td className="px-3 py-2"><span className="text-xs text-muted-foreground truncate">{brandName}</span></td>
-      <td className="px-3 py-2 whitespace-nowrap"><span className="text-xs text-muted-foreground truncate">{p.referencia_cliente || '—'}</span></td>
+      <td className="hidden xl:table-cell px-3 py-2"><span className="text-xs text-muted-foreground truncate">{brandName}</span></td>
+      <td className="hidden lg:table-cell px-3 py-2 whitespace-nowrap"><span className="text-xs text-muted-foreground truncate">{p.referencia_cliente || '—'}</span></td>
       <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs font-mono text-foreground">{saldo?.saldo_total ?? 0}</span></td>
-      <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs font-mono text-muted-foreground">$ {(saldo?.costo_promedio ?? 0).toLocaleString('es-CO', { maximumFractionDigits: 2 })}</span></td>
+      <td className="hidden sm:table-cell px-3 py-2 text-right whitespace-nowrap"><span className="text-xs font-mono text-muted-foreground">$ {(saldo?.costo_promedio ?? 0).toLocaleString('es-CO', { maximumFractionDigits: 2 })}</span></td>
       <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs font-mono text-foreground font-semibold">$ {(saldo?.valor_total ?? 0).toLocaleString('es-CO', { maximumFractionDigits: 0 })}</span></td>
       <td className="px-3 py-2 text-center">
         <button

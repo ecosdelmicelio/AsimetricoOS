@@ -262,7 +262,7 @@ export function ServiciosPanel({ servicios, tipos, subtipos, detalles, ejecutore
 
       {/* Tabla de Servicios */}
       {visibles.length > 0 && (
-        <div className="rounded-2xl bg-neu-base shadow-neu overflow-hidden pb-1">
+        <div className="rounded-2xl bg-neu-base shadow-neu overflow-x-auto w-full pb-1">
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-black/5 bg-neu-base">

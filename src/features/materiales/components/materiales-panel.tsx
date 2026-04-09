@@ -85,7 +85,7 @@ export function MaterialesPanel({ materiales, saldosPorMaterial = [] }: Props) {
 
       {/* Tabla */}
       {visibles.length > 0 && (
-        <div className="rounded-2xl bg-neu-base shadow-neu overflow-hidden">
+        <div className="rounded-2xl bg-neu-base shadow-neu overflow-x-auto w-full">
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-black/5 bg-neu-base">
