@@ -4,6 +4,8 @@ import { getAtributosPT } from '@/features/productos/services/atributo-actions'
 import { getAtributosMP } from '@/features/materiales/services/atributo-actions'
 import { getTipoServicioAtributos } from '@/features/servicios/services/atributo-servicio-actions'
 import { ConfiguracionTabs } from '@/features/configuracion/components/configuracion-tabs'
+import { PageHeader } from '@/shared/components/page-header'
+import { Settings2 } from 'lucide-react'
 import { createClient } from '@/shared/lib/supabase/server'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,12 +32,11 @@ export default async function ConfiguracionPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-display-xs font-heading text-foreground font-bold">Configuración</h1>
-        <p className="text-muted-foreground text-body-sm mt-1">
-          Esquemas de códigos, tablas maestras y parámetros del sistema
-        </p>
-      </div>
+      <PageHeader
+        title="Configuración"
+        subtitle="Esquemas de códigos, tablas maestras y parámetros del sistema"
+        icon={Settings2}
+      />
 
       <ConfiguracionTabs
         tiposDefecto={tiposDefecto}

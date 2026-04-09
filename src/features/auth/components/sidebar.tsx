@@ -20,6 +20,7 @@ import {
   ChevronRight,
   Menu
 } from 'lucide-react'
+import { LogoAsimetrico } from '@/shared/components/logo-asimetrico'
 import type { UserRole } from '@/shared/types'
 
 const NAV_ITEMS: { href: string; label: string; icon: React.ElementType; roles: UserRole[] }[] = [
@@ -75,7 +76,7 @@ export function Sidebar() {
       <div className="flex md:hidden items-center justify-between h-14 bg-primary-900 px-4 shrink-0 shadow-md w-full z-40 fixed top-0">
         <div className="flex items-center gap-2">
            <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
-             <span className="font-heading font-black text-white text-sm">A</span>
+             <LogoAsimetrico className="w-4 h-4 text-white" />
            </div>
            <span className="font-heading font-bold text-white text-body-lg">Asimétrico OS</span>
         </div>
@@ -97,7 +98,7 @@ export function Sidebar() {
         <div className="flex h-16 items-center px-4 shrink-0 border-b border-primary-800/50 justify-between">
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center shrink-0">
-               <span className="font-heading font-black text-white">A</span>
+               <LogoAsimetrico className="w-4 h-4 text-white" />
             </div>
             <span className={cn(
               "font-heading font-bold text-white tracking-tight whitespace-nowrap transition-opacity duration-300",

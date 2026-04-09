@@ -5,6 +5,8 @@ import { getMarcas } from '@/features/configuracion/services/marcas-actions'
 import { getAllDirecciones } from '@/features/terceros/services/tercero-direcciones-actions'
 import { getAllContactos } from '@/features/terceros/services/tercero-contactos-actions'
 import { TercerosPanel } from '@/features/terceros/components/terceros-panel'
+import { PageHeader } from '@/shared/components/page-header'
+import { Users } from 'lucide-react'
 
 export const metadata = { title: 'Terceros' }
 
@@ -38,12 +40,11 @@ function Skeleton() {
 export default function TercerosPage() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-display-xs font-heading font-bold text-foreground">Terceros</h1>
-        <p className="text-muted-foreground text-body-sm mt-1">
-          Clientes, talleres satélites y proveedores de materia prima
-        </p>
-      </div>
+      <PageHeader
+        title="Directorio de Terceros"
+        subtitle="Clientes, talleres satélites y proveedores"
+        icon={Users}
+      />
       <Suspense fallback={<Skeleton />}>
         <Content />
       </Suspense>

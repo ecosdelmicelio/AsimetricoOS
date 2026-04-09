@@ -4,6 +4,7 @@ import {
   Minus, Clock, Star,
 } from 'lucide-react'
 import { OPStatusBadge } from '@/features/ordenes-produccion/components/op-status-badge'
+import { PageHeader } from '@/shared/components/page-header'
 import { formatDate } from '@/shared/lib/utils'
 import type { TallerDashboardData } from '@/features/taller/types'
 
@@ -17,38 +18,30 @@ export function TallerDashboard({ data }: Props) {
   return (
     <div className="space-y-8">
       {/* ── Header ─────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-neu-base shadow-neu-inset flex items-center justify-center">
-              <Factory className="w-5 h-5 text-primary-500" />
-            </div>
-            <div>
-              <h1 className="text-display-xs font-heading text-foreground font-bold leading-none">
-                {taller.nombre}
-              </h1>
-              <div className="flex items-center gap-2 mt-1">
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold
-                  ${taller.estado === 'activo'
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-600'}`}>
-                  {taller.estado}
-                </span>
-                {taller.capacidad_diaria && (
-                  <span className="text-muted-foreground text-body-sm">
-                    {taller.capacidad_diaria} uds/día
-                  </span>
-                )}
-                {taller.lead_time_dias && (
-                  <span className="text-muted-foreground text-body-sm">
-                    · Lead time {taller.lead_time_dias}d
-                  </span>
-                )}
-              </div>
-            </div>
+      <PageHeader
+        title={taller.nombre}
+        icon={Factory}
+        subtitle={
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] uppercase tracking-widest font-bold
+              ${taller.estado === 'activo'
+                ? 'bg-green-100 text-green-700'
+                : 'bg-gray-100 text-gray-600'}`}>
+              {taller.estado}
+            </span>
+            {taller.capacidad_diaria && (
+              <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+                {taller.capacidad_diaria} uds/día
+              </span>
+            )}
+            {taller.lead_time_dias && (
+              <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+                · Lead time {taller.lead_time_dias}d
+              </span>
+            )}
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* ── KPI Cards — mes actual vs anterior ─────────── */}
       <div>
