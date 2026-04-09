@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect, useCallback, useRef } from 'react'
+import { useState, useTransition, useEffect, useCallback, useRef, startTransition } from 'react'
 import { flushSync } from 'react-dom'
 import { Plus, Edit2, Loader2, Package, Wrench, Trash2 } from 'lucide-react'
 import { createProducto, updateProducto, toggleProductoActivo, deleteProducto } from '@/features/productos/services/producto-actions'
