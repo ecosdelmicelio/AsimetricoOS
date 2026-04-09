@@ -133,21 +133,24 @@ export function OCLineasPTForm({ productos, onLineasChange }: Props) {
     <div className="space-y-4">
       {/* Selector de variación por color */}
       <div className="space-y-3">
-        <h3 className="text-body-md font-semibold text-foreground">Agregar Producto</h3>
+        <div className="space-y-1">
+          <h3 className="text-body-md font-semibold text-foreground">Agregar Producto</h3>
+          <p className="text-body-xs text-muted-foreground">Selecciona el producto y variación para agregarlo a la orden</p>
+        </div>
 
         <div className="flex gap-3 items-end">
-          {/* Color / Variación */}
+          {/* Producto / Variación */}
           <div className="flex-1 space-y-1">
-            <label className="text-body-xs font-medium text-muted-foreground">Color / Variación</label>
+            <label className="text-body-xs font-medium text-muted-foreground">Seleccionar Variación</label>
             <select
               value={colorSeleccionado}
               onChange={e => setColorSeleccionado(e.target.value)}
               className="w-full px-3 py-2 rounded-lg bg-neu-base shadow-neu-inset text-foreground outline-none text-body-sm"
             >
-              <option value="">Seleccionar color...</option>
+              <option value="">Seleccionar producto...</option>
               {variacionesDisponibles.map(v => (
                 <option key={v.productoId} value={v.productoId}>
-                  {v.color ?? 'Sin color'} — {v.referencia}
+                  {v.nombre} — {v.color ?? 'Sin color'}
                 </option>
               ))}
             </select>
