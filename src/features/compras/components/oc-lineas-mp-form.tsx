@@ -241,10 +241,10 @@ export function OCLineasMPForm({ materiales, onLineasChange, embedded = false }:
                     </td>
 
                     <td className="text-right py-2 px-2 font-semibold text-xs">
-                      ${(
+                      {formatCurrency(
                         (isEditing ? (parseFloat(editCantidad) || 0) : linea.cantidad) *
                         (isEditing ? (parseFloat(editPrecio) || 0) : linea.precio_unitario)
-                      ).toLocaleString('es-CO', { minimumFractionDigits: 2 })}
+                      )}
                     </td>
 
                     <td className="text-center py-2 px-2">
@@ -289,7 +289,7 @@ export function OCLineasMPForm({ materiales, onLineasChange, embedded = false }:
             <div className="text-right">
               <p className="text-muted-foreground text-body-xs">Total estimado</p>
               <p className="text-display-sm font-bold text-foreground">
-                ${calcularTotal().toLocaleString('es-CO', { minimumFractionDigits: 2 })}
+                {formatCurrency(calcularTotal())}
               </p>
             </div>
           </div>

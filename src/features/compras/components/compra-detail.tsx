@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { ArrowLeft, Calendar, Package } from 'lucide-react'
 import { getOrdenCompraById, getMateriales, getRecepcionesByOC, getBodegaPrincipal } from '@/features/compras/services/compras-actions'
 import { getProductosActivos } from '@/features/kardex/services/kardex-actions'
-import { OCGreigeBadge } from './oc-status-badge'
 import { RecepcionOC } from './recepcion-oc'
 import { RecepcionPTManager } from './recepcion-pt-manager'
 import { formatDate, formatCurrency } from '@/shared/lib/utils'
@@ -43,12 +42,7 @@ export async function CompraDetail({ id }: Props) {
       <div className="rounded-2xl bg-neu-base shadow-neu p-6">
         <h2 className="font-semibold text-foreground text-body-md mb-4">Datos de la orden</h2>
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Estado tela</p>
-            <OCGreigeBadge estado={oc.estado_greige} />
-          </div>
-
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <div className="space-y-1">
             <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
               <Calendar className="w-3.5 h-3.5" />
