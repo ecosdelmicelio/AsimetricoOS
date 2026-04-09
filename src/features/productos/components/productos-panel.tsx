@@ -202,6 +202,7 @@ function ProductForm({
   const [precioN1, setPrecioN1] = useState(product?.precio_base ? String(product.precio_base) : '')
   const [precioN2, setPrecioN2] = useState(product?.precio_estandar ? String(product.precio_estandar) : '')
   const [precioN3, setPrecioN3] = useState(product?.precio_n3 ? String(product.precio_n3) : '')
+  const [partidaArancelaria, setPartidaArancelaria] = useState(product?.partida_arancelaria ?? '')
   const [tab, setTab] = useState<'detalles' | 'bom'>('detalles')
   const [bomData, setBomData] = useState<Awaited<ReturnType<typeof getBOMProducto>> | null>(null)
   const [bomLoading, setBomLoading] = useState(false)
@@ -220,6 +221,7 @@ function ProductForm({
   // Callbacks para CodigoPreviewPT
   const handleCodigoChange = useCallback((codigo: string, completo: boolean) => {
     setCodigoPT(codigo)
+    setReferencia(codigo) // Sincronizar con el código generado
     setCodigoCompleto(completo)
   }, [])
 
@@ -298,6 +300,7 @@ function ProductForm({
             precio_base: precioN1 ? parseFloat(precioN1) : null,
             precio_estandar: precioN2 ? parseFloat(precioN2) : null,
             precio_n3: precioN3 ? parseFloat(precioN3) : null,
+            partida_arancelaria: partidaArancelaria.trim() || null,
             atributos: atributosSeleccionados,
           })
         : await createProducto({
@@ -311,6 +314,7 @@ function ProductForm({
             precio_base: precioN1 ? parseFloat(precioN1) : null,
             precio_estandar: precioN2 ? parseFloat(precioN2) : null,
             precio_n3: precioN3 ? parseFloat(precioN3) : null,
+            partida_arancelaria: partidaArancelaria.trim() || null,
             atributos: atributosSeleccionados,
           })
 
@@ -360,25 +364,33 @@ function ProductForm({
 
       {/* Tab: Detalles */}
       {tab === 'detalles' && (
-        <div className="space-y-3">
-          {/* Row: Referencia + Tipo */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-foreground">Referencia *</label>
-              <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
-                <input
-                  value={referencia}
-                  onChange={e => setReferencia(e.target.value.toUpperCase())}
-                  required
-                  placeholder="PT-001"
-                  className="w-full bg-transparent text-body-sm font-mono text-foreground outline-none placeholder:text-muted-foreground"
-                />
-              </div>
-            </div>
+        <div className="space-y-4">
+          {/* Top Row: Código Generado + Tipo */}
+          <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-3 items-start">
+            <div className="w-full space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Código Generado *</label>
+              {(() => {
+                const atributosAgrupados: Record<TipoAtributo, AtributoPT[]> = {
+                  tipo: [], fit: [], superior: [], inferior: [], capsula: [], diseno: [], color: [], genero: []
+                }
+                atributosPT.forEach(a => {
+                  if (atributosAgrupados[a.tipo]) atributosAgrupados[a.tipo].push(a)
+                })
 
-            <div className="space-y-1">
+                return (
+                  <CodigoPreviewPT
+                    atributos={atributosAgrupados}
+                    seleccionados={atributosSeleccionados}
+                    onCodigoChange={handleCodigoChange}
+                    onNombreRecomendado={handleNombreRecomendado}
+                  />
+                )
+              })()}
+            </div>
+            
+            <div className="space-y-1 md:min-w-[220px]">
               <label className="text-xs font-medium text-muted-foreground">Tipo *</label>
-              <div className="relative flex rounded-xl bg-neu-base shadow-neu-inset p-1 w-full max-w-[240px]">
+              <div className="relative flex rounded-xl bg-neu-base shadow-neu-inset p-1 w-full">
                 <div 
                   className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-primary-600 shadow transition-transform duration-300 ${
                     tipo === 'fabricado' ? 'translate-x-0' : 'translate-x-full'
@@ -408,8 +420,8 @@ function ProductForm({
             </div>
           </div>
 
-          {/* Row: Nombre + Color */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Row 2 (Debajo del código): Nombre, Ref Cliente, Nombre Comercial */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">Nombre *</label>
               <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
@@ -423,72 +435,6 @@ function ProductForm({
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Color</label>
-              <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
-                <input
-                  value={color}
-                  onChange={e => setColor(e.target.value)}
-                  placeholder="Negro"
-                  className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Row: Precios N1, N2, N3 */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">N1 (COP)</label>
-              <div className="relative rounded-lg bg-neu-base shadow-neu">
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={1000}
-                  value={precioN1}
-                  onChange={e => setPrecioN1(e.target.value)}
-                  placeholder="0"
-                  className="w-full bg-transparent pl-6 pr-2.5 py-2 text-body-sm text-foreground outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">N2 (COP)</label>
-              <div className="relative rounded-lg bg-neu-base shadow-neu">
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={1000}
-                  value={precioN2}
-                  onChange={e => setPrecioN2(e.target.value)}
-                  placeholder="0"
-                  className="w-full bg-transparent pl-6 pr-2.5 py-2 text-body-sm text-foreground outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">N3 (COP)</label>
-              <div className="relative rounded-lg bg-neu-base shadow-neu">
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={1000}
-                  value={precioN3}
-                  onChange={e => setPrecioN3(e.target.value)}
-                  placeholder="0"
-                  className="w-full bg-transparent pl-6 pr-2.5 py-2 text-body-sm text-foreground outline-none"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Row: Ref Cliente + Nombre Comercial */}
-          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Ref Cliente</label>
               <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
@@ -514,8 +460,20 @@ function ProductForm({
             </div>
           </div>
 
-          {/* Row: Marca + Estado (si edición) */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Row 3: Color + Marca + Precios */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Color</label>
+              <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+                <input
+                  value={color}
+                  onChange={e => setColor(e.target.value)}
+                  placeholder="Negro"
+                  className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+                />
+              </div>
+            </div>
+
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Marca</label>
               <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
@@ -529,6 +487,103 @@ function ProductForm({
                     <option key={m.id} value={m.id}>{m.nombre}</option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">N1 (COP)</label>
+              <div className="relative rounded-lg bg-neu-base shadow-neu px-3 py-2">
+                <span className="text-muted-foreground text-xs mr-1">$</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={1000}
+                  value={precioN1}
+                  onChange={e => setPrecioN1(e.target.value)}
+                  placeholder="0"
+                  className="bg-transparent text-body-sm text-foreground outline-none w-20"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">N2 (COP)</label>
+              <div className="relative rounded-lg bg-neu-base shadow-neu px-3 py-2">
+                <span className="text-muted-foreground text-xs mr-1">$</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={1000}
+                  value={precioN2}
+                  onChange={e => setPrecioN2(e.target.value)}
+                  placeholder="0"
+                  className="bg-transparent text-body-sm text-foreground outline-none w-20"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">N3 (COP)</label>
+              <div className="relative rounded-lg bg-neu-base shadow-neu px-3 py-2">
+                <span className="text-muted-foreground text-xs mr-1">$</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={1000}
+                  value={precioN3}
+                  onChange={e => setPrecioN3(e.target.value)}
+                  placeholder="0"
+                  className="bg-transparent text-body-sm text-foreground outline-none w-20"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Atributos - creación y edición */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Atributos de Configuración</label>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+              {TIPOS_ATRIBUTO.map(tipoAtributo => {
+                const atributosDelTipo = atributosPT.filter(a => a.tipo === tipoAtributo)
+                return (
+                  <div key={tipoAtributo} className="space-y-0.5">
+                    <label className="text-[10px] font-medium text-muted-foreground block truncate">
+                      {LABELS_ATRIBUTO[tipoAtributo]}
+                    </label>
+                    <select
+                      value={atributosSeleccionados[tipoAtributo] ?? ''}
+                      onChange={e =>
+                        setAtributosSeleccionados(prev => ({
+                          ...prev,
+                          [tipoAtributo]: e.target.value,
+                        }))
+                      }
+                      className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2 py-1.5 text-foreground outline-none appearance-none"
+                    >
+                      <option value="">—</option>
+                      {atributosDelTipo.map(attr => (
+                        <option key={attr.id} value={attr.id}>
+                          {attr.valor}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Row Final: Partida Arancelaria + Estado */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Partida Arancelaria</label>
+              <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+                <input
+                  value={partidaArancelaria}
+                  onChange={e => setPartidaArancelaria(e.target.value)}
+                  placeholder="Ej: 6109.10.00.00"
+                  className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+                />
               </div>
             </div>
 
@@ -557,60 +612,7 @@ function ProductForm({
             )}
           </div>
 
-          {/* Atributos - creación y edición */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Atributos</label>
-            <div className="grid grid-cols-2 gap-2">
-              {TIPOS_ATRIBUTO.map(tipoAtributo => {
-                const atributosDelTipo = atributosPT.filter(a => a.tipo === tipoAtributo)
-                return (
-                  <div key={tipoAtributo} className="space-y-0.5">
-                    <label className="text-xs font-medium text-muted-foreground block truncate">
-                      {LABELS_ATRIBUTO[tipoAtributo]}
-                    </label>
-                    <select
-                      value={atributosSeleccionados[tipoAtributo] ?? ''}
-                      onChange={e =>
-                        setAtributosSeleccionados(prev => ({
-                          ...prev,
-                          [tipoAtributo]: e.target.value,
-                        }))
-                      }
-                      className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2 py-1.5 text-foreground outline-none appearance-none"
-                    >
-                      <option value="">—</option>
-                      {atributosDelTipo.map(attr => (
-                        <option key={attr.id} value={attr.id}>
-                          {attr.valor}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Código inteligente - en creación y edición */}
-          {(() => {
-            const atributosAgrupados: Record<TipoAtributo, AtributoPT[]> = {
-              tipo: [], fit: [], superior: [], inferior: [], capsula: [], diseno: [], color: [], genero: []
-            }
-            atributosPT.forEach(a => {
-              if (atributosAgrupados[a.tipo]) atributosAgrupados[a.tipo].push(a)
-            })
-
-            return (
-              <CodigoPreviewPT
-                atributos={atributosAgrupados}
-                seleccionados={atributosSeleccionados}
-                onCodigoChange={handleCodigoChange}
-                onNombreRecomendado={handleNombreRecomendado}
-              />
-            )
-          })()}
-
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
         </div>
       )}
 

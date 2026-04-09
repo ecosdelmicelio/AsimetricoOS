@@ -12,14 +12,24 @@ import type { Marca } from '@/features/configuracion/services/marcas-actions'
 import { TIPOS_ATRIBUTO, LABELS_ATRIBUTO } from '@/features/productos/types/atributos'
 
 interface Props {
-  atributos: Record<TipoAtributo, AtributoPT[]>
+  atributosPT: AtributoPT[]
   marcas: Marca[]
 }
 
-export function ProductoForm({ atributos, marcas }: Props) {
+export function ProductoForm({ atributosPT, marcas }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+
+  // Agrupar atributos internamente para resolver posible error de serialización en Next.js
+  const atributos = useMemo(() => {
+    const acc = {} as Record<TipoAtributo, AtributoPT[]>
+    TIPOS_ATRIBUTO.forEach(t => acc[t] = [])
+    atributosPT.forEach(a => {
+      if (acc[a.tipo]) acc[a.tipo].push(a)
+    })
+    return acc
+  }, [atributosPT])
 
   // Tipo y Código
   const [tipoProducto, setTipoProducto] = useState<TipoProducto>('fabricado')
@@ -50,6 +60,7 @@ export function ProductoForm({ atributos, marcas }: Props) {
   const [precioN3, setPrecioN3] = useState('')
   const [referenciaCliente, setReferenciaCliente] = useState('')
   const [nombreComercial, setNombreComercial] = useState('')
+  const [partidaArancelaria, setPartidaArancelaria] = useState('')
   const [autoColor, setAutoColor] = useState(false)
 
   // Auto-llenar color cuando se selecciona el atributo color
@@ -101,6 +112,7 @@ export function ProductoForm({ atributos, marcas }: Props) {
         precio_n3: precioN3 ? parseFloat(precioN3) : undefined,
         referencia_cliente: referenciaCliente.trim() || undefined,
         nombre_comercial: nombreComercial.trim() || undefined,
+        partida_arancelaria: partidaArancelaria.trim() || undefined,
         tipo_producto: tipoProducto,
         marca_id: marcaSeleccionada || undefined,
         atributos: atributosSeleccionados,
@@ -118,37 +130,49 @@ export function ProductoForm({ atributos, marcas }: Props) {
         </div>
       )}
 
-      <div className="space-y-1">
-        <label className="text-xs font-medium text-muted-foreground">Tipo *</label>
-        <div className="relative flex rounded-xl bg-neu-base shadow-neu-inset p-1 w-full max-w-[240px]">
-          <div 
-            className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-primary-600 shadow transition-transform duration-300 ${
-              tipoProducto === 'fabricado' ? 'translate-x-0' : 'translate-x-full'
-            }`} 
+      {/* Top Row: Código Generado + Tipo */}
+      <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-3 items-start">
+        <div className="w-full space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Código Generado *</label>
+          <CodigoPreviewPT
+            atributos={atributos}
+            seleccionados={atributosSeleccionados}
+            onCodigoChange={handleCodigoChange}
           />
-          <button
-            type="button"
-            onClick={() => setTipoProducto('fabricado')}
-            className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
-              tipoProducto === 'fabricado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Fabricado
-          </button>
-          <button
-            type="button"
-            onClick={() => setTipoProducto('comercializado')}
-            className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
-              tipoProducto === 'comercializado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Comercializado
-          </button>
+        </div>
+        
+        <div className="space-y-1 md:min-w-[220px]">
+          <label className="text-xs font-medium text-muted-foreground">Tipo *</label>
+          <div className="relative flex rounded-xl bg-neu-base shadow-neu-inset p-1 w-full">
+            <div 
+              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-primary-600 shadow transition-transform duration-300 ${
+                tipoProducto === 'fabricado' ? 'translate-x-0' : 'translate-x-full'
+              }`} 
+            />
+            <button
+              type="button"
+              onClick={() => setTipoProducto('fabricado')}
+              className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
+                tipoProducto === 'fabricado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Fabricado
+            </button>
+            <button
+              type="button"
+              onClick={() => setTipoProducto('comercializado')}
+              className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
+                tipoProducto === 'comercializado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Comercializado
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Row 2: Nombre + Color */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Row 2 (Debajo del código): Nombre, Ref Cliente, Nombre Comercial */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-1.5">
             <label className="text-xs font-medium text-muted-foreground">Nombre *</label>
@@ -171,6 +195,35 @@ export function ProductoForm({ atributos, marcas }: Props) {
         </div>
 
         <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Ref. Cliente</label>
+          <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+            <input
+              type="text"
+              value={referenciaCliente}
+              onChange={e => setReferenciaCliente(e.target.value)}
+              placeholder="SKU-123"
+              className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Nombre Comercial</label>
+          <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+            <input
+              type="text"
+              value={nombreComercial}
+              onChange={e => setNombreComercial(e.target.value)}
+              placeholder="Premium, Ejecutivo"
+              className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Row 3: Color + Marca */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">
             Color {autoColor && <span className="text-primary-500">Auto</span>}
           </label>
@@ -183,9 +236,25 @@ export function ProductoForm({ atributos, marcas }: Props) {
             />
           </div>
         </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Marca</label>
+          <select
+            value={marcaSeleccionada}
+            onChange={e => setMarcaSeleccionada(e.target.value)}
+            className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-[9px] text-foreground outline-none"
+          >
+            <option value="">— seleccionar —</option>
+            {marcas.map(marca => (
+              <option key={marca.id} value={marca.id}>
+                {marca.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      {/* Row 3: Atributos grid (8 campos) */}
+      {/* Row 4: Atributos grid (8 campos) */}
       <div className="grid grid-cols-4 gap-2">
         {TIPOS_ATRIBUTO.map(tipoAtributo => (
           <div key={tipoAtributo} className="space-y-1">
@@ -211,47 +280,6 @@ export function ProductoForm({ atributos, marcas }: Props) {
             </select>
           </div>
         ))}
-      </div>
-
-      {/* Row 4: Marca + Referencias */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Marca</label>
-          <select
-            value={marcaSeleccionada}
-            onChange={e => setMarcaSeleccionada(e.target.value)}
-            className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5 text-foreground outline-none"
-          >
-            <option value="">— seleccionar —</option>
-            {marcas.map(marca => (
-              <option key={marca.id} value={marca.id}>
-                {marca.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Ref. Cliente</label>
-          <input
-            type="text"
-            value={referenciaCliente}
-            onChange={e => setReferenciaCliente(e.target.value)}
-            placeholder="SKU-123"
-            className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5 text-foreground outline-none placeholder:text-muted-foreground"
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Nombre Comercial</label>
-          <input
-            type="text"
-            value={nombreComercial}
-            onChange={e => setNombreComercial(e.target.value)}
-            placeholder="Premium, Ejecutivo"
-            className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5 text-foreground outline-none placeholder:text-muted-foreground"
-          />
-        </div>
       </div>
 
       {/* Row 5: Precios N1, N2, N3 */}
@@ -305,14 +333,18 @@ export function ProductoForm({ atributos, marcas }: Props) {
         </div>
       </div>
 
-      {/* Código */}
+      {/* Row 6: Partida Arancelaria al final */}
       <div className="space-y-1">
-        <label className="text-xs font-medium text-muted-foreground">Código *</label>
-        <CodigoPreviewPT
-          atributos={atributos}
-          seleccionados={atributosSeleccionados}
-          onCodigoChange={handleCodigoChange}
-        />
+        <label className="text-xs font-medium text-muted-foreground">Partida Arancelaria</label>
+        <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+          <input
+            type="text"
+            value={partidaArancelaria}
+            onChange={e => setPartidaArancelaria(e.target.value)}
+            placeholder="Ej: 6109.10.00.00"
+            className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+          />
+        </div>
       </div>
 
       {/* Actions */}

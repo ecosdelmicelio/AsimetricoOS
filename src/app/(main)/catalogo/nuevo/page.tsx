@@ -12,12 +12,6 @@ export default async function NuevoProductoPage() {
     getMarcas(),
   ])
 
-  // Agrupar atributos por tipo
-  const atributos: Record<TipoAtributo, typeof atributosList> = {} as any
-  TIPOS_ATRIBUTO.forEach(tipo => {
-    atributos[tipo] = atributosList.filter(a => a.tipo === tipo)
-  })
-
   return (
     <div className="max-w-xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
@@ -36,7 +30,7 @@ export default async function NuevoProductoPage() {
       </div>
 
       <div className="rounded-2xl bg-neu-base shadow-neu p-6">
-        <ProductoForm atributos={atributos} marcas={marcas} />
+        <ProductoForm atributosPT={atributosList} marcas={marcas} />
       </div>
     </div>
   )

@@ -62,6 +62,7 @@ export async function createProducto(
       precio_n3: input.precio_n3 ?? null,
       referencia_cliente: input.referencia_cliente ?? null,
       nombre_comercial: input.nombre_comercial ?? null,
+      partida_arancelaria: input.partida_arancelaria ?? null,
       estado: 'activo',
       tipo_producto: input.tipo_producto ?? 'fabricado',
       marca_id: input.marca_id ?? null,
@@ -100,8 +101,9 @@ export async function updateProducto(
   if (input.precio_base !== undefined) payload.precio_base = input.precio_base
   if (input.precio_estandar !== undefined) payload.precio_estandar = input.precio_estandar || null
   if (input.precio_n3 !== undefined) payload.precio_n3 = input.precio_n3 || null
-  if (input.referencia_cliente !== undefined) payload.referencia_cliente = input.referencia_cliente || null
-  if (input.nombre_comercial !== undefined) payload.nombre_comercial = input.nombre_comercial || null
+  if (input.referencia_cliente !== undefined) payload.referencia_cliente = input.referencia_cliente ? input.referencia_cliente.trim() : null
+  if (input.nombre_comercial !== undefined) payload.nombre_comercial = input.nombre_comercial ? input.nombre_comercial.trim() : null
+  if (input.partida_arancelaria !== undefined) payload.partida_arancelaria = input.partida_arancelaria ? input.partida_arancelaria.trim() : null
   if (input.estado !== undefined) payload.estado = input.estado
   if (input.tipo_producto !== undefined) payload.tipo_producto = input.tipo_producto
   if (input.color !== undefined) payload.color = input.color || null

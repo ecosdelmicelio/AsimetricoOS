@@ -37,6 +37,7 @@ export interface CreateProductoInput {
   precio_n3?: number
   referencia_cliente?: string
   nombre_comercial?: string
+  partida_arancelaria?: string
   tipo_producto?: TipoProducto
   marca_id?: string
   atributos?: Record<string, string>
@@ -55,6 +56,7 @@ export interface UpdateProductoInput {
   precio_n3?: number | null
   referencia_cliente?: string | null
   nombre_comercial?: string | null
+  partida_arancelaria?: string | null
   tipo_producto?: TipoProducto
   marca_id?: string | null
   estado?: EstadoProducto
