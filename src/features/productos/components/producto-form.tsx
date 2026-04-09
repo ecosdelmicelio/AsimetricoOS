@@ -118,24 +118,32 @@ export function ProductoForm({ atributos, marcas }: Props) {
         </div>
       )}
 
-      {/* Header: Tipo */}
       <div className="space-y-1">
         <label className="text-xs font-medium text-muted-foreground">Tipo *</label>
-        <div className="flex gap-2">
-          {(['fabricado', 'comercializado'] as const).map(tipo => (
-            <button
-              key={tipo}
-              type="button"
-              onClick={() => setTipoProducto(tipo)}
-              className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-all ${
-                tipoProducto === tipo
-                  ? 'bg-primary-600 text-white font-semibold'
-                  : 'bg-neu-base text-muted-foreground hover:bg-neu-base/80'
-              }`}
-            >
-              {tipo === 'fabricado' ? 'Fabricado' : 'Comercializado'}
-            </button>
-          ))}
+        <div className="relative flex rounded-xl bg-neu-base shadow-neu-inset p-1 w-full max-w-[240px]">
+          <div 
+            className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-primary-600 shadow transition-transform duration-300 ${
+              tipoProducto === 'fabricado' ? 'translate-x-0' : 'translate-x-full'
+            }`} 
+          />
+          <button
+            type="button"
+            onClick={() => setTipoProducto('fabricado')}
+            className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
+              tipoProducto === 'fabricado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Fabricado
+          </button>
+          <button
+            type="button"
+            onClick={() => setTipoProducto('comercializado')}
+            className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
+              tipoProducto === 'comercializado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Comercializado
+          </button>
         </div>
       </div>
 

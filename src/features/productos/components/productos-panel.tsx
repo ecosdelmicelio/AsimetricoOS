@@ -378,22 +378,32 @@ function ProductForm({
 
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Tipo *</label>
-              <div className="flex gap-2">
-                {(['fabricado', 'comercializado'] as const).map(t => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setTipo(t)}
-                    disabled={isEdit}
-                    className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-all ${
-                      tipo === t
-                        ? 'bg-primary-600 text-white font-semibold'
-                        : 'bg-neu-base text-muted-foreground hover:bg-neu-base/80'
-                    } ${isEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {t === 'fabricado' ? 'Fabricado' : 'Comercializado'}
-                  </button>
-                ))}
+              <div className="relative flex rounded-xl bg-neu-base shadow-neu-inset p-1 w-full max-w-[240px]">
+                <div 
+                  className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-primary-600 shadow transition-transform duration-300 ${
+                    tipo === 'fabricado' ? 'translate-x-0' : 'translate-x-full'
+                  }`} 
+                />
+                <button
+                  type="button"
+                  disabled={isEdit}
+                  onClick={() => setTipo('fabricado')}
+                  className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
+                    tipo === 'fabricado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
+                  } ${isEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  Fabricado
+                </button>
+                <button
+                  type="button"
+                  disabled={isEdit}
+                  onClick={() => setTipo('comercializado')}
+                  className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
+                    tipo === 'comercializado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
+                  } ${isEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  Comercializado
+                </button>
               </div>
             </div>
           </div>
