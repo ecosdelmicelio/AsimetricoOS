@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Globe } from 'lucide-react'
 import { updateProducto } from '@/features/productos/services/producto-actions'
-import type { Producto, TipoProducto } from '@/features/productos/types'
+import type { Producto, TipoProducto, TipoDistribucion } from '@/features/productos/types'
 import type { AtributoPT, TipoAtributo } from '@/features/productos/types/atributos'
 import { TIPOS_ATRIBUTO, LABELS_ATRIBUTO } from '@/features/productos/types/atributos'
 
@@ -25,6 +25,9 @@ export function ProductoEditForm({ producto, atributos, atributosProducto }: Pro
   const [tipoProducto, setTipoProducto] = useState<TipoProducto>(
     producto.tipo_producto ?? 'fabricado',
   )
+  const [tipoDistribucion, setTipoDistribucion] = useState<TipoDistribucion>(
+    producto.tipo_distribucion ?? 'MTS',
+  )
   const [atributosSeleccionados, setAtributosSeleccionados] = useState<Record<TipoAtributo, string>>(
     atributosProducto,
   )
@@ -39,6 +42,7 @@ export function ProductoEditForm({ producto, atributos, atributosProducto }: Pro
         origen_usa: origenUsa,
         precio_base: precioBase ? parseFloat(precioBase) : undefined,
         tipo_producto: tipoProducto,
+        tipo_distribucion: tipoDistribucion,
         atributos: atributosSeleccionados,
       })
       if (res.error) { setError(res.error); return }
@@ -86,6 +90,37 @@ export function ProductoEditForm({ producto, atributos, atributosProducto }: Pro
             }`}
           >
             Comercializado
+          </button>
+        </div>
+      </div>
+
+      {/* Tipo distribución */}
+      <div className="space-y-1.5">
+        <label className="text-body-sm text-muted-foreground">Distribución</label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTipoDistribucion('MTS'); }}
+            style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+            className={`flex-1 px-3 py-2.5 text-body-sm rounded-xl transition-all font-semibold ${
+              tipoDistribucion === 'MTS'
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            MTS (Stock)
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTipoDistribucion('MTO'); }}
+            style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+            className={`flex-1 px-3 py-2.5 text-body-sm rounded-xl transition-all font-semibold ${
+              tipoDistribucion === 'MTO'
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            MTO (Orden)
           </button>
         </div>
       </div>

@@ -86,8 +86,8 @@ export async function ProductoDetail({ id }: Props) {
         <InfoCard label="Categoría" value={producto.categoria} />
         <InfoCard label="Color" value={producto.color ?? '—'} />
         <InfoCard
-          label="Precio base"
-          value={producto.precio_base ? formatCurrency(producto.precio_base) : 'Sin precio'}
+          label="Distribución"
+          value={producto.tipo_distribucion === 'MTO' ? 'MTO (Orden)' : 'MTS (Stock)'}
         />
         <InfoCard label="Estado" value={esActivo ? 'Activo' : 'Inactivo'} />
       </div>

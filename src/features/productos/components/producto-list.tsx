@@ -66,6 +66,12 @@ export async function ProductoList() {
                         Precio base: {formatCurrency(p.precio_base)}
                       </p>
                     )}
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-lg whitespace-nowrap" style={{
+                      backgroundColor: p.tipo_distribucion === 'MTO' ? '#fef3c7' : '#dbeafe',
+                      color: p.tipo_distribucion === 'MTO' ? '#92400e' : '#1e40af'
+                    }}>
+                      {p.tipo_distribucion === 'MTO' ? 'MTO (Orden)' : 'MTS (Stock)'}
+                    </span>
                     {(saldosTotales[p.id] ?? 0) > 0 && (
                       <span className="text-xs font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-lg whitespace-nowrap">
                         {saldosTotales[p.id]} uds

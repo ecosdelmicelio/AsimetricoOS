@@ -65,6 +65,7 @@ export async function createProducto(
       partida_arancelaria: input.partida_arancelaria ?? null,
       estado: 'activo',
       tipo_producto: input.tipo_producto ?? 'fabricado',
+      tipo_distribucion: input.tipo_distribucion ?? 'MTS',
       marca_id: input.marca_id ?? null,
       schema_id: input.schema_id ?? null,
     })
@@ -106,6 +107,7 @@ export async function updateProducto(
   if (input.partida_arancelaria !== undefined) payload.partida_arancelaria = input.partida_arancelaria ? input.partida_arancelaria.trim() : null
   if (input.estado !== undefined) payload.estado = input.estado
   if (input.tipo_producto !== undefined) payload.tipo_producto = input.tipo_producto
+  if (input.tipo_distribucion !== undefined) payload.tipo_distribucion = input.tipo_distribucion
   if (input.color !== undefined) payload.color = input.color || null
   if (input.origen_usa !== undefined) payload.origen_usa = input.origen_usa
   if (input.marca_id !== undefined) payload.marca_id = input.marca_id || null

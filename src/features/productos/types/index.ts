@@ -1,5 +1,6 @@
 export type EstadoProducto = 'activo' | 'inactivo' | 'en_desarrollo'
 export type TipoProducto = 'fabricado' | 'comercializado'
+export type TipoDistribucion = 'MTO' | 'MTS'
 
 export interface Producto {
   id: string
@@ -15,6 +16,7 @@ export interface Producto {
   nombre_comercial: string | null
   estado: EstadoProducto
   tipo_producto: TipoProducto
+  tipo_distribucion: TipoDistribucion
   marca_id: string | null
   bom_completo: boolean
   created_at: string
@@ -39,6 +41,7 @@ export interface CreateProductoInput {
   nombre_comercial?: string
   partida_arancelaria?: string
   tipo_producto?: TipoProducto
+  tipo_distribucion?: TipoDistribucion
   marca_id?: string
   atributos?: Record<string, string>
   autoRefs?: AutoRefInput[]
@@ -58,6 +61,7 @@ export interface UpdateProductoInput {
   nombre_comercial?: string | null
   partida_arancelaria?: string | null
   tipo_producto?: TipoProducto
+  tipo_distribucion?: TipoDistribucion
   marca_id?: string | null
   estado?: EstadoProducto
   atributos?: Record<string, string>
