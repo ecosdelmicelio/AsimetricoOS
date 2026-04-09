@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { useState, useMemo, useRef } from 'react'
+import { Plus, Trash2, Pencil, Check } from 'lucide-react'
 
 interface Material {
   id: string
@@ -20,13 +20,19 @@ interface LineaMP {
 interface Props {
   materiales: Material[]
   onLineasChange: (lineas: LineaMP[]) => void
+  embedded?: boolean
 }
 
-export function OCLineasMPForm({ materiales, onLineasChange }: Props) {
-  const [lineas, setLineas] = useState<(LineaMP & { tempId: string })[]>([])
+type LineaConId = LineaMP & { tempId: string }
+
+export function OCLineasMPForm({ materiales, onLineasChange, embedded = false }: Props) {
+  const [lineas, setLineas] = useState<LineaConId[]>([])
   const [materialSeleccionado, setMaterialSeleccionado] = useState('')
   const [cantidad, setCantidad] = useState('')
   const [precio, setPrecio] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editCantidad, setEditCantidad] = useState('')
+  const [editPrecio, setEditPrecio] = useState('')
 
   const materialActual = useMemo(
     () => materiales.find(m => m.id === materialSeleccionado),
@@ -34,29 +40,19 @@ export function OCLineasMPForm({ materiales, onLineasChange }: Props) {
   )
 
   const handleAgregarLinea = () => {
-    if (!materialSeleccionado || !cantidad || !precio) {
-      return
-    }
-
+    if (!materialSeleccionado || !cantidad || !precio) return
     const cant = parseFloat(cantidad)
     const prec = parseFloat(precio)
+    if (cant <= 0 || prec < 0) return
 
-    if (cant <= 0 || prec < 0) {
-      return
-    }
-
-    const nuevaLinea = {
+    const nuevasLineas = [...lineas, {
       material_id: materialSeleccionado,
       cantidad: cant,
       precio_unitario: prec,
       tempId: Math.random().toString(),
-    }
-
-    const nuevasLineas = [...lineas, nuevaLinea]
+    }]
     setLineas(nuevasLineas)
     onLineasChange(nuevasLineas)
-
-    // Resetear
     setMaterialSeleccionado('')
     setCantidad('')
     setPrecio('')
@@ -68,15 +64,35 @@ export function OCLineasMPForm({ materiales, onLineasChange }: Props) {
     onLineasChange(nuevasLineas)
   }
 
-  const calcularTotal = () => {
-    return lineas.reduce((sum, l) => sum + l.cantidad * l.precio_unitario, 0)
+  const startEditing = (linea: LineaConId) => {
+    setEditingId(linea.tempId)
+    setEditCantidad(linea.cantidad.toString())
+    setEditPrecio(linea.precio_unitario.toString())
   }
+
+  const saveEditing = (tempId: string) => {
+    const cant = parseFloat(editCantidad)
+    const prec = parseFloat(editPrecio)
+    if (isNaN(cant) || cant <= 0 || isNaN(prec) || prec < 0) {
+      setEditingId(null)
+      return
+    }
+    const nuevasLineas = lineas.map(l =>
+      l.tempId === tempId ? { ...l, cantidad: cant, precio_unitario: prec } : l
+    )
+    setLineas(nuevasLineas)
+    onLineasChange(nuevasLineas)
+    setEditingId(null)
+  }
+
+  const calcularTotal = () =>
+    lineas.reduce((sum, l) => sum + l.cantidad * l.precio_unitario, 0)
 
   return (
     <div className="space-y-4">
       {/* Agregar línea */}
-      <div className="rounded-2xl bg-neu-base shadow-neu p-4">
-        <h3 className="text-body-md font-semibold text-foreground mb-4">Agregar Material</h3>
+      <div className={embedded ? 'space-y-3' : 'rounded-2xl bg-neu-base shadow-neu p-4'}>
+        <h3 className="text-body-md font-semibold text-foreground">Agregar Material</h3>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-4 mb-3">
           {/* Material */}
@@ -98,18 +114,23 @@ export function OCLineasMPForm({ materiales, onLineasChange }: Props) {
 
           {/* Cantidad */}
           <div className="space-y-1.5">
-            <label className="text-body-xs font-medium text-muted-foreground">
-              Cantidad ({materialActual?.unidad || '?'})
-            </label>
-            <input
-              type="number"
-              value={cantidad}
-              onChange={e => setCantidad(e.target.value)}
-              placeholder="0"
-              className="w-full px-3 py-2 rounded-lg bg-white shadow-neu-inset text-foreground outline-none text-body-sm"
-              step="0.01"
-              min="0"
-            />
+            <label className="text-body-xs font-medium text-muted-foreground">Cantidad</label>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number"
+                value={cantidad}
+                onChange={e => setCantidad(e.target.value)}
+                placeholder="0"
+                className="w-full px-3 py-2 rounded-lg bg-white shadow-neu-inset text-foreground outline-none text-body-sm"
+                step="0.01"
+                min="0"
+              />
+              {materialActual?.unidad && (
+                <span className="shrink-0 text-xs font-semibold text-primary-600 bg-primary-50 px-2 py-1.5 rounded-lg">
+                  {materialActual.unidad}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Precio */}
@@ -143,44 +164,118 @@ export function OCLineasMPForm({ materiales, onLineasChange }: Props) {
 
       {/* Tabla de líneas */}
       {lineas.length > 0 && (
-        <div className="rounded-2xl bg-neu-base shadow-neu p-4 overflow-x-auto">
-          <table className="w-full text-body-sm">
+        <div className={embedded ? '' : 'rounded-2xl bg-neu-base shadow-neu p-4 overflow-x-auto'}>
+          {embedded && <div className="border-t border-black/8 mb-3" />}
+          <table className={`w-full text-body-sm ${embedded ? '' : 'overflow-x-auto'}`}>
             <thead>
               <tr className="border-b border-black/10">
                 <th className="text-left py-2 px-2 font-semibold">Código</th>
                 <th className="text-left py-2 px-2 font-semibold">Material</th>
+                <th className="text-left py-2 px-2 font-semibold">Unidad</th>
                 <th className="text-right py-2 px-2 font-semibold">Cantidad</th>
                 <th className="text-right py-2 px-2 font-semibold">Precio Unit</th>
                 <th className="text-right py-2 px-2 font-semibold">Total</th>
-                <th className="text-center py-2 px-2 font-semibold w-10"></th>
+                <th className="text-center py-2 px-2 font-semibold w-20"></th>
               </tr>
             </thead>
             <tbody>
-              {lineas.map((linea, idx) => {
+              {lineas.map((linea) => {
                 const mat = materiales.find(m => m.id === linea.material_id)
+                const isEditing = editingId === linea.tempId
                 return (
-                  <tr key={linea.tempId} className="border-b border-black/5">
-                    <td className="py-2 px-2 font-mono text-muted-foreground">{mat?.codigo}</td>
-                    <td className="py-2 px-2">{mat?.nombre}</td>
-                    <td className="text-right py-2 px-2">
-                      {linea.cantidad.toFixed(2)} {mat?.unidad}
+                  <tr key={linea.tempId} className={`border-b border-black/5 transition-colors ${isEditing ? 'bg-primary-50/30' : 'hover:bg-black/[0.01]'}`}>
+                    <td className="py-2 px-2 font-mono text-xs text-muted-foreground">{mat?.codigo}</td>
+                    <td className="py-2 px-2 text-xs">{mat?.nombre}</td>
+                    <td className="py-2 px-2">
+                      <span className="text-xs font-semibold text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded">
+                        {mat?.unidad ?? '—'}
+                      </span>
                     </td>
-                    <td className="text-right py-2 px-2">
-                      ${linea.precio_unitario.toLocaleString('es-CO', { minimumFractionDigits: 2 })}
+
+                    {/* Cantidad — inline editable */}
+                    <td className="text-right py-1.5 px-2">
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          value={editCantidad}
+                          onChange={e => setEditCantidad(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && saveEditing(linea.tempId)}
+                          autoFocus
+                          step="0.01"
+                          min="0"
+                          className="w-24 text-right px-2 py-1 rounded-lg bg-white shadow-neu-inset text-foreground outline-none text-xs"
+                        />
+                      ) : (
+                        <span
+                          onClick={() => startEditing(linea)}
+                          className="cursor-pointer hover:text-primary-600 transition-colors"
+                          title="Click para editar"
+                        >
+                          {linea.cantidad.toFixed(2)}
+                        </span>
+                      )}
                     </td>
-                    <td className="text-right py-2 px-2 font-semibold">
-                      ${(linea.cantidad * linea.precio_unitario).toLocaleString('es-CO', {
-                        minimumFractionDigits: 2,
-                      })}
+
+                    {/* Precio — inline editable */}
+                    <td className="text-right py-1.5 px-2">
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          value={editPrecio}
+                          onChange={e => setEditPrecio(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && saveEditing(linea.tempId)}
+                          step="0.01"
+                          min="0"
+                          className="w-28 text-right px-2 py-1 rounded-lg bg-white shadow-neu-inset text-foreground outline-none text-xs"
+                        />
+                      ) : (
+                        <span
+                          onClick={() => startEditing(linea)}
+                          className="cursor-pointer hover:text-primary-600 transition-colors"
+                          title="Click para editar"
+                        >
+                          ${linea.precio_unitario.toLocaleString('es-CO', { minimumFractionDigits: 2 })}
+                        </span>
+                      )}
                     </td>
+
+                    <td className="text-right py-2 px-2 font-semibold text-xs">
+                      ${(
+                        (isEditing ? (parseFloat(editCantidad) || 0) : linea.cantidad) *
+                        (isEditing ? (parseFloat(editPrecio) || 0) : linea.precio_unitario)
+                      ).toLocaleString('es-CO', { minimumFractionDigits: 2 })}
+                    </td>
+
                     <td className="text-center py-2 px-2">
-                      <button
-                        type="button"
-                        onClick={() => handleEliminarLinea(linea.tempId)}
-                        className="text-red-400 hover:text-red-600 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-center gap-1.5">
+                        {isEditing ? (
+                          <button
+                            type="button"
+                            onClick={() => saveEditing(linea.tempId)}
+                            className="text-green-600 hover:text-green-700 transition-colors"
+                            title="Guardar"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => startEditing(linea)}
+                            className="text-muted-foreground hover:text-primary-600 transition-colors"
+                            title="Editar línea"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleEliminarLinea(linea.tempId)}
+                          className="text-red-400 hover:text-red-600 transition-colors"
+                          title="Eliminar línea"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )
@@ -202,3 +297,4 @@ export function OCLineasMPForm({ materiales, onLineasChange }: Props) {
     </div>
   )
 }
+

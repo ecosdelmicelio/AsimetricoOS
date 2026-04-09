@@ -55,7 +55,13 @@ export function CompraForm({
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
     const fechaOC = fd.get('fecha_oc') as string
-    const estadoDocumental = tipo === 'materia_prima' ? (fd.get('estado_documental') as EstadoDocumental) : 'na'
+    const estadoDocumental: EstadoDocumental = 'na'
+
+    const proveedorId = fd.get('proveedor_id') as string
+    if (!proveedorId) {
+      setError('Debes seleccionar un proveedor antes de guardar')
+      return
+    }
 
     const lineas = tipo === 'materia_prima' ? lineasMP : lineasPT
 
@@ -154,91 +160,38 @@ export function CompraForm({
         </div>
 
         {/* Row 2: Proveedor */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Proveedor</label>
-            <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
-              <select
-                name="proveedor_id"
-                className="w-full bg-transparent text-sm text-foreground outline-none appearance-none"
-              >
-                <option value="">Sin proveedor (definir luego)</option>
-                {proveedores.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {proveedores.length === 0 && (
-              <p className="text-xs text-muted-foreground">
-                Agrega proveedores en{' '}
-                <a href="/terceros" className="text-primary-600 underline">
-                  Terceros
-                </a>
-              </p>
-            )}
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            Proveedor <span className="text-red-500">*</span>
+          </label>
+          <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+            <select
+              name="proveedor_id"
+              className="w-full bg-transparent text-sm text-foreground outline-none appearance-none"
+            >
+              <option value="">Seleccionar proveedor...</option>
+              {proveedores.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre}
+                </option>
+              ))}
+            </select>
           </div>
-
-          {/* Estado Documental - Solo para MP */}
-          {tipo === 'materia_prima' && (
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">
-                Estado documental (Afidávit)
-              </label>
-              <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
-                <select
-                  name="estado_documental"
-                  className="w-full bg-transparent text-sm text-foreground outline-none appearance-none"
-                >
-                  {DOC_OPTIONS.map(o => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <p className="text-[10px] text-muted-foreground/60">Solo se aplica a telas</p>
-            </div>
+          {proveedores.length === 0 && (
+            <p className="text-xs text-muted-foreground">
+              Agrega proveedores en{' '}
+              <a href="/terceros" className="text-primary-600 underline">
+                Terceros
+              </a>
+            </p>
           )}
         </div>
+        {/* Divider */}
+        <div className="border-t border-black/8" />
 
-        {/* Estado Greige - Solo para MP */}
-        {tipo === 'materia_prima' && (
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Estado de la tela</label>
-            <div className="flex gap-3">
-              {GREIGE_OPTIONS.map(opt => (
-                <label key={opt.value} className="flex-1 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="estado_greige"
-                    value={opt.value}
-                    checked={greige === opt.value}
-                    onChange={() => setGreige(opt.value)}
-                    className="sr-only"
-                  />
-                  <div
-                    className={`rounded-xl p-3 border-2 transition-all ${
-                      greige === opt.value
-                        ? 'border-primary-500 bg-primary-50 shadow-neu-inset'
-                        : 'border-transparent bg-neu-base shadow-neu'
-                    }`}
-                  >
-                    <p className="font-semibold text-xs text-foreground">{opt.label}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{opt.desc}</p>
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Líneas según tipo */}
-      <div>
+        {/* Líneas según tipo */}
         {tipo === 'materia_prima' ? (
-          <OCLineasMPForm materiales={materiales} onLineasChange={setLineasMP} />
+          <OCLineasMPForm materiales={materiales} onLineasChange={setLineasMP} embedded />
         ) : (
           <OCLineasPTForm productos={productos} onLineasChange={setLineasPT} />
         )}
@@ -263,3 +216,4 @@ export function CompraForm({
     </form>
   )
 }
+

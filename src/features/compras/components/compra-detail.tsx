@@ -1,12 +1,11 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Calendar, FileText, Package } from 'lucide-react'
+import { ArrowLeft, Calendar, Package } from 'lucide-react'
 import { getOrdenCompraById, getMateriales, getRecepcionesByOC, getBodegaPrincipal } from '@/features/compras/services/compras-actions'
 import { getProductosActivos } from '@/features/kardex/services/kardex-actions'
-import { OCDocBadge, OCGreigeBadge } from './oc-status-badge'
+import { OCGreigeBadge } from './oc-status-badge'
 import { RecepcionOC } from './recepcion-oc'
 import { RecepcionPTManager } from './recepcion-pt-manager'
-import { DocEstadoSelector } from './doc-estado-selector'
 import { formatDate } from '@/shared/lib/utils'
 
 interface Props {
@@ -34,15 +33,10 @@ export async function CompraDetail({ id }: Props) {
           Compras
         </Link>
 
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-display-xs font-heading font-bold text-foreground">{oc.codigo}</h1>
-            <p className="text-muted-foreground text-body-sm mt-1">
-              {oc.terceros?.nombre ?? 'Sin proveedor'}
-            </p>
-          </div>
-          <OCDocBadge estado={oc.estado_documental} />
-        </div>
+        <h1 className="text-display-xs font-heading font-bold text-foreground">{oc.codigo}</h1>
+        <p className="text-muted-foreground text-body-sm mt-1">
+          {oc.terceros?.nombre ?? 'Sin proveedor'}
+        </p>
       </div>
 
       {/* Datos generales */}
@@ -91,8 +85,7 @@ export async function CompraDetail({ id }: Props) {
         )}
       </div>
 
-      {/* Estado documental (editable) */}
-      <DocEstadoSelector ocId={oc.id} estadoActual={oc.estado_documental} />
+
 
       {/* Líneas solicitadas en la OC */}
       {oc.tipo === 'materia_prima' ? (
