@@ -260,54 +260,98 @@ export function ServiciosPanel({ servicios, tipos, subtipos, detalles, ejecutore
         </div>
       )}
 
-      {/* Tabla */}
+      {/* Tabla de Servicios */}
       {visibles.length > 0 && (
-        <div className="rounded-2xl bg-neu-base shadow-neu overflow-hidden">
+        <div className="rounded-2xl bg-neu-base shadow-neu overflow-hidden pb-1">
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-black/5 bg-neu-base">
                 <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Código</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Nombre</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Nombre del Servicio</th>
                 <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Ejecutor</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2">Tarifa</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2">Tarifa / u</th>
                 <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-center px-3 py-2">Estado</th>
-                <th className="px-3 py-2 w-16" />
+                <th className="px-3 py-2 w-10" />
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5">
-              {visibles.map(srv =>
-                editingId === srv.id
-                  ? <ServicioRow
-                    key={srv.id}
-                    servicio={srv}
-                    ejecutores={ejecutores}
-                    isEditing
-                    editingNombre={editingNombre}
-                    editingTarifa={editingTarifa}
-                    editingEjecutorId={editingEjecutorId}
-                    onEditingNombreChange={setEditingNombre}
-                    onEditingTarifaChange={setEditingTarifa}
-                    onEditingEjecutorChange={setEditingEjecutorId}
-                    onSave={() => handleEditarGuardar(srv.id)}
-                    onCancel={() => setEditingId(null)}
-                    pending={pending}
-                  />
-                  : <ServicioRow
-                    key={srv.id}
-                    servicio={srv}
-                    ejecutores={ejecutores}
-                    onEdit={() => {
-                      setEditingId(srv.id)
-                      setEditingNombre(srv.nombre)
-                      setEditingTarifa(srv.tarifa_unitaria.toString())
-                      setEditingDescripcion(srv.descripcion || '')
-                      setEditingEjecutorId(srv.ejecutor_id || null)
-                    }}
-                    onDelete={() => handleEliminar(srv.id)}
-                    onToggleActivo={() => handleToggleActivo(srv.id)}
-                    pending={pending}
-                  />
-              )}
+              {visibles.map(srv => (
+                editingId === srv.id ? (
+                  <tr key={srv.id}>
+                    <td colSpan={6} className="px-0 py-0">
+                      <ServicioForm
+                        servicio={srv}
+                        tipos={tipos}
+                        subtipos={subtipos}
+                        detalles={detalles}
+                        ejecutores={ejecutores}
+                        pending={pending}
+                        onDone={() => setEditingId(null)}
+                        onSubmit={async (e, data) => {
+                          e.preventDefault()
+                          setError(null)
+                          const res = await updateServicioOperativo(srv.id, {
+                            nombre: data.nombre,
+                            tarifa_unitaria: data.tarifa,
+                            descripcion: data.descripcion,
+                            ejecutor_id: data.ejecutorId,
+                          })
+                          if (res.error) {
+                            setError(res.error)
+                            return
+                          }
+                          setEditingId(null)
+                        }}
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  <tr key={srv.id} className={`${!srv.activo ? 'opacity-50' : ''}`}>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <span className="font-mono text-xs font-semibold text-primary-700">
+                        {srv.codigo}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 min-w-[200px]">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-medium text-foreground">{srv.nombre}</span>
+                        {srv.descripcion && <span className="text-[10px] text-muted-foreground truncate max-w-[300px] mt-0.5">{srv.descripcion}</span>}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className="text-xs text-muted-foreground uppercase">
+                        {getEjecutorNombre(srv.ejecutor_id)}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <span className="font-mono text-xs text-foreground">
+                        $ {srv.tarifa_unitaria.toLocaleString('es-CO')}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <button
+                        onClick={() => handleToggleActivo(srv.id)}
+                        disabled={pending}
+                        className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-lg transition-colors ${
+                          srv.activo 
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}
+                      >
+                        {srv.activo ? 'Activo' : 'Inactivo'}
+                      </button>
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <button
+                        onClick={() => setEditingId(srv.id)}
+                        className="w-6 h-6 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors ml-auto"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                )
+              ))}
             </tbody>
           </table>
         </div>
@@ -345,56 +389,107 @@ interface ServicioFormProps {
   onDone: () => void
 }
 
+interface ServicioFormProps {
+  servicio?: ServicioOperativo
+  tipos: TipoServicioAtributo[]
+  subtipos: TipoServicioAtributo[]
+  detalles: TipoServicioAtributo[]
+  subtiposFiltrados?: TipoServicioAtributo[]
+  detallesFiltrados?: TipoServicioAtributo[]
+  ejecutores: Array<{ id: string; nombre: string }>
+  pending: boolean
+  error?: string | null
+  onSubmit: (e: React.FormEvent<HTMLFormElement>, data: any) => void
+  onDone: () => void
+}
+
 function ServicioForm({
+  servicio,
   tipos,
-  subtipos: _subtipos,
-  detalles: _detalles,
-  subtiposFiltrados,
-  detallesFiltrados,
-  atributo1Id,
-  atributo2Id,
-  atributo3Id,
-  nombre,
-  tarifa,
-  descripcion,
-  ejecutorId,
-  codigoCompleto,
+  subtipos,
+  detalles,
+  subtiposFiltrados: initialSubtiposFitrados,
+  detallesFiltrados: initialDetallesFiltrados,
   ejecutores,
   pending,
-  error,
-  onAtributo1Change,
-  onAtributo2Change,
-  onAtributo3Change,
-  onNombreChange,
-  onTarifaChange,
-  onDescripcionChange,
-  onEjecutorChange,
-  onCodigoChange,
+  error: propError,
   onSubmit,
   onDone,
 }: ServicioFormProps) {
+  const isEdit = !!servicio
+  
+  // Local states for inputs to avoid affecting the main panel during edit
+  const [atributo1Id, setAtributo1Id] = useState<string | null>(servicio?.atributo1_id || null)
+  const [atributo2Id, setAtributo2Id] = useState<string | null>(servicio?.atributo2_id || null)
+  const [atributo3Id, setAtributo3Id] = useState<string | null>(servicio?.atributo3_id || null)
+  const [nombre, setNombre] = useState(servicio?.nombre || '')
+  const [tarifa, setTarifa] = useState(servicio?.tarifa_unitaria?.toString() || '')
+  const [descripcion, setDescripcion] = useState(servicio?.descripcion || '')
+  const [ejecutorId, setEjecutorId] = useState<string | null>(servicio?.ejecutor_id || null)
+  const [codigoCompleto, setCodigoCompleto] = useState(isEdit)
+  const [internalError, setInternalError] = useState<string | null>(null)
+
+  const error = propError || internalError
+
+  const currentSubtipos = useMemo(() => {
+    if (!atributo1Id) return []
+    return subtipos.filter(s => s.tipo_padre_id === atributo1Id)
+  }, [atributo1Id, subtipos])
+
+  const currentDetalles = useMemo(() => {
+    if (!atributo2Id) return []
+    return detalles.filter(d => d.subtipo_padre_id === atributo2Id)
+  }, [atributo2Id, detalles])
+
+  const handleLocalSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    setInternalError(null)
+    const tarifaNum = parseFloat(tarifa)
+    if (isNaN(tarifaNum) || tarifaNum <= 0) {
+      setInternalError('La tarifa debe ser un número mayor a 0')
+      e.preventDefault()
+      return
+    }
+    onSubmit(e, {
+      atributo1Id,
+      atributo2Id,
+      atributo3Id,
+      nombre,
+      tarifa: tarifaNum,
+      descripcion,
+      ejecutorId
+    })
+  }
+
   return (
-    <form onSubmit={onSubmit} className="px-5 py-4 bg-neu-base shadow-neu-inset rounded-xl mx-0 my-0 space-y-4">
+    <form onSubmit={handleLocalSubmit} className={`px-5 py-4 bg-neu-base shadow-neu-inset rounded-xl mx-0 my-0 space-y-4 ${isEdit ? 'ring-2 ring-primary-300' : ''}`}>
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-        Nuevo servicio operativo
+        {isEdit ? `Editando Servicio: ${servicio.codigo}` : 'Nuevo servicio operativo'}
       </p>
 
       {/* Top Section: Código Preview */}
       <div className="space-y-1">
-        <label className="text-xs font-medium text-muted-foreground">Código Generado *</label>
-        <CodigoPreviewServicio
-          tipos={tipos}
-          subtipos={subtiposFiltrados}
-          detalles={detallesFiltrados}
-          atributo1Id={atributo1Id}
-          atributo2Id={atributo2Id}
-          atributo3Id={atributo3Id}
-          descripcion={descripcion}
-          onCodigoChange={onCodigoChange}
-          onNombreRecomendado={(nombre) => {
-            if (nombre.trim()) onNombreChange(nombre)
-          }}
-        />
+        <label className="text-xs font-medium text-muted-foreground">
+          {isEdit ? 'Código Actual' : 'Código Generado *'}
+        </label>
+        {isEdit ? (
+          <div className="rounded-xl bg-neu-base shadow-neu p-4">
+            <p className="text-display-xs font-mono font-bold text-primary-600">
+              {servicio.codigo}
+            </p>
+          </div>
+        ) : (
+          <CodigoPreviewServicio
+            tipos={tipos}
+            subtipos={currentSubtipos}
+            detalles={currentDetalles}
+            atributo1Id={atributo1Id}
+            atributo2Id={atributo2Id}
+            atributo3Id={atributo3Id}
+            descripcion={descripcion}
+            onCodigoChange={(_, completo) => setCodigoCompleto(completo)}
+            onNombreRecomendado={(rec) => { if (!nombre) setNombre(rec) }}
+          />
+        )}
       </div>
 
       {/* Row 1: Clasificación (Tipo, Subtipo, Detalle) */}
@@ -403,15 +498,18 @@ function ServicioForm({
           <label className="text-xs font-medium text-foreground">Tipo de Proceso *</label>
           <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
             <select
+              disabled={isEdit}
               value={atributo1Id || ''}
-              onChange={e => onAtributo1Change(e.target.value || null)}
-              className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none"
+              onChange={e => {
+                setAtributo1Id(e.target.value || null)
+                setAtributo2Id(null)
+                setAtributo3Id(null)
+              }}
+              className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none disabled:opacity-50"
             >
               <option value="">Seleccionar tipo...</option>
               {tipos.map(tipo => (
-                <option key={tipo.id} value={tipo.id}>
-                  {tipo.nombre}
-                </option>
+                <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
               ))}
             </select>
           </div>
@@ -421,16 +519,17 @@ function ServicioForm({
           <label className="text-xs font-medium text-foreground">Subtipo *</label>
           <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
             <select
+              disabled={isEdit || !atributo1Id}
               value={atributo2Id || ''}
-              onChange={e => onAtributo2Change(e.target.value || null)}
-              disabled={!atributo1Id}
+              onChange={e => {
+                setAtributo2Id(e.target.value || null)
+                setAtributo3Id(null)
+              }}
               className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none disabled:opacity-50"
             >
               <option value="">Seleccionar subtipo...</option>
-              {subtiposFiltrados.map(subtipo => (
-                <option key={subtipo.id} value={subtipo.id}>
-                  {subtipo.nombre}
-                </option>
+              {currentSubtipos.map(subtipo => (
+                <option key={subtipo.id} value={subtipo.id}>{subtipo.nombre}</option>
               ))}
             </select>
           </div>
@@ -440,18 +539,16 @@ function ServicioForm({
           <label className="text-xs font-medium text-foreground">Detalle específico</label>
           <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
             <select
+              disabled={isEdit || !atributo2Id || currentDetalles.length === 0}
               value={atributo3Id || ''}
-              onChange={e => onAtributo3Change(e.target.value || null)}
-              disabled={!atributo2Id || detallesFiltrados.length === 0}
+              onChange={e => setAtributo3Id(e.target.value || null)}
               className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none disabled:opacity-50"
             >
               <option value="">
-                {detallesFiltrados.length === 0 ? 'Sin detalles disponibles' : 'Seleccionar detalle...'}
+                {currentDetalles.length === 0 ? 'Sin detalles disponibles' : 'Seleccionar detalle...'}
               </option>
-              {detallesFiltrados.map(detalle => (
-                <option key={detalle.id} value={detalle.id}>
-                  {detalle.nombre}
-                </option>
+              {currentDetalles.map(detalle => (
+                <option key={detalle.id} value={detalle.id}>{detalle.nombre}</option>
               ))}
             </select>
           </div>
@@ -466,7 +563,7 @@ function ServicioForm({
             <input
               type="text"
               value={nombre}
-              onChange={e => onNombreChange(e.target.value)}
+              onChange={e => setNombre(e.target.value)}
               placeholder="Ej: Corte recto estándar"
               className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
@@ -478,14 +575,12 @@ function ServicioForm({
           <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
             <select
               value={ejecutorId || ''}
-              onChange={e => onEjecutorChange(e.target.value || null)}
+              onChange={e => setEjecutorId(e.target.value || null)}
               className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none"
             >
               <option value="">Sin asignar (Interno)</option>
               {ejecutores.map(ejecutor => (
-                <option key={ejecutor.id} value={ejecutor.id}>
-                  {ejecutor.nombre}
-                </option>
+                <option key={ejecutor.id} value={ejecutor.id}>{ejecutor.nombre}</option>
               ))}
             </select>
           </div>
@@ -503,7 +598,7 @@ function ServicioForm({
               min="0"
               step="100"
               value={tarifa}
-              onChange={e => onTarifaChange(e.target.value)}
+              onChange={e => setTarifa(e.target.value)}
               placeholder="5000"
               className="w-full bg-transparent text-body-sm text-foreground outline-none"
             />
@@ -516,7 +611,7 @@ function ServicioForm({
             <input
               type="text"
               value={descripcion}
-              onChange={e => onDescripcionChange(e.target.value)}
+              onChange={e => setDescripcion(e.target.value)}
               placeholder="Notas para la orden de servicio"
               className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
@@ -533,11 +628,11 @@ function ServicioForm({
         </button>
         <button
           type="submit"
-          disabled={pending || !codigoCompleto}
+          disabled={pending || (!isEdit && !codigoCompleto)}
           className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset disabled:opacity-60"
         >
           {pending && <Loader2 className="w-3 h-3 animate-spin" />}
-          Crear servicio
+          {isEdit ? 'Guardar cambios' : 'Crear servicio'}
         </button>
       </div>
     </form>
