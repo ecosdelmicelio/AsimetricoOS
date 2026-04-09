@@ -17,6 +17,7 @@ export interface ServicioOperativo {
   nombre: string
   atributo1_id: string | null
   atributo2_id: string | null
+  atributo3_id: string | null
   ejecutor_id: string | null
   tarifa_unitaria: number
   descripcion: string | null
@@ -25,4 +26,5 @@ export interface ServicioOperativo {
   // Joins opcionales para lectura
   atributo1?: TipoServicioAtributo
   atributo2?: TipoServicioAtributo
+  atributo3?: TipoServicioAtributo
 }

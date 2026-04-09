@@ -14,7 +14,8 @@ export async function getServiciosOperativos(): Promise<ServicioOperativo[]> {
     .select(`
       *,
       atributo1:atributo1_id(*),
-      atributo2:atributo2_id(*)
+      atributo2:atributo2_id(*),
+      atributo3:atributo3_id(*)
     `)
     .order('codigo', { ascending: true }) as { data: ServicioOperativo[] | null }
   return data ?? []
@@ -59,8 +60,9 @@ async function getProximoConsecutivo(atributo1_id: string): Promise<number> {
 /**
  * Genera un código como ABR1-ABR2-NNN (abreviaturas + 3 dígitos)
  */
-function generarCodigo(abr1: string, abr2: string, consecutivo: number): string {
+function generarCodigo(abr1: string, abr2: string, consecutivo: number, abr3?: string): string {
   const numStr = String(consecutivo).padStart(3, '0')
+  if (abr3) return `${abr1.toUpperCase()}-${abr2.toUpperCase()}-${abr3.toUpperCase()}-${numStr}`
   return `${abr1.toUpperCase()}-${abr2.toUpperCase()}-${numStr}`
 }
 
@@ -69,23 +71,28 @@ export async function createServicioOperativo(
   atributo2_id: string,
   nombre: string,
   tarifaUnitaria: number,
+  atributo3_id?: string | null,
   descripcion?: string,
   ejecutor_id?: string,
 ): Promise<{ data: ServicioOperativo | null; error?: string }> {
   const supabase = db(await createClient())
 
   // Obtener abreviaturas de los atributos
+  const ids = [atributo1_id, atributo2_id]
+  if (atributo3_id) ids.push(atributo3_id)
+
   const { data: atributos } = await supabase
     .from('tipo_servicio_atributos')
     .select('*')
-    .in('id', [atributo1_id, atributo2_id]) as { data: TipoServicioAtributo[] | null }
+    .in('id', ids) as { data: TipoServicioAtributo[] | null }
 
-  if (!atributos || atributos.length !== 2) {
-    return { data: null, error: 'Atributos inválidos' }
+  if (!atributos || atributos.length < ids.length) {
+    return { data: null, error: 'Atributos inválidos o incompletos' }
   }
 
   const atributo1 = atributos.find(a => a.id === atributo1_id)
   const atributo2 = atributos.find(a => a.id === atributo2_id)
+  const atributo3 = atributo3_id ? atributos.find(a => a.id === atributo3_id) : undefined
 
   if (!atributo1 || !atributo2) {
     return { data: null, error: 'Atributos inválidos' }
@@ -93,7 +100,7 @@ export async function createServicioOperativo(
 
   // Generar código automáticamente
   const consecutivo = await getProximoConsecutivo(atributo1_id)
-  const codigo = generarCodigo(atributo1.abreviatura, atributo2.abreviatura, consecutivo)
+  const codigo = generarCodigo(atributo1.abreviatura, atributo2.abreviatura, consecutivo, atributo3?.abreviatura)
 
   const { data, error } = await supabase
     .from('servicios_operativos')
@@ -102,6 +109,7 @@ export async function createServicioOperativo(
       nombre: nombre.trim(),
       atributo1_id,
       atributo2_id,
+      atributo3_id: atributo3_id || null,
       tarifa_unitaria: tarifaUnitaria,
       descripcion: descripcion?.trim() || null,
       ejecutor_id: ejecutor_id || null,

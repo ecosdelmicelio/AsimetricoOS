@@ -209,7 +209,42 @@ export function ServiciosPanel({ servicios, tipos, subtipos, detalles, ejecutore
           onCodigoChange={(_codigo, completo) => {
             setCodigoCompleto(completo)
           }}
-          onSubmit={handleAgregar}
+          onSubmit={(e) => {
+            e.preventDefault()
+            setError(null)
+            if (!atributo1Id || !atributo2Id) {
+              setError('Tipo y Subtipo son obligatorios')
+              return
+            }
+            if (!nombre.trim() || !tarifa) {
+              setError('Nombre y tarifa son obligatorios')
+              return
+            }
+            const tarifaNum = parseFloat(tarifa)
+            startTransition(async () => {
+              const res = await createServicioOperativo(
+                atributo1Id,
+                atributo2Id,
+                nombre,
+                tarifaNum,
+                atributo3Id,
+                descripcion || undefined,
+                ejecutorId || undefined
+              )
+              if (res.error) {
+                setError(res.error)
+                return
+              }
+              setAtributo1Id(null)
+              setAtributo2Id(null)
+              setAtributo3Id(null)
+              setNombre('')
+              setTarifa('')
+              setDescripcion('')
+              setEjecutorId(null)
+              setShowForm(false)
+            })
+          }}
           onDone={() => setShowForm(false)}
         />
       )}
@@ -339,15 +374,33 @@ function ServicioForm({
   onDone,
 }: ServicioFormProps) {
   return (
-    <form onSubmit={onSubmit} className="px-5 py-4 bg-neu-base shadow-neu-inset rounded-xl mx-0 my-0 space-y-3">
+    <form onSubmit={onSubmit} className="px-5 py-4 bg-neu-base shadow-neu-inset rounded-xl mx-0 my-0 space-y-4">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-        Nuevo servicio
+        Nuevo servicio operativo
       </p>
 
-      {/* Row: Tipo + Subtipo + Detalle */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* Top Section: Código Preview */}
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">Código Generado *</label>
+        <CodigoPreviewServicio
+          tipos={tipos}
+          subtipos={subtiposFiltrados}
+          detalles={detallesFiltrados}
+          atributo1Id={atributo1Id}
+          atributo2Id={atributo2Id}
+          atributo3Id={atributo3Id}
+          descripcion={descripcion}
+          onCodigoChange={onCodigoChange}
+          onNombreRecomendado={(nombre) => {
+            if (nombre.trim()) onNombreChange(nombre)
+          }}
+        />
+      </div>
+
+      {/* Row 1: Clasificación (Tipo, Subtipo, Detalle) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="space-y-1">
-          <label className="text-xs font-medium text-foreground">Tipo *</label>
+          <label className="text-xs font-medium text-foreground">Tipo de Proceso *</label>
           <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
             <select
               value={atributo1Id || ''}
@@ -384,7 +437,7 @@ function ServicioForm({
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-foreground">Detalle</label>
+          <label className="text-xs font-medium text-foreground">Detalle específico</label>
           <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
             <select
               value={atributo3Id || ''}
@@ -405,10 +458,10 @@ function ServicioForm({
         </div>
       </div>
 
-      {/* Row: Nombre + Ejecutor */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Row 2: Identificación (Nombre + Ejecutor) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="space-y-1">
-          <label className="text-xs font-medium text-foreground">Nombre *</label>
+          <label className="text-xs font-medium text-foreground">Nombre del Servicio *</label>
           <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
             <input
               type="text"
@@ -421,14 +474,14 @@ function ServicioForm({
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-foreground">Ejecutor</label>
+          <label className="text-xs font-medium text-foreground">Tercero / Ejecutor</label>
           <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
             <select
               value={ejecutorId || ''}
               onChange={e => onEjecutorChange(e.target.value || null)}
               className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none"
             >
-              <option value="">Sin asignar</option>
+              <option value="">Sin asignar (Interno)</option>
               {ejecutores.map(ejecutor => (
                 <option key={ejecutor.id} value={ejecutor.id}>
                   {ejecutor.nombre}
@@ -439,57 +492,41 @@ function ServicioForm({
         </div>
       </div>
 
-      {/* Row: Tarifa + Descripción */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Row 3: Comercial (Tarifa + Descripción) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="space-y-1">
-          <label className="text-xs font-medium text-foreground">Tarifa (COP) *</label>
-          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+          <label className="text-xs font-medium text-foreground">Tarifa Unitaria (COP) *</label>
+          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2 flex items-center">
+            <span className="text-muted-foreground text-xs mr-1">$</span>
             <input
               type="number"
               min="0"
-              step="1000"
+              step="100"
               value={tarifa}
               onChange={e => onTarifaChange(e.target.value)}
               placeholder="5000"
-              className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+              className="w-full bg-transparent text-body-sm text-foreground outline-none"
             />
           </div>
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-foreground">Descripción</label>
+          <label className="text-xs font-medium text-foreground">Descripción breve</label>
           <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
             <input
               type="text"
               value={descripcion}
               onChange={e => onDescripcionChange(e.target.value)}
-              placeholder="Detalles adicionales"
+              placeholder="Notas para la orden de servicio"
               className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
           </div>
         </div>
       </div>
 
-      {/* Código preview */}
-      {atributo1Id && atributo2Id && (
-        <CodigoPreviewServicio
-          tipos={tipos}
-          subtipos={subtiposFiltrados}
-          detalles={detallesFiltrados}
-          atributo1Id={atributo1Id}
-          atributo2Id={atributo2Id}
-          atributo3Id={atributo3Id}
-          descripcion={descripcion}
-          onCodigoChange={onCodigoChange}
-          onNombreRecomendado={(nombre) => {
-            if (nombre.trim()) onNombreChange(nombre)
-          }}
-        />
-      )}
+      {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
-
-      <div className="flex gap-2 justify-end">
+      <div className="flex gap-2 justify-end pt-2">
         <button type="button" onClick={onDone}
           className="px-3 py-1.5 rounded-lg text-body-sm text-muted-foreground hover:text-foreground transition-colors">
           Cancelar
