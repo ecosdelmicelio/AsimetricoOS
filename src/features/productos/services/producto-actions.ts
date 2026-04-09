@@ -146,6 +146,22 @@ export async function toggleProductoActivo(id: string): Promise<{ error?: string
     return { error: 'Producto no encontrado' }
   }
 
+  // Sólo bloquear si se intenta INACTIVAR (activo → inactivo)
+  if (producto.estado === 'activo') {
+    const { data: kardexRows } = await supabase
+      .from('kardex')
+      .select('cantidad')
+      .eq('producto_id', id) as { data: Array<{ cantidad: number }> | null }
+
+    const saldoTotal = (kardexRows ?? []).reduce((s, r) => s + (r.cantidad ?? 0), 0)
+
+    if (saldoTotal > 0) {
+      return {
+        error: `No se puede inactivar este producto porque tiene ${saldoTotal} unidad(es) en inventario. Primero realiza un ajuste de inventario.`,
+      }
+    }
+  }
+
   const nuevoEstado = producto.estado === 'activo' ? 'inactivo' : 'activo'
 
   const { error } = await supabase
@@ -160,6 +176,7 @@ export async function toggleProductoActivo(id: string): Promise<{ error?: string
   revalidatePath('/catalogo')
   return {}
 }
+
 
 export async function deleteProducto(id: string): Promise<{ error?: string }> {
   const supabase = db(await createClient())

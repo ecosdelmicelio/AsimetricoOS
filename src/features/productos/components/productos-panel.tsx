@@ -188,8 +188,19 @@ function ProductRow({
       <td className="hidden xl:table-cell px-3 py-2"><span className="text-xs text-muted-foreground truncate">{brandName}</span></td>
       <td className="hidden lg:table-cell px-3 py-2 whitespace-nowrap"><span className="text-xs text-muted-foreground truncate">{p.referencia_cliente || '—'}</span></td>
       <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs font-mono text-foreground">{saldo?.saldo_total ?? 0}</span></td>
-      <td className="hidden sm:table-cell px-3 py-2 text-right whitespace-nowrap"><span className="text-xs font-mono text-muted-foreground">$ {(saldo?.costo_promedio ?? 0).toLocaleString('es-CO', { maximumFractionDigits: 2 })}</span></td>
-      <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs font-mono text-foreground font-semibold">$ {(saldo?.valor_total ?? 0).toLocaleString('es-CO', { maximumFractionDigits: 0 })}</span></td>
+      <td className="hidden sm:table-cell px-3 py-2 text-right whitespace-nowrap">
+        {(saldo?.saldo_total ?? 0) > 0 && (saldo?.costo_promedio ?? 0) > 0
+          ? <span className="text-xs font-mono text-muted-foreground">$ {saldo!.costo_promedio!.toLocaleString('es-CO', { maximumFractionDigits: 2 })}</span>
+          : <span className="text-xs text-muted-foreground/40">—</span>
+        }
+      </td>
+      <td className="px-3 py-2 text-right whitespace-nowrap">
+        {(saldo?.saldo_total ?? 0) > 0 && (saldo?.valor_total ?? 0) > 0
+          ? <span className="text-xs font-mono text-foreground font-semibold">$ {saldo!.valor_total!.toLocaleString('es-CO', { maximumFractionDigits: 0 })}</span>
+          : <span className="text-xs text-muted-foreground/40">—</span>
+        }
+      </td>
+
       <td className="px-3 py-2 text-center">
         <button
           onClick={p.estado !== 'en_desarrollo' ? onToggleActivo : undefined}

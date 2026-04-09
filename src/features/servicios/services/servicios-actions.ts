@@ -179,12 +179,42 @@ export async function toggleServicioActivo(id: string): Promise<{ error?: string
 
   const { data: servicio } = await supabase
     .from('servicios_operativos')
-    .select('activo')
+    .select('activo, nombre')
     .eq('id', id)
-    .single() as { data: { activo: boolean } | null }
+    .single() as { data: { activo: boolean; nombre: string } | null }
 
   if (!servicio) {
     return { error: 'Servicio no encontrado' }
+  }
+
+  // Solo bloquear al INACTIVAR (activo → false)
+  if (servicio.activo) {
+    // 1. Verificar si está en el BOM de algún producto activo
+    const { data: bomRows } = await supabase
+      .from('bom_servicios')
+      .select('producto_id, productos!inner(estado)')
+      .eq('servicio_id', id)
+      .eq('productos.estado', 'activo') as { data: Array<{ producto_id: string }> | null }
+
+    if (bomRows && bomRows.length > 0) {
+      return {
+        error: `No se puede inactivar este servicio: está incluido en el BOM de ${bomRows.length} producto(s) activo(s). Primero retíralo del BOM.`,
+      }
+    }
+
+    // 2. Verificar si está referenciado en OPs que no estén completadas/liquidadas
+    const ESTADOS_ABIERTOS = ['pendiente', 'en_proceso', 'en_calidad', 'terminado']
+    const { data: opRows } = await supabase
+      .from('op_servicios')
+      .select('op_id, ordenes_produccion!inner(estado)')
+      .eq('servicio_id', id)
+      .in('ordenes_produccion.estado', ESTADOS_ABIERTOS) as { data: Array<{ op_id: string }> | null }
+
+    if (opRows && opRows.length > 0) {
+      return {
+        error: `No se puede inactivar este servicio: está siendo utilizado en ${opRows.length} Orden(es) de Producción activa(s).`,
+      }
+    }
   }
 
   const { error } = await supabase
@@ -199,3 +229,4 @@ export async function toggleServicioActivo(id: string): Promise<{ error?: string
   revalidatePath('/configuracion')
   return {}
 }
+
