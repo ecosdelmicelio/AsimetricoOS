@@ -69,9 +69,9 @@ function generarCodigo(abr1: string, abr2: string, consecutivo: number, abr3?: s
 export async function createServicioOperativo(
   atributo1_id: string,
   atributo2_id: string,
+  atributo3_id: string,
   nombre: string,
   tarifaUnitaria: number,
-  atributo3_id?: string | null,
   descripcion?: string,
   ejecutor_id?: string,
 ): Promise<{ data: ServicioOperativo | null; error?: string }> {

@@ -73,17 +73,16 @@ export function generarAbreviatura(
 export function generarCodigo(
   atributo1: Atributo | undefined,
   atributo2: Atributo | undefined,
-  secuencial: number = 1,
-  descripcion?: string,
+  atributo3: Atributo | undefined,
+  secuencial: number = 1
 ): string {
-  // Usa descripción si está disponible, sino usa abreviatura manual
-  const abr1 = descripcion
-    ? generarAbreviatura(descripcion, 'largo')
-    : (atributo1?.abreviatura || '__')
+  const formatSegment = (a?: Atributo) => {
+    if (a?.abreviatura) return a.abreviatura.substring(0, 3).padEnd(3, 'X').toUpperCase()
+    if (a?.nombre) return generarAbreviaturaFija(a.nombre, '3-char')
+    return 'XXX'
+  }
 
-  const abr2 = atributo2?.abreviatura || '___'
-
-  return `${abr1}-${abr2}-${String(secuencial).padStart(3, '0')}`
+  return `${formatSegment(atributo1)}-${formatSegment(atributo2)}-${formatSegment(atributo3)}-${String(secuencial).padStart(3, '0')}`
 }
 
 /**

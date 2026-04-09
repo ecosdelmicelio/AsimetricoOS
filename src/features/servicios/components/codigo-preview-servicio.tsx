@@ -12,7 +12,6 @@ interface Props {
   atributo1Id: string | null
   atributo2Id: string | null
   atributo3Id?: string | null
-  descripcion?: string
   onCodigoChange: (codigo: string, completo: boolean) => void
   onNombreRecomendado?: (nombre: string) => void
 }
@@ -24,7 +23,6 @@ export function CodigoPreviewServicio({
   atributo1Id,
   atributo2Id,
   atributo3Id,
-  descripcion,
   onCodigoChange,
   onNombreRecomendado,
 }: Props) {
@@ -33,15 +31,15 @@ export function CodigoPreviewServicio({
     const atributo2 = subtipos.find(a => a.id === atributo2Id)
     const atributo3 = atributo3Id ? detalles.find(a => a.id === atributo3Id) : undefined
 
-    // Genera código inteligente considerando descripción
-    const codigo = generarCodigo(atributo1, atributo2, 1, descripcion)
-    const completo = esCodigoCompleto(codigo)
+    // Genera código estricto TTT-SSS-DDD-001
+    const codigo = generarCodigo(atributo1, atributo2, atributo3, 1)
+    const completo = Boolean(atributo1 && atributo2 && atributo3) && esCodigoCompleto(codigo)
 
     // Recomienda nombre basado en atributos
     const nombreRecomendado = recomendarNombre([atributo1, atributo2, atributo3])
 
     // Obtiene recomendaciones
-    const recomendaciones = obtenerRecomendaciones(atributo1, atributo2, descripcion)
+    const recomendaciones = obtenerRecomendaciones(atributo1, atributo2)
 
     const tieneAbreviacion1 = !atributo1 || !!atributo1.abreviatura
     const tieneAbreviacion2 = !atributo2 || !!atributo2.abreviatura
@@ -57,7 +55,7 @@ export function CodigoPreviewServicio({
       nombreRecomendado,
       recomendaciones,
     }
-  }, [atributo1Id, atributo2Id, atributo3Id, tipos, subtipos, detalles, descripcion])
+  }, [atributo1Id, atributo2Id, atributo3Id, tipos, subtipos, detalles])
 
   // Notify changes without causing setState-during-render
   useEffect(() => {

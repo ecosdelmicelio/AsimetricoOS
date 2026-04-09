@@ -212,8 +212,8 @@ export function ServiciosPanel({ servicios, tipos, subtipos, detalles, ejecutore
           onSubmit={(e) => {
             e.preventDefault()
             setError(null)
-            if (!atributo1Id || !atributo2Id) {
-              setError('Tipo y Subtipo son obligatorios')
+            if (!atributo1Id || !atributo2Id || !atributo3Id) {
+              setError('Tipo, Subtipo y Detalle son obligatorios')
               return
             }
             if (!nombre.trim() || !tarifa) {
@@ -225,9 +225,9 @@ export function ServiciosPanel({ servicios, tipos, subtipos, detalles, ejecutore
               const res = await createServicioOperativo(
                 atributo1Id,
                 atributo2Id,
+                atributo3Id,
                 nombre,
                 tarifaNum,
-                atributo3Id,
                 descripcion || undefined,
                 ejecutorId || undefined
               )
@@ -444,6 +444,13 @@ function ServicioForm({
 
   const handleLocalSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     setInternalError(null)
+    
+    if (!atributo1Id || !atributo2Id || !atributo3Id) {
+      setInternalError('Todos los atributos (tipo, subtipo y detalle) son requeridos para identificar correctamente el servicio.')
+      e.preventDefault()
+      return
+    }
+
     const tarifaNum = parseFloat(tarifa)
     if (isNaN(tarifaNum) || tarifaNum <= 0) {
       setInternalError('La tarifa debe ser un número mayor a 0')
@@ -539,10 +546,11 @@ function ServicioForm({
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-foreground">Detalle específico</label>
+          <label className="text-xs font-medium text-foreground">Detalle específico *</label>
           <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
             <select
               disabled={isEdit || !atributo2Id || currentDetalles.length === 0}
+              required
               value={atributo3Id || ''}
               onChange={e => setAtributo3Id(e.target.value || null)}
               className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none disabled:opacity-50"
