@@ -6,7 +6,7 @@ import { getProductosActivos } from '@/features/kardex/services/kardex-actions'
 import { OCGreigeBadge } from './oc-status-badge'
 import { RecepcionOC } from './recepcion-oc'
 import { RecepcionPTManager } from './recepcion-pt-manager'
-import { formatDate } from '@/shared/lib/utils'
+import { formatDate, formatCurrency } from '@/shared/lib/utils'
 
 interface Props {
   id: string
@@ -110,8 +110,8 @@ export async function CompraDetail({ id }: Props) {
                       <td className="py-2 px-3 font-mono text-muted-foreground">{detalle.materiales?.codigo}</td>
                       <td className="py-2 px-3">{detalle.materiales?.nombre}</td>
                       <td className="py-2 px-3 text-right">{detalle.cantidad} {detalle.materiales?.unidad}</td>
-                      <td className="py-2 px-3 text-right">${detalle.precio_unitario?.toFixed(2)}</td>
-                      <td className="py-2 px-3 text-right font-semibold">${(detalle.cantidad * detalle.precio_unitario).toFixed(2)}</td>
+                      <td className="py-2 px-3 text-right">{formatCurrency(detalle.precio_unitario ?? 0)}</td>
+                      <td className="py-2 px-3 text-right font-semibold">{formatCurrency(detalle.cantidad * detalle.precio_unitario)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -120,7 +120,7 @@ export async function CompraDetail({ id }: Props) {
                 <div className="text-right">
                   <p className="text-muted-foreground text-body-xs">Total OC</p>
                   <p className="text-display-sm font-bold text-foreground">
-                    ${oc.oc_detalle_mp.reduce((sum: number, d: any) => sum + (d.cantidad * d.precio_unitario), 0).toFixed(2)}
+                    {formatCurrency(oc.oc_detalle_mp.reduce((sum: number, d: any) => sum + (d.cantidad * d.precio_unitario), 0))}
                   </p>
                 </div>
               </div>
@@ -152,8 +152,8 @@ export async function CompraDetail({ id }: Props) {
                       </td>
                       <td className="py-2 px-3">{detalle.talla}</td>
                       <td className="py-2 px-3 text-right">{detalle.cantidad}</td>
-                      <td className="py-2 px-3 text-right">${detalle.precio_pactado?.toFixed(2) ?? '—'}</td>
-                      <td className="py-2 px-3 text-right font-semibold">${(detalle.cantidad * (detalle.precio_pactado ?? 0)).toFixed(2)}</td>
+                      <td className="py-2 px-3 text-right">{detalle.precio_pactado ? formatCurrency(detalle.precio_pactado) : '—'}</td>
+                      <td className="py-2 px-3 text-right font-semibold">{formatCurrency(detalle.cantidad * (detalle.precio_pactado ?? 0))}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -162,7 +162,7 @@ export async function CompraDetail({ id }: Props) {
                 <div className="text-right">
                   <p className="text-muted-foreground text-body-xs">Total OC</p>
                   <p className="text-display-sm font-bold text-foreground">
-                    ${oc.oc_detalle.reduce((sum: number, d: any) => sum + (d.cantidad * (d.precio_pactado ?? 0)), 0).toFixed(2)}
+                    {formatCurrency(oc.oc_detalle.reduce((sum: number, d: any) => sum + (d.cantidad * (d.precio_pactado ?? 0)), 0))}
                   </p>
                 </div>
               </div>

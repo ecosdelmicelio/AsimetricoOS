@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { Trash2 } from 'lucide-react'
 import { TALLAS_STANDARD } from '@/shared/constants/tallas'
 import { derivarNombreBase, extraerColorDelNombre } from '@/shared/lib/productos-utils'
+import { formatCurrency } from '@/shared/lib/utils'
 
 interface Producto {
   id: string
@@ -206,7 +207,7 @@ export function OCLineasPTForm({ productos, onLineasChange }: Props) {
                   ))}
                   <td className="py-2 px-3 text-right font-semibold">{totalUds}</td>
                   <td className="py-2 px-3 text-right font-semibold">
-                    ${totalValor.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
+                    {formatCurrency(totalValor)}
                   </td>
                   <td className="py-2 px-3 text-center">
                     <button
@@ -250,7 +251,7 @@ export function OCLineasPTForm({ productos, onLineasChange }: Props) {
           <div className="text-right">
             <p className="text-muted-foreground text-body-xs">Total orden</p>
             <p className="text-display-sm font-bold text-foreground">
-              ${calcularTotal().toLocaleString('es-CO', { minimumFractionDigits: 2 })}
+              {formatCurrency(calcularTotal())}
             </p>
           </div>
         </div>

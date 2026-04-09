@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef } from 'react'
 import { Plus, Trash2, Pencil, Check } from 'lucide-react'
+import { formatCurrency } from '@/shared/lib/utils'
 
 interface Material {
   id: string
@@ -234,7 +235,7 @@ export function OCLineasMPForm({ materiales, onLineasChange, embedded = false }:
                           className="cursor-pointer hover:text-primary-600 transition-colors"
                           title="Click para editar"
                         >
-                          ${linea.precio_unitario.toLocaleString('es-CO', { minimumFractionDigits: 2 })}
+                          {formatCurrency(linea.precio_unitario)}
                         </span>
                       )}
                     </td>
