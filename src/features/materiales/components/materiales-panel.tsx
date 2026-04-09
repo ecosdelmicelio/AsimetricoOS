@@ -284,35 +284,78 @@ function MaterialForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="px-5 py-4 bg-neu-base shadow-neu-inset rounded-xl mx-3 my-2 space-y-3">
+    <form onSubmit={handleSubmit} className="px-5 py-4 bg-neu-base shadow-neu-inset rounded-xl mx-3 my-2 space-y-4">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
         {isEdit ? `Editando ${material.codigo}` : 'Nuevo material'}
       </p>
 
-      {/* Header: Tipo MP */}
-      <div className="space-y-1">
-        <label className="text-xs font-medium text-muted-foreground">Tipo *</label>
-        <div className="flex gap-2">
-          {(['nacional', 'importado'] as const).map(tipo => (
+      {/* Top Row: Código Generado + Tipo MP Toggle */}
+      <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-3 items-start">
+        {!isEdit ? (
+          <div className="w-full space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Código Generado *</label>
+            <CodigoPreviewMP
+              atributos={[
+                ...(atributosPorTipo.tipo || []),
+                ...(atributosPorTipo.subtipo || []),
+                ...(atributosPorTipo.color || []),
+                ...(atributosPorTipo.diseño || []),
+              ]}
+              tipoId={atributosSeleccionados.tipo || null}
+              subtipoId={atributosSeleccionados.subtipo || null}
+              colorId={atributosSeleccionados.color || null}
+              disenoId={atributosSeleccionados.diseño || null}
+              onCodigoChange={handleCodigoChange}
+              onNombreRecomendado={(nombre) => {
+                if (nombre.trim() && !nombreEditadoRef.current) setNombre(nombre)
+              }}
+            />
+          </div>
+        ) : (
+          <div className="w-full space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Código del Material</label>
+            <div className="rounded-xl bg-neu-base shadow-neu p-4">
+              <p className="text-display-xs font-mono font-bold text-primary-600">
+                {material.codigo}
+              </p>
+            </div>
+          </div>
+        )}
+        
+        <div className="space-y-1 md:min-w-[220px]">
+          <label className="text-xs font-medium text-muted-foreground">Origen del Material *</label>
+          <div className="relative flex rounded-xl bg-neu-base shadow-neu-inset p-1 w-full">
+            <div 
+              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-primary-600 shadow transition-transform duration-300 ${
+                tipoMP === 'nacional' ? 'translate-x-0' : 'translate-x-full'
+              }`} 
+            />
             <button
-              key={tipo}
               type="button"
-              onClick={() => setTipoMP(tipo)}
               disabled={isEdit}
-              className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-all ${
-                tipoMP === tipo
-                  ? 'bg-primary-600 text-white font-semibold'
-                  : 'bg-neu-base text-muted-foreground hover:bg-neu-base/80'
+              onClick={() => setTipoMP('nacional')}
+              className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
+                tipoMP === 'nacional' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
               } ${isEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {tipo === 'nacional' ? 'Nacional' : 'Importado'}
+              Nacional
             </button>
-          ))}
+            <button
+              type="button"
+              disabled={isEdit}
+              onClick={() => setTipoMP('importado')}
+              className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
+                tipoMP === 'importado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
+              } ${isEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              Importado
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Row: Nombre + Unidad */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Row 2: Nombre + Unidad + Ref Proveedor */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-1.5">
             <label className="text-xs font-medium text-foreground">Nombre *</label>
@@ -330,13 +373,13 @@ function MaterialForm({
           {nombreDuplicado && (
             <div className="flex items-center gap-1 text-amber-600">
               <AlertTriangle className="w-3 h-3 shrink-0" />
-              <span className="text-[10px]">Ya existe un material con este nombre</span>
+              <span className="text-[10px]">Nombre duplicado</span>
             </div>
           )}
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-foreground">Unidad</label>
+          <label className="text-xs font-medium text-foreground">Unidad de Medida</label>
           <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
             <select
               value={unidad}
@@ -349,41 +392,57 @@ function MaterialForm({
             </select>
           </div>
         </div>
-      </div>
 
-      {/* Row: Atributos (4 columnas: tipo, subtipo, color, diseño) */}
-      <div className="grid grid-cols-4 gap-2">
-        {TIPOS_ATRIBUTO_MP.map(tipoAtributo => (
-          <div key={tipoAtributo} className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground block truncate">
-              {LABELS_ATRIBUTO_MP[tipoAtributo]} *
-            </label>
-            <select
-              value={atributosSeleccionados[tipoAtributo]}
-              onChange={e =>
-                setAtributosSeleccionados(prev => ({
-                  ...prev,
-                  [tipoAtributo]: e.target.value,
-                }))
-              }
-              className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2 py-1.5 text-foreground outline-none"
-            >
-              <option value="">—</option>
-              {(atributosPorTipo[tipoAtributo] ?? []).map(attr => (
-                <option key={attr.id} value={attr.id}>
-                  {attr.valor}
-                </option>
-              ))}
-            </select>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-foreground">Referencia Proveedor</label>
+          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+            <input
+              value={referenciaProveedor}
+              onChange={e => setReferenciaProveedor(e.target.value)}
+              placeholder="SKU-PROV-123"
+              className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
           </div>
-        ))}
+        </div>
       </div>
 
-      {/* Row: Costo + Referencia Proveedor + Partida Arancelaria */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* Row 3: Atributos de Configuración */}
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">Atributos del Material</label>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {TIPOS_ATRIBUTO_MP.map(tipoAtributo => (
+            <div key={tipoAtributo} className="space-y-0.5">
+              <label className="text-[10px] font-medium text-muted-foreground block truncate">
+                {LABELS_ATRIBUTO_MP[tipoAtributo]} *
+              </label>
+              <select
+                value={atributosSeleccionados[tipoAtributo]}
+                onChange={e =>
+                  setAtributosSeleccionados(prev => ({
+                    ...prev,
+                    [tipoAtributo]: e.target.value,
+                  }))
+                }
+                className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2 py-1.5 text-foreground outline-none appearance-none"
+              >
+                <option value="">—</option>
+                {(atributosPorTipo[tipoAtributo] ?? []).map(attr => (
+                  <option key={attr.id} value={attr.id}>
+                    {attr.valor}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Row 4: Costo + Partida Arancelaria + Rendimiento */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="space-y-1">
           <label className="text-xs font-medium text-foreground">Costo/unidad (COP) *</label>
-          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2 flex items-center">
+            <span className="text-muted-foreground text-xs mr-1">$</span>
             <input
               type="number"
               min="0"
@@ -392,19 +451,7 @@ function MaterialForm({
               value={costoUnit}
               onChange={e => setCostoUnit(e.target.value)}
               placeholder="8500"
-              className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-foreground">Ref. Proveedor</label>
-          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
-            <input
-              value={referenciaProveedor}
-              onChange={e => setReferenciaProveedor(e.target.value)}
-              placeholder="SKU-PROV-123"
-              className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+              className="w-full bg-transparent text-body-sm text-foreground outline-none"
             />
           </div>
         </div>
@@ -420,90 +467,58 @@ function MaterialForm({
             />
           </div>
         </div>
+
+        {unidad === 'metros' && (
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-foreground">Rendimiento (m/kg)</label>
+            <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={rendimientoKg}
+                onChange={e => setRendimientoKg(e.target.value)}
+                placeholder="3.5"
+                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Rendimiento (m/kg) — solo para metros */}
-      {unidad === 'metros' && (
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-foreground">Rendimiento (m/kg)</label>
-          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              value={rendimientoKg}
-              onChange={e => setRendimientoKg(e.target.value)}
-              placeholder="3.5"
-              className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-            />
-          </div>
-          <p className="text-[10px] text-muted-foreground">Metros por kilogramo</p>
-        </div>
-      )}
-
-      {/* Código */}
-      {!isEdit && (
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-foreground">Código *</label>
-          <CodigoPreviewMP
-            atributos={[
-              ...(atributosPorTipo.tipo || []),
-              ...(atributosPorTipo.subtipo || []),
-              ...(atributosPorTipo.color || []),
-              ...(atributosPorTipo.diseño || []),
-            ]}
-            tipoId={atributosSeleccionados.tipo || null}
-            subtipoId={atributosSeleccionados.subtipo || null}
-            colorId={atributosSeleccionados.color || null}
-            disenoId={atributosSeleccionados.diseño || null}
-            onCodigoChange={handleCodigoChange}
-            onNombreRecomendado={(nombre) => {
-              if (nombre.trim() && !nombreEditadoRef.current) setNombre(nombre)
-            }}
-          />
-          {codigoDuplicado && (
-            <div className="flex items-center gap-1 text-red-600">
-              <AlertTriangle className="w-3 h-3 shrink-0" />
-              <span className="text-[10px]">Código ya existe</span>
-            </div>
+      {/* Footer: Estado y Acciones */}
+      <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center gap-4">
+          {isEdit && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <div
+                onClick={() => setActivo(v => !v)}
+                className={`relative w-8 h-4 rounded-full transition-colors ${activo ? 'bg-green-500' : 'bg-neu-base shadow-neu-inset'}`}
+              >
+                <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${activo ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+              </div>
+              <span className="text-[11px] font-medium text-foreground">{activo ? 'Activo' : 'Inactivo'}</span>
+            </label>
           )}
-          {checkingCodigo && (
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <Loader2 className="w-3 h-3 animate-spin" />
-              <span className="text-xs">Verificando...</span>
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* Estado (solo edición) */}
-      {isEdit && (
-        <label className="flex items-center gap-2 cursor-pointer w-fit">
-          <div
-            onClick={() => setActivo(v => !v)}
-            className={`relative w-9 h-5 rounded-full transition-colors ${activo ? 'bg-primary-500' : 'bg-neu-base shadow-neu-inset'}`}
+          {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
+          {!isEdit && checkingCodigo && <span className="text-[10px] text-muted-foreground animate-pulse">Verificando disponibilidad...</span>}
+        </div>
+
+        <div className="flex gap-2">
+          <button type="button" onClick={onDone}
+            className="px-3 py-1.5 rounded-lg text-body-sm text-muted-foreground hover:text-foreground transition-colors">
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={pending || (!isEdit && codigoDuplicado) || (!isEdit && !codigoCompleto)}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset disabled:opacity-60"
           >
-            <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${activo ? 'translate-x-4' : 'translate-x-0.5'}`} />
-          </div>
-          <span className="text-body-sm text-foreground">{activo ? 'Activo' : 'Inactivo'}</span>
-        </label>
-      )}
-
-      {error && <p className="text-xs text-red-600">{error}</p>}
-
-      <div className="flex gap-2 justify-end">
-        <button type="button" onClick={onDone}
-          className="px-3 py-1.5 rounded-lg text-body-sm text-muted-foreground hover:text-foreground transition-colors">
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={pending || (!isEdit && codigoDuplicado) || (!isEdit && !codigoCompleto)}
-          className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset disabled:opacity-60"
-        >
-          {pending && <Loader2 className="w-3 h-3 animate-spin" />}
-          {isEdit ? 'Guardar cambios' : 'Crear material'}
-        </button>
+            {pending && <Loader2 className="w-3 h-3 animate-spin" />}
+            {isEdit ? 'Guardar cambios' : 'Crear material'}
+          </button>
+        </div>
       </div>
     </form>
   )
