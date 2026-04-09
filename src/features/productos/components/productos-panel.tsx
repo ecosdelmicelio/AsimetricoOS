@@ -582,16 +582,23 @@ function ProductForm({
           </div>
 
           {/* Código inteligente - en creación y edición */}
-          <CodigoPreviewPT
-            atributos={atributosPT}
-            generoId={atributosSeleccionados.genero || null}
-            tipoId={atributosSeleccionados.tipo || null}
-            fitId={atributosSeleccionados.fit || null}
-            colorId={atributosSeleccionados.color || null}
-            disenoId={atributosSeleccionados.diseno || null}
-            onCodigoChange={handleCodigoChange}
-            onNombreRecomendado={handleNombreRecomendado}
-          />
+          {(() => {
+            const atributosAgrupados: Record<TipoAtributo, AtributoPT[]> = {
+              tipo: [], fit: [], superior: [], inferior: [], capsula: [], diseno: [], color: [], genero: []
+            }
+            atributosPT.forEach(a => {
+              if (atributosAgrupados[a.tipo]) atributosAgrupados[a.tipo].push(a)
+            })
+
+            return (
+              <CodigoPreviewPT
+                atributos={atributosAgrupados}
+                seleccionados={atributosSeleccionados}
+                onCodigoChange={handleCodigoChange}
+                onNombreRecomendado={handleNombreRecomendado}
+              />
+            )
+          })()}
 
           {error && <p className="text-xs text-red-600">{error}</p>}
         </div>
