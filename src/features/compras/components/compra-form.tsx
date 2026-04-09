@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Package, Shirt } from 'lucide-react'
 import { createOrdenCompra } from '@/features/compras/services/compras-actions'
 import type { EstadoGreige, EstadoDocumental } from '@/features/compras/types'
 import { OCLineasMPForm } from './oc-lineas-mp-form'
@@ -48,8 +48,8 @@ export function CompraForm({
   const [error, setError] = useState<string | null>(null)
   const [tipo, setTipo] = useState<'materia_prima' | 'producto_terminado'>('materia_prima')
   const [greige, setGreige] = useState<EstadoGreige>('para_tejer')
-  const [lineasMP, setLineasMP] = useState<any[]>([])
-  const [lineasPT, setLineasPT] = useState<any[]>([])
+  const [lineasMP, setLineasMP] = useState<unknown[]>([])
+  const [lineasPT, setLineasPT] = useState<unknown[]>([])
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -98,33 +98,69 @@ export function CompraForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="rounded-2xl bg-neu-base shadow-neu p-6 space-y-4">
-        <h2 className="font-semibold text-foreground text-body-md">Datos de la Orden</h2>
 
-        {/* Tipo de OC */}
-        <div className="space-y-1.5">
-          <label className="text-body-sm font-medium text-foreground">Tipo de OC</label>
-          <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
-            <select
-              value={tipo}
-              onChange={e => setTipo(e.target.value as 'materia_prima' | 'producto_terminado')}
-              className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none"
-            >
-              <option value="materia_prima">📦 Materia Prima</option>
-              <option value="producto_terminado">👕 Producto Terminado</option>
-            </select>
+        {/* Top Row: Tipo toggle + Fecha */}
+        <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-3 items-start">
+
+          {/* Toggle Tipo OC — estilo ProductoForm */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Tipo de OC *</label>
+            <div className="relative flex rounded-xl bg-neu-base shadow-neu-inset p-1 w-full max-w-sm">
+              <div
+                className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-primary-600 shadow transition-transform duration-300 ${
+                  tipo === 'materia_prima' ? 'translate-x-0' : 'translate-x-full'
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setTipo('materia_prima')}
+                className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold transition-colors duration-300 ${
+                  tipo === 'materia_prima' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Package className="w-3.5 h-3.5" />
+                Materia Prima
+              </button>
+              <button
+                type="button"
+                onClick={() => setTipo('producto_terminado')}
+                className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold transition-colors duration-300 ${
+                  tipo === 'producto_terminado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Shirt className="w-3.5 h-3.5" />
+                Producto Terminado
+              </button>
+            </div>
+          </div>
+
+          {/* Fecha OC */}
+          <div className="space-y-1 md:min-w-[200px]">
+            <label className="text-xs font-medium text-muted-foreground">
+              Fecha OC <span className="text-red-500">*</span>
+            </label>
+            <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+              <input
+                name="fecha_oc"
+                type="date"
+                defaultValue={new Date().toISOString().split('T')[0]}
+                required
+                className="w-full bg-transparent text-sm text-foreground outline-none"
+              />
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {/* Proveedor */}
-          <div className="space-y-1.5">
-            <label className="text-body-sm font-medium text-foreground">Proveedor</label>
-            <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
+        {/* Row 2: Proveedor */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Proveedor</label>
+            <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
               <select
                 name="proveedor_id"
-                className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none"
+                className="w-full bg-transparent text-sm text-foreground outline-none appearance-none"
               >
                 <option value="">Sin proveedor (definir luego)</option>
                 {proveedores.map(p => (
@@ -144,27 +180,33 @@ export function CompraForm({
             )}
           </div>
 
-          {/* Fecha OC */}
-          <div className="space-y-1.5">
-            <label className="text-body-sm font-medium text-foreground">
-              Fecha OC <span className="text-red-500">*</span>
-            </label>
-            <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
-              <input
-                name="fecha_oc"
-                type="date"
-                defaultValue={new Date().toISOString().split('T')[0]}
-                required
-                className="w-full bg-transparent text-body-sm text-foreground outline-none"
-              />
+          {/* Estado Documental - Solo para MP */}
+          {tipo === 'materia_prima' && (
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">
+                Estado documental (Afidávit)
+              </label>
+              <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+                <select
+                  name="estado_documental"
+                  className="w-full bg-transparent text-sm text-foreground outline-none appearance-none"
+                >
+                  {DOC_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-[10px] text-muted-foreground/60">Solo se aplica a telas</p>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Estado Greige - Solo para MP */}
         {tipo === 'materia_prima' && (
-          <div className="space-y-1.5">
-            <label className="text-body-sm font-medium text-foreground">Estado de la tela</label>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Estado de la tela</label>
             <div className="flex gap-3">
               {GREIGE_OPTIONS.map(opt => (
                 <label key={opt.value} className="flex-1 cursor-pointer">
@@ -183,34 +225,12 @@ export function CompraForm({
                         : 'border-transparent bg-neu-base shadow-neu'
                     }`}
                   >
-                    <p className="font-semibold text-body-sm text-foreground">{opt.label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
+                    <p className="font-semibold text-xs text-foreground">{opt.label}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{opt.desc}</p>
                   </div>
                 </label>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Estado Documental - Solo para MP de tela */}
-        {tipo === 'materia_prima' && (
-          <div className="space-y-1.5">
-            <label className="text-body-sm font-medium text-foreground">
-              Estado documental (Afidávit)
-            </label>
-            <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
-              <select
-                name="estado_documental"
-                className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none"
-              >
-                {DOC_OPTIONS.map(o => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <p className="text-xs text-muted-foreground">Solo se aplica a telas</p>
           </div>
         )}
       </div>
@@ -225,7 +245,7 @@ export function CompraForm({
       </div>
 
       {error && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-red-700 text-body-sm">
+        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-red-700 text-sm">
           {error}
         </div>
       )}
@@ -234,7 +254,7 @@ export function CompraForm({
         <button
           type="submit"
           disabled={pending}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-neu-base shadow-neu text-primary-700 font-bold text-body-sm transition-all active:shadow-neu-inset disabled:opacity-60 hover:shadow-neu-lg"
+          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-neu-base shadow-neu text-primary-700 font-bold text-sm transition-all active:shadow-neu-inset disabled:opacity-60 hover:shadow-neu-lg"
         >
           {pending && <Loader2 className="w-4 h-4 animate-spin" />}
           Crear OC
