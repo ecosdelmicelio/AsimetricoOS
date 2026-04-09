@@ -8,7 +8,7 @@ import { getAtributosPT, getAtributosProducto } from '@/features/productos/servi
 import { getBOMProducto } from '@/features/productos/services/bom-actions'
 import { BOMEditor } from '@/features/productos/components/bom-editor'
 import { CodigoPreviewPT } from '@/features/productos/components/codigo-preview-pt'
-import type { Producto, TipoProducto, EstadoProducto } from '@/features/productos/types'
+import type { Producto, TipoProducto, EstadoProducto, TipoDistribucion } from '@/features/productos/types'
 import type { AtributoPT, TipoAtributo } from '@/features/productos/types/atributos'
 import { TIPOS_ATRIBUTO, LABELS_ATRIBUTO } from '@/features/productos/types/atributos'
 import type { MarcaConTercero } from '@/features/configuracion/services/marcas-actions'
@@ -115,6 +115,7 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
                 <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 min-w-[150px]">Descripción</th>
                 <th className="hidden xl:table-cell text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 w-20">Marca</th>
                 <th className="hidden lg:table-cell text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 w-24 whitespace-nowrap">Ref Cliente</th>
+                <th className="hidden sm:table-cell text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 w-24 whitespace-nowrap">Distribución</th>
                 <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 w-16">Stock</th>
                 <th className="hidden sm:table-cell text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 w-28 whitespace-nowrap">Costo Unit.</th>
                 <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 w-28 whitespace-nowrap">Valor Total</th>
@@ -126,7 +127,7 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
               {visibles.map(p => {
                 const saldo = saldoMap.get(p.id)
                 return editingId === p.id
-                  ? <tr key={p.id}><td colSpan={11} className="px-0 py-0">
+                  ? <tr key={p.id}><td colSpan={12} className="px-0 py-0">
                       <ProductForm
                         product={p}
                         marcas={marcas}
@@ -187,6 +188,14 @@ function ProductRow({
       </td>
       <td className="hidden xl:table-cell px-3 py-2"><span className="text-xs text-muted-foreground truncate">{brandName}</span></td>
       <td className="hidden lg:table-cell px-3 py-2 whitespace-nowrap"><span className="text-xs text-muted-foreground truncate">{p.referencia_cliente || '—'}</span></td>
+      <td className="hidden sm:table-cell px-3 py-2 whitespace-nowrap">
+        <span className="text-xs font-semibold px-2 py-1 rounded-lg" style={{
+          backgroundColor: p.tipo_distribucion === 'MTO' ? '#fef3c7' : '#dbeafe',
+          color: p.tipo_distribucion === 'MTO' ? '#92400e' : '#1e40af'
+        }}>
+          {p.tipo_distribucion === 'MTO' ? 'MTO' : 'MTS'}
+        </span>
+      </td>
       <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs font-mono text-foreground">{saldo?.saldo_total ?? 0}</span></td>
       <td className="hidden sm:table-cell px-3 py-2 text-right whitespace-nowrap">
         {(saldo?.saldo_total ?? 0) > 0 && (saldo?.costo_promedio ?? 0) > 0
@@ -257,6 +266,7 @@ function ProductForm({
   const [referencia, setReferencia] = useState(product?.referencia ?? '')
   const [nombre, setNombre] = useState(product?.nombre ?? '')
   const [tipo, setTipo] = useState<TipoProducto>(product?.tipo_producto ?? 'fabricado')
+  const [tipoDistribucion, setTipoDistribucion] = useState<TipoDistribucion>(product?.tipo_distribucion ?? 'MTS')
   const [referenciaCliente, setReferenciaCliente] = useState(product?.referencia_cliente ?? '')
   const [marcaId, setMarcaId] = useState(product?.marca_id ?? '')
   const [estado, setEstado] = useState<EstadoProducto>(product?.estado ?? 'activo')
@@ -355,6 +365,7 @@ function ProductForm({
             referencia,
             nombre,
             tipo_producto: tipo,
+            tipo_distribucion: tipoDistribucion,
             referencia_cliente: referenciaCliente ? referenciaCliente : null,
             marca_id: marcaId ? marcaId : null,
             estado,
@@ -370,6 +381,7 @@ function ProductForm({
             referencia,
             nombre,
             tipo_producto: tipo,
+            tipo_distribucion: tipoDistribucion,
             referencia_cliente: referenciaCliente ? referenciaCliente : null,
             marca_id: marcaId ? marcaId : null,
             color: color ? color : undefined,
@@ -428,9 +440,10 @@ function ProductForm({
       {/* Tab: Detalles */}
       {tab === 'detalles' && (
         <div className="space-y-4">
-          {/* Top Row: Código Generado + Tipo */}
-          <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-3 items-start">
-            <div className="w-full space-y-1">
+          {/* Top Row: Código Generado + Tipo y Distribución */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Código Generado - 2 columnas en desktop */}
+            <div className="lg:col-span-2 space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Código Generado *</label>
               {(() => {
                 const atributosAgrupados: Record<TipoAtributo, AtributoPT[]> = {
@@ -450,35 +463,67 @@ function ProductForm({
                 )
               })()}
             </div>
-            
-            <div className="space-y-1 md:min-w-[220px]">
-              <label className="text-xs font-medium text-muted-foreground">Tipo *</label>
-              <div className="relative flex rounded-xl bg-neu-base shadow-neu-inset p-1 w-full">
-                <div 
-                  className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-primary-600 shadow transition-transform duration-300 ${
-                    tipo === 'fabricado' ? 'translate-x-0' : 'translate-x-full'
-                  }`} 
-                />
-                <button
-                  type="button"
-                  disabled={isEdit}
-                  onClick={() => setTipo('fabricado')}
-                  className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
-                    tipo === 'fabricado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
-                  } ${isEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  Fabricado
-                </button>
-                <button
-                  type="button"
-                  disabled={isEdit}
-                  onClick={() => setTipo('comercializado')}
-                  className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
-                    tipo === 'comercializado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
-                  } ${isEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  Comercializado
-                </button>
+
+            {/* Tipo y Distribución - 1 columna en desktop, lado derecho */}
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Tipo *</label>
+                <div className="relative flex rounded-xl bg-neu-base shadow-neu-inset p-1 w-full">
+                  <div
+                    className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-primary-600 shadow transition-transform duration-300 ${
+                      tipo === 'fabricado' ? 'translate-x-0' : 'translate-x-full'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    disabled={isEdit}
+                    onClick={() => setTipo('fabricado')}
+                    className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
+                      tipo === 'fabricado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
+                    } ${isEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    Fabricado
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isEdit}
+                    onClick={() => setTipo('comercializado')}
+                    className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
+                      tipo === 'comercializado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
+                    } ${isEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    Comercializado
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Distribución *</label>
+                <div className="relative flex rounded-xl bg-neu-base shadow-neu-inset p-1 w-full">
+                  <div
+                    className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-primary-600 shadow transition-transform duration-300 ${
+                      tipoDistribucion === 'MTS' ? 'translate-x-0' : 'translate-x-full'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setTipoDistribucion('MTS')}
+                    className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
+                      tipoDistribucion === 'MTS' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    MTS
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTipoDistribucion('MTO')}
+                    className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
+                      tipoDistribucion === 'MTO' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    MTO
+                  </button>
+                </div>
               </div>
             </div>
           </div>
