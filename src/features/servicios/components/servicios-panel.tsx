@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useMemo, useRef } from 'react'
 import { Plus, Trash2, Edit2, Loader2, Wrench } from 'lucide-react'
 import {
   createServicioOperativo,
@@ -423,6 +423,7 @@ function ServicioForm({
   const [atributo2Id, setAtributo2Id] = useState<string | null>(servicio?.atributo2_id || null)
   const [atributo3Id, setAtributo3Id] = useState<string | null>(servicio?.atributo3_id || null)
   const [nombre, setNombre] = useState(servicio?.nombre || '')
+  const nombreEditadoRef = useRef(false)
   const [tarifa, setTarifa] = useState(servicio?.tarifa_unitaria?.toString() || '')
   const [descripcion, setDescripcion] = useState(servicio?.descripcion || '')
   const [ejecutorId, setEjecutorId] = useState<string | null>(servicio?.ejecutor_id || null)
@@ -487,7 +488,9 @@ function ServicioForm({
             atributo3Id={atributo3Id}
             descripcion={descripcion}
             onCodigoChange={(_, completo) => setCodigoCompleto(completo)}
-            onNombreRecomendado={(rec) => { if (!nombre) setNombre(rec) }}
+            onNombreRecomendado={(rec) => { 
+              if (rec.trim() && !nombreEditadoRef.current) setNombre(rec) 
+            }}
           />
         )}
       </div>
@@ -563,7 +566,10 @@ function ServicioForm({
             <input
               type="text"
               value={nombre}
-              onChange={e => setNombre(e.target.value)}
+              onChange={e => {
+                nombreEditadoRef.current = true
+                setNombre(e.target.value)
+              }}
               placeholder="Ej: Corte recto estándar"
               className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
