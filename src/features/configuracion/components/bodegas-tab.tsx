@@ -30,25 +30,23 @@ export function BodegasTab({ bodegas, bodegaDefaultId }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState<{
-    codigo: string
     nombre: string
     tipo: Bodega['tipo']
   }>({
-    codigo: '',
     nombre: '',
     tipo: 'secundaria',
   })
 
   const resetForm = () => {
-    setFormData({ codigo: '', nombre: '', tipo: 'secundaria' })
+    setFormData({ nombre: '', tipo: 'secundaria' })
     setEditingId(null)
     setShowForm(false)
     setError(null)
   }
 
   const handleCreate = async () => {
-    if (!formData.codigo.trim() || !formData.nombre.trim()) {
-      setError('Código y nombre son obligatorios')
+    if (!formData.nombre.trim()) {
+      setError('El nombre es obligatorio')
       return
     }
 
@@ -96,11 +94,11 @@ export function BodegasTab({ bodegas, bodegaDefaultId }: Props) {
 
   const startEdit = (bodega: Bodega) => {
     setFormData({
-      codigo: bodega.codigo,
       nombre: bodega.nombre,
       tipo: bodega.tipo,
     })
     setEditingId(bodega.id)
+    setShowForm(true)
   }
 
   return (
@@ -136,22 +134,10 @@ export function BodegasTab({ bodegas, bodegaDefaultId }: Props) {
 
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium mb-1">Código</label>
-              <input
-                type="text"
-                value={formData.codigo}
-                onChange={e => setFormData({ ...formData, codigo: e.target.value })}
-                disabled={!!editingId}
-                placeholder="e.g., PLANT"
-                className="w-full px-3 py-2 rounded-lg border border-neu-300 text-sm"
-              />
-            </div>
-
-            <div>
               <label className="block text-sm font-medium mb-1">Nombre</label>
               <input
                 type="text"
-                value={formData.nombre}
+                value={formData.nombre ?? ''}
                 onChange={e => setFormData({ ...formData, nombre: e.target.value })}
                 placeholder="e.g., Planta Principal"
                 className="w-full px-3 py-2 rounded-lg border border-neu-300 text-sm"
@@ -161,7 +147,7 @@ export function BodegasTab({ bodegas, bodegaDefaultId }: Props) {
             <div>
               <label className="block text-sm font-medium mb-1">Tipo</label>
               <select
-                value={formData.tipo}
+                value={formData.tipo ?? 'secundaria'}
                 onChange={e =>
                   setFormData({
                     ...formData,

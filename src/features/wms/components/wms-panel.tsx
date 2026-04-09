@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { Package } from 'lucide-react'
-import { BodegaSelector } from '@/features/wms/components/bodega-selector'
-import { BodegaBinesView } from '@/features/wms/components/bodega-bines-view'
+import { BodegaFilterBar } from '@/features/wms/components/bodega-filter-bar'
+import { InventarioTable } from '@/features/wms/components/inventario-table'
 import { TrasladoForm } from '@/features/wms/components/traslado-form'
 import { TrasladosHistorial } from '@/features/wms/components/traslados-historial'
 import type { Bodega } from '@/features/wms/types'
@@ -20,23 +20,30 @@ export function WMSPanel({ bodegas }: Props) {
   const bodegaActual = bodegas.find(b => b.id === bodegaSeleccionada)
 
   return (
-    <div className="flex h-full gap-6">
-      {/* Sidebar: Selector de bodegas */}
-      <div className="w-64 shrink-0 overflow-y-auto">
-        <BodegaSelector
-          bodegas={bodegas}
-          bodegaSeleccionada={bodegaSeleccionada}
-          onSelect={setBodegaSeleccionada}
-        />
-      </div>
+    <div className="flex flex-col h-full bg-neu-bg">
+      {/* Filter Bar: Iconos de bodegas */}
+      <BodegaFilterBar
+        bodegas={bodegas}
+        bodegaSeleccionada={bodegaSeleccionada}
+        onSelect={setBodegaSeleccionada}
+      />
 
-      {/* Main: Vista de bines + traslados */}
-      <div className="flex-1 min-w-0 overflow-y-auto space-y-6 pb-6">
+      {/* Main content */}
+      <div className="flex-1 min-w-0 overflow-y-auto p-6 space-y-6">
         {bodegaActual ? (
           <>
-            <BodegaBinesView bodega={bodegaActual} />
+            {/* Header */}
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">{bodegaActual.nombre}</h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                {bodegaActual.codigo} • Inventario de {bodegaActual.tipo.replace(/_/g, ' ')}
+              </p>
+            </div>
 
-            {/* Formulario de traslado + historial */}
+            {/* Inventario Table */}
+            <InventarioTable bodegaId={bodegaActual.id} bodegaNombre={bodegaActual.nombre} />
+
+            {/* Traslados */}
             <div className="grid grid-cols-2 gap-6">
               <div className="bg-neu-base border border-neu-300 rounded-xl p-6 space-y-4">
                 <h3 className="font-semibold">Traslados</h3>
@@ -52,7 +59,7 @@ export function WMSPanel({ bodegas }: Props) {
           <div className="flex items-center justify-center h-full text-muted-foreground">
             <div className="text-center space-y-2">
               <Package className="w-12 h-12 mx-auto opacity-40" />
-              <p>Selecciona una bodega para ver sus bines</p>
+              <p>Selecciona una bodega para ver su inventario</p>
             </div>
           </div>
         )}
