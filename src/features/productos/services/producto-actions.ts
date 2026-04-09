@@ -160,3 +160,36 @@ export async function toggleProductoActivo(id: string): Promise<{ error?: string
   revalidatePath('/catalogo')
   return {}
 }
+
+export async function deleteProducto(id: string): Promise<{ error?: string }> {
+  const supabase = db(await createClient())
+
+  const { data: producto } = await supabase
+    .from('productos')
+    .select('estado')
+    .eq('id', id)
+    .single() as { data: { estado: string } | null }
+
+  if (!producto) {
+    return { error: 'Producto no encontrado' }
+  }
+
+  if (producto.estado !== 'en_desarrollo') {
+    return { error: 'Solo se pueden eliminar productos que están en fase de desarrollo.' }
+  }
+
+  const { error } = await supabase
+    .from('productos')
+    .delete()
+    .eq('id', id) as { error: { message: string } | null }
+
+  if (error) {
+    if (error.message.includes('foreign key') || error.message.includes('violates foreign key constraint')) {
+      return { error: 'No se puede eliminar el producto porque tiene dependencias (listas de materiales, etc.).' }
+    }
+    return { error: error.message }
+  }
+
+  revalidatePath('/catalogo')
+  return {}
+}

@@ -2,8 +2,8 @@
 
 import { useState, useTransition, useEffect, useCallback, useRef } from 'react'
 import { flushSync } from 'react-dom'
-import { Plus, Edit2, Loader2, Package, Wrench } from 'lucide-react'
-import { createProducto, updateProducto, toggleProductoActivo } from '@/features/productos/services/producto-actions'
+import { Plus, Edit2, Loader2, Package, Wrench, Trash2 } from 'lucide-react'
+import { createProducto, updateProducto, toggleProductoActivo, deleteProducto } from '@/features/productos/services/producto-actions'
 import { getAtributosPT, getAtributosProducto } from '@/features/productos/services/atributo-actions'
 import { getBOMProducto } from '@/features/productos/services/bom-actions'
 import { BOMEditor } from '@/features/productos/components/bom-editor'
@@ -33,6 +33,17 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
   const saldoMap = new Map(saldosPorProducto.map(s => [s.producto_id, s]))
 
   const visibles = productos.filter(p => p.estado === filtroEstado)
+
+  const handleEliminar = async (id: string, nombre: string) => {
+    if (confirm(`¿Estás seguro de que deseas eliminar el producto en desarrollo "${nombre}"? Esta acción no se puede deshacer.`)) {
+      startTransition(async () => {
+        const res = await deleteProducto(id)
+        if (res.error) {
+           alert(res.error)
+        }
+      })
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -125,9 +136,15 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
                         onDone={() => setEditingId(null)}
                       />
                     </td></tr>
-                  : <ProductRow key={p.id} product={p} onEdit={() => setEditingId(p.id)} onToggleActivo={async () => {
-                      await toggleProductoActivo(p.id)
-                    }} saldo={saldo} marcas={marcas} />
+                  : <ProductRow 
+                      key={p.id} 
+                      product={p} 
+                      onEdit={() => setEditingId(p.id)} 
+                      onToggleActivo={async () => await toggleProductoActivo(p.id)} 
+                      onDelete={() => handleEliminar(p.id, p.nombre)}
+                      saldo={saldo} 
+                      marcas={marcas} 
+                    />
               })}
             </tbody>
           </table>
@@ -137,7 +154,21 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
   )
 }
 
-function ProductRow({ product: p, onEdit, onToggleActivo, saldo, marcas }: { product: Producto; onEdit: () => void; onToggleActivo: () => void; saldo?: SaldoTotalPT; marcas: MarcaConTercero[] }) {
+function ProductRow({ 
+  product: p, 
+  onEdit, 
+  onToggleActivo, 
+  onDelete,
+  saldo, 
+  marcas 
+}: { 
+  product: Producto; 
+  onEdit: () => void; 
+  onToggleActivo: () => void; 
+  onDelete: () => void;
+  saldo?: SaldoTotalPT; 
+  marcas: MarcaConTercero[] 
+}) {
   const brandName = marcas.find(m => m.id === p.marca_id)?.nombre || '—'
 
   return (
@@ -161,23 +192,35 @@ function ProductRow({ product: p, onEdit, onToggleActivo, saldo, marcas }: { pro
       <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs font-mono text-foreground font-semibold">$ {(saldo?.valor_total ?? 0).toLocaleString('es-CO', { maximumFractionDigits: 0 })}</span></td>
       <td className="px-3 py-2 text-center">
         <button
-          onClick={onToggleActivo}
+          onClick={p.estado !== 'en_desarrollo' ? onToggleActivo : undefined}
+          disabled={p.estado === 'en_desarrollo'}
           className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-lg transition-colors ${
             p.estado === 'activo' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
             p.estado === 'inactivo' ? 'bg-gray-100 text-gray-500 hover:bg-gray-200' :
-            'bg-blue-100 text-blue-700 hover:bg-blue-200'
+            'bg-blue-100 text-blue-700 cursor-default'
           }`}
         >
           {p.estado === 'activo' ? 'Activo' : p.estado === 'inactivo' ? 'Inactivo' : 'En desarrollo'}
         </button>
       </td>
       <td className="px-3 py-2 text-right">
-        <button
-          onClick={onEdit}
-          className="w-6 h-6 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <Edit2 className="w-3 h-3" />
-        </button>
+        <div className="flex justify-end gap-1 opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={onEdit}
+            className="w-6 h-6 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Edit2 className="w-3 h-3" />
+          </button>
+          {p.estado === 'en_desarrollo' && (
+            <button
+              onClick={onDelete}
+              className="w-6 h-6 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-red-500 transition-colors ml-1"
+              title="Eliminar producto"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          )}
+        </div>
       </td>
     </tr>
   )
