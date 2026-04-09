@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useCallback, useMemo, useEffect, useRef } from 'react'
-import { Plus, Edit2, Loader2, Package, AlertTriangle } from 'lucide-react'
+import { Plus, Edit2, Loader2, Package, AlertTriangle, MapPin, Globe } from 'lucide-react'
 import { createMaterial, updateMaterial, toggleMaterialActivo } from '@/features/materiales/services/materiales-actions'
 import { useDuplicateCheck } from '@/shared/hooks/use-duplicate-check'
 import { CodigoPreviewMP } from '@/features/materiales/components/codigo-preview-mp'
@@ -90,13 +90,12 @@ export function MaterialesPanel({ materiales, saldosPorMaterial = [] }: Props) {
             <thead>
               <tr className="border-b border-black/5 bg-neu-base">
                 <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Creación</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Código</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Nombre</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 whitespace-nowrap">Código</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 min-w-[200px]">Nombre</th>
                 <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Unidad</th>
                 <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2">Stock</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2">Costo Unit.</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2">Costo Total</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-center px-3 py-2">Tipo</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 whitespace-nowrap">Costo Unit.</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 whitespace-nowrap">Costo Total</th>
                 <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-center px-3 py-2">Estado</th>
                 <th className="px-3 py-2 w-10" />
               </tr>
@@ -121,20 +120,22 @@ export function MaterialesPanel({ materiales, saldosPorMaterial = [] }: Props) {
 function MaterialRow({ material: m, onEdit, onToggleActivo, saldo }: { material: Material; onEdit: () => void; onToggleActivo: () => void; saldo?: SaldoTotalMP }) {
   return (
     <tr className={!m.activo ? 'opacity-50' : ''}>
-      <td className="px-3 py-2"><span className="text-xs text-muted-foreground">{m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}</span></td>
-      <td className="px-3 py-2"><span className="font-mono text-xs font-semibold text-primary-700">{m.codigo}</span></td>
-      <td className="px-3 py-2">
-        <p className="text-xs font-medium text-foreground line-clamp-2">{m.nombre}</p>
+      <td className="px-3 py-2 whitespace-nowrap"><span className="text-xs text-muted-foreground">{m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}</span></td>
+      <td className="px-3 py-2 whitespace-nowrap"><span className="font-mono text-xs font-semibold text-primary-700">{m.codigo}</span></td>
+      <td className="px-3 py-2 min-w-[200px]">
+        <div className="flex items-center gap-2">
+          {m.tipo_mp === 'nacional' ? (
+            <MapPin className="w-3 h-3 text-emerald-500 shrink-0" title="Nacional" />
+          ) : (
+            <Globe className="w-3 h-3 text-indigo-500 shrink-0" title="Importado" />
+          )}
+          <p className="text-xs font-medium text-foreground truncate">{m.nombre}</p>
+        </div>
       </td>
       <td className="px-3 py-2"><span className="text-xs text-muted-foreground">{UNIDADES.find(u => u.value === m.unidad)?.label ?? m.unidad}</span></td>
-      <td className="px-3 py-2 text-right"><span className="text-xs font-mono text-foreground">{saldo?.saldo_total ?? 0}</span></td>
-      <td className="px-3 py-2 text-right"><span className="text-xs text-foreground font-medium">{formatCop(saldo?.costo_promedio ?? m.costo_unit)}/{UNIDAD_LABEL[m.unidad]}</span></td>
-      <td className="px-3 py-2 text-right"><span className="text-xs font-mono text-foreground font-semibold">{formatCop(saldo?.valor_total ?? 0)}</span></td>
-      <td className="px-3 py-2 text-center">
-        <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-lg bg-blue-100 text-blue-700 capitalize">
-          {m.tipo_mp}
-        </span>
-      </td>
+      <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs font-mono text-foreground">{saldo?.saldo_total ?? 0}</span></td>
+      <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs text-foreground font-medium">{formatCop(saldo?.costo_promedio ?? m.costo_unit)}/{UNIDAD_LABEL[m.unidad]}</span></td>
+      <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs font-mono text-foreground font-semibold">{formatCop(saldo?.valor_total ?? 0)}</span></td>
       <td className="px-3 py-2 text-center">
         <button
           onClick={onToggleActivo}
