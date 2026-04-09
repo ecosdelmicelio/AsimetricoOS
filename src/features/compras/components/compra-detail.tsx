@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Calendar, Package } from 'lucide-react'
+import { ArrowLeft, Calendar, Package, FileText } from 'lucide-react'
 import { getOrdenCompraById, getMateriales, getRecepcionesByOC, getBodegaPrincipal } from '@/features/compras/services/compras-actions'
 import { getProductosActivos } from '@/features/kardex/services/kardex-actions'
 import { RecepcionOC } from './recepcion-oc'

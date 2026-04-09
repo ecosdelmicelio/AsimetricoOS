@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/shared/lib/supabase/server'
+import { getBodegaDefault } from '@/shared/lib/bodega-default'
 import type {
   OrdenCompra,
   OrdenCompraConDetalle,
@@ -9,6 +10,7 @@ import type {
   EstadoDocumental,
   EstadoGreige,
 } from '@/features/compras/types'
+import type { Bodega } from '@/features/wms/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function db(supabase: unknown): any { return supabase }
@@ -247,15 +249,13 @@ export async function createRecepcionOC(input: {
 
   if (recepcionError || !recepcion) return { error: recepcionError?.message || 'Error creando recepción' }
 
-  // 6. Buscar bodega principal
-  const { data: bodega } = await supabase
-    .from('bodegas')
-    .select('id')
-    .eq('tipo', 'principal')
-    .limit(1)
-    .single() as { data: { id: string } | null }
-
-  if (!bodega) return { error: 'Bodega principal no encontrada' }
+  // 6. Obtener bodega default
+  let bodega: Bodega
+  try {
+    bodega = await getBodegaDefault()
+  } catch (e) {
+    return { error: `Error obteniendo bodega default: ${(e as Error).message}` }
+  }
 
   // 7. Buscar tipo de movimiento ENTRADA_OC
   const { data: tipoMov } = await supabase
@@ -391,15 +391,13 @@ export async function revertirRecepcionOC(recepcionId: string): Promise<{ error?
 
   if (updateError) return { error: `Error marcando recepción como revertida: ${updateError.message}` }
 
-  // 3. Obtener bodega principal y tipo de movimiento
-  const { data: bodega } = await supabase
-    .from('bodegas')
-    .select('id')
-    .eq('tipo', 'principal')
-    .limit(1)
-    .single() as { data: { id: string } | null }
-
-  if (!bodega) return { error: 'Bodega principal no encontrada' }
+  // 3. Obtener bodega default y tipo de movimiento
+  let bodega: Bodega
+  try {
+    bodega = await getBodegaDefault()
+  } catch (e) {
+    return { error: `Error obteniendo bodega default: ${(e as Error).message}` }
+  }
 
   const { data: tipoMov } = await supabase
     .from('kardex_tipos_movimiento')
@@ -491,19 +489,12 @@ export async function crearRecepcionesOCConBins(
 }
 
 /**
- * Obtener bodega principal (Asimetrico Central)
+ * Obtener bodega principal (usa getBodegaDefault)
+ * @deprecated Use getBodegaDefault from @/shared/lib/bodega-default instead
  */
-export async function getBodegaPrincipal() {
-  const supabase = db(await createClient())
-
-  const { data } = await supabase
-    .from('bodegas')
-    .select('id, nombre')
-    .eq('tipo', 'principal')
-    .limit(1)
-    .single() as { data: any }
-
-  return data
+export async function getBodegaPrincipal(): Promise<{ id: string; nombre: string }> {
+  const bodega: Bodega = await getBodegaDefault()
+  return { id: bodega.id, nombre: bodega.nombre }
 }
 
 /**

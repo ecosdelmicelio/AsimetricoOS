@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   experimental: {
     mcpServer: true,
   },
+  // Excluir scripts y otros directorios de utilidad del build
+  typescript: {
+    tsconfigPath: './tsconfig.json',
+  },
 }
 
 export default nextConfig

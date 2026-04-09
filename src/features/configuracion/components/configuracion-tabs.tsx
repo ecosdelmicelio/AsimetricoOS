@@ -1,21 +1,24 @@
 'use client'
 
 import { useState } from 'react'
-import { Code2, AlertTriangle, ShieldCheck } from 'lucide-react'
+import { Code2, AlertTriangle, ShieldCheck, Package } from 'lucide-react'
 import { CalidadConfigForm } from '@/features/calidad/components/calidad-config-form'
 import { TiposMovimientoTab } from '@/features/configuracion/components/tipos-movimiento-tab'
+import { BodegasTab } from '@/features/configuracion/components/bodegas-tab'
 import { AtributosConfig } from '@/features/productos/components/atributos-config'
 import { AtributosConfigMP } from '@/features/materiales/components/atributos-config'
 import { AtributosConfigServicio } from '@/features/servicios/components/atributos-config-servicio'
 import type { CalidadConfig } from '@/features/calidad/types'
 import type { TipoMovimiento } from '@/features/configuracion/services/tipos-movimiento-actions'
+import type { Bodega } from '@/features/wms/types'
 import type { AtributoPT } from '@/features/productos/types/atributos'
 import type { AtributoMP } from '@/features/materiales/types/atributos'
 import type { TipoServicioAtributo } from '@/features/servicios/types/servicios'
 
-type Tab = 'defectos' | 'calidad' | 'movimientos' | 'atributos-pt' | 'atributos-mp' | 'atributos-servicios'
+type Tab = 'defectos' | 'calidad' | 'movimientos' | 'atributos-pt' | 'atributos-mp' | 'atributos-servicios' | 'bodegas'
 
-const TABS: { id: Tab; label: string; sub: string; icon: 'code' | 'shield' }[] = [
+const TABS: { id: Tab; label: string; sub: string; icon: 'code' | 'shield' | 'package' }[] = [
+  { id: 'bodegas', label: 'Bodegas', sub: 'Gestión de bodegas y default',           icon: 'package' },
   { id: 'atributos-pt', label: 'Atributos PT', sub: 'Tipo, Fit, Color, etc.',       icon: 'code'  },
   { id: 'atributos-mp', label: 'Atributos MP', sub: 'Tipo, Subtipo, Color, etc.',   icon: 'code'  },
   { id: 'atributos-servicios', label: 'Atributos Servicios', sub: 'Tipo, Subtipo',   icon: 'code'  },
@@ -31,6 +34,8 @@ interface Props {
   atributosPT: AtributoPT[]
   atributosMP: AtributoMP[]
   atributosServicios: TipoServicioAtributo[]
+  bodegas: Bodega[]
+  bodegaDefaultId: string | null
 }
 
 export function ConfiguracionTabs({
@@ -40,8 +45,10 @@ export function ConfiguracionTabs({
   atributosPT,
   atributosMP,
   atributosServicios,
+  bodegas,
+  bodegaDefaultId,
 }: Props) {
-  const [tab, setTab] = useState<Tab>('atributos-pt')
+  const [tab, setTab] = useState<Tab>('bodegas')
 
   return (
     <div className="space-y-6">
@@ -62,7 +69,9 @@ export function ConfiguracionTabs({
             }`}>
               {t.icon === 'shield'
                 ? <ShieldCheck className={`w-3.5 h-3.5 ${tab === t.id ? 'text-primary-600' : 'text-muted-foreground'}`} />
-                : <Code2     className={`w-3.5 h-3.5 ${tab === t.id ? 'text-primary-600' : 'text-muted-foreground'}`} />
+                : t.icon === 'package'
+                ? <Package className={`w-3.5 h-3.5 ${tab === t.id ? 'text-primary-600' : 'text-muted-foreground'}`} />
+                : <Code2 className={`w-3.5 h-3.5 ${tab === t.id ? 'text-primary-600' : 'text-muted-foreground'}`} />
               }
             </div>
             <div>
@@ -76,6 +85,7 @@ export function ConfiguracionTabs({
       </div>
 
       {/* Content */}
+      {tab === 'bodegas' && <BodegasTab bodegas={bodegas} bodegaDefaultId={bodegaDefaultId} />}
       {tab === 'atributos-pt' && <AtributosConfig atributos={atributosPT} />}
       {tab === 'atributos-mp' && <AtributosConfigMP atributos={atributosMP} />}
       {tab === 'atributos-servicios' && <AtributosConfigServicio atributos={atributosServicios} />}

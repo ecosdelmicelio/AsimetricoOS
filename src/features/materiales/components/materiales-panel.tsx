@@ -125,9 +125,9 @@ function MaterialRow({ material: m, onEdit, onToggleActivo, saldo }: { material:
       <td className="px-3 py-2 min-w-[200px]">
         <div className="flex items-center gap-2">
           {m.tipo_mp === 'nacional' ? (
-            <MapPin className="w-3 h-3 text-emerald-500 shrink-0" title="Nacional" />
+            <MapPin className="w-3 h-3 text-emerald-500 shrink-0" />
           ) : (
-            <Globe className="w-3 h-3 text-indigo-500 shrink-0" title="Importado" />
+            <Globe className="w-3 h-3 text-indigo-500 shrink-0" />
           )}
           <p className="text-xs font-medium text-foreground truncate">{m.nombre}</p>
         </div>
