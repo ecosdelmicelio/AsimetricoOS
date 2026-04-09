@@ -20,7 +20,7 @@ import {
   ChevronRight,
   Menu
 } from 'lucide-react'
-import { LogoAsimetrico } from '@/shared/components/logo-asimetrico'
+import Image from 'next/image'
 import type { UserRole } from '@/shared/types'
 
 const NAV_ITEMS: { href: string; label: string; icon: React.ElementType; roles: UserRole[] }[] = [
@@ -74,11 +74,11 @@ export function Sidebar() {
     <>
       {/* Mobile Header (Only visible on small screens to open sidebar) */}
       <div className="flex md:hidden items-center justify-between h-14 bg-primary-900 px-4 shrink-0 shadow-md w-full z-40 fixed top-0">
-        <div className="flex items-center gap-2">
-           <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
-             <LogoAsimetrico className="w-4 h-4 text-white" />
+        <div className="flex items-center gap-3">
+           <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center shrink-0 overflow-hidden">
+             <Image src="/SOCIAL-MEDIA-PERFIL.png" alt="Asimétrico" width={32} height={32} className="w-8 h-8 object-contain" />
            </div>
-           <span className="font-heading font-bold text-white text-body-lg">Asimétrico OS</span>
+           <span className="font-heading font-black text-white text-lg tracking-tight">Asimétrico OS</span>
         </div>
         <button className="text-white p-2 focus:outline-none" onClick={() => setMobileOpen(true)}>
           <Menu className="w-6 h-6" />
@@ -95,22 +95,56 @@ export function Sidebar() {
 
       {/* Main Sidebar */}
       <aside className={sidebarClasses}>
-        <div className="flex h-16 items-center px-4 shrink-0 border-b border-primary-800/50 justify-between">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center shrink-0">
-               <LogoAsimetrico className="w-4 h-4 text-white" />
+        {/* Logo Header — adapts to collapsed/expanded */}
+        {/* COLLAPSED: isotipo fills the full bar width */}
+        {/* EXPANDED / MOBILE: small isotipo + wordmark */}
+        <div className={cn(
+          "flex shrink-0 border-b border-primary-800/50 transition-all duration-300 overflow-hidden",
+          (expanded || mobileOpen)
+            ? "h-20 items-center px-4 justify-between"
+            : "h-[76px] items-center justify-center px-2"
+        )}>
+
+          {/* COLLAPSED: big centered isotipo */}
+          {!expanded && !mobileOpen && (
+            <div className="w-[52px] h-[52px] rounded-2xl overflow-hidden shadow-lg border border-white/10">
+              <Image
+                src="/SOCIAL-MEDIA-PERFIL.png"
+                alt="Asimétrico"
+                width={52}
+                height={52}
+                className="w-full h-full object-cover"
+              />
             </div>
-            <span className={cn(
-              "font-heading font-bold text-white tracking-tight whitespace-nowrap transition-opacity duration-300",
-              (expanded || mobileOpen) ? "opacity-100" : "opacity-0 invisible w-0"
-            )}>
-              Asimétrico OS
-            </span>
-          </div>
+          )}
+
+          {/* EXPANDED / MOBILE: small isotipo + wordmark */}
+          {(expanded || mobileOpen) && (
+            <div className="flex items-center gap-3 overflow-hidden">
+              <div className="w-9 h-9 rounded-xl overflow-hidden shrink-0 shadow-md border border-white/10">
+                <Image
+                  src="/SOCIAL-MEDIA-PERFIL.png"
+                  alt="Asimétrico"
+                  width={36}
+                  height={36}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="font-heading font-black text-white text-base tracking-tight leading-none">
+                  Asimétrico
+                </span>
+                <span className="text-primary-400 text-[10px] font-bold uppercase tracking-[0.15em] mt-0.5">
+                  OS Platform
+                </span>
+              </div>
+            </div>
+          )}
+
           {mobileOpen && (
-             <button className="md:hidden text-primary-300 hover:text-white" onClick={() => setMobileOpen(false)}>
-               <ChevronLeft className="w-6 h-6" />
-             </button>
+            <button className="md:hidden text-primary-300 hover:text-white shrink-0" onClick={() => setMobileOpen(false)}>
+              <ChevronLeft className="w-6 h-6" />
+            </button>
           )}
         </div>
 
