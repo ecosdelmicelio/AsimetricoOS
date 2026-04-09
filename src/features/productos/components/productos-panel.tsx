@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect, useCallback, useRef } from 'react'
 import { flushSync } from 'react-dom'
-import { Plus, Edit2, Loader2, Package } from 'lucide-react'
+import { Plus, Edit2, Loader2, Package, Wrench } from 'lucide-react'
 import { createProducto, updateProducto, toggleProductoActivo } from '@/features/productos/services/producto-actions'
 import { getAtributosPT, getAtributosProducto } from '@/features/productos/services/atributo-actions'
 import { getBOMProducto } from '@/features/productos/services/bom-actions'
@@ -99,16 +99,15 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-black/5 bg-neu-base">
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Creación</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Código</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Descripción</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Tipo</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Ref Cliente</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Marca</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2">Stock</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2">Costo Unit.</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2">Costo Total</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-center px-3 py-2">Estado</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 w-20">Creación</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 whitespace-nowrap">Código</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 min-w-[200px]">Descripción</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 w-20">Marca</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 w-24 whitespace-nowrap">Ref Cliente</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 w-16">Stock</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 w-28 whitespace-nowrap">Costo Unit.</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 w-32 whitespace-nowrap">Valor Total</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-center px-3 py-2 w-20">Estado</th>
                 <th className="px-3 py-2 w-10" />
               </tr>
             </thead>
@@ -128,7 +127,7 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
                     </td></tr>
                   : <ProductRow key={p.id} product={p} onEdit={() => setEditingId(p.id)} onToggleActivo={async () => {
                       await toggleProductoActivo(p.id)
-                    }} saldo={saldo} />
+                    }} saldo={saldo} marcas={marcas} />
               })}
             </tbody>
           </table>
@@ -138,18 +137,28 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
   )
 }
 
-function ProductRow({ product: p, onEdit, onToggleActivo, saldo }: { product: Producto; onEdit: () => void; onToggleActivo: () => void; saldo?: SaldoTotalPT }) {
+function ProductRow({ product: p, onEdit, onToggleActivo, saldo, marcas }: { product: Producto; onEdit: () => void; onToggleActivo: () => void; saldo?: SaldoTotalPT; marcas: MarcaConTercero[] }) {
+  const brandName = marcas.find(m => m.id === p.marca_id)?.nombre || '—'
+
   return (
     <tr className={p.estado === 'inactivo' ? 'opacity-50' : ''}>
       <td className="px-3 py-2"><span className="text-xs text-muted-foreground">{p.created_at ? new Date(p.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span></td>
-      <td className="px-3 py-2"><span className="font-mono text-xs font-semibold text-primary-700">{p.referencia}</span></td>
-      <td className="px-3 py-2"><p className="text-xs font-medium text-foreground line-clamp-2">{p.nombre}</p></td>
-      <td className="px-3 py-2"><span className="text-xs text-foreground capitalize">{p.tipo_producto === 'fabricado' ? 'Fabricado' : 'Comercializado'}</span></td>
-      <td className="px-3 py-2"><span className="text-xs text-muted-foreground truncate">{p.referencia_cliente || '—'}</span></td>
-      <td className="px-3 py-2"><span className="text-xs text-muted-foreground truncate">{p.marca_id ? 'Con marca' : '—'}</span></td>
-      <td className="px-3 py-2 text-right"><span className="text-xs font-mono text-foreground">{saldo?.saldo_total ?? 0}</span></td>
-      <td className="px-3 py-2 text-right"><span className="text-xs font-mono text-muted-foreground">$ {(saldo?.costo_promedio ?? 0).toLocaleString('es-CO', { maximumFractionDigits: 2 })}</span></td>
-      <td className="px-3 py-2 text-right"><span className="text-xs font-mono text-foreground font-semibold">$ {(saldo?.valor_total ?? 0).toLocaleString('es-CO', { maximumFractionDigits: 0 })}</span></td>
+      <td className="px-3 py-2 whitespace-nowrap"><span className="font-mono text-xs font-semibold text-primary-700">{p.referencia}</span></td>
+      <td className="px-3 py-2 min-w-[200px]">
+        <div className="flex items-center gap-2">
+          {p.tipo_producto === 'fabricado' ? (
+            <Wrench className="w-3 h-3 text-primary-500 shrink-0" title="Fabricado" />
+          ) : (
+            <Package className="w-3 h-3 text-amber-500 shrink-0" title="Comercializado" />
+          )}
+          <p className="text-xs font-medium text-foreground truncate">{p.nombre}</p>
+        </div>
+      </td>
+      <td className="px-3 py-2"><span className="text-xs text-muted-foreground truncate">{brandName}</span></td>
+      <td className="px-3 py-2 whitespace-nowrap"><span className="text-xs text-muted-foreground truncate">{p.referencia_cliente || '—'}</span></td>
+      <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs font-mono text-foreground">{saldo?.saldo_total ?? 0}</span></td>
+      <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs font-mono text-muted-foreground">$ {(saldo?.costo_promedio ?? 0).toLocaleString('es-CO', { maximumFractionDigits: 2 })}</span></td>
+      <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs font-mono text-foreground font-semibold">$ {(saldo?.valor_total ?? 0).toLocaleString('es-CO', { maximumFractionDigits: 0 })}</span></td>
       <td className="px-3 py-2 text-center">
         <button
           onClick={onToggleActivo}
