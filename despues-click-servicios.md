@@ -1,0 +1,304 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]: Asimétrico OS
+          - generic [ref=e8]:
+            - link "Torre de Control" [ref=e9] [cursor=pointer]:
+              - /url: /torre-control
+              - img [ref=e10]
+              - generic [ref=e15]: Torre de Control
+            - link "Órdenes de Venta" [ref=e16] [cursor=pointer]:
+              - /url: /ordenes-venta
+              - img [ref=e17]
+              - generic [ref=e20]: Órdenes de Venta
+            - link "Producción" [ref=e21] [cursor=pointer]:
+              - /url: /ordenes-produccion
+              - img [ref=e22]
+              - generic [ref=e24]: Producción
+            - link "Calidad" [ref=e25] [cursor=pointer]:
+              - /url: /calidad
+              - img [ref=e26]
+              - generic [ref=e29]: Calidad
+            - link "Liquidación" [ref=e30] [cursor=pointer]:
+              - /url: /liquidacion
+              - img [ref=e31]
+              - generic [ref=e33]: Liquidación
+            - link "Productos" [ref=e34] [cursor=pointer]:
+              - /url: /productos
+              - img [ref=e35]
+              - generic [ref=e39]: Productos
+            - link "Compras" [ref=e40] [cursor=pointer]:
+              - /url: /compras
+              - img [ref=e41]
+              - generic [ref=e45]: Compras
+            - link "Terceros" [ref=e46] [cursor=pointer]:
+              - /url: /terceros
+              - img [ref=e47]
+              - generic [ref=e52]: Terceros
+            - link "Configuración" [ref=e53] [cursor=pointer]:
+              - /url: /configuracion
+              - img [ref=e54]
+              - generic [ref=e57]: Configuración
+        - generic [ref=e62]:
+          - generic [ref=e402]: alejandro.guevara@asimetrico.co · Orquestador
+          - button "Salir" [ref=e63] [cursor=pointer]:
+            - img [ref=e64]
+            - generic [ref=e67]: Salir
+    - main [ref=e68]:
+      - generic [ref=e70]:
+        - generic [ref=e71]:
+          - heading "ADN de Productos" [level=1] [ref=e72]
+          - paragraph [ref=e73]: Catálogo de referencias, materiales e insumos
+        - generic [ref=e74]:
+          - button "Productos terminados PT — Referencias y BOM" [ref=e75] [cursor=pointer]:
+            - img [ref=e77]
+            - generic [ref=e80]:
+              - paragraph [ref=e81]: Productos terminados
+              - paragraph [ref=e82]: PT — Referencias y BOM
+          - button "Materiales e insumos MP — Telas, hilos, accesorios" [ref=e83] [cursor=pointer]:
+            - img [ref=e85]
+            - generic [ref=e89]:
+              - paragraph [ref=e90]: Materiales e insumos
+              - paragraph [ref=e91]: MP — Telas, hilos, accesorios
+        - generic [ref=e93]:
+          - generic [ref=e94]:
+            - button "Activos" [ref=e95] [cursor=pointer]:
+              - generic [ref=e98]: Activos
+            - button "Nuevo producto" [ref=e99] [cursor=pointer]:
+              - img [ref=e100]
+              - text: Nuevo producto
+          - generic [ref=e101]:
+            - generic [ref=e102]:
+              - generic [ref=e103]: Fecha
+              - generic [ref=e104]: Código
+              - generic [ref=e105]: Tipo
+              - generic [ref=e106]: Nombre
+              - generic [ref=e107]: Ref Cliente
+              - generic [ref=e108]: Marca
+              - generic [ref=e109]: Stock
+              - generic [ref=e110]: Estado
+            - generic [ref=e112]:
+              - generic [ref=e113]:
+                - generic [ref=e114]: 23/02/26
+                - generic [ref=e115]: Fabricado
+                - paragraph [ref=e116]: asd
+                - generic [ref=e117]: —
+                - generic [ref=e118]: —
+                - generic [ref=e119]: 0 uds
+                - generic [ref=e121]: Activo
+                - button [ref=e123] [cursor=pointer]:
+                  - img [ref=e124]
+              - generic [ref=e468]:
+                - generic [ref=e469]: 23/02/26
+                - generic [ref=e470]: ASMBOSEPR001SPSLNEN
+                - generic [ref=e471]: Fabricado
+                - paragraph [ref=e472]: Body Seamless R01 Negro
+                - generic [ref=e473]: —
+                - generic [ref=e474]: —
+                - generic [ref=e475]: 25 uds
+                - generic [ref=e477]: Activo
+                - button [ref=e479] [cursor=pointer]:
+                  - img [ref=e480]
+              - generic [ref=e140]:
+                - generic [ref=e141]: 23/02/26
+                - generic [ref=e142]: ASMBOSHRP001PNSLBEN
+                - generic [ref=e143]: Fabricado
+                - paragraph [ref=e144]: Body Shapewear R01 Beige
+                - generic [ref=e145]: —
+                - generic [ref=e146]: —
+                - generic [ref=e147]: 25 uds
+                - generic [ref=e149]: Activo
+                - button [ref=e151] [cursor=pointer]:
+                  - img [ref=e152]
+              - generic [ref=e154]:
+                - generic [ref=e155]: 23/02/26
+                - generic [ref=e156]: ASMBOSHRP001PNSLNEN
+                - generic [ref=e157]: Fabricado
+                - paragraph [ref=e158]: Body Shapewear R01 Negro
+                - generic [ref=e159]: —
+                - generic [ref=e160]: —
+                - generic [ref=e161]: 0 uds
+                - generic [ref=e163]: Activo
+                - button [ref=e165] [cursor=pointer]:
+                  - img [ref=e166]
+              - generic [ref=e168]:
+                - generic [ref=e169]: 23/02/26
+                - generic [ref=e170]: ASMBOSWR0001SPSLBEN
+                - generic [ref=e171]: Fabricado
+                - paragraph [ref=e172]: Body Softwear R01 Beige
+                - generic [ref=e173]: —
+                - generic [ref=e174]: —
+                - generic [ref=e175]: 0 uds
+                - generic [ref=e177]: Activo
+                - button [ref=e179] [cursor=pointer]:
+                  - img [ref=e180]
+              - generic [ref=e182]:
+                - generic [ref=e183]: 23/02/26
+                - generic [ref=e184]: ASMBOSWR0001SPSLNEN
+                - generic [ref=e185]: Fabricado
+                - paragraph [ref=e186]: Body Softwear R01 Negro
+                - generic [ref=e187]: —
+                - generic [ref=e188]: —
+                - generic [ref=e189]: 0 uds
+                - generic [ref=e191]: Activo
+                - button [ref=e193] [cursor=pointer]:
+                  - img [ref=e194]
+              - generic [ref=e196]:
+                - generic [ref=e197]: 23/02/26
+                - generic [ref=e198]: ASMFASHRP001PNSLBEN
+                - generic [ref=e199]: Fabricado
+                - paragraph [ref=e200]: Faja Shapewear R01 Beige
+                - generic [ref=e201]: —
+                - generic [ref=e202]: —
+                - generic [ref=e203]: 0 uds
+                - generic [ref=e205]: Activo
+                - button [ref=e207] [cursor=pointer]:
+                  - img [ref=e208]
+              - generic [ref=e210]:
+                - generic [ref=e211]: 23/02/26
+                - generic [ref=e212]: ASMFASHRP001PNSLNEN
+                - generic [ref=e213]: Fabricado
+                - paragraph [ref=e214]: Faja Shapewear R01 Negro
+                - generic [ref=e215]: —
+                - generic [ref=e216]: —
+                - generic [ref=e217]: 0 uds
+                - generic [ref=e219]: Activo
+                - button [ref=e221] [cursor=pointer]:
+                  - img [ref=e222]
+              - generic [ref=e224]:
+                - generic [ref=e225]: 27/02/26
+                - generic [ref=e226]: MLANVER
+                - generic [ref=e227]: Fabricado
+                - paragraph [ref=e228]: adsasd
+                - generic [ref=e229]: —
+                - generic [ref=e230]: —
+                - generic [ref=e231]: 0 uds
+                - generic [ref=e233]: Activo
+                - button [ref=e235] [cursor=pointer]:
+                  - img [ref=e236]
+              - generic [ref=e238]:
+                - generic [ref=e239]: 02/04/26
+                - generic [ref=e240]: MLASVER
+                - generic [ref=e241]: Comercializado
+                - paragraph [ref=e242]: Blusa ML c
+                - generic [ref=e243]: —
+                - generic [ref=e244]: —
+                - generic [ref=e245]: 0 uds
+                - generic [ref=e247]: Activo
+                - button [ref=e249] [cursor=pointer]:
+                  - img [ref=e250]
+              - generic [ref=e252]:
+                - generic [ref=e253]: 28/03/26
+                - generic [ref=e254]: REF-001
+                - generic [ref=e255]: Fabricado
+                - paragraph [ref=e256]: Camisa Clásica
+                - generic [ref=e257]: —
+                - generic [ref=e258]: —
+                - generic [ref=e259]: 0 uds
+                - generic [ref=e261]: Activo
+                - button [ref=e263] [cursor=pointer]:
+                  - img [ref=e264]
+              - generic [ref=e266]:
+                - generic [ref=e267]: 28/03/26
+                - generic [ref=e268]: REF-002
+                - generic [ref=e269]: Fabricado
+                - paragraph [ref=e270]: Pantalón Casual
+                - generic [ref=e271]: —
+                - generic [ref=e272]: —
+                - generic [ref=e273]: 0 uds
+                - generic [ref=e275]: Activo
+                - button [ref=e277] [cursor=pointer]:
+                  - img [ref=e278]
+              - generic [ref=e280]:
+                - generic [ref=e281]: 28/03/26
+                - generic [ref=e282]: REF-003
+                - generic [ref=e283]: Fabricado
+                - paragraph [ref=e284]: Blusa Elegante
+                - generic [ref=e285]: —
+                - generic [ref=e286]: —
+                - generic [ref=e287]: 2 uds
+                - generic [ref=e289]: Activo
+                - button [ref=e291] [cursor=pointer]:
+                  - img [ref=e292]
+              - generic [ref=e294]:
+                - generic [ref=e295]: 28/03/26
+                - generic [ref=e296]: REF-004
+                - generic [ref=e297]: Fabricado
+                - paragraph [ref=e298]: Chaqueta Deportiva
+                - generic [ref=e299]: —
+                - generic [ref=e300]: —
+                - generic [ref=e301]: 0 uds
+                - generic [ref=e303]: Activo
+                - button [ref=e305] [cursor=pointer]:
+                  - img [ref=e306]
+              - generic [ref=e308]:
+                - generic [ref=e309]: 28/03/26
+                - generic [ref=e310]: REF-005
+                - generic [ref=e311]: Fabricado
+                - paragraph [ref=e312]: Vestido Social
+                - generic [ref=e313]: —
+                - generic [ref=e314]: —
+                - generic [ref=e315]: 0 uds
+                - generic [ref=e317]: Activo
+                - button [ref=e319] [cursor=pointer]:
+                  - img [ref=e320]
+              - generic [ref=e322]:
+                - generic [ref=e323]: 23/02/26
+                - generic [ref=e324]: SALBOSWRP001SPSLBEN
+                - generic [ref=e325]: Fabricado
+                - paragraph [ref=e326]: Body Softwear Salomé P01 Beige
+                - generic [ref=e327]: —
+                - generic [ref=e328]: —
+                - generic [ref=e329]: 0 uds
+                - generic [ref=e331]: Activo
+                - button [ref=e333] [cursor=pointer]:
+                  - img [ref=e334]
+              - generic [ref=e336]:
+                - generic [ref=e337]: 23/02/26
+                - generic [ref=e338]: SALBOSWRP001SPSLNEN
+                - generic [ref=e339]: Fabricado
+                - paragraph [ref=e340]: Body Softwear Salomé P01 Negro
+                - generic [ref=e341]: —
+                - generic [ref=e342]: —
+                - generic [ref=e343]: 0 uds
+                - generic [ref=e345]: Activo
+                - button [ref=e347] [cursor=pointer]:
+                  - img [ref=e348]
+              - generic [ref=e350]:
+                - generic [ref=e351]: 23/02/26
+                - generic [ref=e352]: SNABOEWRP001CPSLNEN
+                - generic [ref=e353]: Fabricado
+                - paragraph [ref=e354]: Body Easywear Snatched P01 Negro
+                - generic [ref=e355]: —
+                - generic [ref=e356]: —
+                - generic [ref=e357]: 0 uds
+                - generic [ref=e359]: Activo
+                - button [ref=e361] [cursor=pointer]:
+                  - img [ref=e362]
+              - generic [ref=e364]:
+                - generic [ref=e365]: 23/02/26
+                - generic [ref=e366]: SNAFASHRP001PNSLNEN
+                - generic [ref=e367]: Fabricado
+                - paragraph [ref=e368]: Faja Shapewear Snatched P01 Negro
+                - generic [ref=e369]: —
+                - generic [ref=e370]: —
+                - generic [ref=e371]: 0 uds
+                - generic [ref=e373]: Activo
+                - button [ref=e375] [cursor=pointer]:
+                  - img [ref=e376]
+              - generic [ref=e378]:
+                - generic [ref=e379]: 23/02/26
+                - generic [ref=e380]: SNRBOSHRP001PNSLNEN
+                - generic [ref=e381]: Fabricado
+                - paragraph [ref=e382]: Body Shapewear Sonryse P01 Negro
+                - generic [ref=e383]: —
+                - generic [ref=e384]: —
+                - generic [ref=e385]: 60 uds
+                - generic [ref=e387]: Activo
+                - button [ref=e389] [cursor=pointer]:
+                  - img [ref=e390]
+  - button "Open Next.js Dev Tools" [ref=e397] [cursor=pointer]:
+    - img [ref=e398]
+  - alert [ref=e401]

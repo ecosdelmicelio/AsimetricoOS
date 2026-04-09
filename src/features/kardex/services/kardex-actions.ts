@@ -33,6 +33,25 @@ export interface SaldoPT {
   valor_total: number | null
 }
 
+export interface SaldoTotalPT {
+  producto_id: string
+  referencia: string
+  nombre: string
+  saldo_total: number
+  costo_promedio: number | null
+  valor_total: number | null
+}
+
+export interface SaldoTotalMP {
+  material_id: string
+  codigo: string
+  nombre: string
+  unidad: string
+  saldo_total: number
+  costo_promedio: number | null
+  valor_total: number | null
+}
+
 export interface HistorialMP {
   id: string
   fecha_movimiento: string
@@ -551,4 +570,109 @@ export async function getSaldosTotalesPorProducto(): Promise<Record<string, numb
     totales[row.producto_id] = (totales[row.producto_id] ?? 0) + row.cantidad
   }
   return totales
+}
+
+/**
+ * Obtiene saldos totales por producto con costo promedio ponderado y valor total
+ * Agrupa todas bodegas y tallas
+ */
+export async function getSaldosTotalPT(): Promise<SaldoTotalPT[]> {
+  const supabase = db(await createClient())
+
+  const { data } = await supabase
+    .from('kardex')
+    .select(`
+      producto_id,
+      cantidad,
+      saldo_ponderado,
+      productos (referencia, nombre)
+    `)
+    .not('producto_id', 'is', null)
+    .order('fecha_movimiento', { ascending: false }) as {
+      data: any[] | null
+    }
+
+  if (!data) return []
+
+  // Agrupar por producto_id solamente
+  const saldos: Record<string, any> = {}
+
+  for (const row of data) {
+    const key = row.producto_id
+
+    if (!saldos[key]) {
+      saldos[key] = {
+        producto_id: row.producto_id,
+        referencia: row.productos?.referencia,
+        nombre: row.productos?.nombre,
+        saldo_total: 0,
+        costo_promedio: 0,
+      }
+    }
+
+    // Acumular cantidad y usar último CPP conocido
+    saldos[key].saldo_total += row.cantidad
+    if (row.saldo_ponderado) {
+      saldos[key].costo_promedio = row.saldo_ponderado
+    }
+  }
+
+  // Calcular valor total
+  return Object.values(saldos).map((s: any) => ({
+    ...s,
+    valor_total: s.saldo_total * (s.costo_promedio || 0),
+  }))
+}
+
+/**
+ * Obtiene saldos totales por material con costo promedio ponderado y valor total
+ * Agrupa todas bodegas
+ */
+export async function getSaldosTotalMP(): Promise<SaldoTotalMP[]> {
+  const supabase = db(await createClient())
+
+  const { data } = await supabase
+    .from('kardex')
+    .select(`
+      material_id,
+      cantidad,
+      saldo_ponderado,
+      materiales (codigo, nombre, unidad)
+    `)
+    .not('material_id', 'is', null)
+    .order('fecha_movimiento', { ascending: false }) as {
+      data: any[] | null
+    }
+
+  if (!data) return []
+
+  // Agrupar por material_id solamente
+  const saldos: Record<string, any> = {}
+
+  for (const row of data) {
+    const key = row.material_id
+
+    if (!saldos[key]) {
+      saldos[key] = {
+        material_id: row.material_id,
+        codigo: row.materiales?.codigo,
+        nombre: row.materiales?.nombre,
+        unidad: row.materiales?.unidad,
+        saldo_total: 0,
+        costo_promedio: 0,
+      }
+    }
+
+    // Acumular cantidad y usar último CPP conocido
+    saldos[key].saldo_total += row.cantidad
+    if (row.saldo_ponderado) {
+      saldos[key].costo_promedio = row.saldo_ponderado
+    }
+  }
+
+  // Calcular valor total
+  return Object.values(saldos).map((s: any) => ({
+    ...s,
+    valor_total: s.saldo_total * (s.costo_promedio || 0),
+  }))
 }

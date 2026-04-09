@@ -2,75 +2,93 @@
 
 import { useState, useTransition, useCallback, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Package, ShoppingBag, ChevronRight, ChevronLeft, AlertTriangle, Globe } from 'lucide-react'
+import { Loader2, AlertTriangle, Globe } from 'lucide-react'
 import { createProducto } from '@/features/productos/services/producto-actions'
-import { CodigoBuilder } from '@/features/codigo-schema/components/codigo-builder'
+import { CodigoPreviewPT } from '@/features/productos/components/codigo-preview-pt'
 import { useDuplicateCheck } from '@/shared/hooks/use-duplicate-check'
-import type { CodigoSchema, SegmentoSeleccion } from '@/features/codigo-schema/types'
 import type { TipoProducto } from '@/features/productos/types'
-
-interface CodigoState {
-  codigo: string
-  completo: boolean
-  selecciones: SegmentoSeleccion[]
-}
+import type { AtributoPT, TipoAtributo } from '@/features/productos/types/atributos'
+import type { Marca } from '@/features/configuracion/services/marcas-actions'
+import { TIPOS_ATRIBUTO, LABELS_ATRIBUTO } from '@/features/productos/types/atributos'
 
 interface Props {
-  schema: CodigoSchema | null
+  atributosPT: AtributoPT[]
+  marcas: Marca[]
 }
 
-export function ProductoForm({ schema }: Props) {
+export function ProductoForm({ atributosPT, marcas }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  const [step, setStep] = useState(1)
 
-  // Step 1
+  // Agrupar atributos internamente para resolver posible error de serialización en Next.js
+  const atributos = useMemo(() => {
+    const acc = {} as Record<TipoAtributo, AtributoPT[]>
+    TIPOS_ATRIBUTO.forEach(t => acc[t] = [])
+    atributosPT.forEach(a => {
+      if (acc[a.tipo]) acc[a.tipo].push(a)
+    })
+    return acc
+  }, [atributosPT])
+
+  // Tipo y Código
   const [tipoProducto, setTipoProducto] = useState<TipoProducto>('fabricado')
-  const [codigoState, setCodigoState] = useState<CodigoState>({
-    codigo: '',
-    completo: false,
-    selecciones: [],
-  })
+  const [codigo, setCodigo] = useState('')
+  const [codigoCompleto, setCodigoCompleto] = useState(false)
+
+  // Básico
   const [nombre, setNombre] = useState('')
   const [color, setColor] = useState('')
 
-  // Step 2
-  const [precioBase, setPrecioBase] = useState('')
+  // Atributos seleccionados (tipo → atributo_id)
+  const [atributosSeleccionados, setAtributosSeleccionados] = useState<Record<TipoAtributo, string>>({
+    tipo: '',
+    fit: '',
+    superior: '',
+    inferior: '',
+    capsula: '',
+    diseno: '',
+    color: '',
+    genero: '',
+  })
 
-  // Auto-derivar color y origen del esquema de código
-  const autoColor = useMemo(() => {
-    if (!schema || codigoState.selecciones.length === 0) return ''
-    const seg = schema.segmentos.find(s => s.etiqueta.toLowerCase().includes('color'))
-    if (!seg) return ''
-    const sel = codigoState.selecciones.find(s => s.segmento_id === seg.id)
-    if (!sel?.valor) return ''
-    return seg.valores.find(v => v.valor === sel.valor)?.etiqueta ?? sel.valor
-  }, [schema, codigoState.selecciones])
+  const [marcaSeleccionada, setMarcaSeleccionada] = useState('')
 
-  const autoOrigenUsa = useMemo(() => {
-    if (!schema || codigoState.selecciones.length === 0) return false
-    const seg = schema.segmentos.find(s =>
-      s.etiqueta.toLowerCase().includes('origen') || s.etiqueta.toLowerCase().includes('origin')
-    )
-    if (!seg) return false
-    const sel = codigoState.selecciones.find(s => s.segmento_id === seg.id)
-    if (!sel?.valor) return false
-    const etiqueta = seg.valores.find(v => v.valor === sel.valor)?.etiqueta ?? ''
-    return etiqueta.toLowerCase().includes('usa') || etiqueta.toLowerCase().includes(' us') || sel.valor.toUpperCase() === 'US'
-  }, [schema, codigoState.selecciones])
+  // Precios
+  const [precioN1, setPrecioN1] = useState('')
+  const [precioN2, setPrecioN2] = useState('')
+  const [precioN3, setPrecioN3] = useState('')
+  const [referenciaCliente, setReferenciaCliente] = useState('')
+  const [nombreComercial, setNombreComercial] = useState('')
+  const [partidaArancelaria, setPartidaArancelaria] = useState('')
+  const [autoColor, setAutoColor] = useState(false)
 
-  // Auto-rellenar color cuando cambia la selección del código
+  // Auto-llenar color cuando se selecciona el atributo color
   useEffect(() => {
-    if (autoColor) setColor(autoColor)
-  }, [autoColor])
+    const attrColorId = atributosSeleccionados.color
+    if (attrColorId) {
+      const attr = (atributos.color ?? []).find(a => a.id === attrColorId)
+      if (attr) {
+        setColor(attr.valor)
+        setAutoColor(true)
+      }
+    } else {
+      setAutoColor(false)
+    }
+  }, [atributosSeleccionados.color, atributos.color])
 
-  const handleCodigoChange = useCallback(
-    (result: { codigo: string; completo: boolean; selecciones: SegmentoSeleccion[] }) => {
-      setCodigoState(result)
-    },
-    [],
-  )
+  // Auto-llenar referencia cuando código está completo
+  useEffect(() => {
+    if (codigoCompleto && codigo) {
+      // Ya no auto-llenamos, dejamos que se especifique manualmente si es necesario
+      // pero podríamos auto-llenar si queremos
+    }
+  }, [codigoCompleto, codigo])
+
+  const handleCodigoChange = useCallback((nuevoCodigo: string, completo: boolean) => {
+    setCodigo(nuevoCodigo)
+    setCodigoCompleto(completo)
+  }, [])
 
   const { isDuplicate: nombreDuplicado, checking: checkingNombre } = useDuplicateCheck({
     table: 'productos',
@@ -79,285 +97,274 @@ export function ProductoForm({ schema }: Props) {
     enabled: nombre.trim().length > 2,
   })
 
-  const canAdvanceStep1 = codigoState.completo && nombre.trim().length > 0
+  const canAdvanceStep1 = codigoCompleto && nombre.trim().length > 0
 
   function handleSubmit() {
     setError(null)
-    const autoRefs = codigoState.selecciones
-      .filter(s => s.tipo === 'auto_ref')
-      .map(s => ({ segmento_id: s.segmento_id, longitud: s.longitud }))
 
     startTransition(async () => {
       const res = await createProducto({
-        referencia: codigoState.codigo,
+        referencia: codigo,
         nombre: nombre.trim(),
         color: color.trim() || undefined,
-        origen_usa: autoOrigenUsa,
-        precio_base: precioBase ? parseFloat(precioBase) : undefined,
+        precio_base: precioN1 ? parseFloat(precioN1) : undefined,
+        precio_estandar: precioN2 ? parseFloat(precioN2) : undefined,
+        precio_n3: precioN3 ? parseFloat(precioN3) : undefined,
+        referencia_cliente: referenciaCliente.trim() || undefined,
+        nombre_comercial: nombreComercial.trim() || undefined,
+        partida_arancelaria: partidaArancelaria.trim() || undefined,
         tipo_producto: tipoProducto,
-        autoRefs: autoRefs.length > 0 ? autoRefs : undefined,
-        schema_id: schema?.id,
+        marca_id: marcaSeleccionada || undefined,
+        atributos: atributosSeleccionados,
       })
       if (res.error) { setError(res.error); return }
-      router.push(`/productos/${res.data!.id}`)
+      router.push(`/catalogo/${res.data!.id}`)
     })
   }
 
   return (
-    <div className="space-y-6">
-      {/* Step indicator */}
-      <div className="flex items-center gap-2">
-        {(['Identidad', 'Precio'] as const).map((label, i) => {
-          const s = i + 1
-          return (
-            <div key={s} className="flex items-center gap-2">
-              <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                  step === s
-                    ? 'bg-primary-600 text-white'
-                    : step > s
-                    ? 'bg-green-500 text-white'
-                    : 'bg-neu-base shadow-neu text-muted-foreground'
-                }`}
-              >
-                {step > s ? '✓' : s}
-              </div>
-              <span
-                className={`text-body-sm ${
-                  step === s ? 'text-foreground font-medium' : 'text-muted-foreground'
-                }`}
-              >
-                {label}
-              </span>
-              {s < 2 && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-            </div>
-          )
-        })}
-      </div>
-
-      {/* ── Step 1: Identidad ── */}
-      {step === 1 && (
-        <div className="space-y-5">
-          {/* Tipo de producto */}
-          <div className="space-y-2">
-            <label className="text-body-sm text-muted-foreground font-medium">
-              Tipo de Producto *
-            </label>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setTipoProducto('fabricado')}
-                className={`flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-left transition-all ${
-                  tipoProducto === 'fabricado'
-                    ? 'border-primary-400 bg-primary-50 shadow-neu-inset'
-                    : 'border-transparent bg-neu-base shadow-neu hover:shadow-neu-lg'
-                }`}
-              >
-                <Package
-                  className={`w-4 h-4 shrink-0 ${
-                    tipoProducto === 'fabricado' ? 'text-primary-600' : 'text-muted-foreground'
-                  }`}
-                />
-                <div>
-                  <p
-                    className={`text-body-sm font-semibold ${
-                      tipoProducto === 'fabricado' ? 'text-primary-700' : 'text-foreground'
-                    }`}
-                  >
-                    Fabricado
-                  </p>
-                  <p className="text-xs text-muted-foreground">Requiere BOM</p>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setTipoProducto('comercializado')}
-                className={`flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-left transition-all ${
-                  tipoProducto === 'comercializado'
-                    ? 'border-primary-400 bg-primary-50 shadow-neu-inset'
-                    : 'border-transparent bg-neu-base shadow-neu hover:shadow-neu-lg'
-                }`}
-              >
-                <ShoppingBag
-                  className={`w-4 h-4 shrink-0 ${
-                    tipoProducto === 'comercializado' ? 'text-primary-600' : 'text-muted-foreground'
-                  }`}
-                />
-                <div>
-                  <p
-                    className={`text-body-sm font-semibold ${
-                      tipoProducto === 'comercializado' ? 'text-primary-700' : 'text-foreground'
-                    }`}
-                  >
-                    Comercializado
-                  </p>
-                  <p className="text-xs text-muted-foreground">Sin BOM</p>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {/* Código */}
-          <div className="space-y-2">
-            <label className="text-body-sm text-muted-foreground font-medium">
-              Código de referencia *
-            </label>
-            <CodigoBuilder schema={schema} onChange={handleCodigoChange} />
-          </div>
-
-          {/* Nombre */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <label className="text-body-sm text-muted-foreground font-medium">
-                Nombre del producto *
-              </label>
-              {checkingNombre && (
-                <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
-              )}
-            </div>
-            <div className={`rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5 ${nombreDuplicado ? 'ring-1 ring-amber-400' : ''}`}>
-              <input
-                value={nombre}
-                onChange={e => setNombre(e.target.value)}
-                placeholder="Ej: Blusa Manga Larga Body"
-                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-              />
-            </div>
-            {nombreDuplicado && (
-              <div className="flex items-center gap-1.5 text-amber-600">
-                <AlertTriangle className="w-3 h-3 shrink-0" />
-                <span className="text-xs">Ya existe un producto con este nombre</span>
-              </div>
-            )}
-          </div>
-
-          {/* Color */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <label className="text-body-sm text-muted-foreground font-medium">Color</label>
-              {autoColor && (
-                <span className="text-[10px] text-primary-500 font-medium">Auto</span>
-              )}
-            </div>
-            <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
-              <input
-                value={color}
-                onChange={e => setColor(e.target.value)}
-                placeholder="Ej: Rojo Vino, Azul Navy, Negro"
-                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {autoColor ? 'Derivado del esquema de código. Puedes editarlo.' : 'Cada código de producto tiene un color fijo.'}
-            </p>
-          </div>
-
-          {/* Origen USA — solo si el esquema tiene un segmento de origen */}
-          {autoOrigenUsa && (
-            <div className="flex items-center gap-3 rounded-xl bg-blue-50 border border-blue-200 px-4 py-3">
-              <Globe className="w-4 h-4 text-blue-600 shrink-0" />
-              <div>
-                <p className="text-body-sm font-semibold text-blue-700">Origen USA 🇺🇸</p>
-                <p className="text-xs text-blue-600">Derivado del esquema de código. Requiere etiquetado especial.</p>
-              </div>
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-1">
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="flex-1 py-2.5 rounded-xl bg-neu-base shadow-neu text-body-sm text-muted-foreground hover:text-foreground transition-all"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={() => setStep(2)}
-              disabled={!canAdvanceStep1}
-              className="flex-1 py-2.5 rounded-xl bg-primary-600 text-white font-semibold text-body-sm hover:bg-primary-700 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-            >
-              Continuar
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+    <form onSubmit={e => { e.preventDefault(); handleSubmit() }} className="space-y-3">
+      {error && (
+        <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2">
+          <p className="text-red-700 text-sm">{error}</p>
         </div>
       )}
 
-      {/* ── Step 2: Precio ── */}
-      {step === 2 && (
-        <div className="space-y-5">
-          {/* Resumen */}
-          <div className="rounded-xl bg-neu-base shadow-neu-inset px-4 py-3 space-y-1.5">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
-              Resumen
-            </p>
-            <p className="font-mono text-body-sm font-bold text-primary-700 tracking-widest">
-              {codigoState.codigo}
-            </p>
-            <p className="text-body-sm text-foreground">{nombre}</p>
-            {color && (
-              <p className="text-xs text-muted-foreground">Color: <span className="font-medium text-foreground">{color}</span></p>
-            )}
-            <span
-              className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${
-                tipoProducto === 'fabricado'
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-emerald-100 text-emerald-700'
+      {/* Top Row: Código Generado + Tipo */}
+      <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-3 items-start">
+        <div className="w-full space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Código Generado *</label>
+          <CodigoPreviewPT
+            atributos={atributos}
+            seleccionados={atributosSeleccionados}
+            onCodigoChange={handleCodigoChange}
+          />
+        </div>
+        
+        <div className="space-y-1 md:min-w-[220px]">
+          <label className="text-xs font-medium text-muted-foreground">Tipo *</label>
+          <div className="relative flex rounded-xl bg-neu-base shadow-neu-inset p-1 w-full">
+            <div 
+              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-primary-600 shadow transition-transform duration-300 ${
+                tipoProducto === 'fabricado' ? 'translate-x-0' : 'translate-x-full'
+              }`} 
+            />
+            <button
+              type="button"
+              onClick={() => setTipoProducto('fabricado')}
+              className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
+                tipoProducto === 'fabricado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              {tipoProducto === 'fabricado' ? 'Fabricado' : 'Comercializado'}
-            </span>
-          </div>
-
-          {/* Precio techo */}
-          <div className="space-y-1.5">
-            <label className="text-body-sm text-muted-foreground font-medium">
-              Precio techo (COP)
-            </label>
-            <div className="relative rounded-xl bg-neu-base shadow-neu-inset">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-body-sm">
-                $
-              </span>
-              <input
-                type="number"
-                min={0}
-                step={1000}
-                value={precioBase}
-                onChange={e => setPrecioBase(e.target.value)}
-                placeholder="0"
-                className="w-full bg-transparent pl-7 pr-3 py-2.5 text-body-sm text-foreground outline-none"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Precio de venta máximo. El BOM calculará el costo real de producción.
-            </p>
-          </div>
-
-          {error && <p className="text-red-600 text-body-sm">{error}</p>}
-
-          <div className="flex gap-3 pt-1">
-            <button
-              type="button"
-              onClick={() => setStep(1)}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-neu-base shadow-neu text-body-sm text-muted-foreground hover:text-foreground transition-all"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Volver
+              Fabricado
             </button>
             <button
               type="button"
-              onClick={handleSubmit}
-              disabled={pending}
-              className="flex-1 py-2.5 rounded-xl bg-primary-600 text-white font-semibold text-body-sm hover:bg-primary-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              onClick={() => setTipoProducto('comercializado')}
+              className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
+                tipoProducto === 'comercializado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
+              }`}
             >
-              {pending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              Crear producto
+              Comercializado
             </button>
           </div>
         </div>
-      )}
-    </div>
+      </div>
+
+      {/* Row 2 (Debajo del código): Nombre, Ref Cliente, Nombre Comercial */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Nombre *</label>
+            {checkingNombre && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+          </div>
+          <div className={`rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5 ${nombreDuplicado ? 'ring-1 ring-amber-400' : ''}`}>
+            <input
+              value={nombre}
+              onChange={e => setNombre(e.target.value)}
+              placeholder="Nombre"
+              className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+          {nombreDuplicado && (
+            <div className="flex items-center gap-1 text-amber-600">
+              <AlertTriangle className="w-3 h-3 shrink-0" />
+              <span className="text-xs">Duplicado</span>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Ref. Cliente</label>
+          <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+            <input
+              type="text"
+              value={referenciaCliente}
+              onChange={e => setReferenciaCliente(e.target.value)}
+              placeholder="SKU-123"
+              className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Nombre Comercial</label>
+          <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+            <input
+              type="text"
+              value={nombreComercial}
+              onChange={e => setNombreComercial(e.target.value)}
+              placeholder="Premium, Ejecutivo"
+              className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Row 3: Color + Marca */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            Color {autoColor && <span className="text-primary-500">Auto</span>}
+          </label>
+          <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+            <input
+              value={color}
+              onChange={e => setColor(e.target.value)}
+              placeholder="Color"
+              className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Marca</label>
+          <select
+            value={marcaSeleccionada}
+            onChange={e => setMarcaSeleccionada(e.target.value)}
+            className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-[9px] text-foreground outline-none"
+          >
+            <option value="">— seleccionar —</option>
+            {marcas.map(marca => (
+              <option key={marca.id} value={marca.id}>
+                {marca.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Row 4: Atributos grid (8 campos) */}
+      <div className="grid grid-cols-4 gap-2">
+        {TIPOS_ATRIBUTO.map(tipoAtributo => (
+          <div key={tipoAtributo} className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground block truncate">
+              {LABELS_ATRIBUTO[tipoAtributo]}
+            </label>
+            <select
+              value={atributosSeleccionados[tipoAtributo]}
+              onChange={e =>
+                setAtributosSeleccionados(prev => ({
+                  ...prev,
+                  [tipoAtributo]: e.target.value,
+                }))
+              }
+              className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2 py-1.5 text-foreground outline-none"
+            >
+              <option value="">—</option>
+              {(atributos[tipoAtributo] ?? []).map(attr => (
+                <option key={attr.id} value={attr.id}>
+                  {attr.valor}
+                </option>
+              ))}
+            </select>
+          </div>
+        ))}
+      </div>
+
+      {/* Row 5: Precios N1, N2, N3 */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">N1 (COP)</label>
+          <div className="relative rounded-lg bg-neu-base shadow-neu-inset">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
+            <input
+              type="number"
+              min={0}
+              step={1000}
+              value={precioN1}
+              onChange={e => setPrecioN1(e.target.value)}
+              placeholder="0"
+              className="w-full bg-transparent pl-6 pr-2.5 py-1.5 text-sm text-foreground outline-none"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">N2 (COP)</label>
+          <div className="relative rounded-lg bg-neu-base shadow-neu-inset">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
+            <input
+              type="number"
+              min={0}
+              step={1000}
+              value={precioN2}
+              onChange={e => setPrecioN2(e.target.value)}
+              placeholder="0"
+              className="w-full bg-transparent pl-6 pr-2.5 py-1.5 text-sm text-foreground outline-none"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">N3 (COP)</label>
+          <div className="relative rounded-lg bg-neu-base shadow-neu-inset">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
+            <input
+              type="number"
+              min={0}
+              step={1000}
+              value={precioN3}
+              onChange={e => setPrecioN3(e.target.value)}
+              placeholder="0"
+              className="w-full bg-transparent pl-6 pr-2.5 py-1.5 text-sm text-foreground outline-none"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Row 6: Partida Arancelaria al final */}
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">Partida Arancelaria</label>
+        <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+          <input
+            type="text"
+            value={partidaArancelaria}
+            onChange={e => setPartidaArancelaria(e.target.value)}
+            placeholder="Ej: 6109.10.00.00"
+            className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+          />
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-2 pt-2">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="flex-1 py-2 rounded-lg bg-neu-base shadow-neu text-sm text-muted-foreground hover:text-foreground transition-all"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          disabled={!canAdvanceStep1 || pending}
+          className="flex-1 py-2 rounded-lg bg-primary-600 text-white font-semibold text-sm hover:bg-primary-700 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+        >
+          {pending && <Loader2 className="w-4 h-4 animate-spin" />}
+          Crear
+        </button>
+      </div>
+    </form>
   )
 }

@@ -1,4 +1,4 @@
-export type EstadoProducto = 'activo' | 'descontinuado'
+export type EstadoProducto = 'activo' | 'inactivo' | 'en_desarrollo'
 export type TipoProducto = 'fabricado' | 'comercializado'
 
 export interface Producto {
@@ -9,8 +9,14 @@ export interface Producto {
   color: string | null
   origen_usa: boolean
   precio_base: number | null
+  precio_estandar: number | null
+  precio_n3: number | null
+  referencia_cliente: string | null
+  nombre_comercial: string | null
   estado: EstadoProducto
   tipo_producto: TipoProducto
+  marca_id: string | null
+  bom_completo: boolean
   created_at: string
   updated_at: string
 }
@@ -27,7 +33,14 @@ export interface CreateProductoInput {
   color?: string
   origen_usa?: boolean
   precio_base?: number
+  precio_estandar?: number
+  precio_n3?: number
+  referencia_cliente?: string
+  nombre_comercial?: string
+  partida_arancelaria?: string
   tipo_producto?: TipoProducto
+  marca_id?: string
+  atributos?: Record<string, string>
   autoRefs?: AutoRefInput[]
   schema_id?: string
 }
@@ -39,8 +52,15 @@ export interface UpdateProductoInput {
   color?: string
   origen_usa?: boolean
   precio_base?: number
+  precio_estandar?: number | null
+  precio_n3?: number | null
+  referencia_cliente?: string | null
+  nombre_comercial?: string | null
+  partida_arancelaria?: string | null
   tipo_producto?: TipoProducto
+  marca_id?: string | null
   estado?: EstadoProducto
+  atributos?: Record<string, string>
 }
 
 // Categorías estándar textil

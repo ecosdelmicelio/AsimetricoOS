@@ -33,7 +33,7 @@ export async function ProductoDetail({ id }: Props) {
     return (
       <div className="rounded-2xl bg-neu-base shadow-neu p-12 text-center">
         <p className="font-medium text-foreground">Producto no encontrado</p>
-        <Link href="/productos" className="text-primary-600 text-body-sm mt-2 inline-block">
+        <Link href="/catalogo" className="text-primary-600 text-body-sm mt-2 inline-block">
           ← Volver
         </Link>
       </div>
@@ -48,7 +48,7 @@ export async function ProductoDetail({ id }: Props) {
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link
-            href="/productos"
+            href="/catalogo"
             className="w-9 h-9 rounded-xl bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors active:shadow-neu-inset"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -60,7 +60,7 @@ export async function ProductoDetail({ id }: Props) {
               </span>
               {!esActivo && (
                 <span className="text-xs text-muted-foreground bg-neu-base shadow-neu-inset px-2 py-0.5 rounded-lg">
-                  Descontinuado
+                  Inactivo
                 </span>
               )}
             </div>
@@ -72,7 +72,7 @@ export async function ProductoDetail({ id }: Props) {
         <div className="flex items-center gap-2 shrink-0">
           <ProductoEstadoToggle productoId={producto.id} estadoActual={producto.estado} />
           <Link
-            href={`/productos/${producto.id}/editar`}
+            href={`/catalogo/${producto.id}/editar`}
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neu-base shadow-neu text-muted-foreground font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg"
           >
             <Edit className="w-3.5 h-3.5" />
@@ -89,7 +89,7 @@ export async function ProductoDetail({ id }: Props) {
           label="Precio base"
           value={producto.precio_base ? formatCurrency(producto.precio_base) : 'Sin precio'}
         />
-        <InfoCard label="Estado" value={esActivo ? 'Activo' : 'Descontinuado'} />
+        <InfoCard label="Estado" value={esActivo ? 'Activo' : 'Inactivo'} />
       </div>
 
       {/* BOM */}

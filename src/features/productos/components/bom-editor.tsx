@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Trash2, Plus, Loader2, Package, Wrench } from 'lucide-react'
+import { Trash2, Plus, Loader2, Package, Wrench, Check } from 'lucide-react'
 import {
-  addBOMMaterial, addBOMServicio, deleteBOMLinea, updateBOMLinea,
+  addBOMMaterial, addBOMServicio, deleteBOMLinea, updateBOMLinea, toggleBOMCompleted,
 } from '@/features/productos/services/bom-actions'
 import { formatCurrency } from '@/shared/lib/utils'
 import type {
@@ -28,6 +28,9 @@ interface Props {
   costoTotal: number
   costoMateriales: number
   costoServicios: number
+  bomCompleto?: boolean
+  onBOMCompleted?: () => void
+  onBOMChanged?: () => void | Promise<void>
 }
 
 type Tab = 'materiales' | 'servicios'
@@ -35,9 +38,18 @@ type Tab = 'materiales' | 'servicios'
 export function BOMEditor({
   productoId, materiales, servicios,
   catalogoMateriales, catalogoServicios,
-  precioBase, costoTotal, costoMateriales, costoServicios,
+  precioBase, costoTotal, costoMateriales, costoServicios, bomCompleto = false, onBOMCompleted, onBOMChanged,
 }: Props) {
   const [tab, setTab] = useState<Tab>('materiales')
+  const [pending, startTransition] = useTransition()
+  const tieneLineas = materiales.length > 0 || servicios.length > 0
+
+  function handleMarkCompleted() {
+    startTransition(async () => {
+      await toggleBOMCompleted(productoId, !bomCompleto)
+      onBOMCompleted?.()
+    })
+  }
 
   return (
     <div className="space-y-4">
@@ -49,6 +61,27 @@ export function BOMEditor({
           costoServicios={costoServicios}
           precioBase={precioBase}
         />
+      )}
+
+      {/* Checkbox: Marcar como completado */}
+      {tieneLineas && (
+        <div className="rounded-xl bg-neu-base shadow-neu px-4 py-3 flex items-center gap-3">
+          <label className="flex items-center gap-2 flex-1 cursor-pointer">
+            <div className="relative w-5 h-5">
+              <input
+                type="checkbox"
+                checked={bomCompleto}
+                onChange={handleMarkCompleted}
+                disabled={pending}
+                className="w-5 h-5 rounded border-2 border-primary-600 accent-primary-600 cursor-pointer disabled:opacity-50"
+              />
+            </div>
+            <span className="text-body-sm font-medium text-foreground">
+              {bomCompleto ? '✓ BOM completado' : 'Marcar BOM como completado'}
+            </span>
+          </label>
+          {pending && <Loader2 className="w-4 h-4 animate-spin text-primary-600" />}
+        </div>
       )}
 
       {/* Tabs */}
@@ -67,6 +100,7 @@ export function BOMEditor({
           productoId={productoId}
           lineas={materiales}
           catalogo={catalogoMateriales}
+          onBOMChanged={onBOMChanged}
         />
       )}
       {tab === 'servicios' && (
@@ -74,6 +108,7 @@ export function BOMEditor({
           productoId={productoId}
           lineas={servicios}
           catalogo={catalogoServicios}
+          onBOMChanged={onBOMChanged}
         />
       )}
     </div>
@@ -129,8 +164,8 @@ function CostoVelocimetro({
 
 /* ── Tab Materiales ─────────────────────────────────────────── */
 function MaterialesTab({
-  productoId, lineas, catalogo,
-}: { productoId: string; lineas: BOMLineaMaterial[]; catalogo: Material[] }) {
+  productoId, lineas, catalogo, onBOMChanged,
+}: { productoId: string; lineas: BOMLineaMaterial[]; catalogo: Material[]; onBOMChanged?: () => void | Promise<void> }) {
   const [showForm, setShowForm] = useState(false)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -138,19 +173,40 @@ function MaterialesTab({
   const usados = lineas.map(l => l.material_id)
   const disponibles = catalogo.filter(m => !usados.includes(m.id))
 
-  function handleAdd(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    const fd = new FormData(e.currentTarget)
-    const material_id = fd.get('material_id') as string
-    const cantidad = parseFloat(fd.get('cantidad') as string)
-    const notas = fd.get('notas') as string
+  const [materialId, setMaterialId] = useState('')
+  const [cantidad, setCantidad] = useState('')
+  const [notas, setNotas] = useState('')
+  const [reportableEnCorte, setReportableEnCorte] = useState(true)
 
+  function handleAdd() {
+    if (!materialId || !cantidad) {
+      setError('Debes seleccionar un material y definir la cantidad')
+      return
+    }
+    setError(null)
     startTransition(async () => {
-      const res = await addBOMMaterial(productoId, material_id, cantidad, notas || undefined)
-      if (res.error) { setError(res.error); return }
-      setShowForm(false)
-      setError(null)
-      ;(e.target as HTMLFormElement).reset()
+      try {
+        const res = await addBOMMaterial(productoId, materialId, parseFloat(cantidad), notas || undefined, reportableEnCorte)
+        if (res.error) { 
+          setError(`Error al guardar: ${res.error}`)
+          return 
+        }
+        
+        // Limpiar formulario antes de cerrar
+        setMaterialId('')
+        setCantidad('')
+        setNotas('')
+        setReportableEnCorte(true)
+        setShowForm(false)
+        
+        // Notificar cambio y esperar a que los datos se refresquen
+        if (onBOMChanged) {
+          await onBOMChanged()
+        }
+      } catch (err) {
+        setError('Error inesperado al intentar guardar el material')
+        console.error(err)
+      }
     })
   }
 
@@ -173,14 +229,15 @@ function MaterialesTab({
           cantidad={l.cantidad}
           notas={l.notas}
           reportable_en_corte={l.reportable_en_corte}
+          onBOMChanged={onBOMChanged}
         />
       ))}
 
       {showForm ? (
-        <form onSubmit={handleAdd} className="rounded-xl bg-neu-base shadow-neu-inset p-4 space-y-3">
+        <div className="rounded-xl bg-neu-base shadow-neu-inset p-4 space-y-3">
           <select
-            name="material_id"
-            required
+            value={materialId}
+            onChange={e => setMaterialId(e.target.value)}
             className="w-full rounded-xl bg-neu-base shadow-neu px-3 py-2 text-body-sm text-foreground focus:outline-none"
           >
             <option value="">Seleccionar material...</option>
@@ -193,36 +250,60 @@ function MaterialesTab({
           <div className="flex gap-2">
             <div className="flex-1">
               <input
-                name="cantidad"
+                value={cantidad}
+                onChange={e => setCantidad(e.target.value)}
                 type="number"
                 min={0.001}
                 step={0.001}
-                required
                 placeholder="Cantidad por prenda"
                 className="w-full rounded-xl bg-neu-base shadow-neu px-3 py-2 text-body-sm text-foreground focus:outline-none"
               />
             </div>
             <input
-              name="notas"
+              value={notas}
+              onChange={e => setNotas(e.target.value)}
               placeholder="Notas"
               className="flex-1 rounded-xl bg-neu-base shadow-neu px-3 py-2 text-body-sm text-foreground focus:outline-none"
             />
           </div>
+          <label className="flex items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              checked={reportableEnCorte}
+              onChange={e => setReportableEnCorte(e.target.checked)}
+              className="w-4 h-4 rounded border border-primary-600 bg-white"
+            />
+            <span className="text-foreground">Reportable en corte</span>
+          </label>
           {error && <p className="text-red-600 text-body-sm">{error}</p>}
           <div className="flex gap-2">
-            <button type="button" onClick={() => { setShowForm(false); setError(null) }}
+            <button type="button" onClick={() => {
+              setShowForm(false)
+              setError(null)
+              setMaterialId('')
+              setCantidad('')
+              setNotas('')
+              setReportableEnCorte(true)
+            }}
               className="flex-1 py-2 rounded-xl bg-neu-base shadow-neu text-body-sm text-muted-foreground">
               Cancelar
             </button>
-            <button type="submit" disabled={pending}
+            <button type="button" onClick={handleAdd} disabled={pending}
               className="flex-1 py-2 rounded-xl bg-primary-600 text-white font-semibold text-body-sm disabled:opacity-50 flex items-center justify-center gap-1">
               {pending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               Agregar
             </button>
           </div>
-        </form>
+        </div>
       ) : (
-        <AddButton onClick={() => setShowForm(true)} label="Agregar material" disabled={disponibles.length === 0} />
+        <AddButton onClick={() => {
+          setShowForm(true)
+          setMaterialId('')
+          setCantidad('')
+          setNotas('')
+          setReportableEnCorte(true)
+          setError(null)
+        }} label="Agregar material" disabled={disponibles.length === 0} />
       )}
     </div>
   )
@@ -230,8 +311,8 @@ function MaterialesTab({
 
 /* ── Tab Servicios ──────────────────────────────────────────── */
 function ServiciosTab({
-  productoId, lineas, catalogo,
-}: { productoId: string; lineas: BOMLineaServicio[]; catalogo: ServicioOperativo[] }) {
+  productoId, lineas, catalogo, onBOMChanged,
+}: { productoId: string; lineas: BOMLineaServicio[]; catalogo: ServicioOperativo[]; onBOMChanged?: () => void | Promise<void> }) {
   const [showForm, setShowForm] = useState(false)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -246,19 +327,20 @@ function ServiciosTab({
     return acc
   }, {})
 
-  function handleAdd(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    const fd = new FormData(e.currentTarget)
-    const servicio_id = fd.get('servicio_id') as string
-    const cantidad = parseFloat(fd.get('cantidad') as string)
-    const notas = fd.get('notas') as string
+  const [servicioId, setServicioId] = useState('')
+  const [cantidad, setCantidad] = useState('')
+  const [notas, setNotas] = useState('')
 
+  function handleAdd() {
     startTransition(async () => {
-      const res = await addBOMServicio(productoId, servicio_id, cantidad, notas || undefined)
+      const res = await addBOMServicio(productoId, servicioId, parseFloat(cantidad), notas || undefined)
       if (res.error) { setError(res.error); return }
+      await onBOMChanged?.()
       setShowForm(false)
       setError(null)
-      ;(e.target as HTMLFormElement).reset()
+      setServicioId('')
+      setCantidad('')
+      setNotas('')
     })
   }
 
@@ -281,14 +363,15 @@ function ServiciosTab({
           cantidad={l.cantidad}
           notas={l.notas}
           badge={TIPO_PROCESO_LABEL[l.servicios_operativos.tipo_proceso]}
+          onBOMChanged={onBOMChanged}
         />
       ))}
 
       {showForm ? (
-        <form onSubmit={handleAdd} className="rounded-xl bg-neu-base shadow-neu-inset p-4 space-y-3">
+        <div className="rounded-xl bg-neu-base shadow-neu-inset p-4 space-y-3">
           <select
-            name="servicio_id"
-            required
+            value={servicioId}
+            onChange={e => setServicioId(e.target.value)}
             className="w-full rounded-xl bg-neu-base shadow-neu px-3 py-2 text-body-sm text-foreground focus:outline-none"
           >
             <option value="">Seleccionar servicio...</option>
@@ -306,17 +389,17 @@ function ServiciosTab({
           </select>
           <div className="flex gap-2">
             <input
-              name="cantidad"
+              value={cantidad}
+              onChange={e => setCantidad(e.target.value)}
               type="number"
               min={0.001}
               step={0.001}
-              defaultValue={1}
-              required
               placeholder="Unidades por prenda"
               className="flex-1 rounded-xl bg-neu-base shadow-neu px-3 py-2 text-body-sm text-foreground focus:outline-none"
             />
             <input
-              name="notas"
+              value={notas}
+              onChange={e => setNotas(e.target.value)}
               placeholder="Notas"
               className="flex-1 rounded-xl bg-neu-base shadow-neu px-3 py-2 text-body-sm text-foreground focus:outline-none"
             />
@@ -327,13 +410,13 @@ function ServiciosTab({
               className="flex-1 py-2 rounded-xl bg-neu-base shadow-neu text-body-sm text-muted-foreground">
               Cancelar
             </button>
-            <button type="submit" disabled={pending}
+            <button type="button" onClick={handleAdd} disabled={pending}
               className="flex-1 py-2 rounded-xl bg-primary-600 text-white font-semibold text-body-sm disabled:opacity-50 flex items-center justify-center gap-1">
               {pending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               Agregar
             </button>
           </div>
-        </form>
+        </div>
       ) : (
         <AddButton onClick={() => setShowForm(true)} label="Agregar servicio" disabled={disponibles.length === 0} />
       )}
@@ -343,7 +426,7 @@ function ServiciosTab({
 
 /* ── Fila de línea editable ─────────────────────────────────── */
 function LineaRow({
-  lineaId, productoId, nombre, unidad, costoUnit, cantidad, notas, badge, reportable_en_corte = true,
+  lineaId, productoId, nombre, unidad, costoUnit, cantidad, notas, badge, reportable_en_corte = true, onBOMChanged,
 }: {
   lineaId: string
   productoId: string
@@ -354,6 +437,7 @@ function LineaRow({
   notas: string | null
   badge?: string
   reportable_en_corte?: boolean
+  onBOMChanged?: () => void | Promise<void>
 }) {
   const [editing, setEditing] = useState(false)
   const [qty, setQty] = useState(String(cantidad))
@@ -366,6 +450,7 @@ function LineaRow({
   function handleSave() {
     startTransition(async () => {
       await updateBOMLinea(lineaId, productoId, parseFloat(qty), nota || undefined, isReportable)
+      await onBOMChanged?.()
       setEditing(false)
     })
   }
@@ -373,6 +458,7 @@ function LineaRow({
   function handleDelete() {
     startTransition(async () => {
       await deleteBOMLinea(lineaId, productoId)
+      await onBOMChanged?.()
     })
   }
 
@@ -469,6 +555,7 @@ function TabButton({ active, onClick, icon, children }: {
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-body-sm font-semibold transition-all ${
         active

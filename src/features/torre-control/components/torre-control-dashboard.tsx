@@ -2,9 +2,11 @@ import Link from 'next/link'
 import {
   Factory, AlertTriangle, CheckCircle, ShieldCheck,
   ClipboardList, ChevronRight, Plus, Trophy, TrendingUp,
+  LayoutDashboard
 } from 'lucide-react'
 import { getTorreData } from '@/features/torre-control/services/torre-actions'
 import { OPStatusBadge } from '@/features/ordenes-produccion/components/op-status-badge'
+import { PageHeader } from '@/shared/components/page-header'
 import { formatDate } from '@/shared/lib/utils'
 import { SECUENCIA_ESTADOS } from '@/features/ordenes-produccion/types'
 import type { OPResumen, TallerRanking, OVPendiente } from '@/features/torre-control/services/torre-actions'
@@ -16,12 +18,11 @@ export async function TorreControlDashboard() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-display-xs font-heading text-foreground font-bold">Torre de Control</h1>
-        <p className="text-muted-foreground text-body-sm mt-1">
-          Visibilidad en tiempo real de todas las órdenes
-        </p>
-      </div>
+      <PageHeader
+        title="Torre de Control"
+        subtitle="Visibilidad en tiempo real de la fábrica"
+        icon={LayoutDashboard}
+      />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">

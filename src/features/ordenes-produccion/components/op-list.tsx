@@ -6,6 +6,7 @@ import { formatDate } from '@/shared/lib/utils'
 import type { OrdenProduccion } from '@/features/ordenes-produccion/types'
 import { OPCard } from './op-card'
 import { OPDashboardHeader } from './op-dashboard-header'
+import { PageHeader } from '@/shared/components/page-header'
 
 type OPListItem = OrdenProduccion & {
   terceros: { nombre: string } | null
@@ -83,24 +84,16 @@ export async function OPList() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
-            <Factory className="w-5 h-5 text-primary-500" />
-          </div>
-          <div>
-            <h1 className="text-xl font-black tracking-tight text-slate-900 leading-none uppercase">Terminal de Producción</h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">{ops.length} órdenes en curso</p>
-          </div>
-        </div>
-        <Link
-          href="/ordenes-produccion/nueva"
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-primary-600 transition-all shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Nueva OP
-        </Link>
-      </div>
+      <PageHeader
+        title="Terminal de Producción"
+        subtitle={`${ops.length} órdenes en curso`}
+        icon={Factory}
+        action={{
+          label: "Nueva OP",
+          href: "/ordenes-produccion/nueva",
+          icon: Plus
+        }}
+      />
 
       {/* Dashboard Metrics */}
       <OPDashboardHeader 

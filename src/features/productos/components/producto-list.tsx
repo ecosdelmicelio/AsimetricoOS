@@ -43,7 +43,7 @@ export async function ProductoList() {
             {items.map(p => (
               <Link
                 key={p.id}
-                href={`/productos/${p.id}`}
+                href={`/catalogo/${p.id}`}
                 className="flex items-center justify-between rounded-xl bg-neu-base shadow-neu px-4 py-3 transition-all hover:shadow-neu-lg active:shadow-neu-inset"
               >
                 <div className="min-w-0">
@@ -54,9 +54,9 @@ export async function ProductoList() {
                     <span className="font-semibold text-foreground text-body-sm truncate">
                       {p.nombre}
                     </span>
-                    {p.estado === 'descontinuado' && (
+                    {p.estado === 'inactivo' && (
                       <span className="text-xs text-muted-foreground bg-neu-base shadow-neu-inset px-2 py-0.5 rounded-lg">
-                        Descontinuado
+                        Inactivo
                       </span>
                     )}
                   </div>

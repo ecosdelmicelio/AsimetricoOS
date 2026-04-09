@@ -190,15 +190,15 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId, reporteAE
         // Inicializar consumos con el promedio del BOM para cada material
         const consumosIniciales: Record<string, ConsumoPorMaterial> = {}
         for (const material of resultado.materiales) {
-          // Calcular cantidad total de prendas que usan este material (DE LAS QUE SE ESTÁN CORTANDO REALMENTE)
-          const cantidadTotalReal = material.referencias_que_usan.reduce(
-            (sum, ref) => sum + (ref.cantidad_real_cortada ?? 0),
+          // BLINDAJE: Calculamos el consumo basado en la cantidad asignada original 
+          // para que la tela sea VISIBLE desde el primer segundo, incluso antes de escribir cantidades.
+          const cantidadParaCalculo = material.referencias_que_usan.reduce(
+            (sum, ref) => sum + (ref.cantidad_asignada ?? 0),
             0
           )
 
-          // El consumo promedio inicial es el estimado dividido por la cantidad total editada
-          const consumoPromedio = cantidadTotalReal > 0
-            ? material.consumo_estimado / cantidadTotalReal
+          const consumoPromedio = cantidadParaCalculo > 0
+            ? material.consumo_estimado / cantidadParaCalculo
             : 0
 
           consumosIniciales[material.material_id] = {
@@ -206,7 +206,10 @@ export function ReporteCorteMejorado({ opId, lineasOP, bodegaTallerId, reporteAE
             desperdicio_kg: 0,
           }
         }
-        setConsumosPorMaterial(consumosIniciales)
+        setConsumosPorMaterial(consumosInciales => ({
+          ...consumosInciales,
+          ...consumosIniciales
+        }))
       }
       setIsLoadingMateriales(false)
     }

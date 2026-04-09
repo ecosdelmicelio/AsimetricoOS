@@ -1,15 +1,16 @@
 import { Suspense } from 'react'
 import { CalidadList } from '@/features/calidad/components/calidad-list'
+import { PageHeader } from '@/shared/components/page-header'
+import { ShieldCheck } from 'lucide-react'
 
 export default function CalidadPage() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-display-xs font-heading text-foreground font-bold">Calidad</h1>
-        <p className="text-muted-foreground text-body-sm mt-1">
-          Inspecciones DuPro y FRI pendientes
-        </p>
-      </div>
+      <PageHeader
+        title="Control de Calidad"
+        subtitle="Inspecciones DuPro y FRI"
+        icon={ShieldCheck}
+      />
 
       <Suspense fallback={<CalidadListSkeleton />}>
         <CalidadList />

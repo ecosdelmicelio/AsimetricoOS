@@ -129,7 +129,7 @@ export async function addValor(
     .single()
   if (error) return { error: error.message }
   revalidatePath('/configuracion')
-  revalidatePath('/productos/nuevo')
+  revalidatePath('/catalogo/nuevo')
   return { data: data as CodigoSegmentoValor }
 }
 

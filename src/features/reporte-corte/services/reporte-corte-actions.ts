@@ -103,12 +103,32 @@ export async function consolidarMaterialesDelCorte(
     const productosUnicos = [...new Set(referenciasAgrupadas.map(r => r.producto_id))]
 
     for (const productoId of productosUnicos) {
-      const bom = await getBOMProducto(productoId)
+      let bom = await getBOMProducto(productoId)
+
+      // RESPALDO: Si no hay materiales por ID, intentar buscar por referencia
+      if (bom.materiales.length === 0) {
+        const refObj = referenciasAgrupadas.find(r => r.producto_id === productoId)
+        if (refObj?.referencia) {
+          // Intentar obtener el producto por referencia para sacar su verdadero ID
+          const supabase = db(await createClient())
+          const { data: pData } = await supabase
+            .from('productos')
+            .select('id')
+            .ilike('referencia', `${refObj.referencia.trim()}%`)
+            .limit(1)
+          
+          if (pData && pData.length > 0) {
+            bom = await getBOMProducto(pData[0].id)
+          }
+        }
+      }
 
       // Para cada material en el BOM que sea reportable en corte
       for (const linea of bom.materiales) {
-        // Filtrar solo materiales marcados como reportables en corte
-        if (!linea.reportable_en_corte) continue
+        const esMateriaPrima = linea.tipo === 'materia_prima'
+        const debeIncluirse = linea.reportable_en_corte || esMateriaPrima
+
+        if (!debeIncluirse) continue
 
         const material = linea.materiales
 

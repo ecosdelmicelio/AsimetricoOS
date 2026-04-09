@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ShoppingCart, Plus, ChevronRight } from 'lucide-react'
 import { getOrdenesCompra } from '@/features/compras/services/compras-actions'
 import { OCDocBadge, OCGreigeBadge } from './oc-status-badge'
+import { PageHeader } from '@/shared/components/page-header'
 import { formatDate } from '@/shared/lib/utils'
 
 export async function ComprasList() {
@@ -9,19 +10,16 @@ export async function ComprasList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-display-xs font-heading text-foreground font-bold">Compras</h1>
-          <p className="text-muted-foreground text-body-sm mt-1">{ocs.length} órdenes registradas</p>
-        </div>
-        <Link
-          href="/compras/nueva"
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg"
-        >
-          <Plus className="w-4 h-4" />
-          Nueva OC
-        </Link>
-      </div>
+      <PageHeader
+        title="Terminal de Compras"
+        subtitle={`${ocs.length} órdenes registradas`}
+        icon={ShoppingCart}
+        action={{
+          label: "Nueva OC",
+          href: "/compras/nueva",
+          icon: Plus
+        }}
+      />
 
       {ocs.length === 0 && (
         <div className="rounded-2xl bg-neu-base shadow-neu p-12 flex flex-col items-center text-center">

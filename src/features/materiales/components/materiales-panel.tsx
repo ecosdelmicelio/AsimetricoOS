@@ -1,12 +1,15 @@
 'use client'
 
 import { useState, useTransition, useCallback, useMemo, useEffect, useRef } from 'react'
-import { Plus, Edit2, Loader2, Package, AlertTriangle, RotateCcw } from 'lucide-react'
-import { createMaterial, updateMaterial } from '@/features/materiales/services/materiales-actions'
+import { Plus, Edit2, Loader2, Package, AlertTriangle, MapPin, Globe } from 'lucide-react'
+import { createMaterial, updateMaterial, toggleMaterialActivo } from '@/features/materiales/services/materiales-actions'
 import { useDuplicateCheck } from '@/shared/hooks/use-duplicate-check'
-import { CodigoBuilder } from '@/features/codigo-schema/components/codigo-builder'
-import type { CodigoSchema, SegmentoSeleccion } from '@/features/codigo-schema/types'
-import type { Material, UnidadMaterial } from '@/features/materiales/types'
+import { CodigoPreviewMP } from '@/features/materiales/components/codigo-preview-mp'
+import { getAtributosMP, getAtributosPorTipoMP } from '@/features/materiales/services/atributo-actions'
+import type { Material, UnidadMaterial, TipoMP } from '@/features/materiales/types'
+import type { AtributoMP, TipoAtributoMP } from '@/features/materiales/types/atributos'
+import { TIPOS_ATRIBUTO_MP, LABELS_ATRIBUTO_MP } from '@/features/materiales/types/atributos'
+import type { SaldoTotalMP } from '@/features/kardex/services/kardex-actions'
 
 const UNIDADES: { value: UnidadMaterial; label: string }[] = [
   { value: 'metros',   label: 'Metros (m)' },
@@ -26,15 +29,18 @@ function formatCop(n: number) {
 
 interface Props {
   materiales: Material[]
-  schema: CodigoSchema | null
+  saldosPorMaterial?: SaldoTotalMP[]
 }
 
-export function MaterialesPanel({ materiales, schema }: Props) {
+export function MaterialesPanel({ materiales, saldosPorMaterial = [] }: Props) {
   const [showForm, setShowForm]   = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showInactivos, setShowInactivos] = useState(false)
 
-  const visibles = showInactivos ? materiales : materiales.filter(m => m.activo)
+  // Crear índice de saldos por material_id para acceso O(1)
+  const saldoMap = new Map(saldosPorMaterial.map(s => [s.material_id, s]))
+
+  const visibles = showInactivos ? materiales.filter(m => !m.activo) : materiales.filter(m => m.activo)
 
   return (
     <div className="space-y-4">
@@ -63,7 +69,7 @@ export function MaterialesPanel({ materiales, schema }: Props) {
 
       {/* Form de creación */}
       {showForm && (
-        <MaterialForm schema={schema} onDone={() => setShowForm(false)} />
+        <MaterialForm onDone={() => setShowForm(false)} />
       )}
 
       {/* Lista vacía */}
@@ -79,122 +85,145 @@ export function MaterialesPanel({ materiales, schema }: Props) {
 
       {/* Tabla */}
       {visibles.length > 0 && (
-        <div className="rounded-2xl bg-neu-base shadow-neu overflow-hidden">
-          {/* Header */}
-          <div className="grid grid-cols-12 gap-3 px-5 py-3 border-b border-black/5 bg-neu-base">
-            <span className="col-span-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Código</span>
-            <span className="col-span-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Nombre</span>
-            <span className="col-span-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Unidad</span>
-            <span className="col-span-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Costo unit.</span>
-            <span className="col-span-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide text-center">Estado</span>
-            <span className="col-span-1" />
-          </div>
-
-          <div className="divide-y divide-black/5">
-            {visibles.map(m =>
-              editingId === m.id
-                ? <MaterialForm key={m.id} schema={schema} material={m} onDone={() => setEditingId(null)} />
-                : <MaterialRow key={m.id} material={m} onEdit={() => setEditingId(m.id)} />
-            )}
-          </div>
+        <div className="rounded-2xl bg-neu-base shadow-neu overflow-x-auto w-full">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-black/5 bg-neu-base">
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Creación</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 whitespace-nowrap">Código</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 min-w-[200px]">Nombre</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Unidad</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2">Stock</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 whitespace-nowrap">Costo Unit.</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 whitespace-nowrap">Costo Total</th>
+                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-center px-3 py-2">Estado</th>
+                <th className="px-3 py-2 w-10" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/5">
+              {visibles.map(m => {
+                const saldo = saldoMap.get(m.id)
+                return editingId === m.id
+                  ? <MaterialForm key={m.id} material={m} onDone={() => setEditingId(null)} />
+                  : <MaterialRow key={m.id} material={m} onEdit={() => setEditingId(m.id)} onToggleActivo={async () => {
+                      await toggleMaterialActivo(m.id)
+                    }} saldo={saldo} />
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
   )
 }
 
-function MaterialRow({ material: m, onEdit }: { material: Material; onEdit: () => void }) {
+function MaterialRow({ material: m, onEdit, onToggleActivo, saldo }: { material: Material; onEdit: () => void; onToggleActivo: () => void; saldo?: SaldoTotalMP }) {
   return (
-    <div className={`grid grid-cols-12 gap-3 items-center px-5 py-3 ${!m.activo ? 'opacity-50' : ''}`}>
-      <span className="col-span-2 font-mono text-body-sm font-semibold text-primary-700">{m.codigo}</span>
-      <div className="col-span-4">
-        <p className="text-body-sm font-medium text-foreground">{m.nombre}</p>
-        {m.descripcion && <p className="text-xs text-muted-foreground truncate">{m.descripcion}</p>}
-      </div>
-      <span className="col-span-2 text-body-sm text-muted-foreground">{UNIDADES.find(u => u.value === m.unidad)?.label ?? m.unidad}</span>
-      <span className="col-span-2 text-body-sm text-foreground text-right font-medium">{formatCop(m.costo_unit)}/{UNIDAD_LABEL[m.unidad]}</span>
-      <div className="col-span-1 flex justify-center">
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${m.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+    <tr className={!m.activo ? 'opacity-50' : ''}>
+      <td className="px-3 py-2 whitespace-nowrap"><span className="text-xs text-muted-foreground">{m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}</span></td>
+      <td className="px-3 py-2 whitespace-nowrap"><span className="font-mono text-xs font-semibold text-primary-700">{m.codigo}</span></td>
+      <td className="px-3 py-2 min-w-[200px]">
+        <div className="flex items-center gap-2">
+          {m.tipo_mp === 'nacional' ? (
+            <MapPin className="w-3 h-3 text-emerald-500 shrink-0" title="Nacional" />
+          ) : (
+            <Globe className="w-3 h-3 text-indigo-500 shrink-0" title="Importado" />
+          )}
+          <p className="text-xs font-medium text-foreground truncate">{m.nombre}</p>
+        </div>
+      </td>
+      <td className="px-3 py-2"><span className="text-xs text-muted-foreground">{UNIDADES.find(u => u.value === m.unidad)?.label ?? m.unidad}</span></td>
+      <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs font-mono text-foreground">{saldo?.saldo_total ?? 0}</span></td>
+      <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs text-foreground font-medium">{formatCop(saldo?.costo_promedio ?? m.costo_unit)}/{UNIDAD_LABEL[m.unidad]}</span></td>
+      <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs font-mono text-foreground font-semibold">{formatCop(saldo?.valor_total ?? 0)}</span></td>
+      <td className="px-3 py-2 text-center">
+        <button
+          onClick={onToggleActivo}
+          className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-lg transition-colors ${
+            m.activo ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+          }`}
+        >
           {m.activo ? 'Activo' : 'Inactivo'}
-        </span>
-      </div>
-      <div className="col-span-1 flex justify-end">
+        </button>
+      </td>
+      <td className="px-3 py-2 text-right">
         <button
           onClick={onEdit}
-          className="w-7 h-7 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+          className="w-6 h-6 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
         >
           <Edit2 className="w-3 h-3" />
         </button>
-      </div>
-    </div>
+      </td>
+    </tr>
   )
 }
 
 function MaterialForm({
   material,
-  schema,
   onDone,
 }: {
   material?: Material
-  schema: CodigoSchema | null
   onDone: () => void
 }) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [activo, setActivo] = useState(material?.activo ?? true)
-  const [codigoManual, setCodigoManual] = useState(material?.codigo ?? '')
-  const [codigoState, setCodigoState] = useState<{
-    codigo: string
-    completo: boolean
-    selecciones: SegmentoSeleccion[]
-  }>({ codigo: '', completo: false, selecciones: [] })
+  const [tipoMP, setTipoMP] = useState<TipoMP>(material?.tipo_mp ?? 'nacional')
+  const [codigo, setCodigo] = useState('')
+  const [codigoCompleto, setCodigoCompleto] = useState(false)
   const [nombre, setNombre] = useState(material?.nombre ?? '')
   const [unidad, setUnidad] = useState<UnidadMaterial>(material?.unidad ?? 'metros')
   const [costoUnit, setCostoUnit] = useState(material?.costo_unit?.toString() ?? '')
-  const [descripcion, setDescripcion] = useState(material?.descripcion ?? '')
+  const [referenciaProveedor, setReferenciaProveedor] = useState(material?.referencia_proveedor ?? '')
+  const [partidaArancelaria, setPartidaArancelaria] = useState(material?.partida_arancelaria ?? '')
   const [rendimientoKg, setRendimientoKg] = useState(material?.rendimiento_kg?.toString() ?? '')
+
+  // Atributos
+  const [atributosPorTipo, setAtributosPorTipo] = useState<Record<TipoAtributoMP, AtributoMP[]>>({
+    tipo: [],
+    subtipo: [],
+    color: [],
+    diseño: [],
+  })
+  const [atributosSeleccionados, setAtributosSeleccionados] = useState<Record<TipoAtributoMP, string>>({
+    tipo: '',
+    subtipo: '',
+    color: '',
+    diseño: '',
+  })
+
+  const nombreEditadoRef = useRef(false)
+
   const isEdit = !!material
-  const usaSchema = !isEdit && !!schema
 
-  // Refs para saber si el usuario editó manualmente (y dejar de auto-rellenar)
-  const nombreEditadoRef = useRef(isEdit)
-  const descripcionEditadaRef = useRef(isEdit)
-
-  // Texto auto-generado: concatenación de etiquetas de cada valor seleccionado
-  const autoTexto = useMemo(() => {
-    if (!schema || codigoState.selecciones.length === 0) return ''
-    return codigoState.selecciones
-      .filter(s => s.tipo === 'selector' && s.valor)
-      .map(s => {
-        const seg = schema.segmentos.find(sg => sg.id === s.segmento_id)
-        return seg?.valores.find(v => v.valor === s.valor)?.etiqueta ?? ''
-      })
-      .filter(Boolean)
-      .join(' ')
-  }, [schema, codigoState.selecciones])
-
-  // Auto-rellenar nombre y descripción cuando cambian las selecciones
+  // Cargar atributos al montar
   useEffect(() => {
-    if (!usaSchema || !autoTexto) return
-    if (!nombreEditadoRef.current) setNombre(autoTexto)
-    if (!descripcionEditadaRef.current) setDescripcion(autoTexto)
-  }, [autoTexto, usaSchema])
+    const cargarAtributos = async () => {
+      const tipos = await Promise.all(
+        TIPOS_ATRIBUTO_MP.map(async (tipo) => ({
+          tipo,
+          atributos: await getAtributosPorTipoMP(tipo),
+        }))
+      )
+      const mapa = Object.fromEntries(
+        tipos.map(({ tipo, atributos }) => [tipo, atributos])
+      ) as Record<TipoAtributoMP, AtributoMP[]>
+      setAtributosPorTipo(mapa)
+    }
+    cargarAtributos()
+  }, [])
 
-  const handleCodigoChange = useCallback(
-    (result: { codigo: string; completo: boolean; selecciones: SegmentoSeleccion[] }) => {
-      setCodigoState(result)
-    },
-    [],
-  )
-
-  const codigoEffectivo = usaSchema ? codigoState.codigo : codigoManual
+  const handleCodigoChange = useCallback((nuevoCodigo: string, completo: boolean) => {
+    setCodigo(nuevoCodigo)
+    setCodigoCompleto(completo)
+  }, [])
 
   const { isDuplicate: codigoDuplicado, checking: checkingCodigo } = useDuplicateCheck({
     table: 'materiales',
     field: 'codigo',
-    value: codigoEffectivo,
+    value: codigo,
     excludeId: material?.id,
-    enabled: !isEdit && codigoEffectivo.trim().length > 0 && (!usaSchema || codigoState.completo),
+    enabled: !isEdit && codigo.trim().length > 0 && codigoCompleto,
   })
 
   const { isDuplicate: nombreDuplicado, checking: checkingNombre } = useDuplicateCheck({
@@ -216,29 +245,39 @@ function MaterialForm({
       setError('Ya existe un material con ese código')
       return
     }
-    if (usaSchema && !codigoState.completo) {
+    if (!isEdit && !codigoCompleto) {
       setError('Completa el código antes de continuar')
       return
     }
-
-    const autoRefs = codigoState.selecciones
-      .filter(s => s.tipo === 'auto_ref')
-      .map(s => ({ segmento_id: s.segmento_id, longitud: s.longitud }))
+    if (!atributosSeleccionados.tipo || !atributosSeleccionados.subtipo || !atributosSeleccionados.color || !atributosSeleccionados.diseño) {
+      setError('Todos los atributos (tipo, subtipo, color, diseño) son requeridos')
+      return
+    }
 
     setError(null)
     startTransition(async () => {
       const rendimientoNum = rendimientoKg ? parseFloat(rendimientoKg) : null
       const res = isEdit
-        ? await updateMaterial(material.id, { nombre, unidad, costo_unit: costoNum, descripcion, activo, rendimiento_kg: rendimientoNum })
-        : await createMaterial({
-            codigo: codigoEffectivo,
+        ? await updateMaterial(material.id, {
             nombre,
             unidad,
             costo_unit: costoNum,
-            descripcion,
+            referencia_proveedor: referenciaProveedor || undefined,
+            partida_arancelaria: partidaArancelaria || undefined,
+            tipo_mp: tipoMP,
+            activo,
+            rendimiento_kg: rendimientoNum
+          })
+        : await createMaterial({
+            codigo,
+            nombre,
+            unidad,
+            costo_unit: costoNum,
+            referencia_proveedor: referenciaProveedor || undefined,
+            partida_arancelaria: partidaArancelaria || undefined,
+            tipo_mp: tipoMP,
             rendimiento_kg: rendimientoNum,
-            autoRefs: autoRefs.length > 0 ? autoRefs : undefined,
-            schema_id: schema?.id,
+            atributos: atributosSeleccionados,
           })
       if (res.error) { setError(res.error); return }
       onDone()
@@ -246,62 +285,82 @@ function MaterialForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="px-5 py-4 bg-neu-base shadow-neu-inset rounded-xl mx-3 my-2 space-y-3">
+    <form onSubmit={handleSubmit} className="px-5 py-4 bg-neu-base shadow-neu-inset rounded-xl mx-3 my-2 space-y-4">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
         {isEdit ? `Editando ${material.codigo}` : 'Nuevo material'}
       </p>
 
-      {/* Código: CodigoBuilder si hay schema, campo manual si no */}
-      {!isEdit && (
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-foreground">Código *</label>
-          {usaSchema ? (
-            <CodigoBuilder schema={schema} onChange={handleCodigoChange} />
-          ) : (
-            <>
-              <div className="flex items-center gap-1.5">
-                {checkingCodigo && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
-              </div>
-              <div className={`rounded-lg bg-neu-base shadow-neu px-3 py-2 ${codigoDuplicado ? 'ring-1 ring-red-400' : ''}`}>
-                <input
-                  value={codigoManual}
-                  onChange={e => setCodigoManual(e.target.value.toUpperCase())}
-                  required
-                  placeholder="TEL-004"
-                  className="w-full bg-transparent text-body-sm font-mono text-foreground outline-none"
-                />
-              </div>
-              {codigoDuplicado && (
-                <div className="flex items-center gap-1 text-red-600">
-                  <AlertTriangle className="w-3 h-3 shrink-0" />
-                  <span className="text-[10px]">Código ya existe</span>
-                </div>
-              )}
-            </>
-          )}
+      {/* Top Row: Código Generado + Tipo MP Toggle */}
+      <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-3 items-start">
+        {!isEdit ? (
+          <div className="w-full space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Código Generado *</label>
+            <CodigoPreviewMP
+              atributos={[
+                ...(atributosPorTipo.tipo || []),
+                ...(atributosPorTipo.subtipo || []),
+                ...(atributosPorTipo.color || []),
+                ...(atributosPorTipo.diseño || []),
+              ]}
+              tipoId={atributosSeleccionados.tipo || null}
+              subtipoId={atributosSeleccionados.subtipo || null}
+              colorId={atributosSeleccionados.color || null}
+              disenoId={atributosSeleccionados.diseño || null}
+              onCodigoChange={handleCodigoChange}
+              onNombreRecomendado={(nombre) => {
+                if (nombre.trim() && !nombreEditadoRef.current) setNombre(nombre)
+              }}
+            />
+          </div>
+        ) : (
+          <div className="w-full space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Código del Material</label>
+            <div className="rounded-xl bg-neu-base shadow-neu p-4">
+              <p className="text-display-xs font-mono font-bold text-primary-600">
+                {material.codigo}
+              </p>
+            </div>
+          </div>
+        )}
+        
+        <div className="space-y-1 md:min-w-[220px]">
+          <label className="text-xs font-medium text-muted-foreground">Origen del Material *</label>
+          <div className="relative flex rounded-xl bg-neu-base shadow-neu-inset p-1 w-full">
+            <div 
+              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-primary-600 shadow transition-transform duration-300 ${
+                tipoMP === 'nacional' ? 'translate-x-0' : 'translate-x-full'
+              }`} 
+            />
+            <button
+              type="button"
+              disabled={isEdit}
+              onClick={() => setTipoMP('nacional')}
+              className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
+                tipoMP === 'nacional' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
+              } ${isEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              Nacional
+            </button>
+            <button
+              type="button"
+              disabled={isEdit}
+              onClick={() => setTipoMP('importado')}
+              className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
+                tipoMP === 'importado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
+              } ${isEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              Importado
+            </button>
+          </div>
         </div>
-      )}
+      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* Nombre */}
-        <div className="space-y-1 sm:col-span-2">
+      {/* Row 2: Nombre + Unidad + Ref Proveedor */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="space-y-1">
           <div className="flex items-center gap-1.5">
             <label className="text-xs font-medium text-foreground">Nombre *</label>
             {checkingNombre && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
-            {usaSchema && autoTexto && nombreEditadoRef.current && (
-              <button
-                type="button"
-                onClick={() => { nombreEditadoRef.current = false; setNombre(autoTexto) }}
-                title="Restaurar nombre automático"
-                className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary-600 transition-colors"
-              >
-                <RotateCcw className="w-2.5 h-2.5" />
-                Auto
-              </button>
-            )}
-            {usaSchema && autoTexto && !nombreEditadoRef.current && (
-              <span className="ml-auto text-[10px] text-primary-500 font-medium">Auto</span>
-            )}
           </div>
           <div className={`rounded-lg bg-neu-base shadow-neu px-3 py-2 ${nombreDuplicado ? 'ring-1 ring-amber-400' : ''}`}>
             <input
@@ -315,14 +374,13 @@ function MaterialForm({
           {nombreDuplicado && (
             <div className="flex items-center gap-1 text-amber-600">
               <AlertTriangle className="w-3 h-3 shrink-0" />
-              <span className="text-[10px]">Ya existe un material con este nombre</span>
+              <span className="text-[10px]">Nombre duplicado</span>
             </div>
           )}
         </div>
 
-        {/* Unidad */}
         <div className="space-y-1">
-          <label className="text-xs font-medium text-foreground">Unidad</label>
+          <label className="text-xs font-medium text-foreground">Unidad de Medida</label>
           <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
             <select
               value={unidad}
@@ -335,13 +393,57 @@ function MaterialForm({
             </select>
           </div>
         </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-foreground">Referencia Proveedor</label>
+          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+            <input
+              value={referenciaProveedor}
+              onChange={e => setReferenciaProveedor(e.target.value)}
+              placeholder="SKU-PROV-123"
+              className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* Costo */}
+      {/* Row 3: Atributos de Configuración */}
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">Atributos del Material</label>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {TIPOS_ATRIBUTO_MP.map(tipoAtributo => (
+            <div key={tipoAtributo} className="space-y-0.5">
+              <label className="text-[10px] font-medium text-muted-foreground block truncate">
+                {LABELS_ATRIBUTO_MP[tipoAtributo]} *
+              </label>
+              <select
+                value={atributosSeleccionados[tipoAtributo]}
+                onChange={e =>
+                  setAtributosSeleccionados(prev => ({
+                    ...prev,
+                    [tipoAtributo]: e.target.value,
+                  }))
+                }
+                className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2 py-1.5 text-foreground outline-none appearance-none"
+              >
+                <option value="">—</option>
+                {(atributosPorTipo[tipoAtributo] ?? []).map(attr => (
+                  <option key={attr.id} value={attr.id}>
+                    {attr.valor}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Row 4: Costo + Partida Arancelaria + Rendimiento */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="space-y-1">
           <label className="text-xs font-medium text-foreground">Costo/unidad (COP) *</label>
-          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2 flex items-center">
+            <span className="text-muted-foreground text-xs mr-1">$</span>
             <input
               type="number"
               min="0"
@@ -350,12 +452,23 @@ function MaterialForm({
               value={costoUnit}
               onChange={e => setCostoUnit(e.target.value)}
               placeholder="8500"
+              className="w-full bg-transparent text-body-sm text-foreground outline-none"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-foreground">Partida Arancelaria</label>
+          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+            <input
+              value={partidaArancelaria}
+              onChange={e => setPartidaArancelaria(e.target.value)}
+              placeholder="6204.62.20"
               className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
           </div>
         </div>
 
-        {/* Rendimiento (m/kg) — solo para metros */}
         {unidad === 'metros' && (
           <div className="space-y-1">
             <label className="text-xs font-medium text-foreground">Rendimiento (m/kg)</label>
@@ -370,68 +483,43 @@ function MaterialForm({
                 className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
               />
             </div>
-            <p className="text-[10px] text-muted-foreground">Metros por kilogramo</p>
           </div>
         )}
-
-        {/* Descripción */}
-        <div className={`space-y-1 ${unidad === 'metros' ? 'sm:col-span-1' : 'sm:col-span-2'}`}>
-          <div className="flex items-center gap-1.5">
-            <label className="text-xs font-medium text-foreground">Descripción</label>
-            {usaSchema && autoTexto && descripcionEditadaRef.current && (
-              <button
-                type="button"
-                onClick={() => { descripcionEditadaRef.current = false; setDescripcion(autoTexto) }}
-                title="Restaurar descripción automática"
-                className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary-600 transition-colors"
-              >
-                <RotateCcw className="w-2.5 h-2.5" />
-                Auto
-              </button>
-            )}
-            {usaSchema && autoTexto && !descripcionEditadaRef.current && (
-              <span className="ml-auto text-[10px] text-primary-500 font-medium">Auto</span>
-            )}
-          </div>
-          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
-            <input
-              value={descripcion}
-              onChange={e => { descripcionEditadaRef.current = true; setDescripcion(e.target.value) }}
-              placeholder="Especificación técnica..."
-              className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-            />
-          </div>
-        </div>
       </div>
 
-      {/* Estado (solo edición) */}
-      {isEdit && (
-        <label className="flex items-center gap-2 cursor-pointer w-fit">
-          <div
-            onClick={() => setActivo(v => !v)}
-            className={`relative w-9 h-5 rounded-full transition-colors ${activo ? 'bg-primary-500' : 'bg-neu-base shadow-neu-inset'}`}
+      {/* Footer: Estado y Acciones */}
+      <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center gap-4">
+          {isEdit && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <div
+                onClick={() => setActivo(v => !v)}
+                className={`relative w-8 h-4 rounded-full transition-colors ${activo ? 'bg-green-500' : 'bg-neu-base shadow-neu-inset'}`}
+              >
+                <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${activo ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+              </div>
+              <span className="text-[11px] font-medium text-foreground">{activo ? 'Activo' : 'Inactivo'}</span>
+            </label>
+          )}
+
+          {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
+          {!isEdit && checkingCodigo && <span className="text-[10px] text-muted-foreground animate-pulse">Verificando disponibilidad...</span>}
+        </div>
+
+        <div className="flex gap-2">
+          <button type="button" onClick={onDone}
+            className="px-3 py-1.5 rounded-lg text-body-sm text-muted-foreground hover:text-foreground transition-colors">
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={pending || (!isEdit && codigoDuplicado) || (!isEdit && !codigoCompleto)}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset disabled:opacity-60"
           >
-            <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${activo ? 'translate-x-4' : 'translate-x-0.5'}`} />
-          </div>
-          <span className="text-body-sm text-foreground">{activo ? 'Activo' : 'Inactivo'}</span>
-        </label>
-      )}
-
-      {error && <p className="text-xs text-red-600">{error}</p>}
-
-      <div className="flex gap-2 justify-end">
-        <button type="button" onClick={onDone}
-          className="px-3 py-1.5 rounded-lg text-body-sm text-muted-foreground hover:text-foreground transition-colors">
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={pending || (!isEdit && codigoDuplicado) || (usaSchema && !codigoState.completo)}
-          className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset disabled:opacity-60"
-        >
-          {pending && <Loader2 className="w-3 h-3 animate-spin" />}
-          {isEdit ? 'Guardar cambios' : 'Crear material'}
-        </button>
+            {pending && <Loader2 className="w-3 h-3 animate-spin" />}
+            {isEdit ? 'Guardar cambios' : 'Crear material'}
+          </button>
+        </div>
       </div>
     </form>
   )

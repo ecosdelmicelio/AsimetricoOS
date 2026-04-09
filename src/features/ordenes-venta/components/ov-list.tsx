@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ClipboardList, Plus } from 'lucide-react'
 import { getOrdenesVenta, getOVDashboardStats } from '@/features/ordenes-venta/services/ov-actions'
 import { OVDashboardStats } from './ov-dashboard-stats'
+import { PageHeader } from '@/shared/components/page-header'
 import { OVFilters } from './ov-filters'
 import { OVCard } from './ov-card'
 import type { OrdenVenta } from '@/features/ordenes-venta/types'
@@ -65,6 +66,13 @@ export async function OVList({ filters }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* Header */}
+      <PageHeader
+        title="Órdenes de Venta"
+        subtitle={`${ovs.length} órdenes en seguimiento`}
+        icon={ClipboardList}
+      />
+
       {/* Dashboard Stats */}
       <OVDashboardStats stats={stats} />
 

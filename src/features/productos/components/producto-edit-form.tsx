@@ -5,12 +5,16 @@ import { useRouter } from 'next/navigation'
 import { Loader2, Globe } from 'lucide-react'
 import { updateProducto } from '@/features/productos/services/producto-actions'
 import type { Producto, TipoProducto } from '@/features/productos/types'
+import type { AtributoPT, TipoAtributo } from '@/features/productos/types/atributos'
+import { TIPOS_ATRIBUTO, LABELS_ATRIBUTO } from '@/features/productos/types/atributos'
 
 interface Props {
   producto: Producto
+  atributos: Record<TipoAtributo, AtributoPT[]>
+  atributosProducto: Record<TipoAtributo, string>
 }
 
-export function ProductoEditForm({ producto }: Props) {
+export function ProductoEditForm({ producto, atributos, atributosProducto }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -20,6 +24,9 @@ export function ProductoEditForm({ producto }: Props) {
   const [precioBase, setPrecioBase] = useState(producto.precio_base?.toString() ?? '')
   const [tipoProducto, setTipoProducto] = useState<TipoProducto>(
     producto.tipo_producto ?? 'fabricado',
+  )
+  const [atributosSeleccionados, setAtributosSeleccionados] = useState<Record<TipoAtributo, string>>(
+    atributosProducto,
   )
 
   function handleSubmit(e: React.FormEvent) {
@@ -32,9 +39,10 @@ export function ProductoEditForm({ producto }: Props) {
         origen_usa: origenUsa,
         precio_base: precioBase ? parseFloat(precioBase) : undefined,
         tipo_producto: tipoProducto,
+        atributos: atributosSeleccionados,
       })
       if (res.error) { setError(res.error); return }
-      router.push(`/productos/${producto.id}`)
+      router.push(`/catalogo/${producto.id}`)
     })
   }
 
@@ -54,14 +62,32 @@ export function ProductoEditForm({ producto }: Props) {
       {/* Tipo producto */}
       <div className="space-y-1.5">
         <label className="text-body-sm text-muted-foreground">Tipo de Producto</label>
-        <select
-          value={tipoProducto}
-          onChange={e => setTipoProducto(e.target.value as TipoProducto)}
-          className="w-full rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5 text-body-sm text-foreground outline-none"
-        >
-          <option value="fabricado">Fabricado</option>
-          <option value="comercializado">Comercializado</option>
-        </select>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTipoProducto('fabricado'); }}
+            style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+            className={`flex-1 px-3 py-2.5 text-body-sm rounded-xl transition-all font-semibold ${
+              tipoProducto === 'fabricado'
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Fabricado
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTipoProducto('comercializado'); }}
+            style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+            className={`flex-1 px-3 py-2.5 text-body-sm rounded-xl transition-all font-semibold ${
+              tipoProducto === 'comercializado'
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Comercializado
+          </button>
+        </div>
       </div>
 
       {/* Nombre */}
@@ -132,6 +158,37 @@ export function ProductoEditForm({ producto }: Props) {
             placeholder="0"
             className="w-full bg-transparent pl-7 pr-3 py-2.5 text-body-sm text-foreground outline-none"
           />
+        </div>
+      </div>
+
+      {/* Atributos */}
+      <div className="space-y-1.5">
+        <label className="text-body-sm text-muted-foreground">Atributos</label>
+        <div className="grid grid-cols-2 gap-3">
+          {TIPOS_ATRIBUTO.map(tipoAtributo => (
+            <div key={tipoAtributo} className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground block truncate">
+                {LABELS_ATRIBUTO[tipoAtributo]}
+              </label>
+              <select
+                value={atributosSeleccionados[tipoAtributo]}
+                onChange={e =>
+                  setAtributosSeleccionados(prev => ({
+                    ...prev,
+                    [tipoAtributo]: e.target.value,
+                  }))
+                }
+                className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2 py-1.5 text-foreground outline-none"
+              >
+                <option value="">—</option>
+                {(atributos[tipoAtributo] ?? []).map(attr => (
+                  <option key={attr.id} value={attr.id}>
+                    {attr.valor}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ))}
         </div>
       </div>
 

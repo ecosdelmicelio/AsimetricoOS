@@ -1,0 +1,94 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]: Asimétrico OS
+          - generic [ref=e8]:
+            - link "Torre de Control" [ref=e9] [cursor=pointer]:
+              - /url: /torre-control
+              - img [ref=e10]
+              - generic [ref=e15]: Torre de Control
+            - link "Órdenes de Venta" [ref=e16] [cursor=pointer]:
+              - /url: /ordenes-venta
+              - img [ref=e17]
+              - generic [ref=e20]: Órdenes de Venta
+            - link "Producción" [ref=e21] [cursor=pointer]:
+              - /url: /ordenes-produccion
+              - img [ref=e22]
+              - generic [ref=e24]: Producción
+            - link "Calidad" [ref=e25] [cursor=pointer]:
+              - /url: /calidad
+              - img [ref=e26]
+              - generic [ref=e29]: Calidad
+            - link "Liquidación" [ref=e30] [cursor=pointer]:
+              - /url: /liquidacion
+              - img [ref=e31]
+              - generic [ref=e33]: Liquidación
+            - link "Productos" [ref=e34] [cursor=pointer]:
+              - /url: /productos
+              - img [ref=e35]
+              - generic [ref=e39]: Productos
+            - link "Compras" [ref=e40] [cursor=pointer]:
+              - /url: /compras
+              - img [ref=e41]
+              - generic [ref=e45]: Compras
+            - link "Terceros" [ref=e46] [cursor=pointer]:
+              - /url: /terceros
+              - img [ref=e47]
+              - generic [ref=e52]: Terceros
+            - link "Configuración" [ref=e53] [cursor=pointer]:
+              - /url: /configuracion
+              - img [ref=e54]
+              - generic [ref=e57]: Configuración
+            - link "Mi Taller" [ref=e58] [cursor=pointer]:
+              - /url: /taller
+              - img [ref=e59]
+              - generic [ref=e61]: Mi Taller
+        - button "Salir" [ref=e63] [cursor=pointer]:
+          - img [ref=e64]
+          - generic [ref=e67]: Salir
+    - main [ref=e68]:
+      - generic [ref=e69]:
+        - generic [ref=e70]:
+          - heading "Configuración" [level=1] [ref=e71]
+          - paragraph [ref=e72]: Esquemas de códigos, tablas maestras y parámetros del sistema
+        - generic [ref=e74]:
+          - button "Atributos PT Tipo, Fit, Color, etc." [ref=e75] [cursor=pointer]:
+            - img [ref=e77]
+            - generic [ref=e81]:
+              - paragraph [ref=e82]: Atributos PT
+              - paragraph [ref=e83]: Tipo, Fit, Color, etc.
+          - button "Atributos MP Tipo, Subtipo, Color, etc." [ref=e84] [cursor=pointer]:
+            - img [ref=e86]
+            - generic [ref=e90]:
+              - paragraph [ref=e91]: Atributos MP
+              - paragraph [ref=e92]: Tipo, Subtipo, Color, etc.
+          - button "Tipos de Servicio Tipo, Subtipo" [ref=e93] [cursor=pointer]:
+            - img [ref=e95]
+            - generic [ref=e99]:
+              - paragraph [ref=e100]: Tipos de Servicio
+              - paragraph [ref=e101]: Tipo, Subtipo
+          - button "Servicios Procesos operativos" [ref=e102] [cursor=pointer]:
+            - img [ref=e104]
+            - generic [ref=e108]:
+              - paragraph [ref=e109]: Servicios
+              - paragraph [ref=e110]: Procesos operativos
+          - button "Tipos de Defecto Catálogo para calidad" [ref=e111] [cursor=pointer]:
+            - img [ref=e113]
+            - generic [ref=e117]:
+              - paragraph [ref=e118]: Tipos de Defecto
+              - paragraph [ref=e119]: Catálogo para calidad
+          - button "Movimientos Tipos de movimiento kardex" [ref=e120] [cursor=pointer]:
+            - img [ref=e122]
+            - generic [ref=e126]:
+              - paragraph [ref=e127]: Movimientos
+              - paragraph [ref=e128]: Tipos de movimiento kardex
+          - button "Calidad Parámetros de inspección" [ref=e129] [cursor=pointer]:
+            - img [ref=e131]
+            - generic [ref=e134]:
+              - paragraph [ref=e135]: Calidad
+              - paragraph [ref=e136]: Parámetros de inspección
+  - button "Open Next.js Dev Tools" [ref=e142] [cursor=pointer]:
+    - img [ref=e143]
+  - alert [ref=e146]

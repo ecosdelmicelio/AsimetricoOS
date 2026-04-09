@@ -1,7 +1,11 @@
-import { getSchemaByEntidad } from '@/features/codigo-schema/services/schema-actions'
 import { getCalidadConfig } from '@/features/calidad/services/calidad-config-actions'
 import { getTiposMovimiento } from '@/features/configuracion/services/tipos-movimiento-actions'
+import { getAtributosPT } from '@/features/productos/services/atributo-actions'
+import { getAtributosMP } from '@/features/materiales/services/atributo-actions'
+import { getTipoServicioAtributos } from '@/features/servicios/services/atributo-servicio-actions'
 import { ConfiguracionTabs } from '@/features/configuracion/components/configuracion-tabs'
+import { PageHeader } from '@/shared/components/page-header'
+import { Settings2 } from 'lucide-react'
 import { createClient } from '@/shared/lib/supabase/server'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -17,32 +21,30 @@ async function getTiposDefecto() {
 }
 
 export default async function ConfiguracionPage() {
-  const [schemaProducto, schemaMaterial, schemaServicio, tiposDefecto, tiposMovimiento, calidadConfig] =
-    await Promise.all([
-      getSchemaByEntidad('producto'),
-      getSchemaByEntidad('material'),
-      getSchemaByEntidad('servicio'),
-      getTiposDefecto(),
-      getTiposMovimiento(),
-      getCalidadConfig(),
-    ])
+  const [tiposDefecto, tiposMovimiento, calidadConfig, atributosPT, atributosMP, atributosServicios] = await Promise.all([
+    getTiposDefecto(),
+    getTiposMovimiento(),
+    getCalidadConfig(),
+    getAtributosPT(),
+    getAtributosMP(),
+    getTipoServicioAtributos(),
+  ])
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-display-xs font-heading text-foreground font-bold">Configuración</h1>
-        <p className="text-muted-foreground text-body-sm mt-1">
-          Esquemas de códigos, tablas maestras y parámetros del sistema
-        </p>
-      </div>
+      <PageHeader
+        title="Configuración"
+        subtitle="Esquemas de códigos, tablas maestras y parámetros del sistema"
+        icon={Settings2}
+      />
 
       <ConfiguracionTabs
-        schemaProducto={schemaProducto}
-        schemaMaterial={schemaMaterial}
-        schemaServicio={schemaServicio}
         tiposDefecto={tiposDefecto}
         tiposMovimiento={tiposMovimiento}
         calidadConfig={calidadConfig}
+        atributosPT={atributosPT}
+        atributosMP={atributosMP}
+        atributosServicios={atributosServicios}
       />
     </div>
   )
