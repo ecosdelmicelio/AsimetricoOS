@@ -4,8 +4,7 @@ import { useState } from 'react'
 import { Package } from 'lucide-react'
 import { BodegaFilterBar } from '@/features/wms/components/bodega-filter-bar'
 import { InventarioTable } from '@/features/wms/components/inventario-table'
-import { TrasladoForm } from '@/features/wms/components/traslado-form'
-import { TrasladosHistorial } from '@/features/wms/components/traslados-historial'
+import { WMSTabs } from '@/features/wms/components/wms-tabs'
 import type { Bodega } from '@/features/wms/types'
 
 interface Props {
@@ -21,6 +20,11 @@ export function WMSPanel({ bodegas }: Props) {
 
   return (
     <div className="flex flex-col h-full bg-neu-bg">
+      {/* WMS Tabs: Traslados, Ingresos, Salidas - AT THE TOP */}
+      {bodegaActual && (
+        <WMSTabs bodegas={bodegas} bodegaSeleccionada={bodegaSeleccionada} />
+      )}
+
       {/* Filter Bar: Iconos de bodegas */}
       <BodegaFilterBar
         bodegas={bodegas}
@@ -42,18 +46,6 @@ export function WMSPanel({ bodegas }: Props) {
 
             {/* Inventario Table */}
             <InventarioTable bodegaId={bodegaActual.id} bodegaNombre={bodegaActual.nombre} />
-
-            {/* Traslados */}
-            <div className="grid grid-cols-2 gap-6">
-              <div className="bg-neu-base border border-neu-300 rounded-xl p-6 space-y-4">
-                <h3 className="font-semibold">Traslados</h3>
-                <TrasladoForm bodegas={bodegas} bodegaOrigen={bodegaSeleccionada} />
-              </div>
-
-              <div className="bg-neu-base border border-neu-300 rounded-xl p-6">
-                <TrasladosHistorial bodegaId={bodegaSeleccionada} />
-              </div>
-            </div>
           </>
         ) : (
           <div className="flex items-center justify-center h-full text-muted-foreground">
