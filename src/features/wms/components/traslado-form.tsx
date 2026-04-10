@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, X } from 'lucide-react'
+import { Plus, X, ArrowRightLeft, Package, Repeat2 } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
+import { BinSelector } from '@/features/wms/components/bin-selector'
 import { crearTraslado, confirmarTraslado } from '@/features/wms/services/traslados-actions'
 import type { Bodega } from '@/features/wms/types'
 
@@ -25,11 +26,13 @@ export function TrasladoForm({ bodegas, bodegaOrigen }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [trasladoCreado, setTrasladoCreado] = useState<string | null>(null)
+  const [tipo, setTipo] = useState<'entre_bodegas' | 'bin_completo' | 'bin_a_bin'>('entre_bodegas')
 
   const [formData, setFormData] = useState({
     bodega_origen_id: bodegaOrigen || '',
     bodega_destino_id: '',
+    bin_origen_id: null as string | null,
+    bin_destino_id: null as string | null,
     notas: '',
   })
 
@@ -59,20 +62,43 @@ export function TrasladoForm({ bodegas, bodegaOrigen }: Props) {
   }
 
   const handleCrearTraslado = async () => {
+    // Validaciones comunes
     if (!formData.bodega_origen_id || !formData.bodega_destino_id) {
       setError('Selecciona bodega origen y destino')
       return
     }
 
-    if (items.length === 0) {
-      setError('Agrega al menos un item')
-      return
+    // Validaciones específicas por tipo
+    if (tipo === 'entre_bodegas') {
+      if (items.length === 0) {
+        setError('Agrega al menos un item')
+        return
+      }
+    } else if (tipo === 'bin_completo') {
+      if (!formData.bin_origen_id) {
+        setError('Selecciona el bin a trasladar')
+        return
+      }
+    } else if (tipo === 'bin_a_bin') {
+      if (!formData.bin_origen_id || !formData.bin_destino_id) {
+        setError('Selecciona bin origen y destino')
+        return
+      }
+      if (items.length === 0) {
+        setError('Agrega al menos un item')
+        return
+      }
     }
 
     setLoading(true)
+    setError(null)
+
     const result = await crearTraslado({
+      tipo,
       bodega_origen_id: formData.bodega_origen_id,
       bodega_destino_id: formData.bodega_destino_id,
+      bin_origen_id: formData.bin_origen_id || undefined,
+      bin_destino_id: formData.bin_destino_id || undefined,
       items: items.map(i => ({
         producto_id: i.producto_id,
         material_id: i.material_id,
@@ -88,7 +114,6 @@ export function TrasladoForm({ bodegas, bodegaOrigen }: Props) {
     if (result.error) {
       setError(result.error)
     } else if (result.data) {
-      setTrasladoCreado(result.data.id)
       // Automáticamente confirmar
       const confirmResult = await confirmarTraslado(result.data.id)
       if (confirmResult.error) {
@@ -98,11 +123,13 @@ export function TrasladoForm({ bodegas, bodegaOrigen }: Props) {
         setFormData({
           bodega_origen_id: bodegaOrigen || '',
           bodega_destino_id: '',
+          bin_origen_id: null,
+          bin_destino_id: null,
           notas: '',
         })
         setItems([])
         setError(null)
-        setTrasladoCreado(null)
+        setTipo('entre_bodegas')
       }
     }
   }
@@ -134,110 +161,329 @@ export function TrasladoForm({ bodegas, bodegaOrigen }: Props) {
         </div>
       )}
 
-      {/* Bodegas */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Bodega Origen</label>
-          <select
-            value={formData.bodega_origen_id}
-            onChange={e =>
-              setFormData({
-                ...formData,
-                bodega_origen_id: e.target.value,
-              })
-            }
-            className="w-full px-3 py-2 rounded-lg border border-neu-300 text-sm"
-          >
-            <option value="">Seleccionar...</option>
-            {bodegas
-              .filter(b => b.activo)
-              .map(b => (
-                <option key={b.id} value={b.id}>
-                  {b.nombre}
-                </option>
-              ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Bodega Destino</label>
-          <select
-            value={formData.bodega_destino_id}
-            onChange={e =>
-              setFormData({
-                ...formData,
-                bodega_destino_id: e.target.value,
-              })
-            }
-            className="w-full px-3 py-2 rounded-lg border border-neu-300 text-sm"
-          >
-            <option value="">Seleccionar...</option>
-            {bodegas
-              .filter(
-                b =>
-                  b.activo &&
-                  b.id !== formData.bodega_origen_id,
-              )
-              .map(b => (
-                <option key={b.id} value={b.id}>
-                  {b.nombre}
-                </option>
-              ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Items */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <label className="block text-sm font-medium">Items</label>
+      {/* Tipo de traslado */}
+      <div className="space-y-2">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tipo de Traslado</label>
+        <div className="grid grid-cols-3 gap-2">
           <button
-            onClick={agregarItem}
-            className="text-xs px-2 py-1 rounded-lg bg-primary-100 text-primary-700 hover:bg-primary-200 transition-colors"
+            type="button"
+            onClick={() => setTipo('entre_bodegas')}
+            className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${
+              tipo === 'entre_bodegas'
+                ? 'bg-purple-50 border-purple-400 text-purple-700'
+                : 'bg-neu-base border-transparent shadow-neu text-muted-foreground hover:shadow-neu-lg'
+            }`}
           >
-            + Agregar
+            <ArrowRightLeft className="w-4 h-4" />
+            Entre Bodegas
+          </button>
+          <button
+            type="button"
+            onClick={() => setTipo('bin_completo')}
+            className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${
+              tipo === 'bin_completo'
+                ? 'bg-amber-50 border-amber-400 text-amber-700'
+                : 'bg-neu-base border-transparent shadow-neu text-muted-foreground hover:shadow-neu-lg'
+            }`}
+          >
+            <Package className="w-4 h-4" />
+            Bin Completo
+          </button>
+          <button
+            type="button"
+            onClick={() => setTipo('bin_a_bin')}
+            className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${
+              tipo === 'bin_a_bin'
+                ? 'bg-blue-50 border-blue-400 text-blue-700'
+                : 'bg-neu-base border-transparent shadow-neu text-muted-foreground hover:shadow-neu-lg'
+            }`}
+          >
+            <Repeat2 className="w-4 h-4" />
+            Bin a Bin
           </button>
         </div>
-
-        {items.length === 0 ? (
-          <div className="text-xs text-muted-foreground text-center py-6">
-            Sin items
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {items.map(item => (
-              <div key={item.id} className="flex gap-2 items-end">
-                <input
-                  type="number"
-                  value={item.cantidad}
-                  onChange={e =>
-                    updateItem(item.id, 'cantidad', parseInt(e.target.value) || 0)
-                  }
-                  placeholder="Cantidad"
-                  className="flex-1 px-2 py-1 text-sm rounded-lg border border-neu-300"
-                />
-                <select
-                  value={item.unidad}
-                  onChange={e => updateItem(item.id, 'unidad', e.target.value)}
-                  className="px-2 py-1 text-sm rounded-lg border border-neu-300"
-                >
-                  <option>unidades</option>
-                  <option>kg</option>
-                  <option>metros</option>
-                </select>
-                <button
-                  onClick={() => eliminarItem(item.id)}
-                  className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <X className="w-4 h-4 text-red-600" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
-      {/* Notas */}
+      {/* Contenido condicional por tipo */}
+      {tipo === 'entre_bodegas' && (
+        <>
+          {/* Bodegas origen y destino */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Bodega Origen</label>
+              <select
+                value={formData.bodega_origen_id}
+                onChange={e =>
+                  setFormData({ ...formData, bodega_origen_id: e.target.value })
+                }
+                className="w-full px-3 py-2 rounded-lg border border-neu-300 text-sm"
+              >
+                <option value="">Seleccionar...</option>
+                {bodegas
+                  .filter(b => b.activo)
+                  .map(b => (
+                    <option key={b.id} value={b.id}>
+                      {b.nombre}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Bodega Destino</label>
+              <select
+                value={formData.bodega_destino_id}
+                onChange={e =>
+                  setFormData({ ...formData, bodega_destino_id: e.target.value })
+                }
+                className="w-full px-3 py-2 rounded-lg border border-neu-300 text-sm"
+              >
+                <option value="">Seleccionar...</option>
+                {bodegas
+                  .filter(
+                    b =>
+                      b.activo &&
+                      b.id !== formData.bodega_origen_id,
+                  )
+                  .map(b => (
+                    <option key={b.id} value={b.id}>
+                      {b.nombre}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Items grid */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium">Items</label>
+              <button
+                onClick={agregarItem}
+                className="text-xs px-2 py-1 rounded-lg bg-primary-100 text-primary-700 hover:bg-primary-200 transition-colors"
+              >
+                + Agregar
+              </button>
+            </div>
+
+            {items.length === 0 ? (
+              <div className="text-xs text-muted-foreground text-center py-6">
+                Sin items
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {items.map(item => (
+                  <div key={item.id} className="flex gap-2 items-end">
+                    <input
+                      type="number"
+                      value={item.cantidad}
+                      onChange={e =>
+                        updateItem(item.id, 'cantidad', parseInt(e.target.value) || 0)
+                      }
+                      placeholder="Cantidad"
+                      className="flex-1 px-2 py-1 text-sm rounded-lg border border-neu-300"
+                    />
+                    <select
+                      value={item.unidad}
+                      onChange={e => updateItem(item.id, 'unidad', e.target.value)}
+                      className="px-2 py-1 text-sm rounded-lg border border-neu-300"
+                    >
+                      <option>unidades</option>
+                      <option>kg</option>
+                      <option>metros</option>
+                    </select>
+                    <button
+                      onClick={() => eliminarItem(item.id)}
+                      className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <X className="w-4 h-4 text-red-600" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {tipo === 'bin_completo' && (
+        <>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Bodega Origen (contiene el bin)</label>
+            <select
+              value={formData.bodega_origen_id}
+              onChange={e =>
+                setFormData({ ...formData, bodega_origen_id: e.target.value })
+              }
+              className="w-full px-3 py-2 rounded-lg border border-neu-300 text-sm"
+            >
+              <option value="">Seleccionar...</option>
+              {bodegas
+                .filter(b => b.activo)
+                .map(b => (
+                  <option key={b.id} value={b.id}>
+                    {b.nombre}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Bin a Trasladar</label>
+            <BinSelector
+              bodegaId={formData.bodega_origen_id}
+              value={formData.bin_origen_id}
+              onChange={binId => setFormData({ ...formData, bin_origen_id: binId })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Bodega Destino</label>
+            <select
+              value={formData.bodega_destino_id}
+              onChange={e =>
+                setFormData({ ...formData, bodega_destino_id: e.target.value })
+              }
+              className="w-full px-3 py-2 rounded-lg border border-neu-300 text-sm"
+            >
+              <option value="">Seleccionar...</option>
+              {bodegas
+                .filter(
+                  b =>
+                    b.activo &&
+                    b.id !== formData.bodega_origen_id,
+                )
+                .map(b => (
+                  <option key={b.id} value={b.id}>
+                    {b.nombre}
+                  </option>
+                ))}
+            </select>
+          </div>
+        </>
+      )}
+
+      {tipo === 'bin_a_bin' && (
+        <>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">Bodega Origen</label>
+              <select
+                value={formData.bodega_origen_id}
+                onChange={e =>
+                  setFormData({ ...formData, bodega_origen_id: e.target.value })
+                }
+                className="w-full px-3 py-2 rounded-lg border border-neu-300 text-sm"
+              >
+                <option value="">Seleccionar...</option>
+                {bodegas
+                  .filter(b => b.activo)
+                  .map(b => (
+                    <option key={b.id} value={b.id}>
+                      {b.nombre}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">Bodega Destino</label>
+              <select
+                value={formData.bodega_destino_id}
+                onChange={e =>
+                  setFormData({ ...formData, bodega_destino_id: e.target.value })
+                }
+                className="w-full px-3 py-2 rounded-lg border border-neu-300 text-sm"
+              >
+                <option value="">Seleccionar...</option>
+                {bodegas
+                  .filter(
+                    b =>
+                      b.activo &&
+                      b.id !== formData.bodega_origen_id,
+                  )
+                  .map(b => (
+                    <option key={b.id} value={b.id}>
+                      {b.nombre}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">Bin Origen</label>
+              <BinSelector
+                bodegaId={formData.bodega_origen_id}
+                value={formData.bin_origen_id}
+                onChange={binId => setFormData({ ...formData, bin_origen_id: binId })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">Bin Destino</label>
+              <BinSelector
+                bodegaId={formData.bodega_destino_id}
+                value={formData.bin_destino_id}
+                onChange={binId => setFormData({ ...formData, bin_destino_id: binId })}
+              />
+            </div>
+          </div>
+
+          {/* Items grid para bin_a_bin */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium">Items</label>
+              <button
+                onClick={agregarItem}
+                className="text-xs px-2 py-1 rounded-lg bg-primary-100 text-primary-700 hover:bg-primary-200 transition-colors"
+              >
+                + Agregar
+              </button>
+            </div>
+
+            {items.length === 0 ? (
+              <div className="text-xs text-muted-foreground text-center py-6">
+                Sin items
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {items.map(item => (
+                  <div key={item.id} className="flex gap-2 items-end">
+                    <input
+                      type="number"
+                      value={item.cantidad}
+                      onChange={e =>
+                        updateItem(item.id, 'cantidad', parseInt(e.target.value) || 0)
+                      }
+                      placeholder="Cantidad"
+                      className="flex-1 px-2 py-1 text-sm rounded-lg border border-neu-300"
+                    />
+                    <select
+                      value={item.unidad}
+                      onChange={e => updateItem(item.id, 'unidad', e.target.value)}
+                      className="px-2 py-1 text-sm rounded-lg border border-neu-300"
+                    >
+                      <option>unidades</option>
+                      <option>kg</option>
+                      <option>metros</option>
+                    </select>
+                    <button
+                      onClick={() => eliminarItem(item.id)}
+                      className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <X className="w-4 h-4 text-red-600" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Notas (común a todos los tipos) */}
       <div>
         <label className="block text-sm font-medium mb-1">Notas</label>
         <textarea

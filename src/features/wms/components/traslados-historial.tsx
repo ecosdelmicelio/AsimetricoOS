@@ -14,6 +14,12 @@ const ESTADO_COLORS: Record<string, string> = {
   cancelado: 'bg-red-50 text-red-700 border-red-200',
 }
 
+const TIPO_LABELS: Record<string, string> = {
+  entre_bodegas: 'Entre Bodegas',
+  bin_completo: 'Bin Completo',
+  bin_a_bin: 'Bin a Bin',
+}
+
 export function TrasladosHistorial({ bodegaId }: Props) {
   const [traslados, setTraslados] = useState<Traslado[]>([])
   const [loading, setLoading] = useState(true)
@@ -54,6 +60,7 @@ export function TrasladosHistorial({ bodegaId }: Props) {
           <thead className="bg-neu-100 border-b border-neu-300">
             <tr>
               <th className="text-left px-4 py-2 font-medium">Código</th>
+              <th className="text-left px-4 py-2 font-medium">Tipo</th>
               <th className="text-left px-4 py-2 font-medium">Estado</th>
               <th className="text-left px-4 py-2 font-medium">Fecha</th>
             </tr>
@@ -62,6 +69,7 @@ export function TrasladosHistorial({ bodegaId }: Props) {
             {traslados.map(traslado => (
               <tr key={traslado.id} className="hover:bg-neu-50">
                 <td className="px-4 py-2 font-mono text-xs">{traslado.codigo}</td>
+                <td className="px-4 py-2 text-xs">{TIPO_LABELS[traslado.tipo] || traslado.tipo}</td>
                 <td className="px-4 py-2">
                   <span
                     className={`text-xs font-semibold px-2 py-1 rounded border ${

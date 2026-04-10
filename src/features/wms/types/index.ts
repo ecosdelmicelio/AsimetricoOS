@@ -11,10 +11,13 @@ export interface Bodega {
 export interface Traslado {
   id: string
   codigo: string
+  tipo: 'entre_bodegas' | 'bin_completo' | 'bin_a_bin'
   bodega_origen_id: string
   bodega_destino_id: string
   bodega_origen?: Bodega
   bodega_destino?: Bodega
+  bin_origen_id?: string | null
+  bin_destino_id?: string | null
   estado: 'pendiente' | 'completado' | 'cancelado'
   notas: string | null
   registrado_por: string | null
@@ -28,6 +31,41 @@ export interface TrasladoItem {
   producto_id: string | null
   material_id: string | null
   bin_id: string | null
+  talla: string | null
+  cantidad: number
+  unidad: string
+  costo_unitario: number | null
+  created_at: string
+}
+
+export interface BinEnBodega {
+  id: string
+  codigo: string
+  posicion: string | null
+  estado: string
+  tipo: string
+}
+
+export interface AjusteInventario {
+  id: string
+  codigo: string
+  tipo: 'entrada' | 'salida'
+  bodega_id: string
+  bin_id: string
+  notas: string
+  estado: string
+  registrado_por: string | null
+  fecha_ajuste: string
+  created_at: string
+  bines?: { codigo: string; posicion: string | null }
+  ajuste_items?: AjusteItem[]
+}
+
+export interface AjusteItem {
+  id: string
+  ajuste_id: string
+  producto_id: string | null
+  material_id: string | null
   talla: string | null
   cantidad: number
   unidad: string

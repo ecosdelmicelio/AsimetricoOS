@@ -163,6 +163,7 @@ export function BodegasTab({ bodegas, bodegaDefaultId }: Props) {
 
     setLoading(true)
     const result = await crearTraslado({
+      tipo: 'entre_bodegas',
       bodega_origen_id: trasladoForm.bodega_origen_id,
       bodega_destino_id: trasladoForm.bodega_destino_id,
       items: [
