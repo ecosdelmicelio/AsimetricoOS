@@ -1,0 +1,221 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - img "Asimétrico" [ref=e6]
+      - navigation [ref=e7]:
+        - link "Torre de Control" [ref=e8] [cursor=pointer]:
+          - /url: /torre-control
+          - img [ref=e9]
+        - link "Órdenes de Venta" [ref=e14] [cursor=pointer]:
+          - /url: /ordenes-venta
+          - img [ref=e15]
+        - link "Producción" [ref=e17] [cursor=pointer]:
+          - /url: /ordenes-produccion
+          - img [ref=e18]
+        - link "Calidad" [ref=e20] [cursor=pointer]:
+          - /url: /calidad
+          - img [ref=e21]
+        - link "Catálogo" [ref=e24] [cursor=pointer]:
+          - /url: /catalogo
+          - img [ref=e25]
+        - link "WMS" [ref=e29] [cursor=pointer]:
+          - /url: /wms
+          - img [ref=e30]
+        - link "Compras" [ref=e33] [cursor=pointer]:
+          - /url: /compras
+          - img [ref=e34]
+        - link "Terceros" [ref=e38] [cursor=pointer]:
+          - /url: /terceros
+          - img [ref=e39]
+        - link "Configuración" [ref=e44] [cursor=pointer]:
+          - /url: /configuracion
+          - img [ref=e45]
+        - link "Mi Taller" [ref=e48] [cursor=pointer]:
+          - /url: /taller
+          - img [ref=e49]
+      - button "Expandir menú" [ref=e52] [cursor=pointer]:
+        - img [ref=e53]
+    - main [ref=e55]:
+      - generic [ref=e57]:
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - img [ref=e61]
+            - generic [ref=e65]:
+              - heading "Terminal de Compras" [level=1] [ref=e66]
+              - paragraph [ref=e67]: 12 órdenes registradas
+          - link "Nueva OC" [ref=e68] [cursor=pointer]:
+            - /url: /compras/nueva
+            - img [ref=e69]
+            - text: Nueva OC
+        - generic [ref=e70]:
+          - 'link "OC-2026-012 Sin afidávit Bivatex · 🕐 Por tejer (30d) · Entrega: 08/05/2026 · 0 rollos" [ref=e71] [cursor=pointer]':
+            - /url: /compras/ea17cdac-c3f9-4acb-86ff-639c08edcaab
+            - generic [ref=e72]:
+              - generic [ref=e73]:
+                - img [ref=e75]
+                - generic [ref=e79]:
+                  - generic [ref=e80]:
+                    - generic [ref=e81]: OC-2026-012
+                    - generic [ref=e82]: Sin afidávit
+                  - paragraph [ref=e83]:
+                    - text: Bivatex ·
+                    - generic [ref=e84]: 🕐 Por tejer (30d)
+                    - text: "· Entrega: 08/05/2026 · 0 rollos"
+              - img [ref=e85]
+          - 'link "OC-2026-011 Sin afidávit Bivatex · 🕐 Por tejer (30d) · Entrega: 08/05/2026 · 0 rollos" [ref=e87] [cursor=pointer]':
+            - /url: /compras/a4ebb636-43f9-4253-82c7-1213fff0124b
+            - generic [ref=e88]:
+              - generic [ref=e89]:
+                - img [ref=e91]
+                - generic [ref=e95]:
+                  - generic [ref=e96]:
+                    - generic [ref=e97]: OC-2026-011
+                    - generic [ref=e98]: Sin afidávit
+                  - paragraph [ref=e99]:
+                    - text: Bivatex ·
+                    - generic [ref=e100]: 🕐 Por tejer (30d)
+                    - text: "· Entrega: 08/05/2026 · 0 rollos"
+              - img [ref=e101]
+          - 'link "OC-2026-010 Sin afidávit Bivatex · 🕐 Por tejer (30d) · Entrega: 08/05/2026 · 0 rollos" [ref=e103] [cursor=pointer]':
+            - /url: /compras/79cfef37-385c-46ba-b86e-18c4e81b34ea
+            - generic [ref=e104]:
+              - generic [ref=e105]:
+                - img [ref=e107]
+                - generic [ref=e111]:
+                  - generic [ref=e112]:
+                    - generic [ref=e113]: OC-2026-010
+                    - generic [ref=e114]: Sin afidávit
+                  - paragraph [ref=e115]:
+                    - text: Bivatex ·
+                    - generic [ref=e116]: 🕐 Por tejer (30d)
+                    - text: "· Entrega: 08/05/2026 · 0 rollos"
+              - img [ref=e117]
+          - 'link "OC-2026-009 Sin afidávit Bivatex · 🕐 Por tejer (30d) · Entrega: 05/05/2026 · 0 rollos" [ref=e119] [cursor=pointer]':
+            - /url: /compras/e73c0eef-631e-4ce5-9824-e06873624281
+            - generic [ref=e120]:
+              - generic [ref=e121]:
+                - img [ref=e123]
+                - generic [ref=e127]:
+                  - generic [ref=e128]:
+                    - generic [ref=e129]: OC-2026-009
+                    - generic [ref=e130]: Sin afidávit
+                  - paragraph [ref=e131]:
+                    - text: Bivatex ·
+                    - generic [ref=e132]: 🕐 Por tejer (30d)
+                    - text: "· Entrega: 05/05/2026 · 0 rollos"
+              - img [ref=e133]
+          - 'link "OC-2026-008 Sin afidávit Bivatex · ⚡ En crudo (15d) · Entrega: 19/04/2026 · 0 rollos" [ref=e135] [cursor=pointer]':
+            - /url: /compras/dfb7e928-7a6c-479f-b465-f3c46db4f940
+            - generic [ref=e136]:
+              - generic [ref=e137]:
+                - img [ref=e139]
+                - generic [ref=e143]:
+                  - generic [ref=e144]:
+                    - generic [ref=e145]: OC-2026-008
+                    - generic [ref=e146]: Sin afidávit
+                  - paragraph [ref=e147]:
+                    - text: Bivatex ·
+                    - generic [ref=e148]: ⚡ En crudo (15d)
+                    - text: "· Entrega: 19/04/2026 · 0 rollos"
+              - img [ref=e149]
+          - 'link "OC-2026-007 Sin afidávit Sin proveedor · 🕐 Por tejer (30d) · Entrega: 04/05/2026 · 0 rollos" [ref=e151] [cursor=pointer]':
+            - /url: /compras/4cd8e96e-365c-49a1-825a-27b4a6dbbff8
+            - generic [ref=e152]:
+              - generic [ref=e153]:
+                - img [ref=e155]
+                - generic [ref=e159]:
+                  - generic [ref=e160]:
+                    - generic [ref=e161]: OC-2026-007
+                    - generic [ref=e162]: Sin afidávit
+                  - paragraph [ref=e163]:
+                    - text: Sin proveedor ·
+                    - generic [ref=e164]: 🕐 Por tejer (30d)
+                    - text: "· Entrega: 04/05/2026 · 0 rollos"
+              - img [ref=e165]
+          - 'link "OC-2026-006 Sin afidávit Sin proveedor · 🕐 Por tejer (30d) · Entrega: 03/05/2026 · 0 rollos" [ref=e167] [cursor=pointer]':
+            - /url: /compras/bfa5fa81-4898-4bd4-9ccf-241a92da337c
+            - generic [ref=e168]:
+              - generic [ref=e169]:
+                - img [ref=e171]
+                - generic [ref=e175]:
+                  - generic [ref=e176]:
+                    - generic [ref=e177]: OC-2026-006
+                    - generic [ref=e178]: Sin afidávit
+                  - paragraph [ref=e179]:
+                    - text: Sin proveedor ·
+                    - generic [ref=e180]: 🕐 Por tejer (30d)
+                    - text: "· Entrega: 03/05/2026 · 0 rollos"
+              - img [ref=e181]
+          - 'link "OC-2026-005 Sin afidávit Bivatex · 🕐 Por tejer (30d) · Entrega: 03/05/2026 · 0 rollos" [ref=e183] [cursor=pointer]':
+            - /url: /compras/0f7b0dc0-90e2-4b87-91f5-6a5b77abfc29
+            - generic [ref=e184]:
+              - generic [ref=e185]:
+                - img [ref=e187]
+                - generic [ref=e191]:
+                  - generic [ref=e192]:
+                    - generic [ref=e193]: OC-2026-005
+                    - generic [ref=e194]: Sin afidávit
+                  - paragraph [ref=e195]:
+                    - text: Bivatex ·
+                    - generic [ref=e196]: 🕐 Por tejer (30d)
+                    - text: "· Entrega: 03/05/2026 · 0 rollos"
+              - img [ref=e197]
+          - 'link "OC-2026-004 Afidávit cargado Bivatex · 🕐 Por tejer (30d) · Entrega: 03/05/2026 · 0 rollos" [ref=e199] [cursor=pointer]':
+            - /url: /compras/08b24cad-6431-448f-9ff1-64db7c89a969
+            - generic [ref=e200]:
+              - generic [ref=e201]:
+                - img [ref=e203]
+                - generic [ref=e207]:
+                  - generic [ref=e208]:
+                    - generic [ref=e209]: OC-2026-004
+                    - generic [ref=e210]: Afidávit cargado
+                  - paragraph [ref=e211]:
+                    - text: Bivatex ·
+                    - generic [ref=e212]: 🕐 Por tejer (30d)
+                    - text: "· Entrega: 03/05/2026 · 0 rollos"
+              - img [ref=e213]
+          - 'link "OC-2026-003 Sin afidávit Bivatex · 🕐 Por tejer (30d) · Entrega: 02/05/2026 · 0 rollos" [ref=e215] [cursor=pointer]':
+            - /url: /compras/59a7e312-ffbf-4dc0-9d38-4bffa0eab872
+            - generic [ref=e216]:
+              - generic [ref=e217]:
+                - img [ref=e219]
+                - generic [ref=e223]:
+                  - generic [ref=e224]:
+                    - generic [ref=e225]: OC-2026-003
+                    - generic [ref=e226]: Sin afidávit
+                  - paragraph [ref=e227]:
+                    - text: Bivatex ·
+                    - generic [ref=e228]: 🕐 Por tejer (30d)
+                    - text: "· Entrega: 02/05/2026 · 0 rollos"
+              - img [ref=e229]
+          - 'link "OC-2026-002 Sin afidávit Sin proveedor · ⚡ En crudo (15d) · Entrega: 02/05/2026 · 0 rollos" [ref=e231] [cursor=pointer]':
+            - /url: /compras/1901d20a-7a3c-43ac-9364-dc2d5d1508e7
+            - generic [ref=e232]:
+              - generic [ref=e233]:
+                - img [ref=e235]
+                - generic [ref=e239]:
+                  - generic [ref=e240]:
+                    - generic [ref=e241]: OC-2026-002
+                    - generic [ref=e242]: Sin afidávit
+                  - paragraph [ref=e243]:
+                    - text: Sin proveedor ·
+                    - generic [ref=e244]: ⚡ En crudo (15d)
+                    - text: "· Entrega: 02/05/2026 · 0 rollos"
+              - img [ref=e245]
+          - 'link "OC-2026-001 Sin afidávit Bivatex · 🕐 Por tejer (30d) · Entrega: 02/05/2026 · 0 rollos" [ref=e247] [cursor=pointer]':
+            - /url: /compras/01cf9cbb-4bba-47cb-a08f-adad41fd3366
+            - generic [ref=e248]:
+              - generic [ref=e249]:
+                - img [ref=e251]
+                - generic [ref=e255]:
+                  - generic [ref=e256]:
+                    - generic [ref=e257]: OC-2026-001
+                    - generic [ref=e258]: Sin afidávit
+                  - paragraph [ref=e259]:
+                    - text: Bivatex ·
+                    - generic [ref=e260]: 🕐 Por tejer (30d)
+                    - text: "· Entrega: 02/05/2026 · 0 rollos"
+              - img [ref=e261]
+  - button "Open Next.js Dev Tools" [ref=e268] [cursor=pointer]:
+    - img [ref=e269]
+  - alert [ref=e272]

@@ -113,6 +113,20 @@ export interface FiltrosHistorial {
   producto_id?: string // para PT
 }
 
+export interface SaldoBin {
+  bin_id: string
+  bin_codigo: string
+  bodega_id: string
+  bodega_nombre: string
+  producto_id: string
+  referencia: string
+  nombre: string
+  talla: string | null
+  saldo: number
+  costo_promedio: number | null
+  valor_total: number | null
+}
+
 /**
  * Obtiene saldos actuales de materias primas por bodega
  * Agrupa por material + bodega y suma cantidades para calcular CPP
@@ -674,5 +688,38 @@ export async function getSaldosTotalMP(): Promise<SaldoTotalMP[]> {
   return Object.values(saldos).map((s: any) => ({
     ...s,
     valor_total: s.saldo_total * (s.costo_promedio || 0),
+  }))
+}
+
+/**
+ * Obtiene saldos actuales de productos terminados agrupados por bin
+ * Soporta filtro opcional por bodega_id
+ */
+export async function getSaldosPorBin(bodegaId?: string): Promise<SaldoBin[]> {
+  const supabase = db(await createClient())
+
+  const { data, error } = await supabase.rpc('get_saldos_por_bin', {
+    p_bodega_id: bodegaId || null,
+  }) as { data: any[] | null; error: { message: string } | null }
+
+  if (error) {
+    console.error('Error fetching saldos por bin:', error)
+    return []
+  }
+
+  if (!data) return []
+
+  return data.map(row => ({
+    bin_id: row.bin_id,
+    bin_codigo: row.bin_codigo,
+    bodega_id: row.bodega_id,
+    bodega_nombre: row.bodega_nombre,
+    producto_id: row.producto_id,
+    referencia: row.referencia,
+    nombre: row.nombre,
+    talla: row.talla ?? null,
+    saldo: Number(row.saldo) || 0,
+    costo_promedio: row.costo_promedio ? Number(row.costo_promedio) : null,
+    valor_total: row.valor_total ? Number(row.valor_total) : null,
   }))
 }

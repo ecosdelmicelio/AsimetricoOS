@@ -14,6 +14,9 @@ export interface Material {
   rendimiento_kg: number | null
   es_tela: boolean
   saldo: number
+  minimo_orden: number
+  multiplo_orden: number
+  leadtime_dias: number
   created_at: string
   updated_at: string
 }
@@ -27,6 +30,9 @@ export interface CreateMaterialInput {
   partida_arancelaria?: string
   tipo_mp?: TipoMP
   rendimiento_kg?: number | null
+  minimo_orden?: number
+  multiplo_orden?: number
+  leadtime_dias?: number
   schema_id?: string
   autoRefs?: Array<{ segmento_id: string; longitud: number }>
 }
@@ -39,5 +45,8 @@ export interface UpdateMaterialInput {
   partida_arancelaria?: string
   tipo_mp?: TipoMP
   rendimiento_kg?: number | null
+  minimo_orden?: number
+  multiplo_orden?: number
+  leadtime_dias?: number
   activo?: boolean
 }

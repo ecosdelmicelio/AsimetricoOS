@@ -304,6 +304,11 @@ test('should calculate total with tax', () => {
 - **Fix**: Siempre usar `npm run dev` (auto-detecta puerto)
 - **Aplicar en**: Todos los proyectos
 
+### 2026-04-10: Keys únicas en Kardex/PT (Producto Terminado)
+- **Error**: `Encountered two children with the same key` al usar solo `producto_id` o `producto_id + bodega_id`.
+- **Fix**: Siempre incluir `talla` en la composición de la key si los datos están desagregados por talla, o agrupar los datos por la dimensión de visualización antes del `.map()`.
+- **Aplicar en**: Tablas y matrices de inventario de productos terminados.
+
 ---
 
 *Este archivo es el cerebro de la fábrica. Cada error documentado la hace más fuerte.*

@@ -174,6 +174,7 @@ export async function CompraDetail({ id }: Props) {
           ocId={oc.id}
           bodegaId={bodegaPrincipal.id}
           productosActivos={productosActivos}
+          ocDetalle={oc.oc_detalle ?? []}
         />
       )}
     </div>

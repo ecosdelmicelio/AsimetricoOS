@@ -373,10 +373,10 @@ export async function revertirRecepcionOC(recepcionId: string): Promise<{ error?
   const supabase = db(await createClient())
   const { data: { user } } = await supabase.auth.getUser()
 
-  // 1. Obtener datos de la recepción
+  // 1. Obtener datos de la recepción (ahora incluyendo bin_id)
   const { data: recepcion } = await supabase
     .from('recepcion_oc')
-    .select('id, oc_id, material_id, producto_id, talla, cantidad_recibida, precio_unitario, estado')
+    .select('id, oc_id, material_id, producto_id, talla, cantidad_recibida, precio_unitario, estado, bin_id')
     .eq('id', recepcionId)
     .single() as { data: any | null }
 
@@ -391,38 +391,53 @@ export async function revertirRecepcionOC(recepcionId: string): Promise<{ error?
 
   if (updateError) return { error: `Error marcando recepción como revertida: ${updateError.message}` }
 
-  // 3. Obtener bodega default y tipo de movimiento
-  let bodega: Bodega
-  try {
-    bodega = await getBodegaDefault()
-  } catch (e) {
-    return { error: `Error obteniendo bodega default: ${(e as Error).message}` }
-  }
-
+  // 3. Obtener tipo de movimiento
   const { data: tipoMov } = await supabase
     .from('kardex_tipos_movimiento')
     .select('id')
     .eq('codigo', 'ENTRADA_OC')
-    .limit(1)
     .single() as { data: { id: string } | null }
 
   if (!tipoMov) return { error: 'Tipo de movimiento ENTRADA_OC no encontrado' }
 
-  // 4. Crear movimiento kardex inverso (reversión)
+  // 4. Buscar el movimiento kardex original para obtener bodega_id y bin_id reales
+  const { data: kardexOriginal } = await supabase
+    .from('kardex')
+    .select('bodega_id, bin_id')
+    .eq('documento_tipo', 'recepcion_oc')
+    .eq('documento_id', recepcionId)
+    .limit(1)
+    .single() as { data: { bodega_id: string; bin_id: string | null } | null }
+
+  let bodegaId = kardexOriginal?.bodega_id
+  let binId = kardexOriginal?.bin_id ?? recepcion.bin_id ?? null
+
+  // Si no encontramos bodega en kardex original, usar bodega default
+  if (!bodegaId) {
+    try {
+      const bodega = (await getBodegaDefault()) as Bodega
+      bodegaId = bodega.id
+    } catch (e) {
+      return { error: `Error obteniendo bodega default: ${(e as Error).message}` }
+    }
+  }
+
+  // 5. Crear movimiento kardex inverso (reversión)
   const { error: kardexError } = await supabase
     .from('kardex')
     .insert({
       material_id: recepcion.material_id ?? null,
       producto_id: recepcion.producto_id ?? null,
-      bodega_id: bodega.id,
+      bodega_id: bodegaId,
       tipo_movimiento_id: tipoMov.id,
       documento_tipo: 'recepcion_oc',
       documento_id: recepcion.id,
-      cantidad: -recepcion.cantidad_recibida, // cantidad negativa para revertir
-      unidad: recepcion.material_id ? 'kg' : 'unidades', // simplificado
+      cantidad: -recepcion.cantidad_recibida,
+      unidad: recepcion.material_id ? 'kg' : 'unidades',
       costo_unitario: recepcion.precio_unitario ?? 0,
       costo_total: -(recepcion.cantidad_recibida * (recepcion.precio_unitario ?? 0)),
       saldo_ponderado: 0,
+      bin_id: binId,
       talla: recepcion.talla ?? null,
       fecha_movimiento: new Date().toISOString(),
       registrado_por: user?.id ?? null,
@@ -446,12 +461,25 @@ export async function crearRecepcionesOCConBins(
       producto_id: string
       talla: string
       cantidad: number
+      precio_unitario?: number
     }>
   }>,
   usuarioId?: string
 ) {
   const supabase = db(await createClient())
   const { crearBin, getContenidoBin } = await import('@/features/bines/services/bines-actions')
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Obtener tipo de movimiento ENTRADA_OC
+  const { data: tipoMov } = await supabase
+    .from('kardex_tipos_movimiento')
+    .select('id')
+    .eq('codigo', 'ENTRADA_OC')
+    .single() as { data: { id: string } | null }
+
+  if (!tipoMov) {
+    throw new Error('Tipo de movimiento ENTRADA_OC no encontrado')
+  }
 
   const resultados: Array<{ binId: string; contenido: any }> = []
 
@@ -463,17 +491,49 @@ export async function crearRecepcionesOCConBins(
       producto_id: item.producto_id,
       talla: item.talla,
       cantidad_recibida: item.cantidad,
+      precio_unitario: item.precio_unitario ?? 0,
       bin_id: bin.id,
       recibido_por: usuarioId,
       fecha_recepcion: new Date().toISOString(),
     }))
 
-    const { error } = await supabase
+    const { data: recepciones_creadas, error } = await supabase
       .from('recepcion_oc')
       .insert(inserts)
+      .select('id, producto_id, talla, cantidad_recibida, precio_unitario') as {
+        data: Array<{ id: string; producto_id: string; talla: string; cantidad_recibida: number; precio_unitario: number }> | null
+        error: { message: string } | null
+      }
 
-    if (error) {
-      throw new Error(`Error creando recepción: ${error.message}`)
+    if (error || !recepciones_creadas) {
+      throw new Error(`Error creando recepción: ${error?.message || 'Sin datos'}`)
+    }
+
+    // Generar kardex ENTRADA_OC para cada recepción
+    const movimientosKardex = recepciones_creadas.map(rec => ({
+      producto_id: rec.producto_id,
+      bodega_id: recepcion.bodegaId,
+      tipo_movimiento_id: tipoMov.id,
+      documento_tipo: 'recepcion_oc',
+      documento_id: rec.id,
+      cantidad: rec.cantidad_recibida,
+      unidad: 'unidades',
+      costo_unitario: rec.precio_unitario ?? 0,
+      costo_total: (rec.cantidad_recibida * (rec.precio_unitario ?? 0)),
+      saldo_ponderado: rec.precio_unitario ?? 0,
+      bin_id: bin.id,
+      talla: rec.talla,
+      fecha_movimiento: new Date().toISOString(),
+      registrado_por: user?.id ?? null,
+      notas: `Recepción OC - Bin ${bin.codigo}`,
+    }))
+
+    const { error: kardexError } = await supabase
+      .from('kardex')
+      .insert(movimientosKardex) as { error: { message: string } | null }
+
+    if (kardexError) {
+      throw new Error(`Error creando movimientos kardex: ${kardexError.message}`)
     }
 
     const contenido = await getContenidoBin(bin.id)
@@ -485,6 +545,7 @@ export async function crearRecepcionesOCConBins(
     }
   }
 
+  revalidatePath('/compras')
   return resultados
 }
 

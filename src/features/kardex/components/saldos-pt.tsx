@@ -105,6 +105,7 @@ export function SaldosPT({ saldos }: Props) {
                 <tr className="border-b border-black/5">
                   <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">Referencia</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">Producto</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">Talla</th>
                   <th className="text-right px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">Saldo</th>
                   <th className="text-right px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">CPP</th>
                   <th className="text-right px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">Valor Total</th>
@@ -112,12 +113,15 @@ export function SaldosPT({ saldos }: Props) {
               </thead>
               <tbody className="divide-y divide-black/5">
                 {saldosBodega.map(s => (
-                  <tr key={`${s.producto_id}`} className="hover:bg-black/2 transition-colors">
+                  <tr key={`${s.producto_id}-${s.talla}`} className="hover:bg-black/2 transition-colors">
                     <td className="px-5 py-3">
                       <p className="text-body-sm font-mono font-medium text-foreground">{s.referencia}</p>
                     </td>
                     <td className="px-5 py-3">
                       <p className="text-body-sm text-foreground">{s.nombre}</p>
+                    </td>
+                    <td className="px-5 py-3">
+                      <p className="text-body-sm text-muted-foreground">{s.talla || '—'}</p>
                     </td>
                     <td className="px-5 py-3 text-right">
                       <p className="text-body-sm font-medium text-foreground">{s.saldo.toFixed(0)} un.</p>

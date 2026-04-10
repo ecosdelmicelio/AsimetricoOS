@@ -258,3 +258,99 @@ export async function getDespachoById(id: string) {
   }
   return { data }
 }
+
+export interface DespachoListItem {
+  id: string
+  fecha_despacho: string
+  estado: EstadoDespacho
+  tipo_envio: TipoEnvio
+  transportadora: string | null
+  guia_seguimiento: string | null
+  total_bultos: number
+  notas: string | null
+  ov_id: string
+  ov_codigo: string
+  cliente_nombre: string
+  cliente_nit: string | null
+  total_unidades: number
+}
+
+/**
+ * Obtiene todos los despachos con info de OV y cliente para el dashboard global
+ */
+export async function getDespachosList(filtros?: {
+  estado?: EstadoDespacho
+  desde?: string
+  hasta?: string
+}): Promise<DespachoListItem[]> {
+  const supabase = db(await createClient())
+
+  let query = supabase
+    .from('despachos')
+    .select(`
+      id,
+      fecha_despacho,
+      estado,
+      tipo_envio,
+      transportadora,
+      guia_seguimiento,
+      total_bultos,
+      notas,
+      ov_id,
+      despacho_detalle ( cantidad ),
+      ordenes_venta (
+        codigo,
+        terceros!cliente_id ( nombre, nit )
+      )
+    `)
+    .order('fecha_despacho', { ascending: false })
+
+  if (filtros?.estado) {
+    query = query.eq('estado', filtros.estado)
+  }
+  if (filtros?.desde) {
+    query = query.gte('fecha_despacho', filtros.desde)
+  }
+  if (filtros?.hasta) {
+    query = query.lte('fecha_despacho', filtros.hasta + 'T23:59:59')
+  }
+
+  const { data, error } = await query as { data: any[] | null; error: { message: string } | null }
+
+  if (error) {
+    console.error('getDespachosList error:', error)
+    return []
+  }
+  if (!data) return []
+
+  return data.map(row => ({
+    id: row.id,
+    fecha_despacho: row.fecha_despacho,
+    estado: row.estado as EstadoDespacho,
+    tipo_envio: row.tipo_envio as TipoEnvio,
+    transportadora: row.transportadora ?? null,
+    guia_seguimiento: row.guia_seguimiento ?? null,
+    total_bultos: row.total_bultos || 0,
+    notas: row.notas ?? null,
+    ov_id: row.ov_id,
+    ov_codigo: row.ordenes_venta?.codigo ?? '—',
+    cliente_nombre: row.ordenes_venta?.terceros?.nombre ?? '—',
+    cliente_nit: row.ordenes_venta?.terceros?.nit ?? null,
+    total_unidades: (row.despacho_detalle ?? []).reduce((sum: number, d: any) => sum + (d.cantidad || 0), 0),
+  }))
+}
+
+/**
+ * Actualiza estado de un despacho desde el dashboard global (sin contexto de OV)
+ */
+export async function updateEstadoDespachoGlobal(id: string, estado: EstadoDespacho) {
+  const supabase = db(await createClient())
+  const { error } = await supabase
+    .from('despachos')
+    .update({ estado })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
+  revalidatePath('/despachos')
+  return { data: true }
+}

@@ -10,10 +10,18 @@ interface Props {
   agrupacionPor?: 'referencia' | 'bodega'
 }
 
+interface MatrixRow {
+  id: string
+  label: string
+  tallas: Record<string, number>
+  total: number
+  valor: number
+}
+
 interface ReferenciaGroup {
   referencia: string
   bodega?: string
-  productos: SaldoPT[]
+  rows: MatrixRow[]
   totalUnidades: number
   totalValor: number
 }
@@ -55,14 +63,35 @@ export function SaldosPTMatriz({ saldos, tallas = TALLAS_STANDARD, agrupacionPor
 
       return Array.from(map.entries())
         .map(([ref, prods]) => {
-          const sorted = prods.sort(
-            (a, b) => (a.bodega_nombre || '').localeCompare(b.bodega_nombre || '')
+          // Agrupar productos por bodega para la matriz
+          const rowMap = new Map<string, MatrixRow>()
+          for (const p of prods) {
+            const rowId = p.bodega_id
+            if (!rowMap.has(rowId)) {
+              rowMap.set(rowId, {
+                id: rowId,
+                label: p.bodega_nombre || 'Sin bodega',
+                tallas: {},
+                total: 0,
+                valor: 0,
+              })
+            }
+            const row = rowMap.get(rowId)!
+            const tallaKey = p.talla || 'N/A'
+            row.tallas[tallaKey] = (row.tallas[tallaKey] || 0) + p.saldo
+            row.total += p.saldo
+            row.valor += p.valor_total || 0
+          }
+
+          const sortedRows = Array.from(rowMap.values()).sort((a, b) =>
+            a.label.localeCompare(b.label)
           )
+
           return {
             referencia: ref,
-            productos: sorted,
-            totalUnidades: sorted.reduce((s, p) => s + p.saldo, 0),
-            totalValor: sorted.reduce((s, p) => s + (p.valor_total || 0), 0),
+            rows: sortedRows,
+            totalUnidades: prods.reduce((s, p) => s + p.saldo, 0),
+            totalValor: prods.reduce((s, p) => s + (p.valor_total || 0), 0),
           }
         })
         .sort((a, b) => a.referencia.localeCompare(b.referencia))
@@ -77,13 +106,36 @@ export function SaldosPTMatriz({ saldos, tallas = TALLAS_STANDARD, agrupacionPor
 
       return Array.from(map.entries())
         .map(([bodega, prods]) => {
-          const sorted = prods.sort((a, b) => a.referencia.localeCompare(b.referencia))
+          // Agrupar productos por referencia para la matriz
+          const rowMap = new Map<string, MatrixRow>()
+          for (const p of prods) {
+            const rowId = p.producto_id
+            if (!rowMap.has(rowId)) {
+              rowMap.set(rowId, {
+                id: rowId,
+                label: p.referencia || 'Sin referencia',
+                tallas: {},
+                total: 0,
+                valor: 0,
+              })
+            }
+            const row = rowMap.get(rowId)!
+            const tallaKey = p.talla || 'N/A'
+            row.tallas[tallaKey] = (row.tallas[tallaKey] || 0) + p.saldo
+            row.total += p.saldo
+            row.valor += p.valor_total || 0
+          }
+
+          const sortedRows = Array.from(rowMap.values()).sort((a, b) =>
+            a.label.localeCompare(b.label)
+          )
+
           return {
             referencia: bodega,
             bodega,
-            productos: sorted,
-            totalUnidades: sorted.reduce((s, p) => s + p.saldo, 0),
-            totalValor: sorted.reduce((s, p) => s + (p.valor_total || 0), 0),
+            rows: sortedRows,
+            totalUnidades: prods.reduce((s, p) => s + p.saldo, 0),
+            totalValor: prods.reduce((s, p) => s + (p.valor_total || 0), 0),
           }
         })
         .sort((a, b) => a.referencia.localeCompare(b.referencia))
@@ -254,19 +306,19 @@ export function SaldosPTMatriz({ saldos, tallas = TALLAS_STANDARD, agrupacionPor
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-black/5">
-                        {grupo.productos.map(saldo => (
-                          <tr key={`${saldo.producto_id}-${saldo.bodega_id}`} className="hover:bg-black/2">
+                        {grupo.rows.map(row => (
+                          <tr key={row.id} className="hover:bg-black/2">
                             <td className="px-3 py-2 text-body-sm">
                               {agrupacion === 'referencia' ? (
-                                <span className="text-muted-foreground">{saldo.bodega_nombre}</span>
+                                <span className="text-muted-foreground">{row.label}</span>
                               ) : (
                                 <span className="font-mono font-medium text-foreground">
-                                  {saldo.referencia}
+                                  {row.label}
                                 </span>
                               )}
                             </td>
                             {tallasReales.map(talla => {
-                              const saldoParaTalla = saldo.talla === talla ? saldo.saldo : 0
+                              const saldoParaTalla = row.tallas[talla] || 0
                               return (
                                 <td
                                   key={talla}
@@ -277,10 +329,10 @@ export function SaldosPTMatriz({ saldos, tallas = TALLAS_STANDARD, agrupacionPor
                               )
                             })}
                             <td className="text-right px-3 py-2 text-body-sm font-medium text-foreground">
-                              {saldo.saldo.toFixed(0)} un.
+                              {row.total.toFixed(0)} un.
                             </td>
                             <td className="text-right px-3 py-2 text-body-sm font-medium text-foreground">
-                              ${(saldo.valor_total || 0).toFixed(2)}
+                              ${(row.valor || 0).toFixed(2)}
                             </td>
                           </tr>
                         ))}

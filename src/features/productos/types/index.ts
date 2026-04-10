@@ -19,6 +19,9 @@ export interface Producto {
   tipo_distribucion: TipoDistribucion
   marca_id: string | null
   bom_completo: boolean
+  minimo_orden: number
+  multiplo_orden: number
+  leadtime_dias: number
   created_at: string
   updated_at: string
 }
@@ -43,6 +46,9 @@ export interface CreateProductoInput {
   tipo_producto?: TipoProducto
   tipo_distribucion?: TipoDistribucion
   marca_id?: string
+  minimo_orden?: number
+  multiplo_orden?: number
+  leadtime_dias?: number
   atributos?: Record<string, string>
   autoRefs?: AutoRefInput[]
   schema_id?: string
@@ -63,6 +69,9 @@ export interface UpdateProductoInput {
   tipo_producto?: TipoProducto
   tipo_distribucion?: TipoDistribucion
   marca_id?: string | null
+  minimo_orden?: number
+  multiplo_orden?: number
+  leadtime_dias?: number
   estado?: EstadoProducto
   atributos?: Record<string, string>
 }

@@ -19,7 +19,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  Warehouse
+  Warehouse,
+  BarChart2,
+  Truck
 } from 'lucide-react'
 import Image from 'next/image'
 import type { UserRole } from '@/shared/types'
@@ -31,6 +33,8 @@ const NAV_ITEMS: { href: string; label: string; icon: React.ElementType; roles: 
   { href: '/calidad',             label: 'Calidad',          icon: ShieldCheck,     roles: ['orquestador', 'inspector'] },
   { href: '/catalogo',            label: 'Catálogo',         icon: Package,         roles: ['orquestador'] },
   { href: '/wms',                 label: 'WMS',              icon: Warehouse,       roles: ['orquestador'] },
+  { href: '/kardex',              label: 'Kardex',           icon: BarChart2,       roles: ['orquestador'] },
+  { href: '/despachos',            label: 'Despachos',        icon: Truck,           roles: ['orquestador'] },
   { href: '/compras',             label: 'Compras',          icon: ShoppingCart,    roles: ['orquestador'] },
   { href: '/terceros',            label: 'Terceros',         icon: Users,           roles: ['orquestador'] },
   { href: '/configuracion',       label: 'Configuración',    icon: Settings2,       roles: ['orquestador'] },

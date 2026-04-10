@@ -16,6 +16,11 @@ interface Props {
     nombre: string
     color?: string | null
   }>
+  ocDetalle?: Array<{
+    producto_id: string
+    talla: string
+    precio_pactado?: number | null
+  }>
   usuarioId?: string
 }
 
@@ -28,6 +33,7 @@ export function RecepcionPTManager({
   ocId,
   bodegaId,
   productosActivos,
+  ocDetalle = [],
   usuarioId,
 }: Props) {
   const [paso, setPaso] = useState<'formulario' | 'confirmacion'>('formulario')
@@ -47,11 +53,18 @@ export function RecepcionPTManager({
           .map(bin => ({
             ocId,
             bodegaId,
-            items: bin.items.map((item: any) => ({
-              producto_id: item.producto_id,
-              talla: item.talla,
-              cantidad: item.cantidad,
-            })),
+            items: bin.items.map((item: any) => {
+              // Buscar precio_pactado del item en ocDetalle
+              const detalle = ocDetalle.find(
+                d => d.producto_id === item.producto_id && d.talla === item.talla
+              )
+              return {
+                producto_id: item.producto_id,
+                talla: item.talla,
+                cantidad: item.cantidad,
+                precio_unitario: detalle?.precio_pactado ?? 0,
+              }
+            }),
           }))
 
         const resultados = await crearRecepcionesOCConBins(recepciones, usuarioId)
@@ -66,7 +79,7 @@ export function RecepcionPTManager({
         setCargando(false)
       }
     },
-    [ocId, bodegaId, usuarioId]
+    [ocId, bodegaId, ocDetalle, usuarioId]
   )
 
   if (paso === 'confirmacion' && binesCreados.length > 0) {
