@@ -67,10 +67,7 @@ export function WMSPanel({ bodegas }: Props) {
       {activeTab === 'traslados' && (
         <div className="flex-1 min-w-0 overflow-y-auto p-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-neu-base border border-neu-300 rounded-2xl p-6 space-y-4 shadow-neu">
-              <h3 className="font-semibold text-lg">Crear Traslado</h3>
-              <TrasladoForm bodegas={bodegas} bodegaOrigen={bodegaSeleccionada || ''} />
-            </div>
+            <TrasladoForm bodegas={bodegas} bodegaOrigen={bodegaSeleccionada || ''} />
             <div className="bg-neu-base border border-neu-300 rounded-2xl p-6 shadow-neu">
               <h3 className="font-semibold text-lg mb-4">Historial de Traslados</h3>
               <TrasladosHistorial bodegaId={bodegaSeleccionada || undefined} />
@@ -84,7 +81,6 @@ export function WMSPanel({ bodegas }: Props) {
         <div className="flex-1 min-w-0 overflow-y-auto p-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-neu-base border border-neu-300 rounded-2xl p-6 space-y-4 shadow-neu">
-              <h3 className="font-semibold text-lg">Nuevo Ajuste</h3>
               <AjusteForm
                 bodegaId={bodegaSeleccionada}
                 onSuccess={() => setAjusteRefreshKey(k => k + 1)}

@@ -23,7 +23,6 @@ interface ItemTraslado {
 }
 
 export function TrasladoForm({ bodegas, bodegaOrigen }: Props) {
-  const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [tipo, setTipo] = useState<'entre_bodegas' | 'bin_completo' | 'bin_a_bin'>('entre_bodegas')
@@ -119,7 +118,6 @@ export function TrasladoForm({ bodegas, bodegaOrigen }: Props) {
       if (confirmResult.error) {
         setError(`Traslado creado pero error al confirmar: ${confirmResult.error}`)
       } else {
-        setShowForm(false)
         setFormData({
           bodega_origen_id: bodegaOrigen || '',
           bodega_destino_id: '',
@@ -134,25 +132,10 @@ export function TrasladoForm({ bodegas, bodegaOrigen }: Props) {
     }
   }
 
-  if (!showForm) {
-    return (
-      <Button onClick={() => setShowForm(true)} className="gap-2">
-        <Plus className="w-4 h-4" />
-        Nuevo Traslado
-      </Button>
-    )
-  }
-
   return (
     <div className="bg-neu-base border border-neu-300 rounded-xl p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold">Crear Traslado</h3>
-        <button
-          onClick={() => setShowForm(false)}
-          className="p-1 hover:bg-neu-200 rounded-lg transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        <h3 className="font-semibold text-lg">Nuevo Traslado</h3>
       </div>
 
       {error && (
@@ -497,9 +480,6 @@ export function TrasladoForm({ bodegas, bodegaOrigen }: Props) {
 
       {/* Botones */}
       <div className="flex gap-2 justify-end">
-        <Button variant="outline" onClick={() => setShowForm(false)}>
-          Cancelar
-        </Button>
         <Button onClick={handleCrearTraslado} disabled={loading}>
           {loading ? 'Creando traslado...' : 'Crear y Confirmar'}
         </Button>
