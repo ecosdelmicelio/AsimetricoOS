@@ -9,7 +9,7 @@ export default async function WMSPage() {
   return (
     <div className="space-y-6 h-full">
       <PageHeader
-        title="Warehouse Management"
+        title="Gestión de Bodegas"
         subtitle="Gestión de bodegas, bines y traslados de inventario"
         icon={Package}
       />

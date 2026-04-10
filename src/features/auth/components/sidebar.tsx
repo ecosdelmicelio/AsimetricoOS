@@ -32,7 +32,7 @@ const NAV_ITEMS: { href: string; label: string; icon: React.ElementType; roles: 
   { href: '/ordenes-produccion',  label: 'Producción',       icon: Factory,         roles: ['orquestador', 'jefe_piso'] },
   { href: '/calidad',             label: 'Calidad',          icon: ShieldCheck,     roles: ['orquestador', 'inspector'] },
   { href: '/catalogo',            label: 'Catálogo',         icon: Package,         roles: ['orquestador'] },
-  { href: '/wms',                 label: 'WMS',              icon: Warehouse,       roles: ['orquestador'] },
+  { href: '/wms',                 label: 'Gestión de Bodegas', icon: Warehouse,       roles: ['orquestador'] },
   { href: '/kardex',              label: 'Kardex',           icon: BarChart2,       roles: ['orquestador'] },
   { href: '/despachos',            label: 'Despachos',        icon: Truck,           roles: ['orquestador'] },
   { href: '/compras',             label: 'Compras',          icon: ShoppingCart,    roles: ['orquestador'] },
