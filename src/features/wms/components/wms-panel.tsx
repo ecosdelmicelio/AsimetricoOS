@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Package } from 'lucide-react'
+import { Package, Repeat2 } from 'lucide-react'
 import { BodegaFilterBar } from '@/features/wms/components/bodega-filter-bar'
 import { InventarioTable } from '@/features/wms/components/inventario-table'
 import { WMSTabs, type WMSTab } from '@/features/wms/components/wms-tabs'
@@ -65,34 +65,36 @@ export function WMSPanel({ bodegas }: Props) {
 
       {/* VISTA: TRASLADOS */}
       {activeTab === 'traslados' && (
-        <div className="flex-1 min-w-0 overflow-y-auto p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <TrasladoForm bodegas={bodegas} bodegaOrigen={bodegaSeleccionada || ''} />
-            <div className="bg-neu-base border border-neu-300 rounded-2xl p-6 shadow-neu">
-              <h3 className="font-semibold text-lg mb-4">Historial de Traslados</h3>
-              <TrasladosHistorial bodegaId={bodegaSeleccionada || undefined} />
-            </div>
+        <div className="flex-1 min-w-0 overflow-y-auto p-6 space-y-8">
+          <TrasladoForm bodegas={bodegas} bodegaOrigen={bodegaSeleccionada || ''} />
+          
+          <div className="bg-neu-base border border-neu-300 rounded-3xl p-8 shadow-neu">
+            <h3 className="font-bold text-xl mb-6 text-foreground flex items-center gap-2">
+              <Package className="w-5 h-5 text-primary-500" />
+              Historial de Traslados Recientes
+            </h3>
+            <TrasladosHistorial bodegaId={bodegaSeleccionada || undefined} />
           </div>
         </div>
       )}
 
       {/* VISTA: AJUSTES */}
       {activeTab === 'ajustes' && bodegaSeleccionada && (
-        <div className="flex-1 min-w-0 overflow-y-auto p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-neu-base border border-neu-300 rounded-2xl p-6 space-y-4 shadow-neu">
-              <AjusteForm
-                bodegaId={bodegaSeleccionada}
-                onSuccess={() => setAjusteRefreshKey(k => k + 1)}
-              />
-            </div>
-            <div className="bg-neu-base border border-neu-300 rounded-2xl p-6 shadow-neu overflow-y-auto max-h-[700px]">
-              <h3 className="font-semibold text-lg mb-4">Historial de Ajustes</h3>
-              <AjusteHistorial
-                bodegaId={bodegaSeleccionada}
-                refreshKey={ajusteRefreshKey}
-              />
-            </div>
+        <div className="flex-1 min-w-0 overflow-y-auto p-6 space-y-8">
+          <AjusteForm
+            bodegaId={bodegaSeleccionada}
+            onSuccess={() => setAjusteRefreshKey(k => k + 1)}
+          />
+          
+          <div className="bg-neu-base border border-neu-300 rounded-3xl p-8 shadow-neu">
+            <h3 className="font-bold text-xl mb-6 text-foreground flex items-center gap-2">
+              <Repeat2 className="w-5 h-5 text-amber-500" />
+              Historial de Ajustes de Inventario
+            </h3>
+            <AjusteHistorial
+              bodegaId={bodegaSeleccionada}
+              refreshKey={ajusteRefreshKey}
+            />
           </div>
         </div>
       )}
