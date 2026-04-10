@@ -3,6 +3,9 @@ export interface Bin {
   codigo: string
   tipo: 'caja_cliente' | 'interno'
   bodega_id: string | null
+  posicion_id: string | null
+  posicion_codigo?: string
+  es_fijo: boolean
   bodega_nombre?: string
   estado: 'en_bodega' | 'en_transito' | 'entregado'
   created_at: string

@@ -8,6 +8,14 @@ export interface Bodega {
   created_at: string
 }
 
+export interface Posicion {
+  id: string
+  bodega_id: string
+  codigo: string
+  capacidad_bines: number
+  created_at: string
+}
+
 export interface Traslado {
   id: string
   codigo: string
@@ -41,9 +49,11 @@ export interface TrasladoItem {
 export interface BinEnBodega {
   id: string
   codigo: string
-  posicion: string | null
+  posicion_id: string | null
+  posicion_codigo?: string // Para facilitar UI
   estado: string
   tipo: string
+  es_fijo: boolean
 }
 
 export interface AjusteInventario {

@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { Plus, X, MapPin, Loader2 } from 'lucide-react'
 import { getBinesEnBodega, crearBinEnBodega } from '@/features/wms/services/ajustes-actions'
-import type { BinEnBodega } from '@/features/wms/types'
+import { getPosicionesByBodega } from '@/features/wms/services/posiciones-actions'
+import type { BinEnBodega, Posicion } from '@/features/wms/types'
 
 interface Props {
   bodegaId: string
@@ -14,9 +15,11 @@ interface Props {
 
 export function BinSelector({ bodegaId, value, onChange, onBinCreated }: Props) {
   const [bines, setBines] = useState<BinEnBodega[]>([])
+  const [posiciones, setPosiciones] = useState<Posicion[]>([])
   const [loadingBines, setLoadingBines] = useState(false)
   const [showNuevoBin, setShowNuevoBin] = useState(false)
-  const [nuevaPosicion, setNuevaPosicion] = useState('')
+  const [posicionId, setPosicionId] = useState('')
+  const [esFijo, setEsFijo] = useState(false)
   const [creando, setCreando] = useState(false)
   const [errorCrear, setErrorCrear] = useState<string | null>(null)
 
@@ -27,17 +30,30 @@ export function BinSelector({ bodegaId, value, onChange, onBinCreated }: Props) 
     }
     const load = async () => {
       setLoadingBines(true)
-      const data = await getBinesEnBodega(bodegaId)
-      setBines(data)
+      const [binData, posData] = await Promise.all([
+        getBinesEnBodega(bodegaId),
+        getPosicionesByBodega(bodegaId)
+      ])
+      setBines(binData)
+      setPosiciones(posData)
       setLoadingBines(false)
     }
     load()
   }, [bodegaId])
 
   const handleCrearBin = async () => {
+    if (!posicionId) {
+      setErrorCrear('Selecciona una posición')
+      return
+    }
+
     setCreando(true)
     setErrorCrear(null)
-    const result = await crearBinEnBodega(bodegaId, nuevaPosicion)
+    const result = await crearBinEnBodega({
+      bodega_id: bodegaId,
+      posicion_id: posicionId,
+      es_fijo: esFijo
+    })
     setCreando(false)
 
     if (result.error || !result.data) {
@@ -50,7 +66,8 @@ export function BinSelector({ bodegaId, value, onChange, onBinCreated }: Props) 
     onChange(nuevo.id)
     onBinCreated?.(nuevo)
     setShowNuevoBin(false)
-    setNuevaPosicion('')
+    setPosicionId('')
+    setEsFijo(false)
   }
 
   const binSeleccionado = bines.find(b => b.id === value)
@@ -75,7 +92,7 @@ export function BinSelector({ bodegaId, value, onChange, onBinCreated }: Props) 
               <option value="">Seleccionar bin...</option>
               {bines.map(bin => (
                 <option key={bin.id} value={bin.id}>
-                  {bin.codigo}{bin.posicion ? ` · ${bin.posicion}` : ''}
+                  {bin.codigo}{bin.posicion_codigo ? ` · ${bin.posicion_codigo}` : ''} {bin.es_fijo ? '(FIJO)' : ''}
                 </option>
               ))}
             </select>
@@ -96,10 +113,10 @@ export function BinSelector({ bodegaId, value, onChange, onBinCreated }: Props) 
       </div>
 
       {/* Posición del bin seleccionado */}
-      {binSeleccionado?.posicion && (
+      {binSeleccionado?.posicion_codigo && (
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <MapPin className="w-3 h-3" />
-          <span>{binSeleccionado.posicion}</span>
+          <span>{binSeleccionado.posicion_codigo} {binSeleccionado.es_fijo ? '(Cajón Fijo)' : ''}</span>
         </div>
       )}
 
@@ -117,31 +134,43 @@ export function BinSelector({ bodegaId, value, onChange, onBinCreated }: Props) 
             </button>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-              <MapPin className="w-3 h-3" />
-              Posición (opcional)
-            </label>
-            <div className="rounded-lg bg-neu-base shadow-neu-inset px-3 py-1.5">
-              <input
-                type="text"
-                value={nuevaPosicion}
-                onChange={e => setNuevaPosicion(e.target.value)}
-                placeholder="Ej: A-03, Rack-2, Zona-PT..."
-                className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
-                onKeyDown={e => e.key === 'Enter' && handleCrearBin()}
-              />
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
+                <MapPin className="w-3 h-3" />
+                Posición
+              </label>
+              <select
+                value={posicionId}
+                onChange={e => setPosicionId(e.target.value)}
+                className="w-full px-3 py-1.5 text-sm rounded-lg border border-neu-300 bg-neu-base outline-none focus:ring-2 focus:ring-primary-400"
+              >
+                <option value="">Seleccionar posición...</option>
+                {posiciones.map(p => (
+                  <option key={p.id} value={p.id}>{p.codigo}</option>
+                ))}
+              </select>
             </div>
+
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <div 
+                onClick={() => setEsFijo(!esFijo)}
+                className={`w-8 h-4 rounded-full transition-colors relative ${esFijo ? 'bg-primary-500' : 'bg-neu-300'}`}
+              >
+                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${esFijo ? 'left-4.5' : 'left-0.5'}`} />
+              </div>
+              <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">¿Es un bin fijo (cajón/estante)?</span>
+            </label>
           </div>
 
           {errorCrear && (
             <p className="text-xs text-red-600">{errorCrear}</p>
           )}
 
-          <div className="flex gap-2 justify-end">
+          <div className="flex gap-2 justify-end pt-2 border-t border-neu-200">
             <button
               type="button"
-              onClick={() => { setShowNuevoBin(false); setNuevaPosicion(''); setErrorCrear(null) }}
+              onClick={() => { setShowNuevoBin(false); setPosicionId(''); setEsFijo(false); setErrorCrear(null) }}
               className="px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               Cancelar

@@ -19,6 +19,8 @@ export async function generarCodigoBin(prefijo: string = 'ASI'): Promise<string>
 
 export async function crearBin(
   bodegaId: string,
+  posicionId: string,
+  esFijo: boolean = false,
   tipo: 'caja_cliente' | 'interno' = 'interno',
   prefijo: string = 'ASI'
 ): Promise<Bin> {
@@ -30,6 +32,8 @@ export async function crearBin(
       codigo,
       tipo,
       bodega_id: bodegaId,
+      posicion_id: posicionId,
+      es_fijo: esFijo,
       estado: 'en_bodega',
     })
     .select() as { data: any[] | null; error: any }
@@ -95,9 +99,12 @@ export async function getBinesByBodega(bodegaId: string, estado?: string): Promi
       codigo,
       tipo,
       bodega_id,
+      posicion_id,
+      es_fijo,
       estado,
       created_at,
-      bodegas (nombre)
+      bodegas (nombre),
+      bodega_posiciones (codigo)
     `
     )
     .eq('bodega_id', bodegaId)
@@ -110,6 +117,9 @@ export async function getBinesByBodega(bodegaId: string, estado?: string): Promi
     codigo: b.codigo,
     tipo: b.tipo,
     bodega_id: b.bodega_id,
+    posicion_id: b.posicion_id,
+    posicion_codigo: b.bodega_posiciones?.codigo,
+    es_fijo: b.es_fijo,
     bodega_nombre: b.bodegas?.nombre,
     estado: b.estado,
     created_at: b.created_at,

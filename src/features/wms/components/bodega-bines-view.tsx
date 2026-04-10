@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, MapPin, Lock, Package } from 'lucide-react'
 import { getBinesByBodega, getContenidoBin } from '@/features/bines/services/bines-actions'
 import { BinCard } from '@/features/wms/components/bin-card'
 import type { Bodega } from '@/features/wms/types'
@@ -87,27 +87,50 @@ export function BodegaBinesView({ bodega }: Props) {
                 {binesEnBodega.map(bin => (
                   <div
                     key={bin.id}
-                    className="bg-neu-base border border-neu-300 rounded-xl overflow-hidden"
+                    className="bg-neu-base border border-neu-300 rounded-2xl overflow-hidden shadow-neu-sm transition-all hover:shadow-neu"
                   >
                     <button
                       onClick={() => handleExpandBin(bin.id)}
-                      className="w-full text-left px-4 py-3 hover:bg-neu-100 transition-colors flex items-center justify-between"
+                      className="w-full text-left px-5 py-4 hover:bg-neu-100/50 transition-colors flex items-center justify-between"
                     >
-                      <div>
-                        <p className="font-semibold text-sm">{bin.codigo}</p>
-                        <p className="text-xs text-muted-foreground capitalize">
-                          {bin.tipo.replace(/_/g, ' ')}
-                        </p>
+                      <div className="flex items-center gap-4">
+                        <div className={`p-2 rounded-xl ${bin.es_fijo ? 'bg-amber-100 text-amber-700' : 'bg-primary-100 text-primary-700'}`}>
+                          {bin.es_fijo ? <Lock className="w-4 h-4" /> : <Package className="w-4 h-4" />}
+                        </div>
+                        <div>
+                          <p className="font-bold text-sm flex items-center gap-2">
+                            {bin.codigo}
+                            {bin.es_fijo && (
+                              <span className="text-[10px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-md font-black uppercase tracking-tighter">Fijo</span>
+                            )}
+                          </p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
+                              {bin.tipo.replace(/_/g, ' ')}
+                            </span>
+                            {bin.posicion_codigo && (
+                              <>
+                                <span className="w-1 h-1 rounded-full bg-neu-300" />
+                                <span className="text-[10px] text-primary-600 font-bold flex items-center gap-1">
+                                  <MapPin className="w-2.5 h-2.5" />
+                                  {bin.posicion_codigo}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
                       <ChevronDown
-                        className={`w-4 h-4 transition-transform ${
+                        className={`w-4 h-4 text-neu-400 transition-transform ${
                           expandedBin === bin.id ? 'rotate-180' : ''
                         }`}
                       />
                     </button>
 
                     {expandedBin === bin.id && (
-                      <BinCard contenido={contenidos[bin.id]} />
+                      <div className="border-t border-neu-200 bg-neu-50/30">
+                        <BinCard contenido={contenidos[bin.id]} />
+                      </div>
                     )}
                   </div>
                 ))}

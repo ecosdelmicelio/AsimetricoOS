@@ -21,17 +21,37 @@ export async function getBinesEnBodega(bodegaId: string): Promise<BinEnBodega[]>
 
   const { data } = await supabase
     .from('bines')
-    .select('id, codigo, posicion, estado, tipo')
+    .select(`
+      id, 
+      codigo, 
+      posicion_id, 
+      estado, 
+      tipo, 
+      es_fijo,
+      bodega_posiciones (codigo)
+    `)
     .eq('bodega_id', bodegaId)
     .eq('estado', 'en_bodega')
-    .order('codigo') as { data: BinEnBodega[] | null }
+    .order('codigo') as { data: any[] | null }
 
-  return data ?? []
+  return (data ?? []).map(b => ({
+    id: b.id,
+    codigo: b.codigo,
+    posicion_id: b.posicion_id,
+    posicion_codigo: b.bodega_posiciones?.codigo,
+    estado: b.estado,
+    tipo: b.tipo,
+    es_fijo: b.es_fijo,
+  }))
 }
 
 export async function crearBinEnBodega(
-  bodegaId: string,
-  posicion?: string,
+  input: {
+    bodega_id: string
+    posicion_id: string
+    es_fijo?: boolean
+    tipo?: 'caja_cliente' | 'interno'
+  }
 ): Promise<{ data: BinEnBodega | null; error?: string }> {
   const supabase = db(await createClient())
 
@@ -49,20 +69,39 @@ export async function crearBinEnBodega(
     .from('bines')
     .insert({
       codigo,
-      tipo: 'interno',
-      bodega_id: bodegaId,
-      posicion: posicion?.trim() || null,
+      tipo: input.tipo || 'interno',
+      bodega_id: input.bodega_id,
+      posicion_id: input.posicion_id,
+      es_fijo: input.es_fijo ?? false,
       estado: 'en_bodega',
     })
-    .select('id, codigo, posicion, estado, tipo')
-    .single() as { data: BinEnBodega | null; error: { message: string } | null }
+    .select(`
+      id, 
+      codigo, 
+      posicion_id, 
+      estado, 
+      tipo, 
+      es_fijo,
+      bodega_posiciones (codigo)
+    `)
+    .single() as { data: any | null; error: { message: string } | null }
 
   if (error || !data) {
     return { data: null, error: error?.message || 'Error creando bin' }
   }
 
+  const result: BinEnBodega = {
+    id: data.id,
+    codigo: data.codigo,
+    posicion_id: data.posicion_id,
+    posicion_codigo: data.bodega_posiciones?.codigo,
+    estado: data.estado,
+    tipo: data.tipo,
+    es_fijo: data.es_fijo,
+  }
+
   revalidatePath('/wms')
-  return { data }
+  return { data: result }
 }
 
 export async function crearAjuste(input: {
