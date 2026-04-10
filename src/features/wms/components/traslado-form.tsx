@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, X, ArrowRightLeft, Package, Repeat2 } from 'lucide-react'
+import { Plus, X, ArrowRightLeft, Package, Repeat2, Sparkles, Loader2 } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { crearTraslado, confirmarTraslado } from '@/features/wms/services/traslados-actions'
+import { getSugerenciaPosicion } from '@/features/wms/services/posiciones-actions'
 import { LocationSelector } from '@/features/wms/components/location-selector'
 import type { Bodega } from '@/features/wms/types'
 
@@ -24,6 +25,7 @@ interface ItemTraslado {
 
 export function TrasladoForm({ bodegas, bodegaOrigen }: Props) {
   const [loading, setLoading] = useState(false)
+  const [sugerirLoading, setSugerirLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
   const [source, setSource] = useState<{ bodegaId?: string; posicionId?: string; binId?: string }>({
@@ -122,6 +124,28 @@ export function TrasladoForm({ bodegas, bodegaOrigen }: Props) {
     }
   }
 
+  const handleSugerirDestino = async () => {
+    if (!target.bodegaId) {
+      setError('Selecciona primero la bodega de destino')
+      return
+    }
+
+    setSugerirLoading(true)
+    const result = await getSugerenciaPosicion(target.bodegaId)
+    setSugerirLoading(false)
+
+    if (result.error) {
+      setError(result.error)
+    } else if (result.data) {
+      setTarget(prev => ({
+        ...prev,
+        posicionId: result.data!.id
+      }))
+    } else {
+      setError('No se encontraron posiciones con espacio disponible en la bodega destino')
+    }
+  }
+
   return (
     <div className="bg-neu-base border border-neu-300 rounded-3xl p-6 space-y-8 shadow-neu">
       <div className="flex items-center justify-between border-b border-neu-200 pb-4">
@@ -166,8 +190,22 @@ export function TrasladoForm({ bodegas, bodegaOrigen }: Props) {
 
         {/* Destino */}
         <div className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Destino</span>
+            {target.bodegaId && tipo === 'movimiento_bin' && (
+              <button
+                onClick={handleSugerirDestino}
+                disabled={sugerirLoading}
+                className="text-[10px] font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1 bg-primary-50 px-2 py-1 rounded-lg transition-all border border-primary-100 hover:border-primary-200"
+              >
+                {sugerirLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                Sugerir Ubicación
+              </button>
+            )}
+          </div>
           <LocationSelector 
             label="Destino" 
+            hideLabel
             value={target} 
             onChange={setTarget}
             excludeBinId={source.binId}

@@ -15,13 +15,14 @@ interface Location {
 
 interface Props {
   label: string
+  hideLabel?: boolean
   value: Location
   onChange: (loc: Location) => void
   excludeBinId?: string
   placeholder?: string
 }
 
-export function LocationSelector({ label, value, onChange, excludeBinId, placeholder }: Props) {
+export function LocationSelector({ label, hideLabel, value, onChange, excludeBinId, placeholder }: Props) {
   const [bodegas, setBodegas] = useState<Bodega[]>([])
   const [posiciones, setPosiciones] = useState<Posicion[]>([])
   const [bines, setBines] = useState<BinEnBodega[]>([])
@@ -81,16 +82,18 @@ export function LocationSelector({ label, value, onChange, excludeBinId, placeho
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</label>
-        <button 
-          onClick={() => setMode(mode === 'text' ? 'selector' : 'text')}
-          className="text-[10px] font-bold text-primary-600 hover:underline flex items-center gap-1"
-        >
-          {mode === 'text' ? <Package className="w-3 h-3" /> : <Scan className="w-3 h-3" />}
-          {mode === 'text' ? 'Selector Manual' : 'Modo Escaneo'}
-        </button>
-      </div>
+      {!hideLabel && (
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</label>
+          <button 
+            onClick={() => setMode(mode === 'text' ? 'selector' : 'text')}
+            className="text-[10px] font-bold text-primary-600 hover:underline flex items-center gap-1"
+          >
+            {mode === 'text' ? <Package className="w-3 h-3" /> : <Scan className="w-3 h-3" />}
+            {mode === 'text' ? 'Selector Manual' : 'Modo Escaneo'}
+          </button>
+        </div>
+      )}
 
       <div className="bg-neu-base border-2 border-neu-300 rounded-2xl p-4 shadow-neu-sm transition-all focus-within:border-primary-400 focus-within:shadow-neu-lg">
         {mode === 'text' ? (

@@ -9,6 +9,7 @@ import { TrasladoForm } from '@/features/wms/components/traslado-form'
 import { TrasladosHistorial } from '@/features/wms/components/traslados-historial'
 import { AjusteForm } from '@/features/wms/components/ajuste-form'
 import { AjusteHistorial } from '@/features/wms/components/ajuste-historial'
+import { PosicionesTab } from '@/features/wms/components/posiciones-tab'
 import type { Bodega } from '@/features/wms/types'
 
 interface Props {
@@ -97,6 +98,25 @@ export function WMSPanel({ bodegas }: Props) {
             />
           </div>
         </div>
+      )}
+      {/* VISTA: POSICIONES */}
+      {activeTab === 'posiciones' && (
+        <>
+          <BodegaFilterBar
+            bodegas={bodegas}
+            bodegaSeleccionada={bodegaSeleccionada}
+            onSelect={setBodegaSeleccionada}
+          />
+          <div className="flex-1 min-w-0 overflow-y-auto p-6">
+            {bodegaSeleccionada ? (
+              <PosicionesTab bodegaId={bodegaSeleccionada} />
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground italic">
+                Selecciona una bodega para gestionar sus posiciones
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   )

@@ -12,6 +12,7 @@ export interface Posicion {
   id: string
   bodega_id: string
   codigo: string
+  nombre: string | null
   capacidad_bines: number
   created_at: string
 }
