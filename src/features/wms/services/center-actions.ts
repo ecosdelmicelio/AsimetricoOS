@@ -92,6 +92,7 @@ export async function getOCItemsGrid(ocId: string): Promise<GridItem[]> {
           label: d.productos?.nombre || 'Producto',
           sublabel: `${d.talla} — SKU: ${d.productos?.referencia}`,
           count: d.cantidad,
+          price: d.precio_pactado,
           icon: 'Shirt'
         })
       })
@@ -105,6 +106,7 @@ export async function getOCItemsGrid(ocId: string): Promise<GridItem[]> {
           label: d.materiales?.nombre || 'Material',
           sublabel: `${d.materiales?.codigo} — ${d.materiales?.unidad}`,
           count: d.cantidad,
+          price: d.precio_unitario,
           icon: 'Package'
         })
       })
@@ -180,10 +182,11 @@ export async function processUnifiedMovement(input: {
   targetId: string
   itemId?: string
   cantidad: number
+  precioUnitario?: number
   notas?: string
   bodegaId?: string
 }) {
-  const { mode, sourceId, targetId, itemId, cantidad, notas, bodegaId } = input
+  const { mode, sourceId, targetId, itemId, cantidad, precioUnitario, notas, bodegaId } = input
 
   // Handle Virtual "New Bin" creation if requested
   let finalTargetId = targetId

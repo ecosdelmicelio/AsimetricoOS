@@ -32,6 +32,7 @@ export interface GridItem {
   sublabel?: string
   icon?: string
   count?: number
+  price?: number
   type?: string
   isSelected?: boolean
 }
