@@ -35,6 +35,7 @@ export interface GridItem {
   price?: number
   type?: string
   isSelected?: boolean
+  metadata?: any
 }
 
 interface Props {

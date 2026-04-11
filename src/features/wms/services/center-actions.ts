@@ -93,7 +93,8 @@ export async function getOCItemsGrid(ocId: string): Promise<GridItem[]> {
           sublabel: `${d.talla} — SKU: ${d.productos?.referencia}`,
           count: d.cantidad,
           price: d.precio_pactado,
-          icon: 'Shirt'
+          icon: 'Shirt',
+          metadata: { producto_id: d.producto_id, talla: d.talla }
         })
       })
     }
@@ -107,7 +108,8 @@ export async function getOCItemsGrid(ocId: string): Promise<GridItem[]> {
           sublabel: `${d.materiales?.codigo} — ${d.materiales?.unidad}`,
           count: d.cantidad,
           price: d.precio_unitario,
-          icon: 'Package'
+          icon: 'Package',
+          metadata: { material_id: d.material_id, talla: 'UNICA' }
         })
       })
     }
@@ -185,8 +187,9 @@ export async function processUnifiedMovement(input: {
   precioUnitario?: number
   notas?: string
   bodegaId?: string
+  metadata?: any
 }) {
-  const { mode, sourceId, targetId, itemId, cantidad, precioUnitario, notas, bodegaId } = input
+  const { mode, sourceId, targetId, itemId, cantidad, precioUnitario, notas, bodegaId, metadata } = input
 
   // Handle Virtual "New Bin" creation if requested
   let finalTargetId = targetId
@@ -203,10 +206,18 @@ export async function processUnifiedMovement(input: {
   switch (mode) {
     case 'INGRESAR': {
       const { crearRecepcionesOCConBins } = await import('@/features/compras/services/compras-actions')
+      const meta = (input as any).metadata || {}
+      
       return await crearRecepcionesOCConBins([{
         ocId: sourceId,
         bodegaId: bodegaId || '', 
-        items: [{ producto_id: itemId || '', talla: '...', cantidad, bin_id: finalTargetId }]
+        items: [{ 
+          producto_id: meta.producto_id || itemId || '', 
+          talla: meta.talla || '...', 
+          cantidad, 
+          bin_id: finalTargetId,
+          precio_unitario: precioUnitario
+        }]
       }])
     }
 

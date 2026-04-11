@@ -56,6 +56,7 @@ export function MovementCommandCenter({ bodegas }: Props) {
   // Selección final
   const [sourceSelection, setSourceSelection] = useState<GridItem | null>(null)
   const [targetSelection, setTargetSelection] = useState<GridItem | null>(null)
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(null)
   const [cantidad, setCantidad] = useState<number>(1)
   const [precioValidado, setPrecioValidado] = useState<number>(0)
   const [notas, setNotas] = useState<string>('')
@@ -66,6 +67,7 @@ export function MovementCommandCenter({ bodegas }: Props) {
   useEffect(() => {
     setSourceSelection(null)
     setTargetSelection(null)
+    setActiveOrderId(null)
     resetPanels()
   }, [mode, ajusteTipo, activeBodegaId])
 
@@ -213,9 +215,11 @@ export function MovementCommandCenter({ bodegas }: Props) {
         nextLevel = 'ITEMS'
         nextItems = await getBinItemsGrid(item.id)
       } else if (currentState.level === 'PURCHASE_ORDERS') {
+        setActiveOrderId(item.id)
         nextLevel = 'ITEMS'
         nextItems = await getOCItemsGrid(item.id)
       } else if (currentState.level === 'SALES_ORDERS') {
+        setActiveOrderId(item.id)
         nextLevel = 'ITEMS'
         nextItems = await getOVItemsGrid(item.id)
         
@@ -256,13 +260,14 @@ export function MovementCommandCenter({ bodegas }: Props) {
     try {
       const res = await processUnifiedMovement({
         mode,
-        sourceId: source.id || '',
+        sourceId: activeOrderId || source.id || '',
         targetId: targetSelection?.id || target.id || '',
         itemId: sourceSelection?.id,
         cantidad,
         precioUnitario: precioValidado,
         notas,
-        bodegaId: activeBodegaId
+        bodegaId: activeBodegaId,
+        metadata: sourceSelection?.metadata
       })
 
       if ((res as any).error) {

@@ -462,6 +462,7 @@ export async function crearRecepcionesOCConBins(
       talla: string
       cantidad: number
       precio_unitario?: number
+      bin_id?: string
     }>
   }>,
   usuarioId?: string
@@ -484,7 +485,13 @@ export async function crearRecepcionesOCConBins(
   const resultados: Array<{ binId: string; contenido: any }> = []
 
   for (const recepcion of recepciones) {
-    const bin = await crearBin(recepcion.bodegaId, 'interno')
+    // Si la recepción viene con un bin_id global o en el primer item, lo usamos
+    const firstBinId = recepcion.items[0]?.bin_id
+    let commonBin: any = null
+    
+    if (!firstBinId) {
+      commonBin = await crearBin(recepcion.bodegaId, null as any, false, 'interno')
+    }
 
     const inserts = recepcion.items.map(item => ({
       oc_id: recepcion.ocId,
@@ -492,7 +499,7 @@ export async function crearRecepcionesOCConBins(
       talla: item.talla,
       cantidad_recibida: item.cantidad,
       precio_unitario: item.precio_unitario ?? 0,
-      bin_id: bin.id,
+      bin_id: item.bin_id || commonBin?.id,
       recibido_por: usuarioId,
       fecha_recepcion: new Date().toISOString(),
     }))
@@ -521,7 +528,7 @@ export async function crearRecepcionesOCConBins(
       costo_unitario: rec.precio_unitario ?? 0,
       costo_total: (rec.cantidad_recibida * (rec.precio_unitario ?? 0)),
       saldo_ponderado: rec.precio_unitario ?? 0,
-      bin_id: bin.id,
+      bin_id: inserts[0].bin_id, // Usamos el bin de la inserción
       talla: rec.talla,
       fecha_movimiento: new Date().toISOString(),
       registrado_por: user?.id ?? null,
