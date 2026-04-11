@@ -33,6 +33,7 @@ export interface GridItem {
   icon?: string
   count?: number
   type?: string
+  isSelected?: boolean
 }
 
 interface Props {
@@ -124,9 +125,15 @@ export function VisualHierarchyGrid({
               <button
                 key={item.id}
                 onClick={() => onSelect(item)}
-                className="flex flex-col items-center justify-center gap-3 p-4 bg-white border-2 border-transparent rounded-3xl hover:border-primary-400 hover:shadow-neu transition-all group text-center"
+                className={`flex flex-col items-center justify-center gap-3 p-4 border-2 rounded-3xl transition-all group text-center
+                  ${item.isSelected 
+                    ? 'bg-primary-50 border-primary-600 shadow-sm ring-4 ring-primary-100' 
+                    : 'bg-white border-transparent hover:border-primary-400 hover:shadow-neu'}
+                `}
               >
-                <div className="p-4 bg-neu-100 rounded-2xl group-hover:bg-primary-50 group-hover:text-primary-600 transition-colors">
+                <div className={`p-4 rounded-2xl transition-colors
+                  ${item.isSelected ? 'bg-primary-600 text-white' : 'bg-neu-100 group-hover:bg-primary-50 group-hover:text-primary-600'}
+                `}>
                   {getIcon(level, item.icon)}
                 </div>
                 <div className="space-y-0.5">

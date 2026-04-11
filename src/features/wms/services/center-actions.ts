@@ -75,18 +75,49 @@ export async function getAdjustmentReasons() {
 
 /**
  * Obtiene los items de una OC para mostrar como iconos.
+ * Soporta tanto prendas como materia prima.
  */
 export async function getOCItemsGrid(ocId: string): Promise<GridItem[]> {
-  const oc = await getOrdenCompraById(ocId)
-  if (!oc) return []
-  
-  return oc.oc_detalle.map(d => ({
-    id: d.id,
-    label: d.productos?.nombre || 'Producto',
-    sublabel: `${d.talla} — SKU: ${d.productos?.referencia}`,
-    count: d.cantidad,
-    icon: 'Shirt'
-  }))
+  try {
+    const oc = await getOrdenCompraById(ocId)
+    if (!oc) return [{ id: 'error', label: 'OC No Encontrada', sublabel: `ID: ${ocId}`, icon: 'AlertCircle' }]
+    
+    const items: GridItem[] = []
+
+    // Prendas
+    if (oc.oc_detalle && oc.oc_detalle.length > 0) {
+      oc.oc_detalle.forEach(d => {
+        items.push({
+          id: d.id,
+          label: d.productos?.nombre || 'Producto',
+          sublabel: `${d.talla} — SKU: ${d.productos?.referencia}`,
+          count: d.cantidad,
+          icon: 'Shirt'
+        })
+      })
+    }
+
+    // MP
+    if (oc.oc_detalle_mp && oc.oc_detalle_mp.length > 0) {
+      oc.oc_detalle_mp.forEach(d => {
+        items.push({
+          id: d.id,
+          label: d.materiales?.nombre || 'Material',
+          sublabel: `${d.materiales?.codigo} — ${d.materiales?.unidad}`,
+          count: d.cantidad,
+          icon: 'Package'
+        })
+      })
+    }
+    
+    if (items.length === 0) {
+      return [{ id: 'empty', label: 'OC sin productos', sublabel: 'Verifica la OC', icon: 'Info' }]
+    }
+
+    return items
+  } catch (err: any) {
+    return [{ id: 'error', label: 'Error al cargar OC', sublabel: err.message, icon: 'AlertCircle' }]
+  }
 }
 
 /**
@@ -124,8 +155,24 @@ export async function getOVItemsGrid(ovId: string): Promise<GridItem[]> {
 }
 
 /**
+ * Obtiene los bines que tienen stock de los productos de una OV.
+ * Usado para sugerir ubicaciones de despacho.
+ */
+export async function getSuggestedBinesForOVGrid(ovId: string): Promise<GridItem[]> {
+  const { getBinesDisponiblesParaOV } = await import('@/features/ordenes-venta/services/despachos-actions')
+  const availableBines = await getBinesDisponiblesParaOV(ovId)
+  
+  return availableBines.map(b => ({
+    id: b.id,
+    label: b.codigo,
+    sublabel: b.items.map((i: any) => `${i.cantidad} items`).join(', '),
+    icon: 'Box'
+  }))
+}
+
+/**
  * Procesador Central de Movimientos.
- * Enruta la operación al servicio correspondiente según el modo.
+ * ...
  */
 export async function processUnifiedMovement(input: {
   mode: 'INGRESAR' | 'TRASLADAR' | 'DESPACHAR' | 'AJUSTAR'
@@ -134,18 +181,29 @@ export async function processUnifiedMovement(input: {
   itemId?: string
   cantidad: number
   notas?: string
+  bodegaId?: string
 }) {
-  const { mode, sourceId, targetId, itemId, cantidad, notas } = input
+  const { mode, sourceId, targetId, itemId, cantidad, notas, bodegaId } = input
+
+  // Handle Virtual "New Bin" creation if requested
+  let finalTargetId = targetId
+  if (targetId.startsWith('NEW_BIN|')) {
+    const [, posId, posLabel] = targetId.split('|')
+    const { crearBin } = await import('@/features/bines/services/bines-actions')
+    
+    // Generamos prefijo basado en la posición (primeras 3 letras o código corto)
+    const prefijo = posLabel.substring(0, 3).toUpperCase() || 'BN'
+    const newBin = await crearBin(bodegaId || '', posId, false, 'interno', prefijo)
+    finalTargetId = newBin.id
+  }
 
   switch (mode) {
     case 'INGRESAR': {
       const { crearRecepcionesOCConBins } = await import('@/features/compras/services/compras-actions')
-      // sourceId is OC ID, targetId is Bin or position ID
-      // itemId is OC Detail ID
       return await crearRecepcionesOCConBins([{
         ocId: sourceId,
-        bodegaId: '...', // Extracted from context usually, or passed in
-        items: [{ producto_id: itemId || '', talla: '...', cantidad }]
+        bodegaId: bodegaId || '', 
+        items: [{ producto_id: itemId || '', talla: '...', cantidad, bin_id: finalTargetId }]
       }])
     }
 
@@ -173,6 +231,21 @@ export async function processUnifiedMovement(input: {
         binId: isInput ? targetId : sourceId,
         notas: notas || 'Ajuste visual Command Center',
         items: [{ cantidad, unidad: 'unidades' }]
+      })
+    }
+
+    case 'DESPACHAR': {
+      const { createDespacho } = await import('@/features/ordenes-venta/services/despachos-actions')
+      return await createDespacho({
+        ov_id: sourceId,
+        tipo_envio: 'externo',
+        total_bultos: 1,
+        lineas: [{
+          producto_id: itemId || '',
+          talla: '...', // Extrapolar de la selección
+          cantidad,
+          bin_id: targetId
+        }]
       })
     }
 

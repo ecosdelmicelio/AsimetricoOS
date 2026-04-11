@@ -23,7 +23,9 @@ import {
   getAdjustmentReasons,
   getOCItemsGrid,
   getOVItemsGrid,
-  getBinItemsGrid
+  getBinItemsGrid,
+  getSuggestedBinesForOVGrid,
+  processUnifiedMovement
 } from '@/features/wms/services/center-actions'
 import type { Bodega } from '@/features/wms/types'
 
@@ -49,11 +51,21 @@ export function MovementCommandCenter({ bodegas }: Props) {
   const [target, setTarget] = useState<PanelState>({ level: 'BODEGAS', breadcrumb: [], items: [] })
 
   const [ajusteTipo, setAjusteTipo] = useState<'entrada' | 'salida'>('salida')
+  const [activeBodegaId, setActiveBodegaId] = useState<string>(bodegas[0]?.id || '')
+
+  // Selección final
+  const [sourceSelection, setSourceSelection] = useState<GridItem | null>(null)
+  const [targetSelection, setTargetSelection] = useState<GridItem | null>(null)
+  const [cantidad, setCantidad] = useState<number>(1)
+  const [notas, setNotas] = useState<string>('')
+  const [processing, setProcessing] = useState(false)
 
   // Inicialización o Cambio de Modo
   useEffect(() => {
+    setSourceSelection(null)
+    setTargetSelection(null)
     resetPanels()
-  }, [mode, ajusteTipo])
+  }, [mode, ajusteTipo, activeBodegaId])
 
   const resetPanels = async () => {
     setLoading(true)
@@ -81,21 +93,21 @@ export function MovementCommandCenter({ bodegas }: Props) {
       setSource({ level: 'BODEGAS', breadcrumb: ['Origen'], items: warehouseItems })
       setTarget({ level: 'BODEGAS', breadcrumb: ['Destino'], items: warehouseItems })
     } else if (mode === 'DESPACHAR') {
-      setSource({
-        level: 'BODEGAS',
-        breadcrumb: ['Origen'],
-        items: bodegas.map(b => ({ id: b.id, label: b.nombre, sublabel: b.codigo }))
-      })
       const ovs = await getCenterPendingSales()
-      setTarget({
+      setSource({
         level: 'SALES_ORDERS',
-        breadcrumb: ['Despachos'],
+        breadcrumb: ['Despachos (OV)'],
         items: ovs.map(ov => ({
           id: ov.id,
           label: ov.codigo,
           sublabel: ov.terceros?.nombre || 'Cliente',
           icon: 'Truck'
         }))
+      })
+      setTarget({
+        level: 'BODEGAS',
+        breadcrumb: ['Origen Mercancía'],
+        items: bodegas.map(b => ({ id: b.id, label: b.nombre, sublabel: b.codigo }))
       })
     } else if (mode === 'AJUSTAR') {
       const reasons = await getAdjustmentReasons()
@@ -134,11 +146,20 @@ export function MovementCommandCenter({ bodegas }: Props) {
     const setState = panel === 'source' ? setSource : setTarget
     
     setLoading(true)
-    let nextLevel: HierarchyLevel = 'BODEGAS'
+    let nextLevel: HierarchyLevel = currentState.level
     let nextItems: GridItem[] = []
+    // Si ya estamos en el nivel terminal o es un elemento de acción final (ITEMS, REASONS, BINES)
+    if (currentState.level === 'ITEMS' || currentState.level === 'REASONS' || currentState.level === 'BINES') {
+      setState(prev => ({ ...prev, id: item.id })) // Marcamos el ID activo
+      if (panel === 'source') setSourceSelection(item)
+      else setTargetSelection(item)
+      setLoading(false)
+      return
+    }
 
     try {
       if (currentState.level === 'BODEGAS') {
+        setActiveBodegaId(item.id)
         const hierarchy = await getWarehouseHierarchy(item.id)
         if (hierarchy.zonas.length > 0) {
           nextLevel = 'ZONAS'
@@ -153,17 +174,34 @@ export function MovementCommandCenter({ bodegas }: Props) {
           }))
         }
       } else if (currentState.level === 'ZONAS') {
-        const hierarchy = await getWarehouseHierarchy(source.id || target.id || '') // Simplificado: usa bodega actual
+        const hierarchy = await getWarehouseHierarchy(activeBodegaId)
         nextLevel = 'POSICIONES'
         nextItems = hierarchy.posiciones
           .filter(p => p.zona_id === item.id)
           .map(p => ({ id: p.id, label: p.nombre || p.codigo, sublabel: p.codigo, count: (p as any).bines_count }))
       } else if (currentState.level === 'POSICIONES') {
-        const hierarchy = await getWarehouseHierarchy(source.id || target.id || '')
+        const hierarchy = await getWarehouseHierarchy(activeBodegaId)
         nextLevel = 'BINES'
-        nextItems = hierarchy.bines
+        
+        const existingBines = hierarchy.bines
           .filter(b => b.posicion_id === item.id)
           .map(b => ({ id: b.id, label: b.codigo, sublabel: b.es_fijo ? '🔒 FIJO' : '📦 MOVIBLE', icon: 'Box' }))
+        
+        // Inyectar opción de nuevo bin si estamos ingresando
+        if (mode === 'INGRESAR') {
+          nextItems = [
+            { 
+              id: `NEW_BIN|${item.id}|${item.label}`, // Encapsulamos ID de posición y nombre para el generador
+              label: 'Crear Nuevo Bin', 
+              sublabel: `En ${item.label}`, 
+              icon: 'PlusCircle',
+              type: 'NEW_BIN_ACTION' 
+            },
+            ...existingBines
+          ]
+        } else {
+          nextItems = existingBines
+        }
       } else if (currentState.level === 'BINES') {
         nextLevel = 'ITEMS'
         nextItems = await getBinItemsGrid(item.id)
@@ -173,6 +211,17 @@ export function MovementCommandCenter({ bodegas }: Props) {
       } else if (currentState.level === 'SALES_ORDERS') {
         nextLevel = 'ITEMS'
         nextItems = await getOVItemsGrid(item.id)
+        
+        // Bonus: Si estamos despachando, el panel derecho puede sugerir bines automáticamente
+        if (panel === 'source' && mode === 'DESPACHAR') {
+          const suggested = await getSuggestedBinesForOVGrid(item.id)
+          setTarget(prev => ({
+            ...prev,
+            level: suggested.length > 0 ? 'BINES' : prev.level,
+            breadcrumb: suggested.length > 0 ? ['Bines Sugeridos'] : prev.breadcrumb,
+            items: suggested.length > 0 ? suggested : prev.items
+          }))
+        }
       }
       
       setState({
@@ -191,6 +240,37 @@ export function MovementCommandCenter({ bodegas }: Props) {
   const handleBack = (panel: 'source' | 'target') => {
     // Para simplificar por ahora, retroceder al estado inicial del modo
     resetPanels()
+  }
+
+  const handleConfirm = async () => {
+    if (processing) return
+    setProcessing(true)
+    
+    try {
+      const res = await processUnifiedMovement({
+        mode,
+        sourceId: source.id || '',
+        targetId: targetSelection?.id || target.id || '',
+        itemId: sourceSelection?.id,
+        cantidad,
+        notas,
+        bodegaId: activeBodegaId
+      })
+
+      if ((res as any).error) {
+        alert(`Error: ${(res as any).error}`)
+      } else {
+        alert('Movimiento procesado con éxito')
+        setSourceSelection(null)
+        setTargetSelection(null)
+        setCantidad(1)
+        resetPanels()
+      }
+    } catch (err: any) {
+      alert(`Error crítico: ${err.message}`)
+    } finally {
+      setProcessing(false)
+    }
   }
 
   return (
@@ -261,7 +341,7 @@ export function MovementCommandCenter({ bodegas }: Props) {
         <VisualHierarchyGrid 
           title="ORIGEN / FUENTE"
           level={source.level}
-          items={source.items}
+          items={source.items.map(i => ({ ...i, isSelected: i.id === sourceSelection?.id }))}
           breadcrumb={source.breadcrumb}
           onSelect={(item) => handleSelect('source', item)}
           onBack={source.breadcrumb.length > 1 ? () => handleBack('source') : undefined}
@@ -277,7 +357,7 @@ export function MovementCommandCenter({ bodegas }: Props) {
         <VisualHierarchyGrid 
           title="DESTINO / UBICACIÓN"
           level={target.level}
-          items={target.items}
+          items={target.items.map(i => ({ ...i, isSelected: i.id === targetSelection?.id }))}
           breadcrumb={target.breadcrumb}
           onSelect={(item) => handleSelect('target', item)}
           onBack={target.breadcrumb.length > 1 ? () => handleBack('target') : undefined}
@@ -292,12 +372,14 @@ export function MovementCommandCenter({ bodegas }: Props) {
             <LocationSummary 
               label="Origen" 
               path={source.breadcrumb} 
+              selection={sourceSelection?.label}
               icon={<Box className="w-5 h-5 text-amber-500" />}
             />
             <ChevronRight className="w-6 h-6 text-neu-300" />
             <LocationSummary 
               label="Destino" 
               path={target.breadcrumb} 
+              selection={targetSelection?.label}
               icon={<CheckCircle2 className="w-5 h-5 text-emerald-500" />}
             />
           </div>
@@ -307,11 +389,17 @@ export function MovementCommandCenter({ bodegas }: Props) {
               <input 
                 type="number" 
                 placeholder="Cant."
+                value={cantidad}
+                onChange={(e) => setCantidad(Number(e.target.value))}
                 className="w-full px-4 py-3 bg-neu-100 border-2 border-transparent rounded-2xl outline-none font-black text-center text-lg transition-all focus:border-primary-400 focus:bg-white shadow-neu-inset"
               />
             </div>
-            <button className="flex-1 md:flex-none px-10 py-3 bg-primary-600 text-white font-black rounded-2xl hover:bg-primary-700 transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-2">
-              Confirmar Movimiento
+            <button 
+              onClick={handleConfirm}
+              disabled={processing || (!sourceSelection && mode !== 'AJUSTAR') || !targetSelection}
+              className="flex-1 md:flex-none px-10 py-3 bg-primary-600 text-white font-black rounded-2xl hover:bg-primary-700 transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-2"
+            >
+              {processing ? 'Procesando...' : 'Confirmar Movimiento'}
               <Plus className="w-5 h-5" />
             </button>
           </div>
@@ -340,7 +428,7 @@ function ModeButton({ active, onClick, icon, label, color }: { active: boolean, 
   )
 }
 
-function LocationSummary({ label, path, icon }: { label: string, path: string[], icon: React.ReactNode }) {
+function LocationSummary({ label, path, selection, icon }: { label: string, path: string[], selection?: string, icon: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3">
       <div className="p-3 bg-neu-100 rounded-2xl">
@@ -349,7 +437,7 @@ function LocationSummary({ label, path, icon }: { label: string, path: string[],
       <div>
         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{label}</p>
         <p className="text-sm font-black text-foreground truncate max-w-[200px]">
-          {path[path.length - 1] || 'Sin selección'}
+          {selection || path[path.length - 1] || 'Sin selección'}
         </p>
       </div>
     </div>
