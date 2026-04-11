@@ -10,6 +10,8 @@ import { TrasladosHistorial } from '@/features/wms/components/traslados-historia
 import { AjusteForm } from '@/features/wms/components/ajuste-form'
 import { AjusteHistorial } from '@/features/wms/components/ajuste-historial'
 import { PosicionesTab } from '@/features/wms/components/posiciones-tab'
+import { MovementCommandCenter } from '@/features/wms/components/movement-command-center'
+import { ZonasManagement } from '@/features/wms/components/zonas-management'
 import type { Bodega } from '@/features/wms/types'
 
 interface Props {
@@ -117,6 +119,20 @@ export function WMSPanel({ bodegas }: Props) {
             )}
           </div>
         </>
+      )}
+
+      {/* VISTA: CENTRO DE MOVIMIENTOS (COMMAND CENTER) */}
+      {activeTab === 'command_center' && (
+        <div className="flex-1 min-h-0 bg-white">
+          <MovementCommandCenter bodegas={bodegas} />
+        </div>
+      )}
+
+      {/* VISTA: GESTIÓN DE ZONAS */}
+      {activeTab === 'zonas' && (
+        <div className="flex-1 min-w-0 overflow-y-auto bg-neu-bg">
+          <ZonasManagement bodegas={bodegas} />
+        </div>
       )}
     </div>
   )

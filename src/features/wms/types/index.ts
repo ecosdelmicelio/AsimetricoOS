@@ -8,9 +8,18 @@ export interface Bodega {
   created_at: string
 }
 
+export interface Zona {
+  id: string
+  bodega_id: string
+  nombre: string
+  codigo: string
+  created_at: string
+}
+
 export interface Posicion {
   id: string
   bodega_id: string
+  zona_id: string | null
   codigo: string
   nombre: string | null
   capacidad_bines: number
