@@ -32,11 +32,10 @@ function db(supabase: unknown): any {
 export async function getCenterPendingPurchases(): Promise<any[]> {
   const all = await getOrdenesCompra()
   
-  // Filtramos las que ya están completadas o canceladas
-  // Si no tienen estado_documental (null), las mostramos como pendientes
+  // Filtramos las que ya están completadas o finalizadas
   const pending = all.filter(oc => {
     const status = (oc.estado_documental || 'pendiente').toLowerCase()
-    return !['completada', 'na', 'finalizada'].includes(status)
+    return !['completada', 'finalizada'].includes(status)
   })
 
   return pending.map(oc => ({
@@ -46,7 +45,15 @@ export async function getCenterPendingPurchases(): Promise<any[]> {
   }))
 }
 
-// getCenterPendingSales se ha eliminado ya que los despachos se gestionan fuera del Command Center
+/**
+ * Marca una orden como completada manualmente.
+ */
+export async function markOrderAsCompleted(id: string) {
+  const { updateOCStatus } = await import('@/features/compras/services/compras-actions')
+  const res = await updateOCStatus(id, 'completada')
+  if (res.error) return { success: false, error: res.error }
+  return { success: true }
+}
 
 /**
  * Agregador de jerarquía para navegación visual.
@@ -218,7 +225,8 @@ export async function processUnifiedMovement(input: {
         ocId: sourceId,
         bodegaId: bodegaId || '', 
         items: [{ 
-          producto_id: meta.producto_id || itemId || '', 
+          producto_id: meta.producto_id || null, 
+          material_id: meta.material_id || null,
           talla: meta.talla || '...', 
           cantidad, 
           bin_id: finalTargetId,

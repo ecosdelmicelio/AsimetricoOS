@@ -21,11 +21,10 @@ import {
   getCenterPendingSales, 
   getWarehouseHierarchy, 
   getAdjustmentReasons,
-  getOCItemsGrid,
-  getOVItemsGrid,
   getBinItemsGrid,
   getSuggestedBinesForOVGrid,
-  processUnifiedMovement
+  processUnifiedMovement,
+  markOrderAsCompleted
 } from '@/features/wms/services/center-actions'
 import type { Bodega } from '@/features/wms/types'
 
@@ -57,6 +56,7 @@ export function MovementCommandCenter({ bodegas }: Props) {
   const [sourceSelection, setSourceSelection] = useState<GridItem | null>(null)
   const [targetSelection, setTargetSelection] = useState<GridItem | null>(null)
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null)
+  const [activeOrderLabel, setActiveOrderLabel] = useState<string | null>(null)
   const [cantidad, setCantidad] = useState<number>(1)
   const [precioValidado, setPrecioValidado] = useState<number>(0)
   const [notas, setNotas] = useState<string>('')
@@ -203,8 +203,14 @@ export function MovementCommandCenter({ bodegas }: Props) {
         nextItems = await getBinItemsGrid(item.id)
       } else if (currentState.level === 'PURCHASE_ORDERS') {
         setActiveOrderId(item.id)
+        setActiveOrderLabel(item.label)
         nextLevel = 'ITEMS'
         nextItems = await getOCItemsGrid(item.id)
+      } else if (currentState.level === 'SALES_ORDERS') {
+        setActiveOrderId(item.id)
+        setActiveOrderLabel(item.label)
+        nextLevel = 'ITEMS'
+        nextItems = await getOVItemsGrid(item.id)
       }
       
       setState({
@@ -316,15 +322,40 @@ export function MovementCommandCenter({ bodegas }: Props) {
 
       {/* Grid Dual de Navegación */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
-        <VisualHierarchyGrid 
-          title="ORIGEN / FUENTE"
-          level={source.level}
-          items={source.items.map(i => ({ ...i, isSelected: i.id === sourceSelection?.id }))}
-          breadcrumb={source.breadcrumb}
-          onSelect={(item) => handleSelect('source', item)}
-          onBack={source.breadcrumb.length > 1 ? () => handleBack('source') : undefined}
-          loading={loading}
-        />
+        <div className="flex-1 flex flex-col min-h-0 relative">
+          <VisualHierarchyGrid 
+            title="ORIGEN / FUENTE"
+            level={source.level}
+            items={source.items.map(i => ({ ...i, isSelected: i.id === sourceSelection?.id }))}
+            breadcrumb={source.breadcrumb}
+            onSelect={(item) => handleSelect('source', item)}
+            onBack={source.breadcrumb.length > 1 ? () => handleBack('source') : undefined}
+            loading={loading}
+          />
+          
+          {/* Botón de Finalización Manual para OCs */}
+          {mode === 'INGRESAR' && source.level === 'ITEMS' && activeOrderId && (
+            <div className="absolute top-4 right-16 z-20">
+              <button 
+                onClick={async () => {
+                  if (confirm('¿Deseas marcar esta orden como COMPLETADA manualmente?')) {
+                    const res = await markOrderAsCompleted(activeOrderId)
+                    if (res.success) {
+                      alert('Orden completada')
+                      resetPanels()
+                    } else {
+                      alert('Error: ' + res.error)
+                    }
+                  }
+                }}
+                className="px-4 py-2 bg-emerald-100 text-emerald-700 border-2 border-emerald-300 rounded-xl text-[10px] font-black uppercase hover:bg-emerald-600 hover:text-white transition-all shadow-sm flex items-center gap-2"
+              >
+                <CheckCircle2 className="w-3 h-3" />
+                Finalizar Orden
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
           <div className="w-14 h-14 bg-white border-4 border-neu-200 rounded-full flex items-center justify-center shadow-neu animate-pulse">
@@ -352,7 +383,9 @@ export function MovementCommandCenter({ bodegas }: Props) {
                 <ShoppingCart className="w-6 h-6 text-primary-600" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-widest text-primary-600 mb-1">Validación de Ingreso</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary-600 mb-1">
+                  Validación de Ingreso — {activeOrderLabel}
+                </span>
                 <span className="text-sm font-black text-foreground truncate max-w-[300px]">{sourceSelection.label}</span>
                 <span className="text-[10px] font-bold text-muted-foreground">{sourceSelection.sublabel}</span>
               </div>

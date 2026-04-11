@@ -458,7 +458,8 @@ export async function crearRecepcionesOCConBins(
     ocId: string
     bodegaId: string
     items: Array<{
-      producto_id: string
+      producto_id?: string
+      material_id?: string
       talla: string
       cantidad: number
       precio_unitario?: number
@@ -495,7 +496,8 @@ export async function crearRecepcionesOCConBins(
 
     const inserts = recepcion.items.map(item => ({
       oc_id: recepcion.ocId,
-      producto_id: item.producto_id,
+      producto_id: item.producto_id || null,
+      material_id: item.material_id || null,
       talla: item.talla,
       cantidad_recibida: item.cantidad,
       precio_unitario: item.precio_unitario ?? 0,
@@ -516,9 +518,12 @@ export async function crearRecepcionesOCConBins(
       throw new Error(`Error creando recepción: ${error?.message || 'Sin datos'}`)
     }
 
+    const selectedBinId = inserts[0].bin_id
+    
     // Generar kardex ENTRADA_OC para cada recepción
     const movimientosKardex = recepciones_creadas.map(rec => ({
-      producto_id: rec.producto_id,
+      producto_id: rec.producto_id || null,
+      material_id: (rec as any).material_id || null,
       bodega_id: recepcion.bodegaId,
       tipo_movimiento_id: tipoMov.id,
       documento_tipo: 'recepcion_oc',
@@ -528,11 +533,11 @@ export async function crearRecepcionesOCConBins(
       costo_unitario: rec.precio_unitario ?? 0,
       costo_total: (rec.cantidad_recibida * (rec.precio_unitario ?? 0)),
       saldo_ponderado: rec.precio_unitario ?? 0,
-      bin_id: inserts[0].bin_id, // Usamos el bin de la inserción
+      bin_id: selectedBinId,
       talla: rec.talla,
       fecha_movimiento: new Date().toISOString(),
       registrado_por: user?.id ?? null,
-      notas: `Recepción OC - Bin ${bin.codigo}`,
+      notas: `Recepción OC - Bin ${selectedBinId}`,
     }))
 
     const { error: kardexError } = await supabase
@@ -543,17 +548,33 @@ export async function crearRecepcionesOCConBins(
       throw new Error(`Error creando movimientos kardex: ${kardexError.message}`)
     }
 
-    const contenido = await getContenidoBin(bin.id)
+    const contenido = await getContenidoBin(selectedBinId || '')
     if (contenido) {
       resultados.push({
-        binId: bin.id,
+        binId: selectedBinId || '',
         contenido,
       })
-    }
+    
+    // Auto-check status: Toda orden con ingresos pasa a 'en_proceso' automáticamente
+    await updateOCStatus(recepcion.ocId, 'en_proceso')
   }
 
   revalidatePath('/compras')
+  revalidatePath('/wms')
   return resultados
+}
+
+export async function updateOCStatus(id: string, estado: string): Promise<{ error?: string }> {
+  const supabase = db(await createClient())
+  const { error } = await supabase
+    .from('ordenes_compra')
+    .update({ estado_documental: estado })
+    .eq('id', id)
+  
+  if (error) return { error: error.message }
+  revalidatePath('/wms')
+  revalidatePath('/compras')
+  return {}
 }
 
 /**
