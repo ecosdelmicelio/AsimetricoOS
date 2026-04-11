@@ -27,20 +27,26 @@ function db(supabase: unknown): any {
 
 /**
  * Obtiene órdenes de compra pendientes de recibir.
- * Filtra por aquellas que no están marcadas como completadas o 'na'.
+ * Muestra información de estado y tipo para facilitar la identificación.
  */
-export async function getCenterPendingPurchases(): Promise<OCListItem[]> {
+export async function getCenterPendingPurchases(): Promise<any[]> {
   const all = await getOrdenesCompra()
-  return all.filter(oc => oc.estado_documental !== 'na')
+  
+  // Filtramos las que ya están completadas o canceladas
+  // Si no tienen estado_documental (null), las mostramos como pendientes
+  const pending = all.filter(oc => {
+    const status = (oc.estado_documental || 'pendiente').toLowerCase()
+    return !['completada', 'na', 'finalizada'].includes(status)
+  })
+
+  return pending.map(oc => ({
+    ...oc,
+    label_formatted: oc.codigo,
+    sublabel_formatted: `${oc.terceros?.nombre || 'Proveedor'} — ${oc.tipo === 'materia_prima' ? '📦 MP' : '👕 PT'} (${oc.estado_documental || 'Pendiente'})`
+  }))
 }
 
-/**
- * Obtiene órdenes de venta pendientes de despachar.
- */
-export async function getCenterPendingSales(): Promise<any[]> {
-  const { data } = await getOrdenesVenta()
-  return (data ?? []).filter(ov => !['despachada', 'entregada', 'completada', 'cancelada'].includes(ov.estado))
-}
+// getCenterPendingSales se ha eliminado ya que los despachos se gestionan fuera del Command Center
 
 /**
  * Agregador de jerarquía para navegación visual.

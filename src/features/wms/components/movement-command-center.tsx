@@ -29,7 +29,7 @@ import {
 } from '@/features/wms/services/center-actions'
 import type { Bodega } from '@/features/wms/types'
 
-type MovementMode = 'INGRESAR' | 'TRASLADAR' | 'DESPACHAR' | 'AJUSTAR'
+type MovementMode = 'INGRESAR' | 'TRASLADAR' | 'AJUSTAR'
 
 interface PanelState {
   level: HierarchyLevel
@@ -82,8 +82,8 @@ export function MovementCommandCenter({ bodegas }: Props) {
         breadcrumb: ['Ingresos'],
         items: ocs.map(oc => ({
           id: oc.id,
-          label: oc.codigo,
-          sublabel: oc.terceros?.nombre || 'Proveedor Desconocido',
+          label: (oc as any).label_formatted,
+          sublabel: (oc as any).sublabel_formatted,
           icon: 'ShoppingCart'
         }))
       })
@@ -95,22 +95,9 @@ export function MovementCommandCenter({ bodegas }: Props) {
     } else if (mode === 'TRASLADAR') {
       const warehouseItems = bodegas.map(b => ({ id: b.id, label: b.nombre, sublabel: b.codigo }))
       setSource({ level: 'BODEGAS', breadcrumb: ['Origen'], items: warehouseItems })
-      setTarget({ level: 'BODEGAS', breadcrumb: ['Destino'], items: warehouseItems })
-    } else if (mode === 'DESPACHAR') {
-      const ovs = await getCenterPendingSales()
-      setSource({
-        level: 'SALES_ORDERS',
-        breadcrumb: ['Despachos (OV)'],
-        items: ovs.map(ov => ({
-          id: ov.id,
-          label: ov.codigo,
-          sublabel: ov.terceros?.nombre || 'Cliente',
-          icon: 'Truck'
-        }))
-      })
       setTarget({
         level: 'BODEGAS',
-        breadcrumb: ['Origen Mercancía'],
+        breadcrumb: ['Ubicación Destino'],
         items: bodegas.map(b => ({ id: b.id, label: b.nombre, sublabel: b.codigo }))
       })
     } else if (mode === 'AJUSTAR') {
@@ -218,21 +205,6 @@ export function MovementCommandCenter({ bodegas }: Props) {
         setActiveOrderId(item.id)
         nextLevel = 'ITEMS'
         nextItems = await getOCItemsGrid(item.id)
-      } else if (currentState.level === 'SALES_ORDERS') {
-        setActiveOrderId(item.id)
-        nextLevel = 'ITEMS'
-        nextItems = await getOVItemsGrid(item.id)
-        
-        // Bonus: Si estamos despachando, el panel derecho puede sugerir bines automáticamente
-        if (panel === 'source' && mode === 'DESPACHAR') {
-          const suggested = await getSuggestedBinesForOVGrid(item.id)
-          setTarget(prev => ({
-            ...prev,
-            level: suggested.length > 0 ? 'BINES' : prev.level,
-            breadcrumb: suggested.length > 0 ? ['Bines Sugeridos'] : prev.breadcrumb,
-            items: suggested.length > 0 ? suggested : prev.items
-          }))
-        }
       }
       
       setState({
@@ -304,13 +276,6 @@ export function MovementCommandCenter({ bodegas }: Props) {
             icon={<Repeat2 className="w-4 h-4" />} 
             label="Trasladar" 
             color="amber"
-          />
-          <ModeButton 
-            active={mode === 'DESPACHAR'} 
-            onClick={() => setMode('DESPACHAR')} 
-            icon={<TrendingDown className="w-4 h-4" />} 
-            label="Despachar" 
-            color="purple"
           />
           <ModeButton 
             active={mode === 'AJUSTAR'} 
