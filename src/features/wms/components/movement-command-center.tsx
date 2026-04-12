@@ -21,6 +21,8 @@ import {
   getCenterPendingSales, 
   getWarehouseHierarchy, 
   getAdjustmentReasons,
+  getOCItemsGrid,
+  getOVItemsGrid,
   getBinItemsGrid,
   getSuggestedBinesForOVGrid,
   processUnifiedMovement,
@@ -53,7 +55,7 @@ export function MovementCommandCenter({ bodegas }: Props) {
   const [activeBodegaId, setActiveBodegaId] = useState<string>(bodegas[0]?.id || '')
 
   // Selección final
-  const [sourceSelection, setSourceSelection] = useState<GridItem | null>(null)
+  const [sourceSelections, setSourceSelections] = useState<GridItem[]>([])
   const [targetSelection, setTargetSelection] = useState<GridItem | null>(null)
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null)
   const [activeOrderLabel, setActiveOrderLabel] = useState<string | null>(null)
@@ -65,7 +67,7 @@ export function MovementCommandCenter({ bodegas }: Props) {
 
   // Inicialización o Cambio de Modo
   useEffect(() => {
-    setSourceSelection(null)
+    setSourceSelections([])
     setTargetSelection(null)
     setActiveOrderId(null)
     resetPanels()
@@ -142,8 +144,15 @@ export function MovementCommandCenter({ bodegas }: Props) {
     // Si ya estamos en el nivel terminal o es un elemento de acción final (ITEMS, REASONS, BINES)
     if (currentState.level === 'ITEMS' || currentState.level === 'REASONS' || currentState.level === 'BINES') {
       setState(prev => ({ ...prev, id: item.id })) // Marcamos el ID activo
-      if (panel === 'source') {
-        setSourceSelection(item)
+      if (panel === 'source' && mode === 'INGRESAR') {
+        // Toggle selection for multiple items
+        setSourceSelections(prev => {
+          const exists = prev.find(i => i.id === item.id)
+          if (exists) return prev.filter(i => i.id !== item.id)
+          return [...prev, item]
+        })
+      } else if (panel === 'source') {
+        setSourceSelections([item])
         setCantidad(item.count || 1)
         setPrecioValidado(item.price || 0)
       } else {
@@ -234,31 +243,38 @@ export function MovementCommandCenter({ bodegas }: Props) {
   const handleConfirm = async () => {
     if (processing) return
     setProcessing(true)
-    
-    try {
-      const res = await processUnifiedMovement({
-        mode,
-        sourceId: activeOrderId || source.id || '',
-        targetId: targetSelection?.id || target.id || '',
-        itemId: sourceSelection?.id,
-        cantidad,
-        precioUnitario: precioValidado,
-        notas,
-        bodegaId: activeBodegaId,
-        metadata: sourceSelection?.metadata
-      })
+    let anyError = false
 
-      if ((res as any).error) {
-        alert(`Error: ${(res as any).error}`)
-      } else {
-        alert('Movimiento procesado con éxito')
-        setSourceSelection(null)
+    try {
+      for (const item of sourceSelections) {
+        const meta = item.metadata || {}
+        
+        const res = await processUnifiedMovement({
+          mode,
+          sourceId: activeOrderId || source.id || '',
+          targetId: targetSelection?.id || target.id || '',
+          itemId: item.id,
+          cantidad: item.count || 1, // En ingresos masivos usamos el esperado
+          precioUnitario: item.price || 0,
+          notas,
+          bodegaId: activeBodegaId,
+          metadata: meta
+        })
+
+        if ((res as any).error) {
+          anyError = true
+          alert(`Error en ${item.label}: ${(res as any).error}`)
+          break // Si uno falla paramos el lote
+        }
+      }
+
+      if (!anyError) {
+        alert(`${sourceSelections.length} movimientos procesados con éxito`)
+        setSourceSelections([])
         setTargetSelection(null)
-        setCantidad(1)
-        resetPanels()
       }
     } catch (err: any) {
-      alert(`Error crítico: ${err.message}`)
+      alert('Error crítico: ' + err.message)
     } finally {
       setProcessing(false)
     }
@@ -326,7 +342,10 @@ export function MovementCommandCenter({ bodegas }: Props) {
           <VisualHierarchyGrid 
             title="ORIGEN / FUENTE"
             level={source.level}
-            items={source.items.map(i => ({ ...i, isSelected: i.id === sourceSelection?.id }))}
+            items={source.items.map(i => ({ 
+              ...i, 
+              isSelected: sourceSelections.some(s => s.id === i.id) 
+            }))}
             breadcrumb={source.breadcrumb}
             onSelect={(item) => handleSelect('source', item)}
             onBack={source.breadcrumb.length > 1 ? () => handleBack('source') : undefined}
@@ -376,44 +395,33 @@ export function MovementCommandCenter({ bodegas }: Props) {
 
       {/* Barra de Confirmación / Validación Inferior */}
       <div className="bg-white border-2 border-primary-100 rounded-3xl p-6 shadow-neu-lg animate-in slide-in-from-bottom-4 duration-500">
-        {mode === 'INGRESAR' && sourceSelection && targetSelection ? (
+        {mode === 'INGRESAR' && sourceSelections.length > 0 && targetSelection ? (
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="flex-1 flex items-center gap-6">
-              <div className="p-4 bg-primary-100 rounded-2xl">
+              <div className="p-4 bg-primary-100 rounded-2xl relative">
                 <ShoppingCart className="w-6 h-6 text-primary-600" />
+                <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
+                  {sourceSelections.length}
+                </span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-widest text-primary-600 mb-1">
-                  Validación de Ingreso — {activeOrderLabel}
-                </span>
-                <span className="text-sm font-black text-foreground truncate max-w-[300px]">{sourceSelection.label}</span>
-                <span className="text-[10px] font-bold text-muted-foreground">{sourceSelection.sublabel}</span>
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary-600 mb-1">
+                  Validación Grupal — {activeOrderLabel}
+                </p>
+                <p className="text-sm font-black text-foreground truncate max-w-[300px]">
+                  {sourceSelections.length === 1 ? sourceSelections[0].label : `${sourceSelections.length} Items seleccionados`}
+                </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-6 bg-neu-100 p-2 rounded-2xl">
-              <div className="flex flex-col gap-1 px-4">
-                <label className="text-[9px] font-black uppercase text-muted-foreground">Cantidad Recibida</label>
-                <input 
-                  type="number" 
-                  value={cantidad}
-                  onChange={(e) => setCantidad(Number(e.target.value))}
-                  className="w-24 bg-transparent border-b-2 border-primary-300 outline-none font-black text-lg text-primary-700 focus:border-primary-600 transition-all"
-                />
-                <span className="text-[8px] font-bold text-amber-600">Esperado: {sourceSelection.count}</span>
+            <div className="flex items-center gap-4 bg-neu-100 p-2 rounded-2xl">
+              <div className="flex flex-col gap-1 px-4 border-r-2 border-neu-300">
+                <span className="text-[8px] font-black uppercase text-muted-foreground">Productos a ingresar</span>
+                <span className="text-lg font-black text-primary-700">{sourceSelections.length}</span>
               </div>
-
-              <div className="h-10 w-px bg-neu-300 hidden md:block" />
-
-              <div className="flex flex-col gap-1 px-4">
-                <label className="text-[9px] font-black uppercase text-muted-foreground">Valor Unitario ($)</label>
-                <input 
-                  type="number" 
-                  value={precioValidado}
-                  onChange={(e) => setPrecioValidado(Number(e.target.value))}
-                  className="w-32 bg-transparent border-b-2 border-primary-300 outline-none font-black text-lg text-emerald-700 focus:border-primary-600 transition-all"
-                />
-                <span className="text-[8px] font-bold text-emerald-600">Pactado: ${sourceSelection.price}</span>
+              <div className="px-4">
+                <span className="text-[8px] font-black uppercase text-muted-foreground">Destino</span>
+                <p className="text-xs font-black truncate max-w-[150px]">{targetSelection.label}</p>
               </div>
             </div>
 
@@ -422,7 +430,7 @@ export function MovementCommandCenter({ bodegas }: Props) {
               disabled={processing}
               className="px-12 py-4 bg-primary-600 text-white font-black rounded-2xl hover:bg-primary-700 transition-all shadow-md active:scale-95 flex items-center gap-3"
             >
-              {processing ? 'Procesando...' : 'Confirmar e Ingresar'}
+              {processing ? '⏳ Procesando...' : `Confirmar Ingreso (${sourceSelections.length})`}
               <Plus className="w-5 h-5" />
             </button>
           </div>
@@ -432,7 +440,7 @@ export function MovementCommandCenter({ bodegas }: Props) {
               <LocationSummary 
                 label="Origen" 
                 path={source.breadcrumb} 
-                selection={sourceSelection?.label}
+                selection={sourceSelections.length > 0 ? `${sourceSelections.length} Items` : undefined}
                 icon={<Box className="w-5 h-5 text-amber-500" />}
               />
               <ChevronRight className="w-6 h-6 text-neu-300" />
@@ -445,7 +453,7 @@ export function MovementCommandCenter({ bodegas }: Props) {
             </div>
 
             <div className="flex items-center gap-3 w-full md:w-auto">
-              {mode !== 'AJUSTAR' && (
+              {mode !== 'AJUSTAR' && sourceSelections.length === 1 && (
                 <div className="flex-1 md:w-32 group">
                   <input 
                     type="number" 
@@ -458,10 +466,10 @@ export function MovementCommandCenter({ bodegas }: Props) {
               )}
               <button 
                 onClick={handleConfirm}
-                disabled={processing || (!sourceSelection && mode !== 'AJUSTAR') || !targetSelection}
+                disabled={processing || (sourceSelections.length === 0 && mode !== 'AJUSTAR') || !targetSelection}
                 className="flex-1 md:flex-none px-10 py-3 bg-primary-600 text-white font-black rounded-2xl hover:bg-primary-700 transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-2"
               >
-                {processing ? 'Procesando...' : 'Confirmar Movimiento'}
+                {processing ? 'Procesando...' : 'Confirmar e Ingresar'}
                 <Plus className="w-5 h-5" />
               </button>
             </div>

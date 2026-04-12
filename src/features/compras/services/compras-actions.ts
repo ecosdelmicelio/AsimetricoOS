@@ -554,6 +554,7 @@ export async function crearRecepcionesOCConBins(
         binId: selectedBinId || '',
         contenido,
       })
+    }
     
     // Auto-check status: Toda orden con ingresos pasa a 'en_proceso' automáticamente
     await updateOCStatus(recepcion.ocId, 'en_proceso')
