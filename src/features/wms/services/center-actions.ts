@@ -73,43 +73,96 @@ export async function getWarehouseHierarchy(bodegaId: string) {
 }
 
 /**
- * Obtiene estadísticas de inventario (Stock y Valor) para una bodega.
+ * Obtiene estadísticas de inventario (Stock, Valor, Capacidad) para una bodega.
  */
 export async function getWarehouseStats(bodegaId: string) {
   const supabase = db(await createClient())
-  const { data } = await supabase
+  
+  // 1. Valor e Inventario (desde recepciones)
+  const { data: recData } = await supabase
     .from('recepcion_oc')
     .select('cantidad_recibida, precio_unitario')
     .eq('bodega_id', bodegaId) as { data: any[] | null }
 
-  const totalUnits = (data ?? []).reduce((sum, item) => sum + Number(item.cantidad_recibida || 0), 0)
-  const totalValue = (data ?? []).reduce((sum, item) => {
+  const totalUnits = (recData ?? []).reduce((sum, item) => sum + Number(item.cantidad_recibida || 0), 0)
+  const totalValue = (recData ?? []).reduce((sum, item) => {
     const qty = Number(item.cantidad_recibida || 0)
     const price = Number(item.precio_unitario || 0)
     return sum + (qty * price)
   }, 0)
 
-  return { totalUnits, totalValue }
+  // 2. Capacidad y Ocupación (desde posiciones)
+  const { data: posData } = await supabase
+    .from('bodega_posiciones')
+    .select(`
+      capacidad_bines,
+      bines:bines(count)
+    `)
+    .eq('bodega_id', bodegaId) as { data: any[] | null }
+
+  const capacity = (posData ?? []).reduce((sum, p) => sum + (p.capacidad_bines || 0), 0)
+  const occupied = (posData ?? []).reduce((sum, p) => sum + (p.bines?.[0]?.count || 0), 0)
+
+  return { totalUnits, totalValue, capacity, occupied }
 }
 
 /**
- * Obtiene estadísticas de inventario para un bin específico.
+ * Obtiene estadísticas para una zona específica.
  */
-export async function getBinStats(binId: string) {
+export async function getZoneStats(zonaId: string) {
   const supabase = db(await createClient())
-  const { data } = await supabase
+  
+  const { data: posData } = await supabase
+    .from('bodega_posiciones')
+    .select(`
+      capacidad_bines,
+      bines:bines(count)
+    `)
+    .eq('zona_id', zonaId) as { data: any[] | null }
+
+  const capacity = (posData ?? []).reduce((sum, p) => sum + (p.capacidad_bines || 0), 0)
+  const occupied = (posData ?? []).reduce((sum, p) => sum + (p.bines?.[0]?.count || 0), 0)
+
+  return { capacity, occupied }
+}
+
+/**
+ * Obtiene estadísticas de inventario para una posición específica.
+ */
+export async function getPositionStats(posicionId: string) {
+  const supabase = db(await createClient())
+  
+  // 1. Valor e Inventario
+  const { data: recData } = await supabase
     .from('recepcion_oc')
     .select('cantidad_recibida, precio_unitario')
-    .eq('bin_id', binId) as { data: any[] | null }
+    .eq('posicion_id', posicionId) as { data: any[] | null }
 
-  const totalUnits = (data ?? []).reduce((sum, item) => sum + Number(item.cantidad_recibida || 0), 0)
-  const totalValue = (data ?? []).reduce((sum, item) => {
+  const totalUnits = (recData ?? []).reduce((sum, item) => sum + Number(item.cantidad_recibida || 0), 0)
+  const totalValue = (recData ?? []).reduce((sum, item) => {
     const qty = Number(item.cantidad_recibida || 0)
     const price = Number(item.precio_unitario || 0)
     return sum + (qty * price)
   }, 0)
 
-  return { totalUnits, totalValue }
+  // 2. Capacidad
+  const { data: posData } = await supabase
+    .from('bodega_posiciones')
+    .select('capacidad_bines')
+    .eq('id', posicionId)
+    .single() as { data: any | null }
+
+  const { count } = await supabase
+    .from('bines')
+    .select('*', { count: 'exact', head: true })
+    .eq('posicion_id', posicionId) as { count: number }
+
+  return { 
+    totalUnits, 
+    totalValue, 
+    capacity: posData?.capacidad_bines || 0,
+    occupied: count || 0
+  }
 }
 
 /**

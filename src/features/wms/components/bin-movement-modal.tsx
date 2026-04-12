@@ -139,7 +139,14 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
                         {item.icon === 'Shirt' ? <Shirt className="w-4 h-4 text-primary-600" /> : <Package className="w-4 h-4 text-slate-500" />}
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-[11px] font-black text-slate-800">{item.label}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-black text-slate-800">{item.label}</span>
+                          {item.price > 0 && (
+                            <span className="text-[8px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md border border-slate-200">
+                              Val: ${item.price.toLocaleString()}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide leading-tight whitespace-pre-line">{item.sublabel}</span>
                       </div>
                     </div>

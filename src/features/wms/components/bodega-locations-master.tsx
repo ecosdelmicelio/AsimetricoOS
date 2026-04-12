@@ -23,7 +23,8 @@ import {
 import { 
   getCenterPendingPurchases, 
   getWarehouseStats, 
-  getBinStats, 
+  getZoneStats,
+  getPositionStats, 
   processUnifiedMovement 
 } from '@/features/wms/services/center-actions'
 import { BinMovementModal } from './bin-movement-modal'
@@ -44,11 +45,12 @@ export function BodegaLocationsMaster() {
   const [selPosicionId, setSelPosicionId] = useState<string>('')
 
   // --- ESTADOS DE UI & OPERACIÓN ---
-  const [mode, setMode] = useState<'DISEÑO' | 'OPERACIÓN'>('OPERACIÓN')
+  const [mode, setMode] = useState<'DISE\u00D1O' | 'OPERACI\u00D3N'>('OPERACI\u00D3N')
   const [activeOC, setActiveOC] = useState<any>(null)
   const [pendientes, setPendientes] = useState<any[]>([])
-  const [bodegaStats, setBodegaStats] = useState<Record<string, { units: number, value: number }>>({})
-  const [posicionStats, setPosicionStats] = useState<Record<string, { units: number, value: number }>>({})
+  const [bodegaStats, setBodegaStats] = useState<Record<string, { units: number, value: number, capacity: number, occupied: number }>>({})
+  const [zonaStats, setZonaStats] = useState<Record<string, { capacity: number, occupied: number }>>({})
+  const [posicionStats, setPosicionStats] = useState<Record<string, { units: number, value: number, capacity: number, occupied: number }>>({})
   
   const [modalOpen, setModalOpen] = useState(false)
   const [modalTargetBin, setModalTargetBin] = useState<any>(null)
@@ -60,6 +62,7 @@ export function BodegaLocationsMaster() {
     bodega: '', 
     zona: '', 
     posicion: '', 
+    posicionCapacidad: 4,
     binSufijo: '', 
     binFijo: false,
     productoSeleccionado: null as any
@@ -89,12 +92,12 @@ export function BodegaLocationsMaster() {
   useEffect(() => {
     if (selPosicionId) {
       cargarBines(selPosicionId)
-      cargarBinStats(selPosicionId)
+      cargarPosicionStats(selPosicionId)
     }
   }, [selPosicionId])
 
   useEffect(() => {
-    if (mode === 'OPERACIÓN') {
+    if (mode === 'OPERACI\u00D3N') {
       cargarPendientes()
     }
   }, [mode])
@@ -108,13 +111,19 @@ export function BodegaLocationsMaster() {
   const cargarWarehouseStats = async (bid: string) => {
     if (!bid) return
     const s = await getWarehouseStats(bid)
-    setBodegaStats(prev => ({ ...prev, [bid]: { units: s.totalUnits, value: s.totalValue } }))
+    setBodegaStats(prev => ({ ...prev, [bid]: { units: s.totalUnits, value: s.totalValue, capacity: s.capacity, occupied: s.occupied } }))
   }
 
-  const cargarBinStats = async (pid: string) => {
+  const cargarZoneStats = async (zid: string) => {
+    if (!zid) return
+    const s = await getZoneStats(zid)
+    setZonaStats(prev => ({ ...prev, [zid]: { capacity: s.capacity, occupied: s.occupied } }))
+  }
+
+  const cargarPosicionStats = async (pid: string) => {
     if (!pid) return
-    const s = await getBinStats(pid)
-    setPosicionStats(prev => ({ ...prev, [pid]: { units: s.totalUnits, value: s.totalValue } }))
+    const s = await getPositionStats(pid)
+    setPosicionStats(prev => ({ ...prev, [pid]: { units: s.totalUnits, value: s.totalValue, capacity: s.capacity, occupied: s.occupied } }))
   }
   
   const cargarBodegas = async () => {
@@ -134,6 +143,9 @@ export function BodegaLocationsMaster() {
     const { getZonasByBodega } = await import('@/features/wms/services/zonas-actions')
     const data = await getZonasByBodega(bid)
     setZonas(data)
+    
+    // Cargar stats para cada zona
+    data.forEach(z => cargarZoneStats(z.id))
   }
 
   const cargarPosiciones = async (zid: string) => {
@@ -142,7 +154,7 @@ export function BodegaLocationsMaster() {
     setPosiciones(data)
     
     // Cargar stats para cada posición
-    data.forEach(p => cargarBinStats(p.id))
+    data.forEach(p => cargarPosicionStats(p.id))
   }
 
   const cargarBines = async (pid: string) => {
@@ -183,7 +195,8 @@ export function BodegaLocationsMaster() {
     const { error } = await crearPosicion({ 
       nombre: newNames.posicion, 
       zona_id: selZonaId,
-      bodega_id: selBodegaId 
+      bodega_id: selBodegaId,
+      capacidad_bines: newNames.posicionCapacidad || 4
     })
     if (error) alert(error)
     else {
@@ -239,6 +252,20 @@ export function BodegaLocationsMaster() {
 
   const posSeleccionada = posiciones.find(p => p.id === selPosicionId)
 
+  // --- COMPONENTE INTERNO: BARRA DE CAPACIDAD ---
+  const CapacityBar = ({ occupied, capacity, className = "" }: { occupied: number, capacity: number, className?: string }) => {
+    const pct = capacity > 0 ? Math.min(100, (occupied / capacity) * 100) : 0
+    let color = 'bg-emerald-500'
+    if (pct >= 90) color = 'bg-red-500'
+    else if (pct >= 70) color = 'bg-amber-500'
+
+    return (
+      <div className={`w-full h-1 bg-slate-100 rounded-full overflow-hidden ${className}`}>
+        <div className={`h-full ${color} transition-all duration-500`} style={{ width: `${pct}%` }} />
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-full bg-[#f1f5f9] p-4 gap-4 font-inter overflow-hidden select-none">
       
@@ -260,14 +287,14 @@ export function BodegaLocationsMaster() {
         <div className="flex items-center gap-4">
           <div className="flex bg-slate-100 p-1 rounded-[16px]">
             <button 
-              onClick={() => setMode('OPERACIÓN')}
-              className={`px-6 py-2 rounded-[12px] text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${mode === 'OPERACIÓN' ? 'bg-primary-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'}`}
+              onClick={() => setMode('OPERACI\u00D3N')}
+              className={`px-6 py-2 rounded-[12px] text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${mode === 'OPERACI\u00D3N' ? 'bg-primary-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'}`}
             >
               <Package className="w-3.5 h-3.5" /> Operación
             </button>
             <button 
-              onClick={() => setMode('DISEÑO')}
-              className={`px-6 py-2 rounded-[12px] text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${mode === 'DISEÑO' ? 'bg-slate-800 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'}`}
+              onClick={() => setMode('DISE\u00D1O')}
+              className={`px-6 py-2 rounded-[12px] text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${mode === 'DISE\u00D1O' ? 'bg-slate-800 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'}`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" /> Diseño
             </button>
@@ -328,7 +355,16 @@ export function BodegaLocationsMaster() {
                      </div>
                    )}
                  </div>
-                 <p className="text-[9px] font-black uppercase tracking-tighter text-center leading-none w-full truncate px-1">{b.nombre}</p>
+                 <div className="w-full px-4 text-center">
+                   <p className="text-[9px] font-black uppercase tracking-tighter leading-none truncate mb-1">{b.nombre}</p>
+                   {bodegaStats[b.id] && (
+                     <CapacityBar 
+                       occupied={bodegaStats[b.id].occupied} 
+                       capacity={bodegaStats[b.id].capacity} 
+                       className={selBodegaId === b.id ? "opacity-40" : ""}
+                     />
+                   )}
+                 </div>
                </button>
              ))}
            </div>
@@ -354,7 +390,16 @@ export function BodegaLocationsMaster() {
                  className={`w-full py-4 px-2 rounded-[24px] flex flex-col items-center gap-2 transition-all border ${selZonaId === z.id ? 'bg-slate-800 border-slate-600 shadow-lg text-white' : 'bg-white border-slate-100 hover:bg-slate-50 text-slate-600'}`}
                >
                  <Layers className={`w-6 h-6 ${selZonaId === z.id ? 'text-white' : 'text-slate-300'}`} />
-                 <p className="text-[9px] font-black uppercase tracking-tighter text-center leading-none w-full truncate px-1">{z.nombre}</p>
+                 <div className="w-full px-4 text-center">
+                   <p className="text-[9px] font-black uppercase tracking-tighter leading-none truncate mb-1">{z.nombre}</p>
+                   {zonaStats[z.id] && (
+                     <CapacityBar 
+                       occupied={zonaStats[z.id].occupied} 
+                       capacity={zonaStats[z.id].capacity} 
+                       className={selZonaId === z.id ? "opacity-30" : ""}
+                     />
+                   )}
+                 </div>
                </button>
              ))}
            </div>
@@ -364,14 +409,18 @@ export function BodegaLocationsMaster() {
         <div className="w-[18%] flex flex-col bg-white rounded-[32px] border border-slate-200 p-4 shadow-md overflow-hidden">
            <div className="flex items-center justify-between mb-4">
              <h3 className="text-[9px] font-black uppercase tracking-widest text-slate-800">Posiciones</h3>
-             {mode === 'DISEÑO' && (
+             {mode === 'DISE\u00D1O' && (
                <button disabled={!selZonaId} onClick={() => setShowForms({...showForms, posicion: !showForms.posicion})} className="p-1.5 bg-primary-600 text-white rounded-lg hover:scale-110 transition-all disabled:opacity-20"><Plus className="w-3 h-3"/></button>
              )}
            </div>
            {showForms.posicion && (
              <div className="mb-4 p-3 bg-primary-50 rounded-2xl border border-primary-200">
-               <input autoFocus placeholder="A1, Estante..." className="w-full bg-white px-2 py-1.5 rounded-lg text-xs font-bold outline-none mb-2" value={newNames.posicion} onChange={e=>setNewNames({...newNames, posicion: e.target.value})}/>
-               <button onClick={handleCreatePosicion} className="w-full text-[9px] font-black uppercase py-2 bg-primary-600 text-white rounded-xl">Crear Posición</button>
+               <input autoFocus placeholder="Nombre (A1, B2...)" className="w-full bg-white px-2 py-1.5 rounded-lg text-xs font-bold outline-none mb-2" value={newNames.posicion} onChange={e=>setNewNames({...newNames, posicion: e.target.value})}/>
+               <div className="flex items-center gap-2 mb-2">
+                 <span className="text-[8px] font-black uppercase text-slate-400">Capacidad:</span>
+                 <input type="number" className="w-12 bg-white px-2 py-1 rounded-lg text-[10px] font-black outline-none border border-slate-100" value={(newNames as any).posicionCapacidad || 4} onChange={e=>setNewNames({...newNames, posicionCapacidad: parseInt(e.target.value)}) as any}/>
+               </div>
+               <button onClick={handleCreatePosicion} className="w-full text-[9px] font-black uppercase py-2 bg-primary-600 text-white rounded-xl shadow-md">Crear Posición</button>
              </div>
            )}
            <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-1">
@@ -385,17 +434,27 @@ export function BodegaLocationsMaster() {
                  <div className={`p-2 rounded-xl border relative ${selPosicionId === pos.id ? 'bg-primary-600 text-white border-primary-400' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
                     <MapPin className="w-4 h-4" />
                     {posicionStats[pos.id] && (
-                      <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full border-2 border-white" />
+                      <div className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-white ${posicionStats[pos.id].occupied >= posicionStats[pos.id].capacity ? 'bg-red-500' : 'bg-green-500'}`} />
                     )}
                  </div>
-                 <div className="flex-1 overflow-hidden">
-                   <div className="flex items-center justify-between gap-1">
+                 <div className="flex-1 overflow-hidden text-left">
+                   <div className="flex items-center justify-between gap-1 mb-1">
                      <p className="text-[10px] font-black text-slate-800 uppercase truncate leading-none">{pos.nombre || 'POSICIÓN'}</p>
                      {posicionStats[pos.id] && (
                        <span className="text-[8px] font-black text-green-600">${(posicionStats[pos.id].value / 1000).toFixed(1)}k</span>
                      )}
                    </div>
-                   <p className="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{pos.codigo}</p>
+                   {posicionStats[pos.id] && (
+                     <CapacityBar 
+                       occupied={posicionStats[pos.id].occupied} 
+                       capacity={posicionStats[pos.id].capacity}
+                       className="mb-1"
+                     />
+                   )}
+                   <div className="flex items-center justify-between text-[7px] font-bold text-slate-400 uppercase tracking-tighter">
+                     <span>{pos.codigo}</span>
+                     {posicionStats[pos.id] && <span>{posicionStats[pos.id].occupied}/{posicionStats[pos.id].capacity} bines</span>}
+                   </div>
                  </div>
                </button>
              ))}
@@ -422,7 +481,7 @@ export function BodegaLocationsMaster() {
                       <div className="flex items-center gap-2 mt-0.5">
                          <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">ID: {posSeleccionada?.codigo}</span>
                          <span className="w-1 h-1 bg-primary-500 rounded-full" />
-                         <span className="text-[8px] font-black text-primary-500 uppercase tracking-[0.1em]">Val: ${posicionStats[posSeleccionada.id]?.value.toLocaleString() || 0}</span>
+                         <span className="text-[8px] font-black text-primary-500 uppercase tracking-[0.1em]">Val: ${(posicionStats[posSeleccionada?.id || '']?.value || 0).toLocaleString()}</span>
                       </div>
                     </div>
                  </div>
@@ -430,7 +489,7 @@ export function BodegaLocationsMaster() {
 
                {/* PANEL DE OPERACIÓN DINÁMICO */}
                <div className="mb-6">
-                 {mode === 'DISEÑO' ? (
+                 {mode === 'DISE\u00D1O' ? (
                     <div className="bg-slate-800/80 p-5 rounded-3xl border border-slate-700 space-y-4">
                        <div className="relative">
                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -467,7 +526,7 @@ export function BodegaLocationsMaster() {
                          <button 
                             onClick={() => {
                               setNewNames(prev => ({ ...prev, binSufijo: activeOC.codigo.split('-').pop() || 'RC', binFijo: false }))
-                              setMode('DISEÑO')
+                              setMode('DISE\u00D1O')
                             }}
                             className="p-2.5 bg-white text-amber-600 rounded-xl hover:scale-110 transition-all shadow-md"><Plus className="w-4 h-4 text-black" /></button>
                        </div>
@@ -500,7 +559,7 @@ export function BodegaLocationsMaster() {
                        </div>
                        
                        <div className="flex items-center gap-2">
-                          {mode === 'OPERACIÓN' && activeOC && (
+                          {mode === 'OPERACI\u00D3N' && activeOC && (
                             <button onClick={()=>{setModalTargetBin(bin); setModalOpen(true)}} className="px-4 py-2 bg-amber-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg hover:bg-amber-500 active:scale-95 transition-all flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" /> Recibir</button>
                           )}
                           <button onClick={()=>handleEliminarBin(bin.id)} className="p-2 text-slate-600 hover:text-red-400 transition-all opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
@@ -530,7 +589,7 @@ export function BodegaLocationsMaster() {
         targetBin={modalTargetBin}
         onSuccess={() => {
           cargarBines(selPosicionId)
-          cargarBinStats(selPosicionId)
+          cargarPosicionStats(selPosicionId)
           cargarWarehouseStats(selBodegaId)
           cargarPendientes()
           setActiveOC(null)
