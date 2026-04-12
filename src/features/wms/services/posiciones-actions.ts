@@ -148,3 +148,66 @@ export async function getSugerenciaPosicion(bodegaId: string): Promise<{ data: P
 
   return { data: sugerencia || null }
 }
+
+/**
+ * Sugiere posiciones basadas en afinidad (productos similares en la misma zona).
+ */
+export async function getSugerenciaPosicionInteligente(
+  bodegaId: string, 
+  binId: string
+): Promise<{ data: string[]; error?: string }> {
+  try {
+    const supabase = db(await createClient())
+    
+    // 1. Obtener contenido del bin actual
+    const { getContenidoBin } = await import('@/features/bines/services/bines-actions')
+    const contenido = await getContenidoBin(binId)
+    if (!contenido || contenido.items.length === 0) {
+      return { data: [] }
+    }
+
+    const itemPrincipal = contenido.items[0]
+    
+    // 2. Obtener categorías del contenido actual
+    const { data: productosBin } = await supabase
+      .from('productos')
+      .select('id, categoria')
+      .in('id', contenido.items.map(i => i.producto_id)) as { data: any[] | null }
+
+    const categorias = Array.from(new Set((productosBin || []).map(p => p.categoria).filter(Boolean)))
+    const productIds = (productosBin || []).map(p => p.id)
+
+    // 3. Buscar otros bines que tengan productos de la misma categoría o la misma referencia
+    let query = supabase
+      .from('recepcion_oc')
+      .select('bin_id')
+      .eq('bodega_id', bodegaId)
+      .neq('bin_id', binId)
+
+    if (categorias.length > 0) {
+      // Búsqueda por misma categoría o mismas referencias exactas
+      query = query.or(`producto_id.in.(${productIds.join(',')})`) // Prioridad 1: referencias exactas
+    }
+
+    const { data: binesSimilares } = await query.limit(30) as { data: any[] | null }
+
+    if (!binesSimilares || binesSimilares.length === 0) {
+      // Fallback: Si no hay afinidad exacta, buscar por categorías enlazadas si es posible
+      const sug = await getSugerenciaPosicion(bodegaId)
+      return { data: sug.data ? [sug.data.id] : [] }
+    }
+
+    // 4. Extraer las posiciones de esos bines
+    const binIds = binesSimilares.map(b => b.bin_id)
+    const { data: posSimilares } = await supabase
+      .from('bines')
+      .select('posicion_id')
+      .in('id', binIds) as { data: any[] | null }
+
+    const suggestedPosIds = Array.from(new Set((posSimilares || []).map(p => p.posicion_id).filter(Boolean)))
+    
+    return { data: suggestedPosIds as string[] }
+  } catch (err: any) {
+    return { error: err.message, data: [] }
+  }
+}

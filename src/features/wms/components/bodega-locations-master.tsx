@@ -18,7 +18,9 @@ import {
   SlidersHorizontal,
   ShoppingCart,
   CheckCircle2,
-  ExternalLink
+  ExternalLink,
+  Wrench,
+  SquareArrowOutUpRight
 } from 'lucide-react'
 import { 
   getCenterPendingPurchases, 
@@ -28,6 +30,8 @@ import {
   processUnifiedMovement 
 } from '@/features/wms/services/center-actions'
 import { BinMovementModal } from './bin-movement-modal'
+import { BinAdjustmentModal } from './bin-adjustment-modal'
+import { TransferConfirmationModal } from './transfer-confirmation-modal'
 import type { Bodega, Zona, Posicion } from '@/features/wms/types'
 import type { Bin } from '@/features/bines/types'
 
@@ -48,6 +52,10 @@ export function BodegaLocationsMaster() {
   const [mode, setMode] = useState<'DISE\u00D1O' | 'OPERACI\u00D3N'>('OPERACI\u00D3N')
   const [activeOC, setActiveOC] = useState<any>(null)
   const [pendientes, setPendientes] = useState<any[]>([])
+  const [transferSource, setTransferSource] = useState<any>(null)
+  const [suggestedPos, setSuggestedPos] = useState<string[]>([])
+  const [adjustmentTarget, setAdjustmentTarget] = useState<any>(null)
+  const [confirmTransfer, setConfirmTransfer] = useState<{ source: any, target: any } | null>(null)
   const [bodegaStats, setBodegaStats] = useState<Record<string, { units: number, value: number, capacity: number, occupied: number }>>({})
   const [zonaStats, setZonaStats] = useState<Record<string, { capacity: number, occupied: number }>>({})
   const [posicionStats, setPosicionStats] = useState<Record<string, { units: number, value: number, capacity: number, occupied: number }>>({})
@@ -97,15 +105,21 @@ export function BodegaLocationsMaster() {
   }, [selPosicionId])
 
   useEffect(() => {
-    if (mode === 'OPERACI\u00D3N') {
+    if (mode === 'OPERACI\u00D3N' && selBodegaId) {
       cargarPendientes()
     }
-  }, [mode])
+    // Limpiar estados de transferencia al cambiar de modo
+    if (mode === 'DISE\u00D1O') {
+      setTransferSource(null)
+      setSuggestedPos([])
+    }
+  }, [mode, selBodegaId])
 
   // --- FUNCIONES DE CARGA ---
   const cargarPendientes = async () => {
-    const ocs = await getCenterPendingPurchases()
-    setPendientes(ocs)
+    const { getCenterPendingOperations } = await import('@/features/wms/services/center-actions')
+    const data = await getCenterPendingOperations(selBodegaId)
+    setPendientes(data)
   }
 
   const cargarWarehouseStats = async (bid: string) => {
@@ -161,6 +175,18 @@ export function BodegaLocationsMaster() {
     const { getBinesByPosicion } = await import('@/features/bines/services/bines-actions')
     const data = await getBinesByPosicion(pid)
     setBines(data)
+  }
+
+  const handleStartTransfer = async (bin: any) => {
+    setTransferSource(bin)
+    const { getSugerenciaPosicionInteligente } = await import('@/features/wms/services/posiciones-actions')
+    const { data } = await getSugerenciaPosicionInteligente(selBodegaId, bin.id)
+    setSuggestedPos(data || [])
+  }
+
+  const handleConfirmTransfer = (targetPos: any) => {
+    if (!transferSource) return
+    setConfirmTransfer({ source: transferSource, target: targetPos })
   }
 
   // --- EVENT HANDLERS (Iguales logicamente, solo limpieza) ---
@@ -358,11 +384,14 @@ export function BodegaLocationsMaster() {
                  <div className="w-full px-4 text-center">
                    <p className="text-[9px] font-black uppercase tracking-tighter leading-none truncate mb-1">{b.nombre}</p>
                    {bodegaStats[b.id] && (
-                     <CapacityBar 
-                       occupied={bodegaStats[b.id].occupied} 
-                       capacity={bodegaStats[b.id].capacity} 
-                       className={selBodegaId === b.id ? "opacity-40" : ""}
-                     />
+                     <>
+                       <CapacityBar 
+                        occupied={bodegaStats[b.id].occupied} 
+                        capacity={bodegaStats[b.id].capacity} 
+                        className={selBodegaId === b.id ? "opacity-40" : ""}
+                      />
+                      <p className="text-[7px] font-bold opacity-40 mt-1">{bodegaStats[b.id].occupied}/{bodegaStats[b.id].capacity} Bines</p>
+                    </>
                    )}
                  </div>
                </button>
@@ -393,11 +422,14 @@ export function BodegaLocationsMaster() {
                  <div className="w-full px-4 text-center">
                    <p className="text-[9px] font-black uppercase tracking-tighter leading-none truncate mb-1">{z.nombre}</p>
                    {zonaStats[z.id] && (
-                     <CapacityBar 
-                       occupied={zonaStats[z.id].occupied} 
-                       capacity={zonaStats[z.id].capacity} 
-                       className={selZonaId === z.id ? "opacity-30" : ""}
-                     />
+                     <>
+                       <CapacityBar 
+                        occupied={zonaStats[z.id].occupied} 
+                        capacity={zonaStats[z.id].capacity} 
+                        className={selZonaId === z.id ? "opacity-30" : ""}
+                      />
+                      <p className="text-[7px] font-bold opacity-30 mt-1">{zonaStats[z.id].occupied}/{zonaStats[z.id].capacity} Bines</p>
+                    </>
                    )}
                  </div>
                </button>
@@ -408,10 +440,11 @@ export function BodegaLocationsMaster() {
         {/* COL 3: POSICIONES (18%) */}
         <div className="w-[18%] flex flex-col bg-white rounded-[32px] border border-slate-200 p-4 shadow-md overflow-hidden">
            <div className="flex items-center justify-between mb-4">
-             <h3 className="text-[9px] font-black uppercase tracking-widest text-slate-800">Posiciones</h3>
-             {mode === 'DISE\u00D1O' && (
-               <button disabled={!selZonaId} onClick={() => setShowForms({...showForms, posicion: !showForms.posicion})} className="p-1.5 bg-primary-600 text-white rounded-lg hover:scale-110 transition-all disabled:opacity-20"><Plus className="w-3 h-3"/></button>
-             )}
+              <h3 className="text-[9px] font-black uppercase tracking-widest text-slate-800">Posiciones</h3>
+              <button onClick={() => {
+                if(!selZonaId) alert('Selecciona una Zona primero para crear posiciones.');
+                else setShowForms({...showForms, posicion: !showForms.posicion});
+              }} className={`p-1.5 bg-primary-600 text-white rounded-lg hover:scale-110 transition-all ${!selZonaId ? 'opacity-30' : ''}`}><Plus className="w-3 h-3"/></button>
            </div>
            {showForms.posicion && (
              <div className="mb-4 p-3 bg-primary-50 rounded-2xl border border-primary-200">
@@ -428,15 +461,18 @@ export function BodegaLocationsMaster() {
               posiciones.map(pos => (
                <button 
                  key={pos.id} 
-                 onClick={() => setSelPosicionId(pos.id)}
-                 className={`w-full p-4 rounded-[24px] flex items-center gap-4 transition-all border ${selPosicionId === pos.id ? 'bg-primary-50 border-primary-500 ring-4 ring-primary-100' : 'bg-white border-slate-100 hover:border-primary-200'}`}
+                 onClick={() => transferSource ? handleConfirmTransfer(pos) : setSelPosicionId(pos.id)}
+                 className={`w-full p-4 rounded-[24px] flex items-center gap-4 transition-all border ${selPosicionId === pos.id ? 'bg-primary-50 border-primary-500 ring-4 ring-primary-100' : 'bg-white border-slate-100 hover:border-primary-200'} ${transferSource && !suggestedPos.includes(pos.id) ? 'opacity-40 grayscale' : ''}`}
                >
-                 <div className={`p-2 rounded-xl border relative ${selPosicionId === pos.id ? 'bg-primary-600 text-white border-primary-400' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
-                    <MapPin className="w-4 h-4" />
-                    {posicionStats[pos.id] && (
-                      <div className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-white ${posicionStats[pos.id].occupied >= posicionStats[pos.id].capacity ? 'bg-red-500' : 'bg-green-500'}`} />
-                    )}
-                 </div>
+                  <div className={`p-2 rounded-xl border relative ${selPosicionId === pos.id ? 'bg-primary-600 text-white border-primary-400' : 'bg-slate-50 text-slate-400 border-slate-100'} ${suggestedPos.includes(pos.id) ? 'ring-2 ring-amber-400 ring-offset-2' : ''}`}>
+                     <MapPin className="w-4 h-4" />
+                     {suggestedPos.includes(pos.id) && (
+                       <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-[6px] font-black px-1 rounded-sm uppercase whitespace-nowrap shadow-sm">Sug. Afin.</div>
+                     )}
+                     {posicionStats[pos.id] && (
+                       <div className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-white ${posicionStats[pos.id].occupied >= posicionStats[pos.id].capacity ? 'bg-red-500' : 'bg-green-500'}`} />
+                     )}
+                  </div>
                  <div className="flex-1 overflow-hidden text-left">
                    <div className="flex items-center justify-between gap-1 mb-1">
                      <p className="text-[10px] font-black text-slate-800 uppercase truncate leading-none">{pos.nombre || 'POSICIÓN'}</p>
@@ -452,7 +488,6 @@ export function BodegaLocationsMaster() {
                      />
                    )}
                    <div className="flex items-center justify-between text-[7px] font-bold text-slate-400 uppercase tracking-tighter">
-                     <span>{pos.codigo}</span>
                      {posicionStats[pos.id] && <span>{posicionStats[pos.id].occupied}/{posicionStats[pos.id].capacity} bines</span>}
                    </div>
                  </div>
@@ -464,13 +499,37 @@ export function BodegaLocationsMaster() {
         {/* COL 4: BINES & OPERACIÓN (36%) - EL CORAZÓN */}
         <div className="w-[36%] flex flex-col bg-slate-900 rounded-[32px] p-6 shadow-2xl relative overflow-hidden">
           <div className="absolute top-[-10%] right-[-10%] w-60 h-60 bg-primary-600/10 rounded-full blur-3xl pointer-events-none" />
-           {!selPosicionId ? (
-             <div className="h-full flex flex-col items-center justify-center text-slate-600 space-y-4">
-               <Archive className="w-12 h-12 opacity-20" />
-               <p className="text-[9px] font-black uppercase tracking-[0.2em]">Select Position To Operate</p>
-             </div>
-           ) : (
-             <>
+                <div className="flex items-center justify-between mb-8">
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-1">
+                        {transferSource ? 'Destino de Traslado' : 'Contenedores'}
+                      </h3>
+                      <h2 className="text-2xl font-black text-white tracking-tighter">
+                        {selPosicionId ? posiciones.find(p=>p.id===selPosicionId)?.nombre : transferSource ? 'Selecciona Destino' : 'Selecciona Posición'}
+                      </h2>
+                    </div>
+                    {selPosicionId && (
+                       <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 p-2 rounded-2xl shadow-inner">
+                          <MapPin className="w-3.5 h-3.5 text-primary-500" />
+                          <span className="text-[10px] font-black text-slate-400 uppercase">{posSeleccionada?.nombre}</span>
+                       </div>
+                    )}
+                </div>
+
+                {!selPosicionId ? (
+                   <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
+                      <div className={`w-24 h-24 rounded-[40px] flex items-center justify-center mb-6 border-2 border-dashed ${transferSource ? 'bg-primary-500/10 border-primary-500/40 animate-pulse' : 'bg-slate-900 border-slate-800'}`}>
+                        {transferSource ? <SquareArrowOutUpRight className="w-10 h-10 text-primary-500" /> : <MapPin className="w-10 h-10 text-slate-800" />}
+                      </div>
+                      <h4 className="text-lg font-black text-white mb-2">{transferSource ? '¿Dónde quieres soltarlo?' : 'Área de Operación'}</h4>
+                      <p className="text-[11px] font-medium text-slate-500 max-w-[240px] leading-relaxed">
+                        {transferSource 
+                          ? `Has seleccionado el bin ${transferSource.codigo}. Navega por el mapa y elige una posición destino para completar el traslado.` 
+                          : 'Selecciona una posición en el mapa para gestionar sus bines activos o realizar ingresos.'}
+                      </p>
+                   </div>
+                ) : (
+                  <>
                <div className="mb-6 flex items-center justify-between">
                  <div className="flex items-center gap-3">
                     <div className="p-3 bg-slate-800 rounded-2xl border border-slate-700">
@@ -558,12 +617,18 @@ export function BodegaLocationsMaster() {
                          </div>
                        </div>
                        
-                       <div className="flex items-center gap-2">
+                       <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
                           {mode === 'OPERACI\u00D3N' && activeOC && (
-                            <button onClick={()=>{setModalTargetBin(bin); setModalOpen(true)}} className="px-4 py-2 bg-amber-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg hover:bg-amber-500 active:scale-95 transition-all flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" /> Recibir</button>
+                            <button onClick={()=>{setModalTargetBin(bin); setModalOpen(true)}} className="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg hover:bg-amber-500 active:scale-95 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Recibir</button>
                           )}
-                          <button onClick={()=>handleEliminarBin(bin.id)} className="p-2 text-slate-600 hover:text-red-400 transition-all opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
-                       </div>
+                          {mode === 'OPERACI\u00D3N' && !activeOC && !transferSource && (
+                            <>
+                              <button onClick={()=>setAdjustmentTarget(bin)} title="Ajustar Inventario" className="p-2 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600"><Wrench className="w-3.5 h-3.5" /></button>
+                              <button onClick={()=>handleStartTransfer(bin)} title="Mover Bin" className="p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500"><SquareArrowOutUpRight className="w-3.5 h-3.5" /></button>
+                            </>
+                          )}
+                          <button onClick={()=>handleEliminarBin(bin.id)} className="p-2 text-slate-600 hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
+                        </div>
                     </div>
                   ))}
                </div>
@@ -595,6 +660,57 @@ export function BodegaLocationsMaster() {
           setActiveOC(null)
         }}
       />
+
+      {/* MODAL DE AJUSTES */}
+      <BinAdjustmentModal 
+        isOpen={!!adjustmentTarget}
+        onClose={() => setAdjustmentTarget(null)}
+        bin={adjustmentTarget}
+        onSuccess={() => {
+          cargarBines(selPosicionId)
+          cargarPosicionStats(selPosicionId)
+        }}
+      />
+
+      {/* MODAL CONFIRMAR TRASLADO */}
+      <TransferConfirmationModal 
+        isOpen={!!confirmTransfer}
+        onClose={() => setConfirmTransfer(null)}
+        sourceBin={confirmTransfer?.source}
+        targetPos={confirmTransfer?.target}
+        onSuccess={() => {
+          setTransferSource(null)
+          setSuggestedPos([])
+          cargarBines(selPosicionId)
+          cargarWarehouseStats(selBodegaId)
+          // Recargar destino si es posible
+          if (confirmTransfer?.target?.id) cargarPosicionStats(confirmTransfer.target.id)
+          setConfirmTransfer(null)
+        }}
+      />
+
+      {/* FLOATING ACTION BAR: TRANSFER MODE */}
+      {transferSource && (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-10 duration-500">
+          <div className="bg-slate-900 border border-slate-700 px-8 py-4 rounded-3xl shadow-2xl flex items-center gap-8 ring-8 ring-primary-500/10">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center animate-bounce"><SquareArrowOutUpRight className="w-5 h-5 text-white" /></div>
+              <div>
+                <p className="text-[10px] font-black text-primary-400 uppercase tracking-widest leading-none">Modo Traslado Activo</p>
+                <h6 className="text-sm font-black text-white leading-tight">Moviendo Bin: {transferSource.codigo}</h6>
+              </div>
+            </div>
+            <div className="h-10 w-px bg-slate-700 mx-2" />
+            <div className="text-[10px] font-bold text-slate-400 max-w-[200px] leading-tight">Haz clic en la posición o bin destino para confirmar el traslado.</div>
+            <button 
+              onClick={() => {setTransferSource(null); setSuggestedPos([])}}
+              className="px-6 py-2.5 bg-red-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500 transition-all font-black shadow-lg shadow-red-900/40"
+            >
+              Cancelar Movimiento
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

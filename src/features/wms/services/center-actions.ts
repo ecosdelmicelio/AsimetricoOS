@@ -26,23 +26,39 @@ function db(supabase: unknown): any {
 }
 
 /**
- * Obtiene órdenes de compra pendientes de recibir.
- * Muestra información de estado y tipo para facilitar la identificación.
+ * Obtiene operaciones pendientes de recibir (OCs y Traslados entrantes).
  */
-export async function getCenterPendingPurchases(): Promise<any[]> {
-  const all = await getOrdenesCompra()
+export async function getCenterPendingOperations(bodegaId: string): Promise<any[]> {
+  const [purchases, transfers] = await Promise.all([
+    getOrdenesCompra(),
+    import('@/features/wms/services/traslados-actions').then(m => m.getTraslados(bodegaId))
+  ])
   
-  // Filtramos las que ya están completadas o finalizadas
-  const pending = all.filter(oc => {
-    const status = (oc.estado_documental || 'pendiente').toLowerCase()
-    return !['completada', 'finalizada'].includes(status)
-  })
+  // 1. OCs Pendientes
+  const pendingOCs = purchases
+    .filter(oc => !['completada', 'finalizada'].includes((oc.estado_documental || 'pendiente').toLowerCase()))
+    .map(oc => ({
+      id: oc.id,
+      tipo: 'OC',
+      codigo: oc.codigo,
+      label_formatted: oc.codigo,
+      sublabel_formatted: `${oc.terceros?.nombre || 'Proveedor'} — ${oc.tipo === 'materia_prima' ? '📦 MP' : '👕 PT'}`,
+      metadata: oc
+    }))
 
-  return pending.map(oc => ({
-    ...oc,
-    label_formatted: oc.codigo,
-    sublabel_formatted: `${oc.terceros?.nombre || 'Proveedor'} — ${oc.tipo === 'materia_prima' ? '📦 MP' : '👕 PT'} (${oc.estado_documental || 'Pendiente'})`
-  }))
+  // 2. Traslados entrantes pendientes
+  const pendingTRs = transfers
+    .filter(tr => tr.bodega_destino_id === bodegaId && tr.estado === 'pendiente')
+    .map(tr => ({
+      id: tr.id,
+      tipo: 'TRS',
+      codigo: tr.codigo,
+      label_formatted: tr.codigo,
+      sublabel_formatted: `Traslado Interno — Desde: ${tr.bodega_origen_id.substring(0,8)}`,
+      metadata: tr
+    }))
+
+  return [...pendingOCs, ...pendingTRs]
 }
 
 /**
@@ -376,28 +392,48 @@ export async function processUnifiedMovement(input: {
 
     case 'TRASLADAR': {
       const { crearTraslado, confirmarTraslado } = await import('@/features/wms/services/traslados-actions')
+      const meta = metadata || {}
+      
+      const tipo = cantidad === 0 ? 'bin_completo' : 'bin_a_bin'
+      
+      // FIX: Si es traslado de bin completo a posición, bin_destino_id debe ser null para evitar FK Error.
+      // Guardamos la posición destino en las notas para que confirmarTraslado la use.
       const res = await crearTraslado({
-        tipo: 'bin_a_bin',
-        bodega_origen_id: '...', 
-        bodega_destino_id: '...',
+        tipo,
+        bodega_origen_id: bodegaId || '', 
+        bodega_destino_id: bodegaId || '',
         bin_origen_id: sourceId,
-        bin_destino_id: targetId,
-        items: [{ bin_id: sourceId, cantidad, unidad: 'unidades' }],
-        notas
+        bin_destino_id: tipo === 'bin_completo' ? undefined : targetId, 
+        items: cantidad > 0 ? [{ 
+          producto_id: meta.producto_id, 
+          talla: meta.talla, 
+          cantidad, 
+          unidad: 'unidades' 
+        }] : [],
+        notas: (notas || 'Traslado rápido Command Center') + (tipo === 'bin_completo' ? ` [TARGET_POS:${targetId}]` : '')
       })
+      
       if (res.data) await confirmarTraslado(res.data.id)
       return res
     }
 
     case 'AJUSTAR': {
       const { crearAjuste } = await import('@/features/wms/services/ajustes-actions')
-      const isInput = sourceId.includes('found') || sourceId.includes('plus')
+      const meta = metadata || {}
+      const isInput = metadata?.adjustmentType === 'entrada'
+      
       return await crearAjuste({
         tipo: isInput ? 'entrada' : 'salida',
-        bodegaId: '...',
-        binId: isInput ? targetId : sourceId,
-        notas: notas || 'Ajuste visual Command Center',
-        items: [{ cantidad, unidad: 'unidades' }]
+        bodegaId: bodegaId || '',
+        binId: targetId, // El bin donde se hace el ajuste
+        notas: notas || 'Ajuste manual desde Command Center',
+        items: [{ 
+          productoId: meta.producto_id, 
+          talla: meta.talla, 
+          cantidad, 
+          unidad: 'unidades',
+          costoUnitario: meta.precio_unitario || 0
+        }]
       })
     }
 

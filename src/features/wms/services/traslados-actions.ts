@@ -275,10 +275,15 @@ export async function confirmarTraslado(
       },
     ])
 
-    // Actualizar bodega_id del bin
+    // Actualizar bodega_id y posicion_id del bin
+    const targetPosId = traslado.notas?.match(/\[TARGET_POS:(.*?)\]/)?.[1]
+    
     const { error: binError } = await supabase
       .from('bines')
-      .update({ bodega_id: traslado.bodega_destino })
+      .update({ 
+        bodega_id: traslado.bodega_destino,
+        posicion_id: targetPosId || undefined
+      })
       .eq('id', traslado.bin_origen_id) as any
 
     if (binError) {
