@@ -214,8 +214,11 @@ export function BodegaLocationsMaster() {
         <div className="md:col-span-2 flex flex-col gap-3 bg-white/50 rounded-[32px] border border-slate-200 p-4 shadow-sm">
           <div className="flex items-center justify-between px-2 mb-2">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Bodegas</h3>
-            <button onClick={() => setShowForms({...showForms, bodega: !showForms.bodega})} className="p-1 hover:bg-primary-50 text-primary-600 rounded-lg transition-all">
-              <Plus className="w-4 h-4" />
+            <button 
+              onClick={() => setShowForms({...showForms, bodega: !showForms.bodega})} 
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary-600 text-white rounded-xl text-[8px] font-black uppercase shadow-md shadow-primary-100 hover:bg-primary-700 active:scale-95 transition-all"
+            >
+              <Plus className="w-3 h-3" /> Nueva
             </button>
           </div>
           {showForms.bodega && (
@@ -249,8 +252,12 @@ export function BodegaLocationsMaster() {
         <div className="md:col-span-2 flex flex-col gap-3 bg-white/50 rounded-[32px] border border-slate-200 p-4 shadow-sm">
           <div className="flex items-center justify-between px-2 mb-2">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Zonas</h3>
-            <button onClick={() => setShowForms({...showForms, zona: !showForms.zona})} className="p-1 hover:bg-slate-800 text-slate-600 hover:text-white rounded-lg transition-all" disabled={!selBodegaId}>
-              <Plus className="w-4 h-4" />
+            <button 
+              onClick={() => setShowForms({...showForms, zona: !showForms.zona})} 
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 text-white rounded-xl text-[8px] font-black uppercase shadow-md hover:bg-black active:scale-95 transition-all"
+              disabled={!selBodegaId}
+            >
+              <Plus className="w-3 h-3" /> Nueva
             </button>
           </div>
           {showForms.zona && (
