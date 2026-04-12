@@ -27,6 +27,7 @@ export function BinesManagement({ bodegas }: Props) {
   
   const [nuevoBin, setNuevoBin] = useState({ 
     codigo: '', 
+    sufijo: '',
     esFijo: false,
     loading: false, 
     error: '' 
@@ -71,13 +72,19 @@ export function BinesManagement({ bodegas }: Props) {
     if (!selectedPosicionId) return
     setNuevoBin(prev => ({ ...prev, loading: true, error: '' }))
     
-    // Si no hay código, el servicio genera uno basado en la posición
-    const { error } = await crearBin(selectedPosicionId, nuevoBin.codigo || undefined, 'interno', nuevoBin.esFijo)
+    // Si hay sufijo, construimos el código manual [POSICION]-[SUFIJO]
+    let codigoFinal = nuevoBin.codigo || undefined
+    if (nuevoBin.sufijo.trim()) {
+      const pos = posiciones.find(p => p.id === selectedPosicionId)
+      codigoFinal = `${pos?.codigo || 'BN'}-${nuevoBin.sufijo.trim().toUpperCase()}`
+    }
+
+    const { error } = await crearBin(selectedPosicionId, codigoFinal, 'interno', nuevoBin.esFijo)
 
     if (error) {
       setNuevoBin(prev => ({ ...prev, loading: false, error }))
     } else {
-      setNuevoBin({ codigo: '', esFijo: false, loading: false, error: '' })
+      setNuevoBin({ codigo: '', sufijo: '', esFijo: false, loading: false, error: '' })
       cargarBines()
     }
   }
@@ -176,48 +183,73 @@ export function BinesManagement({ bodegas }: Props) {
                     Nuevo Bin en esta Posición
                   </h4>
                 </div>
-                
-                <div className="flex flex-col md:flex-row gap-4 items-end">
-                  <div className="flex-1 space-y-2">
-                    <label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Código del Bin</label>
-                    <input 
-                      type="text"
-                      placeholder="Ej. BIN-001 (Auto si vacío)"
-                      value={nuevoBin.codigo}
-                      onChange={(e) => setNuevoBin(prev => ({ ...prev, codigo: e.target.value }))}
-                      className="w-full bg-neu-100 border-none rounded-xl px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-primary-300 transition-all font-inter"
-                    />
-                  </div>
-                  
-                  <div className="flex items-center gap-4 bg-slate-50 px-6 py-4 rounded-2xl border-2 border-slate-200 hover:border-primary-300 transition-all cursor-pointer select-none shadow-sm"
-                    onClick={() => setNuevoBin(prev => ({ ...prev, esFijo: !prev.esFijo }))}
-                  >
-                    <div className={`w-14 h-7 rounded-full relative transition-all duration-300 border-2 ${nuevoBin.esFijo ? 'bg-primary-600 border-primary-700' : 'bg-slate-500 border-slate-600'}`}>
-                      <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-lg transition-all duration-300 ${nuevoBin.esFijo ? 'right-1' : 'left-1'}`} />
+                          <div className="flex flex-col gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Sufijo Descriptivo (Opcional)</label>
+                      <input 
+                        type="text"
+                        placeholder="Ej. HILOS, ETIQUETAS, TALLA-S"
+                        value={nuevoBin.sufijo}
+                        onChange={(e) => setNuevoBin(prev => ({ ...prev, sufijo: e.target.value, codigo: '' }))}
+                        className="w-full bg-neu-100 border-none rounded-xl px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-primary-300 transition-all font-inter"
+                      />
                     </div>
-                    <div className="flex flex-col">
-                      <span className={`text-[11px] font-black uppercase tracking-tight ${nuevoBin.esFijo ? 'text-primary-700' : 'text-slate-700'}`}>
-                        {nuevoBin.esFijo ? 'Estantería Fija' : 'Ubicación Variable'}
-                      </span>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Configuración</span>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Código Manual (Ocupa todo)</label>
+                      <input 
+                        type="text"
+                        placeholder="Ej. BIN-PROPIO-01"
+                        value={nuevoBin.codigo}
+                        onChange={(e) => setNuevoBin(prev => ({ ...prev, codigo: e.target.value, sufijo: '' }))}
+                        className="w-full bg-neu-100 border-none rounded-xl px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-primary-300 transition-all font-inter"
+                      />
                     </div>
                   </div>
 
-                  <button 
-                    onClick={handleCrearBin}
-                    disabled={nuevoBin.loading}
-                    className="px-8 py-3 bg-primary-600 text-white font-black uppercase text-xs tracking-widest rounded-xl hover:bg-primary-700 transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-2 h-[46px]"
-                  >
-                    {nuevoBin.loading ? '...' : (
-                      <>
-                        <Plus className="w-4 h-4" />
-                        Crear Bin
-                      </>
-                    )}
-                  </button>
+                  <div className="flex flex-col md:flex-row gap-6 items-center justify-between bg-neu-50 p-4 rounded-2xl border border-dashed border-neu-300">
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col">
+                        <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Vista Previa Código</span>
+                        <code className="text-sm font-black text-primary-600 bg-white px-3 py-1 rounded-lg border border-neu-200">
+                          {nuevoBin.codigo ? nuevoBin.codigo.toUpperCase() : (
+                            nuevoBin.sufijo ? `${posiciones.find(p => p.id === selectedPosicionId)?.codigo}-${nuevoBin.sufijo.toUpperCase()}` : '[POSICIÓN]-00X'
+                          )}
+                        </code>
+                      </div>
+
+                      <div className="w-px h-8 bg-neu-200" />
+
+                      <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-xl border-2 border-slate-200 cursor-pointer select-none"
+                        onClick={() => setNuevoBin(prev => ({ ...prev, esFijo: !prev.esFijo }))}
+                      >
+                        <div className={`w-10 h-5 rounded-full relative transition-all duration-300 border-2 ${nuevoBin.esFijo ? 'bg-primary-600 border-primary-700' : 'bg-slate-500 border-slate-600'}`}>
+                          <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow-lg transition-all duration-300 ${nuevoBin.esFijo ? 'right-0.5' : 'left-0.5'}`} />
+                        </div>
+                        <span className={`text-[10px] font-black uppercase ${nuevoBin.esFijo ? 'text-primary-700' : 'text-slate-700'}`}>
+                          {nuevoBin.esFijo ? 'Fijo' : 'Variable'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={handleCrearBin}
+                      disabled={nuevoBin.loading}
+                      className="w-full md:w-auto px-12 py-3 bg-primary-600 text-white font-black uppercase text-xs tracking-widest rounded-xl hover:bg-primary-700 transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {nuevoBin.loading ? 'Procesando...' : (
+                        <>
+                          <Plus className="w-4 h-4" />
+                          Crear Bin
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
-                {nuevoBin.error && <p className="text-[10px] font-bold text-red-500 uppercase">{nuevoBin.error}</p>}
-                <p className="text-[9px] font-bold text-muted-foreground uppercase opacity-60">
+
+                {nuevoBin.error && <p className="text-[10px] font-bold text-red-500 uppercase mt-2">{nuevoBin.error}</p>}
+                <p className="text-[9px] font-bold text-muted-foreground uppercase opacity-60 mt-4">
                   Nota: Al crear un bin, se le asigna stock "interno" automáticamente.
                 </p>
               </div>
