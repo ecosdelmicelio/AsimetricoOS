@@ -31,8 +31,31 @@ export async function getPosicionesByBodega(bodegaId: string): Promise<(Posicion
   }))
 }
 
+export async function getPosicionesByZona(zonaId: string): Promise<(Posicion & { bines_count: number })[]> {
+  const supabase = db(await createClient())
+  const { data, error } = await supabase
+    .from('bodega_posiciones')
+    .select(`
+      *,
+      bines:bines(count)
+    `)
+    .eq('zona_id', zonaId)
+    .order('codigo') as { data: any[] | null; error: any }
+
+  if (error) {
+    console.error('Error fetching posiciones por zona:', error)
+    return []
+  }
+
+  return (data ?? []).map(p => ({
+    ...p,
+    bines_count: p.bines?.[0]?.count ?? 0
+  }))
+}
+
 export async function crearPosicion(input: {
   bodega_id: string
+  zona_id?: string
   nombre: string
   codigo?: string
   capacidad_bines?: number
@@ -51,6 +74,7 @@ export async function crearPosicion(input: {
     .from('bodega_posiciones')
     .insert({
       bodega_id: input.bodega_id,
+      zona_id: input.zona_id,
       codigo,
       nombre: input.nombre.trim(),
       capacidad_bines: input.capacidad_bines ?? 4,

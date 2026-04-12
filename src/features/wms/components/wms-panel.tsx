@@ -9,10 +9,8 @@ import { TrasladoForm } from '@/features/wms/components/traslado-form'
 import { TrasladosHistorial } from '@/features/wms/components/traslados-historial'
 import { AjusteForm } from '@/features/wms/components/ajuste-form'
 import { AjusteHistorial } from '@/features/wms/components/ajuste-historial'
-import { PosicionesTab } from '@/features/wms/components/posiciones-tab'
 import { MovementCommandCenter } from '@/features/wms/components/movement-command-center'
-import { ZonasManagement } from '@/features/wms/components/zonas-management'
-import { BinesManagement } from '@/features/wms/components/bines-management'
+import { BodegaLocationsMaster } from '@/features/wms/components/bodega-locations-master'
 import type { Bodega } from '@/features/wms/types'
 
 interface Props {
@@ -102,44 +100,17 @@ export function WMSPanel({ bodegas }: Props) {
           </div>
         </div>
       )}
-      {/* VISTA: POSICIONES */}
-      {activeTab === 'posiciones' && (
-        <>
-          <BodegaFilterBar
-            bodegas={bodegas}
-            bodegaSeleccionada={bodegaSeleccionada}
-            onSelect={setBodegaSeleccionada}
-          />
-          <div className="flex-1 min-w-0 overflow-y-auto p-6">
-            {bodegaSeleccionada ? (
-              <PosicionesTab bodegaId={bodegaSeleccionada} />
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground italic">
-                Selecciona una bodega para gestionar sus posiciones
-              </div>
-            )}
-          </div>
-        </>
+      {/* VISTA: INFRAESTRUCTURA (MAPA DE UBICACIONES UNIFICADO) */}
+      {activeTab === 'infraestructura' && (
+        <div className="flex-1 min-h-0 bg-white">
+          <BodegaLocationsMaster />
+        </div>
       )}
 
       {/* VISTA: CENTRO DE MOVIMIENTOS (COMMAND CENTER) */}
       {activeTab === 'command_center' && (
         <div className="flex-1 min-h-0 bg-white">
           <MovementCommandCenter bodegas={bodegas} />
-        </div>
-      )}
-
-      {/* VISTA: GESTIÓN DE ZONAS */}
-      {activeTab === 'zonas' && (
-        <div className="flex-1 min-w-0 overflow-y-auto bg-neu-bg">
-          <ZonasManagement bodegas={bodegas} />
-        </div>
-      )}
-
-      {/* VISTA: GESTIÓN DE BINES */}
-      {activeTab === 'bines' && (
-        <div className="flex-1 min-w-0 overflow-y-auto bg-neu-bg">
-          <BinesManagement bodegas={bodegas} />
         </div>
       )}
     </div>
