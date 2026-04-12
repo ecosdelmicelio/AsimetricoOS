@@ -5,16 +5,29 @@ import type { Bin, BinContenido } from '../types'
 
 function db(supabase: unknown): any { return supabase }
 
-export async function generarCodigoBin(prefijo: string = 'ASI'): Promise<string> {
+export async function generarCodigoBin(prefijo: string = 'BN'): Promise<string> {
   const supabase = db(await createClient())
-  const hoy = new Date().toISOString().split('T')[0].replace(/-/g, '')
+  
+  // Buscamos el último bin con ese prefijo para seguir la secuencia
   const { data } = await supabase
     .from('bines')
     .select('codigo')
-    .ilike('codigo', `${prefijo}-${hoy}%`) as { data: any[] | null }
-  const contador = (data?.length ?? 0) + 1
-  const secuencial = String(contador).padStart(5, '0')
-  return `${prefijo}-${hoy}-${secuencial}`
+    .ilike('codigo', `${prefijo}-%`)
+    .order('codigo', { ascending: false })
+    .limit(1) as { data: any[] | null }
+
+  let nextNumber = 1
+  if (data && data.length > 0) {
+    const lastCode = data[0].codigo
+    const parts = lastCode.split('-')
+    const lastNum = parseInt(parts[parts.length - 1])
+    if (!isNaN(lastNum)) {
+      nextNumber = lastNum + 1
+    }
+  }
+
+  const secuencial = String(nextNumber).padStart(3, '0')
+  return `${prefijo}-${secuencial}`
 }
 
 export async function crearBin(

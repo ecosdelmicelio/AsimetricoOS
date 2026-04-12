@@ -232,8 +232,29 @@ export async function processUnifiedMovement(input: {
     const [, posId, posLabel] = targetId.split('|')
     const { crearBin } = await import('@/features/bines/services/bines-actions')
     
-    // El servicio ahora maneja el código automáticamente si no se pasa
-    const { data: bin, error } = await crearBin(posId, undefined, 'interno')
+    let descriptiveCode = undefined
+
+    // CEREBRO DE NOMENCLATURA: Ingresos por OC
+    if (mode === 'INGRESAR') {
+      try {
+        const { getOrdenCompraById } = await import('@/features/compras/services/compras-actions')
+        const oc = await getOrdenCompraById(sourceId)
+        
+        const ocNum = (oc as any)?.data?.numero_orden || (sourceId.length > 8 ? sourceId.substring(0, 8) : sourceId)
+        const tipo = metadata?.producto_id ? 'COM' : 'FAB'
+        
+        // Limpiamos el nombre del producto para el código
+        const rawName = metadata?.label || 'ITEM'
+        const cleanName = rawName.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '')
+        
+        descriptiveCode = `${ocNum}-${tipo}-${cleanName}`.toUpperCase()
+      } catch (err) {
+        console.error('Error in naming cerebro:', err)
+      }
+    }
+
+    // El servicio ahora maneja el código automáticamente si no se pasa descriptivo
+    const { data: bin, error } = await crearBin(posId, descriptiveCode, 'interno')
     
     if (error || !bin) {
       return { error: `Error creando bin: ${error}` }
