@@ -97,22 +97,44 @@ export async function getOCItemsGrid(ocId: string): Promise<GridItem[]> {
     
     const items: GridItem[] = []
 
-    // Prendas
+    // PT (Producto Terminado) - Agrupado por Referencia
     if (oc.oc_detalle && oc.oc_detalle.length > 0) {
+      const grouped = new Map<string, any[]>()
       oc.oc_detalle.forEach(d => {
+        const list = grouped.get(d.producto_id) || []
+        list.push(d)
+        grouped.set(d.producto_id, list)
+      })
+
+      grouped.forEach((details, prodId) => {
+        const first = details[0]
+        const totalQty = details.reduce((sum, d) => sum + d.cantidad, 0)
+        const tallasStr = details.map(d => `${d.talla}(${d.cantidad})`).join(' · ')
+        
         items.push({
-          id: d.id,
-          label: d.productos?.nombre || 'Producto',
-          sublabel: `${d.talla} — SKU: ${d.productos?.referencia}`,
-          count: d.cantidad,
-          price: d.precio_pactado,
+          id: `GROUP|${prodId}`,
+          label: first.productos?.nombre || 'Producto',
+          sublabel: `${first.productos?.referencia}\n${tallasStr}`,
+          count: totalQty,
+          price: first.precio_pactado, 
           icon: 'Shirt',
-          metadata: { producto_id: d.producto_id, talla: d.talla }
+          metadata: { 
+            isGroup: true,
+            producto_id: prodId,
+            children: details.map(d => ({
+              id: d.id,
+              label: `${first.productos?.nombre} (${d.talla})`,
+              sublabel: `${first.productos?.referencia} — ${d.talla}`,
+              count: d.cantidad,
+              price: d.precio_pactado,
+              metadata: { producto_id: d.producto_id, talla: d.talla }
+            }))
+          }
         })
       })
     }
 
-    // MP
+    // MP (Materia Prima) - Se mantiene individual por rollo/ítem
     if (oc.oc_detalle_mp && oc.oc_detalle_mp.length > 0) {
       oc.oc_detalle_mp.forEach(d => {
         items.push({
@@ -210,10 +232,13 @@ export async function processUnifiedMovement(input: {
     const [, posId, posLabel] = targetId.split('|')
     const { crearBin } = await import('@/features/bines/services/bines-actions')
     
-    // Generamos prefijo basado en la posición (primeras 3 letras o código corto)
-    const prefijo = posLabel.substring(0, 3).toUpperCase() || 'BN'
-    const newBin = await crearBin(bodegaId || '', posId, false, 'interno', prefijo)
-    finalTargetId = newBin.id
+    // El servicio ahora maneja el código automáticamente si no se pasa
+    const { data: bin, error } = await crearBin(posId, undefined, 'interno')
+    
+    if (error || !bin) {
+      return { error: `Error creando bin: ${error}` }
+    }
+    finalTargetId = bin.id
   }
 
   switch (mode) {

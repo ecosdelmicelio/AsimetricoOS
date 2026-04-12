@@ -138,18 +138,18 @@ export function VisualHierarchyGrid({
                 `}>
                   {getIcon(level, item.icon)}
                 </div>
-                <div className="space-y-0.5">
-                  <div className="text-[11px] font-black uppercase tracking-tight text-foreground line-clamp-1">
+                <div className="space-y-1 w-full max-w-full overflow-hidden">
+                  <div className="text-[10px] sm:text-[11px] font-black uppercase tracking-tight text-foreground leading-none min-h-[1.2em]">
                     {item.label}
                   </div>
                   {item.sublabel && (
-                    <div className="text-[9px] font-bold text-muted-foreground truncate max-w-full">
+                    <div className="text-[9px] font-medium text-muted-foreground leading-snug">
                       {item.sublabel}
                     </div>
                   )}
                   {item.count !== undefined && (
-                    <div className="mt-1 inline-block px-2 py-0.5 bg-neu-200 rounded-lg text-[9px] font-black text-neu-600">
-                      {item.count} items
+                    <div className="mt-1 inline-block px-1.5 py-0.5 bg-primary-100 text-primary-700 rounded text-[9px] font-black uppercase">
+                      {item.count} Items
                     </div>
                   )}
                 </div>

@@ -18,29 +18,52 @@ export async function generarCodigoBin(prefijo: string = 'ASI'): Promise<string>
 }
 
 export async function crearBin(
-  bodegaId: string,
   posicionId: string,
-  esFijo: boolean = false,
+  codigoManual?: string,
   tipo: 'caja_cliente' | 'interno' = 'interno',
-  prefijo: string = 'ASI'
-): Promise<Bin> {
-  const supabase = db(await createClient())
-  const codigo = await generarCodigoBin(prefijo)
-  const { data, error } = await supabase
-    .from('bines')
-    .insert({
-      codigo,
-      tipo,
-      bodega_id: bodegaId,
-      posicion_id: posicionId,
-      es_fijo: esFijo,
-      estado: 'en_bodega',
-    })
-    .select() as { data: any[] | null; error: any }
-  if (error || !data?.[0]) {
-    throw new Error(`No se pudo crear bin: ${error?.message}`)
+  esFijo: boolean = false
+): Promise<{ data?: Bin; error?: string }> {
+  try {
+    const supabase = db(await createClient())
+    
+    // Si no hay código manual, generamos uno
+    let codigo = codigoManual
+    if (!codigo) {
+      // Necesitamos el prefijo de la posición para generar el código
+      const { data: pos } = await supabase
+        .from('bodega_posiciones')
+        .select('codigo, bodega_id')
+        .eq('id', posicionId)
+        .single() as { data: any }
+      
+      const prefijo = pos?.codigo?.split('-')[0] || 'ASI'
+      codigo = await generarCodigoBin(prefijo)
+    }
+
+    // Obtenemos la bodega_id de la posición
+    const { data: posData } = await supabase
+      .from('bodega_posiciones')
+      .select('bodega_id')
+      .eq('id', posicionId)
+      .single() as { data: any }
+
+    const { data, error } = await supabase
+      .from('bines')
+      .insert({
+        codigo,
+        tipo,
+        bodega_id: posData?.bodega_id,
+        posicion_id: posicionId,
+        es_fijo: esFijo,
+        estado: 'en_bodega',
+      })
+      .select() as { data: any[] | null; error: any }
+
+    if (error) return { error: error.message }
+    return { data: data?.[0] as Bin }
+  } catch (err: any) {
+    return { error: err.message }
   }
-  return data[0] as Bin
 }
 
 export async function getContenidoBin(binId: string): Promise<BinContenido | null> {
@@ -137,4 +160,36 @@ export async function actualizarEstadoBin(binId: string, estado: string): Promis
     throw new Error('No se pudo actualizar el bin')
   }
   return data[0] as Bin
+}
+
+export async function getBinesByPosicion(posicionId: string): Promise<Bin[]> {
+  const supabase = db(await createClient())
+  const { data } = await supabase
+    .from('bines')
+    .select('*')
+    .eq('posicion_id', posicionId)
+    .order('created_at', { ascending: false }) as { data: any[] | null }
+  return (data ?? []) as Bin[]
+}
+
+export async function eliminarBin(id: string): Promise<{ error?: string }> {
+  const supabase = db(await createClient())
+  
+  // Primero verificamos si tiene stock relacionado en recepcion_oc
+  const { count } = await supabase
+    .from('recepcion_oc')
+    .select('*', { count: 'exact', head: true })
+    .eq('bin_id', id)
+  
+  if (count && count > 0) {
+    return { error: 'No se puede eliminar un bin que tiene movimientos o stock histórico.' }
+  }
+
+  const { error } = await supabase
+    .from('bines')
+    .delete()
+    .eq('id', id)
+  
+  if (error) return { error: error.message }
+  return {}
 }

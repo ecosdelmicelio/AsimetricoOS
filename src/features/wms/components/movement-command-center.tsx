@@ -145,12 +145,28 @@ export function MovementCommandCenter({ bodegas }: Props) {
     if (currentState.level === 'ITEMS' || currentState.level === 'REASONS' || currentState.level === 'BINES') {
       setState(prev => ({ ...prev, id: item.id })) // Marcamos el ID activo
       if (panel === 'source' && mode === 'INGRESAR') {
-        // Toggle selection for multiple items
-        setSourceSelections(prev => {
-          const exists = prev.find(i => i.id === item.id)
-          if (exists) return prev.filter(i => i.id !== item.id)
-          return [...prev, item]
-        })
+        const meta = item.metadata || {}
+        
+        if (meta.isGroup && meta.children) {
+          // Toggle ALL children in the group
+          setSourceSelections(prev => {
+            const allPresent = meta.children.every((c: any) => prev.some(p => p.id === c.id))
+            if (allPresent) {
+              const childIds = meta.children.map((c: any) => c.id)
+              return prev.filter(p => !childIds.includes(p.id))
+            } else {
+              const toAdd = meta.children.filter((c: any) => !prev.some(p => p.id === c.id))
+              return [...prev, ...toAdd]
+            }
+          })
+        } else {
+          // Standard toggle for single item
+          setSourceSelections(prev => {
+            const exists = prev.find(i => i.id === item.id)
+            if (exists) return prev.filter(i => i.id !== item.id)
+            return [...prev, item]
+          })
+        }
       } else if (panel === 'source') {
         setSourceSelections([item])
         setCantidad(item.count || 1)
@@ -342,10 +358,13 @@ export function MovementCommandCenter({ bodegas }: Props) {
           <VisualHierarchyGrid 
             title="ORIGEN / FUENTE"
             level={source.level}
-            items={source.items.map(i => ({ 
-              ...i, 
-              isSelected: sourceSelections.some(s => s.id === i.id) 
-            }))}
+            items={source.items.map(i => {
+              const isSelected = i.metadata?.isGroup 
+                ? i.metadata.children.some((c: any) => sourceSelections.some(s => s.id === c.id))
+                : sourceSelections.some(s => s.id === i.id)
+
+              return { ...i, isSelected }
+            })}
             breadcrumb={source.breadcrumb}
             onSelect={(item) => handleSelect('source', item)}
             onBack={source.breadcrumb.length > 1 ? () => handleBack('source') : undefined}

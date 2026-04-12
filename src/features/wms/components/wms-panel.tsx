@@ -12,6 +12,7 @@ import { AjusteHistorial } from '@/features/wms/components/ajuste-historial'
 import { PosicionesTab } from '@/features/wms/components/posiciones-tab'
 import { MovementCommandCenter } from '@/features/wms/components/movement-command-center'
 import { ZonasManagement } from '@/features/wms/components/zonas-management'
+import { BinesManagement } from '@/features/wms/components/bines-management'
 import type { Bodega } from '@/features/wms/types'
 
 interface Props {
@@ -132,6 +133,13 @@ export function WMSPanel({ bodegas }: Props) {
       {activeTab === 'zonas' && (
         <div className="flex-1 min-w-0 overflow-y-auto bg-neu-bg">
           <ZonasManagement bodegas={bodegas} />
+        </div>
+      )}
+
+      {/* VISTA: GESTIÓN DE BINES */}
+      {activeTab === 'bines' && (
+        <div className="flex-1 min-w-0 overflow-y-auto bg-neu-bg">
+          <BinesManagement bodegas={bodegas} />
         </div>
       )}
     </div>

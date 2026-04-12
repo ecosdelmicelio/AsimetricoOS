@@ -1,6 +1,6 @@
-import { ArrowRightLeft, SlidersHorizontal, Package, Map as MapIcon, Repeat2, LayoutGrid } from 'lucide-react'
+import { ArrowRightLeft, SlidersHorizontal, Package, Map as MapIcon, Repeat2, LayoutGrid, Layers } from 'lucide-react'
 
-export type WMSTab = 'inventario' | 'command_center' | 'traslados' | 'ajustes' | 'posiciones' | 'zonas'
+export type WMSTab = 'inventario' | 'command_center' | 'traslados' | 'ajustes' | 'posiciones' | 'zonas' | 'bines'
 
 const TABS: { id: WMSTab; label: string; icon: React.ElementType }[] = [
   { id: 'inventario',     label: 'Inventario',        icon: Package },
@@ -9,6 +9,7 @@ const TABS: { id: WMSTab; label: string; icon: React.ElementType }[] = [
   { id: 'ajustes',        label: 'Ajustes (Antiguo)',   icon: SlidersHorizontal },
   { id: 'posiciones',     label: 'Posiciones',        icon: MapIcon },
   { id: 'zonas',          label: 'Zonas',             icon: LayoutGrid },
+  { id: 'bines',          label: 'Bines',             icon: Layers },
 ]
 
 interface Props {
