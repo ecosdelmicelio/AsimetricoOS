@@ -73,6 +73,46 @@ export async function getWarehouseHierarchy(bodegaId: string) {
 }
 
 /**
+ * Obtiene estadísticas de inventario (Stock y Valor) para una bodega.
+ */
+export async function getWarehouseStats(bodegaId: string) {
+  const supabase = db(await createClient())
+  const { data } = await supabase
+    .from('recepcion_oc')
+    .select('cantidad_recibida, precio_unitario')
+    .eq('bodega_id', bodegaId) as { data: any[] | null }
+
+  const totalUnits = (data ?? []).reduce((sum, item) => sum + Number(item.cantidad_recibida || 0), 0)
+  const totalValue = (data ?? []).reduce((sum, item) => {
+    const qty = Number(item.cantidad_recibida || 0)
+    const price = Number(item.precio_unitario || 0)
+    return sum + (qty * price)
+  }, 0)
+
+  return { totalUnits, totalValue }
+}
+
+/**
+ * Obtiene estadísticas de inventario para un bin específico.
+ */
+export async function getBinStats(binId: string) {
+  const supabase = db(await createClient())
+  const { data } = await supabase
+    .from('recepcion_oc')
+    .select('cantidad_recibida, precio_unitario')
+    .eq('bin_id', binId) as { data: any[] | null }
+
+  const totalUnits = (data ?? []).reduce((sum, item) => sum + Number(item.cantidad_recibida || 0), 0)
+  const totalValue = (data ?? []).reduce((sum, item) => {
+    const qty = Number(item.cantidad_recibida || 0)
+    const price = Number(item.precio_unitario || 0)
+    return sum + (qty * price)
+  }, 0)
+
+  return { totalUnits, totalValue }
+}
+
+/**
  * Motivos estándar para ajustes.
  */
 export async function getAdjustmentReasons() {
