@@ -3,9 +3,8 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Save, AlertCircle, Trash2, Plus } from 'lucide-react'
-import { guardarCondicionesMaterial, guardarCondiciones } from '@/features/desarrollo/services/muestra-actions'
-import { cn } from '@/shared/lib/utils'
-import type { Material } from '@/features/productos/services/bom-actions'
+import { guardarCondicionesMaterial, guardarCondiciones, getMaterialInheritedConditions } from '@/features/desarrollo/services/muestra-actions'
+import { useEffect } from 'react'
 
 interface Props {
   desarrolloId: string
@@ -16,6 +15,7 @@ interface Props {
   materialCondicionesExistentes: any[]
   proveedores: { id: string; nombre: string }[]
   catalogoMateriales: Material[]
+  readOnly?: boolean
 }
 
 export function CondicionesPanel({
@@ -27,6 +27,7 @@ export function CondicionesPanel({
   materialCondicionesExistentes,
   proveedores,
   catalogoMateriales,
+  readOnly = false,
 }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -45,7 +46,6 @@ export function CondicionesPanel({
   })
 
   // Estado para condiciones de materiales (fabricados)
-  // Inicializamos con los materiales del BOM si no hay condiciones guardadas
   const [materiales, setMateriales] = useState<any[]>(
     materialCondicionesExistentes.length > 0
       ? materialCondicionesExistentes.map(m => ({
@@ -55,16 +55,44 @@ export function CondicionesPanel({
           moq_unidad: m.moq_unidad,
           consumo_por_unidad: m.consumo_por_unidad,
           leadtime_material_dias: m.leadtime_material_dias,
+          proveedor_id: m.proveedor_id,
         }))
       : bomData.map(b => ({
-          material_id: b.material_id || '', // Si el BOM tiene IDs de materiales reales
+          material_id: b.material_id || '',
           material_nombre: b.material_nombre,
           moq_material: 0,
           moq_unidad: b.unidad || 'metros',
           consumo_por_unidad: b.cantidad || 0,
           leadtime_material_dias: 0,
+          proveedor_id: '',
         }))
   )
+
+  // Herencia automática de condiciones
+  useEffect(() => {
+    const fetchInherited = async () => {
+      let changed = false
+      const newMats = [...materiales]
+
+      for (let i = 0; i < newMats.length; i++) {
+        const m = newMats[i]
+        if (m.material_id && (!m.moq_material || !m.proveedor_id)) {
+          const res = await getMaterialInheritedConditions(m.material_id)
+          if (res.data) {
+            newMats[i].moq_material = newMats[i].moq_material || 1
+            newMats[i].proveedor_id = newMats[i].proveedor_id || res.data.proveedor_id
+            changed = true
+          }
+        }
+      }
+
+      if (changed) setMateriales(newMats)
+    }
+
+    if (materialCondicionesExistentes.length === 0 && materiales.length > 0) {
+      fetchInherited()
+    }
+  }, [bomData])
 
   function handleSave() {
     setError(null)
@@ -102,13 +130,15 @@ export function CondicionesPanel({
           <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Condiciones de Abastecimiento</h3>
           <p className="text-[11px] text-slate-500">Define mínimos, leadtimes y precios necesarios para avanzar a revisión operativa.</p>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={isPending}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-primary-600 transition-all disabled:opacity-50"
-        >
-          {isPending ? 'Guardando...' : <><Save className="w-3.5 h-3.5" /> Guardar Cambios</>}
-        </button>
+        {!readOnly && (
+          <button
+            onClick={handleSave}
+            disabled={isPending}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-primary-600 transition-all disabled:opacity-50"
+          >
+            {isPending ? 'Guardando...' : <><Save className="w-3.5 h-3.5" /> Guardar Cambios</>}
+          </button>
+        )}
       </div>
 
       {hasMissingData && (
@@ -143,7 +173,8 @@ export function CondicionesPanel({
               <select
                 value={general.proveedor_id}
                 onChange={e => setGeneral({ ...general, proveedor_id: e.target.value })}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-primary-400"
+                disabled={readOnly}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-primary-400 disabled:bg-slate-50 disabled:text-slate-500"
               >
                 <option value="">Seleccionar proveedor...</option>
                 {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
@@ -156,7 +187,8 @@ export function CondicionesPanel({
                 type="number"
                 value={general.moq_producto}
                 onChange={e => setGeneral({ ...general, moq_producto: parseInt(e.target.value) || 0 })}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-primary-400"
+                disabled={readOnly}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-primary-400 disabled:bg-slate-50 disabled:text-slate-500"
               />
             </div>
 
@@ -166,7 +198,8 @@ export function CondicionesPanel({
                 type="number"
                 value={general.multiplo_orden}
                 onChange={e => setGeneral({ ...general, multiplo_orden: parseInt(e.target.value) || 1 })}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-primary-400"
+                disabled={readOnly}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-primary-400 disabled:bg-slate-50 disabled:text-slate-500"
               />
             </div>
 
@@ -176,7 +209,8 @@ export function CondicionesPanel({
                 type="number"
                 value={general.leadtime_produccion_dias}
                 onChange={e => setGeneral({ ...general, leadtime_produccion_dias: parseInt(e.target.value) || 0 })}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-primary-400"
+                disabled={readOnly}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-primary-400 disabled:bg-slate-50 disabled:text-slate-500"
               />
             </div>
 
@@ -186,7 +220,8 @@ export function CondicionesPanel({
                 type="number"
                 value={general.leadtime_envio_dias}
                 onChange={e => setGeneral({ ...general, leadtime_envio_dias: parseInt(e.target.value) || 0 })}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-primary-400"
+                disabled={readOnly}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-primary-400 disabled:bg-slate-50 disabled:text-slate-500"
               />
             </div>
           </div>
@@ -218,7 +253,8 @@ export function CondicionesPanel({
                           newMats[idx].moq_material = parseFloat(e.target.value) || 0
                           setMateriales(newMats)
                         }}
-                        className="w-full rounded-lg border border-slate-200 px-2 py-1 text-[11px] focus:outline-none focus:border-primary-400"
+                        disabled={readOnly}
+                        className="w-full rounded-lg border border-slate-200 px-2 py-1 text-[11px] focus:outline-none focus:border-primary-400 disabled:bg-slate-50 disabled:text-slate-500"
                       />
                     </div>
                     <div>
@@ -231,7 +267,8 @@ export function CondicionesPanel({
                           newMats[idx].consumo_por_unidad = parseFloat(e.target.value) || 0
                           setMateriales(newMats)
                         }}
-                        className="w-full rounded-lg border border-slate-200 px-2 py-1 text-[11px] focus:outline-none focus:border-primary-400"
+                        disabled={readOnly}
+                        className="w-full rounded-lg border border-slate-200 px-2 py-1 text-[11px] focus:outline-none focus:border-primary-400 disabled:bg-slate-50 disabled:text-slate-500"
                       />
                     </div>
                     {m.consumo_por_unidad > 0 && (

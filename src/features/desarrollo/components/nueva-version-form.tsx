@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useTransition, useMemo } from 'react'
-import { Plus, Trash2, Package, Wrench, Calculator } from 'lucide-react'
-import { crearNuevaVersion } from '@/features/desarrollo/services/versiones-actions'
+import { Plus, Trash2, Package, Wrench, Calculator, Edit3 } from 'lucide-react'
+import { crearNuevaVersion, actualizarVersion } from '@/features/desarrollo/services/versiones-actions'
 import { cn, formatCurrency } from '@/shared/lib/utils'
 import type { Material, ServicioOperativo } from '@/features/productos/services/bom-actions'
+import { QuickCreateMaterialModal } from './quick-create-material-modal'
 
 const TALLAS = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 
@@ -29,42 +30,64 @@ interface Props {
   desarrolloId: string
   catalogoMateriales: Material[]
   catalogoServicios: ServicioOperativo[]
+  proveedores: { id: string; nombre: string }[]
+  initialBom?: any 
+  initialNotas?: string
+  initialComportamiento?: string
+  initialMedidas?: Record<string, any>
+  mode?: 'create' | 'edit'
+  versionId?: string
   onCreated: () => void
   onCancel: () => void
 }
 
 export function NuevaVersionForm({ 
   desarrolloId, 
-  catalogoMateriales, 
+  catalogoMateriales: initialMateriales, 
   catalogoServicios,
+  proveedores,
+  initialBom,
+  initialNotas = '',
+  initialComportamiento = '',
+  initialMedidas,
+  mode = 'create',
+  versionId,
   onCreated, 
   onCancel 
 }: Props) {
+  const [catalogoMateriales, setCatalogoMateriales] = useState(initialMateriales)
+  const [showQuickCreate, setShowQuickCreate] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<'materiales' | 'servicios'>('materiales')
 
-  const [notas, setNotas] = useState('')
-  const [comportamiento, setComportamiento] = useState('')
+  const [notas, setNotas] = useState(initialNotas)
+  const [comportamiento, setComportamiento] = useState(initialComportamiento)
 
-  // BOM Materiales
-  const [bomMateriales, setBomMateriales] = useState<BomMaterial[]>([])
+  // BOM Materiales - Precarga si existe initialBom
+  const [bomMateriales, setBomMateriales] = useState<BomMaterial[]>(
+    initialBom?.materiales || []
+  )
   const [selectedMatId, setSelectedMatId] = useState('')
   const [matQty, setMatQty] = useState('')
 
-  // BOM Servicios
-  const [bomServicios, setBomServicios] = useState<BomServicio[]>([])
+  // BOM Servicios - Precarga si existe initialBom
+  const [bomServicios, setBomServicios] = useState<BomServicio[]>(
+    initialBom?.servicios || []
+  )
   const [selectedServId, setSelectedServId] = useState('')
   const [servQty, setServQty] = useState('')
 
   // Cuadro de medidas por talla
-  const [medidas, setMedidas] = useState<Record<string, Record<string, string>>>({
-    largo: Object.fromEntries(TALLAS.map(t => [t, ''])),
-    ancho: Object.fromEntries(TALLAS.map(t => [t, ''])),
-    manga: Object.fromEntries(TALLAS.map(t => [t, ''])),
-    cuello: Object.fromEntries(TALLAS.map(t => [t, ''])),
-    pecho: Object.fromEntries(TALLAS.map(t => [t, ''])),
-  })
+  const [medidas, setMedidas] = useState<Record<string, Record<string, string>>>(
+    initialMedidas as any ?? {
+      largo: Object.fromEntries(TALLAS.map(t => [t, ''])),
+      ancho: Object.fromEntries(TALLAS.map(t => [t, ''])),
+      manga: Object.fromEntries(TALLAS.map(t => [t, ''])),
+      cuello: Object.fromEntries(TALLAS.map(t => [t, ''])),
+      pecho: Object.fromEntries(TALLAS.map(t => [t, ''])),
+    }
+  )
 
   // Totales
   const costoMateriales = useMemo(() => bomMateriales.reduce((sum, m) => sum + (m.cantidad * m.costo_unit), 0), [bomMateriales])
@@ -127,7 +150,7 @@ export function NuevaVersionForm({
     }
 
     startTransition(async () => {
-      const result = await crearNuevaVersion(desarrolloId, {
+      const payload = {
         notas_version: notas.trim(),
         bom_data: {
           materiales: bomMateriales,
@@ -136,7 +159,11 @@ export function NuevaVersionForm({
         } as any,
         cuadro_medidas: medidas,
         comportamiento_tela: comportamiento || undefined,
-      })
+      }
+
+      const result = mode === 'edit' && versionId
+        ? await actualizarVersion(versionId, desarrolloId, payload)
+        : await crearNuevaVersion(desarrolloId, payload)
 
       if (result.error) {
         setError(result.error)
@@ -199,6 +226,11 @@ export function NuevaVersionForm({
                   <option key={m.id} value={m.id}>{m.codigo} — {m.nombre} ({m.unidad}) · {formatCurrency(m.costo_unit)}</option>
                 ))}
               </select>
+              <button type="button" onClick={() => setShowQuickCreate(true)}
+                title="Crear material que no existe"
+                className="px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 text-[10px] font-bold uppercase">
+                Nuevo
+              </button>
               <input
                 type="number"
                 placeholder="Cant"
@@ -211,6 +243,19 @@ export function NuevaVersionForm({
                 <Plus className="w-4 h-4" />
               </button>
             </div>
+
+            {showQuickCreate && (
+              <QuickCreateMaterialModal
+                desarrolloId={desarrolloId}
+                proveedores={proveedores}
+                onClose={() => setShowQuickCreate(false)}
+                onCreated={(newMat) => {
+                  setCatalogoMateriales(prev => [...prev, newMat])
+                  setSelectedMatId(newMat.id)
+                  setShowQuickCreate(false)
+                }}
+              />
+            )}
 
             <div className="space-y-2">
               {bomMateriales.map((m, i) => (
@@ -332,7 +377,11 @@ export function NuevaVersionForm({
           disabled={isPending}
           className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-primary-600 transition-all disabled:opacity-50"
         >
-          {isPending ? 'Guardando versión...' : <><Calculator className="w-4 h-4" /> Crear Nueva Versión</>}
+          {isPending ? 'Guardando...' : (
+            mode === 'edit' 
+              ? <><Edit3 className="w-4 h-4" /> Guardar Cambios</>
+              : <><Calculator className="w-4 h-4" /> Crear Nueva Versión</>
+          )}
         </button>
         <button
           type="button"

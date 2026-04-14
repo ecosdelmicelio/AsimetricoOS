@@ -407,3 +407,93 @@ export async function getCondicionesGenerales(desarrolloId: string) {
   
   return { data }
 }
+
+// ─── MATERIALES BORRADOR ──────────────────────────────────────────────────────
+
+export async function createDraftMaterial(input: {
+  nombre: string
+  unidad: string
+  costo_unit: number
+  proveedor_id: string
+  moq: number
+  multiplo: number
+  desarrollo_id: string
+}) {
+  const supabase = db(await createClient())
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  // Generar código temporal
+  const { data: dev } = await supabase.from('desarrollo').select('temp_id').eq('id', input.desarrollo_id).single()
+  const tempCode = `PROP-${dev?.temp_id || 'DEV'}-${Math.floor(Math.random() * 1000)}`
+
+  // 1. Crear material inactivo
+  const { data: material, error: matError } = await supabase
+    .from('materiales')
+    .insert({
+      codigo:     tempCode,
+      nombre:     input.nombre.trim(),
+      unidad:     input.unidad,
+      costo_unit: input.costo_unit,
+      activo:     false, // Inactivo hasta que se gradué el producto
+    })
+    .select('id, nombre, unidad, costo_unit, codigo')
+    .single()
+
+  if (matError || !material) return { error: matError?.message ?? 'Error al crear material borrador' }
+
+  // 2. Registrar condiciones iniciales en el panel de desarrollo para este material
+  await supabase.from('desarrollo_condiciones_material').insert({
+    desarrollo_id:          input.desarrollo_id,
+    material_id:            material.id,
+    proveedor_id:           input.proveedor_id,
+    moq_material:           input.moq,
+    moq_unidad:             input.unidad,
+    consumo_por_unidad:     0, // Se definirá en el panel de condiciones
+    leadtime_material_dias: 0,
+    notas:                  'Material propuesto desde desarrollo',
+  })
+
+  return { data: material, error: null }
+}
+
+export async function getMaterialInheritedConditions(materialId: string) {
+  const supabase = db(await createClient())
+
+  // Intentar obtener de la última OC de este material
+  const { data: lastOc } = await supabase
+    .from('oc_detalle_mp')
+    .select(`
+      precio_unitario,
+      ordenes_compra ( proveedor_id )
+    `)
+    .eq('material_id', materialId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (lastOc) {
+    return {
+      data: {
+        costo_unit: lastOc.precio_unitario,
+        proveedor_id: lastOc.ordenes_compra?.proveedor_id,
+      },
+      error: null
+    }
+  }
+
+  // Si no hay compras, obtener el costo_unit del maestro
+  const { data: material } = await supabase
+    .from('materiales')
+    .select('costo_unit')
+    .eq('id', materialId)
+    .maybeSingle()
+
+  return {
+    data: {
+      costo_unit: material?.costo_unit || 0,
+      proveedor_id: null,
+    },
+    error: null
+  }
+}

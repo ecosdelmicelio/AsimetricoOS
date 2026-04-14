@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ChevronRight, AlertTriangle, Plus, FlaskConical } from 'lucide-react'
+import { ArrowLeft, ChevronRight, AlertTriangle, Plus, FlaskConical, Edit3 } from 'lucide-react'
 import Link from 'next/link'
 import { cn, formatCurrency } from '@/shared/lib/utils'
 import { DesarrolloStatusBadge } from './desarrollo-status-badge'
@@ -36,7 +36,7 @@ const TRANSICIONES_PERMITIDAS: Record<StatusDesarrollo, StatusDesarrollo[]> = {
   cancelled:     [],
 }
 
-type Tab = 'info' | 'versiones' | 'condiciones' | 'muestra' | 'assets' | 'hallazgos' | 'historial'
+type Tab = 'info' | 'versiones' | 'bom' | 'condiciones' | 'muestra' | 'assets' | 'hallazgos' | 'historial'
 
 interface Tercero { id: string; nombre: string }
 
@@ -115,6 +115,7 @@ export function DesarrolloDetail({
   const [estadoDestino, setEstadoDestino]     = useState<StatusDesarrollo | null>(null)
   const [showTransicionModal, setShowTransicionModal] = useState(false)
   const [showNuevaVersion, setShowNuevaVersion] = useState(false)
+  const [showEditarVersion, setShowEditarVersion] = useState(false)
   const [versionActiva, setVersionActiva]     = useState<string | null>(null)
   const [showMuestraModal, setShowMuestraModal] = useState(false)
   const [muestraCreadaCodigo, setMuestraCreadaCodigo] = useState<string | null>(null)
@@ -137,17 +138,51 @@ export function DesarrolloDetail({
     : ultimaVersion
 
   const esFabricado = desarrollo.tipo_producto === 'fabricado'
+
+  const currentAdvice = ({
+    draft: {
+      title: 'Fase de Diseño & BOM',
+      description: 'Enfócate en definir los materiales (BOM) y crear la ficha técnica. Una vez listo, define condiciones y envía a revisión de operaciones.',
+      bg: 'bg-blue-50 border-blue-100 text-blue-800',
+    },
+    ops_review: {
+      title: 'Revisión de Viabilidad Ops',
+      description: 'Define MOQs, proveedores y múltiplos para determinar si el producto es escalable. El Director debe dar su aval.',
+      bg: 'bg-amber-50 border-amber-100 text-amber-800',
+    },
+    sampling: {
+      title: 'Desarrollo de Muestra Física',
+      description: 'Genera la OP/OC de muestra y haz seguimiento al ingreso en bodega para iniciar el fitting.',
+      bg: 'bg-violet-50 border-violet-100 text-violet-800',
+    },
+    fitting: {
+      title: 'Pruebas de Ajuste (Fitting)',
+      description: 'Registra hallazgos y correcciones necesarias sobre la muestra física recibida.',
+      bg: 'bg-teal-50 border-teal-100 text-teal-800',
+    },
+    client_review: {
+      title: 'Validación del Cliente',
+      description: 'Presenta el prototipo final al cliente y obtén su aprobación comercial.',
+      bg: 'bg-indigo-50 border-indigo-100 text-indigo-800',
+    },
+    approved: {
+      title: 'Desarrollo Aprobado',
+      description: 'Todo está listo. Verifica que los materiales y costos sean correctos antes de graduar a producción.',
+      bg: 'bg-emerald-50 border-emerald-100 text-emerald-800',
+    }
+  } as any)[status]
   const tercerosMuestra = esFabricado ? talleres : proveedores
 
-  const bom = ultimaVersion?.bom_data as any
-  const hasBom = Array.isArray(bom) 
-    ? bom.length > 0 
-    : (bom && typeof bom === 'object' && Array.isArray(bom.materiales) && bom.materiales.length > 0)
-  const hasCondiciones = esFabricado
-    ? desarrollo.desarrollo_condiciones_material.length > 0
-    : desarrollo.desarrollo_condiciones && (Array.isArray(desarrollo.desarrollo_condiciones) ? desarrollo.desarrollo_condiciones.length > 0 : !!desarrollo.desarrollo_condiciones)
- 
-  const canMoveToOps = hasBom && hasCondiciones
+  const hasBom = (ultimaVersion?.bom_data as any)?.materiales?.length > 0
+  const hasMedidas = ultimaVersion?.cuadro_medidas != null && Object.keys(ultimaVersion.cuadro_medidas as any).length > 0
+  
+  // Validación de archivos mandatorios
+  const hasOptitex = ultimaVersion?.desarrollo_assets?.some(a => a.tipo === 'optitex')
+  const hasEtiquetas = ultimaVersion?.desarrollo_assets?.some(a => ['etiqueta', 'marquilla_comp', 'marquilla_imp'].includes(a.tipo))
+  const hasFotos = ultimaVersion?.desarrollo_assets?.some(a => a.tipo === 'foto_muestra')
+  const hasFicha = ultimaVersion?.desarrollo_assets?.some(a => a.tipo === 'ficha_tecnica')
+
+  const canMoveToOps = hasBom && hasMedidas && hasOptitex && hasEtiquetas && hasFotos && hasFicha
   const canMoveToSampling = !!ultimaVersion?.aprobado_ops
   const canMoveToApproved = !!ultimaVersion?.aprobado_cliente
   const canMoveToGraduated = !!ultimaVersion?.aprobado_director
@@ -189,15 +224,45 @@ export function DesarrolloDetail({
     setGaleriaOpen(true)
   }
 
+  // Lógica de visibilidad por estado
+  const getVisibleTabs = (s: StatusDesarrollo): Tab[] => {
+    switch (s) {
+      case 'draft':
+        return ['versiones', 'assets', 'info']
+      case 'ops_review':
+        return ['condiciones', 'bom', 'versiones', 'info']
+      case 'sampling':
+      case 'fitting':
+        return ['muestra', 'hallazgos', 'assets', 'versiones', 'info']
+      case 'client_review':
+        return ['assets', 'hallazgos', 'info']
+      case 'approved':
+      case 'graduated':
+        return ['info', 'bom', 'condiciones', 'assets', 'versiones']
+      default:
+        return ['info', 'versiones', 'bom', 'condiciones', 'muestra', 'assets', 'hallazgos', 'historial']
+    }
+  }
+
+  const visibleTabsIds = getVisibleTabs(status)
+
   const TABS: { id: Tab; label: string; badge?: number }[] = [
-    { id: 'info',        label: 'General' },
-    { id: 'versiones',   label: 'Versiones', badge: desarrollo.desarrollo_versiones.length },
-    { id: 'condiciones', label: 'Condiciones' },
-    { id: 'muestra',     label: 'Muestra' },
+    { id: 'versiones',   label: 'Diseño & BOM', badge: desarrollo.desarrollo_versiones.length },
+    { id: 'bom',         label: 'BOM & Costos' },
+    { id: 'condiciones', label: 'Viabilidad Ops' },
+    { id: 'muestra',     label: 'Muestra Física' },
     { id: 'assets',      label: 'Fotos & Archivos', badge: versionSeleccionada?.desarrollo_assets.length },
-    { id: 'hallazgos',   label: 'Hallazgos', badge: versionSeleccionada?.desarrollo_hallazgos.filter(h => !h.resuelto).length },
+    { id: 'hallazgos',   label: 'Hallazgos (Prototipo)', badge: versionSeleccionada?.desarrollo_hallazgos.filter(h => !h.resuelto).length },
+    { id: 'info',        label: 'Info General' },
     { id: 'historial',   label: 'Historial' },
-  ]
+  ].filter(t => visibleTabsIds.includes(t.id))
+
+  // Auto-switch tab si el actual ya no es visible por cambio de estado
+  useEffect(() => {
+    if (!visibleTabsIds.includes(activeTab)) {
+      setActiveTab(visibleTabsIds[0] || 'info')
+    }
+  }, [status, visibleTabsIds, activeTab])
 
   return (
     <div className="space-y-4">
@@ -313,6 +378,19 @@ export function DesarrolloDetail({
         </div>
       )}
 
+      {/* Banner de Contexto / Advice */}
+      {currentAdvice && (
+        <div className={cn('rounded-2xl border px-5 py-4 flex gap-4 items-center shrink-0', currentAdvice.bg)}>
+          <div className="p-2.5 rounded-xl bg-white/50">
+             <FlaskConical className="w-5 h-5 opacity-70" />
+          </div>
+          <div>
+            <h4 className="text-xs font-black uppercase tracking-tight">{currentAdvice.title}</h4>
+            <p className="text-xs opacity-80 leading-snug">{currentAdvice.description}</p>
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden">
         <div className="flex border-b border-slate-100 overflow-x-auto no-scrollbar">
@@ -349,9 +427,10 @@ export function DesarrolloDetail({
             </div>
           )}
 
-          {/* TAB: Condiciones */}
+          {/* TAB: Viabilidad Ops */}
           {activeTab === 'condiciones' && (
             <CondicionesPanel
+              readOnly={status !== 'ops_review'}
               desarrolloId={desarrollo.id}
               versionId={ultimaVersion?.id || ''}
               tipoProducto={desarrollo.tipo_producto as 'fabricado' | 'comercializado'}
@@ -371,8 +450,25 @@ export function DesarrolloDetail({
                   desarrolloId={desarrollo.id}
                   catalogoMateriales={catalogoMateriales}
                   catalogoServicios={catalogoServicios}
+                  proveedores={proveedores}
+                  initialBom={ultimaVersion?.bom_data}
                   onCreated={() => { setShowNuevaVersion(false); router.refresh() }}
                   onCancel={() => setShowNuevaVersion(false)}
+                />
+              ) : showEditarVersion && ultimaVersion ? (
+                <NuevaVersionForm
+                  mode="edit"
+                  versionId={ultimaVersion.id}
+                  desarrolloId={desarrollo.id}
+                  catalogoMateriales={catalogoMateriales}
+                  catalogoServicios={catalogoServicios}
+                  proveedores={proveedores}
+                  initialBom={ultimaVersion.bom_data}
+                  initialNotas={ultimaVersion.notas_version || ''}
+                  initialComportamiento={ultimaVersion.comportamiento_tela || ''}
+                  initialMedidas={ultimaVersion.cuadro_medidas as any}
+                  onCreated={() => { setShowEditarVersion(false); router.refresh() }}
+                  onCancel={() => setShowEditarVersion(false)}
                 />
               ) : (
                 <>
@@ -381,11 +477,13 @@ export function DesarrolloDetail({
                     <Plus className="w-3.5 h-3.5" /> Crear nueva versión
                   </button>
                   <div className="space-y-3">
-                    {versionesOrdenadas.map(v => (
-                      <div key={v.id}
-                        onClick={() => setVersionActiva(v.id)}
-                        className={cn('rounded-xl border p-4 cursor-pointer transition-all',
-                          versionSeleccionada?.id === v.id ? 'border-primary-300 bg-primary-50' : 'border-slate-200 hover:border-slate-300')}>
+                    {versionesOrdenadas.map(v => {
+                      const isUltima = v.id === ultimaVersion?.id
+                      return (
+                        <div key={v.id}
+                          onClick={() => setVersionActiva(v.id)}
+                          className={cn('rounded-xl border p-4 cursor-pointer transition-all',
+                            versionSeleccionada?.id === v.id ? 'border-primary-300 bg-primary-50' : 'border-slate-200 hover:border-slate-300')}>
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <div className="flex items-center gap-2 mb-1">
@@ -394,58 +492,177 @@ export function DesarrolloDetail({
                             </div>
                             {v.notas_version && <p className="text-xs text-slate-600 line-clamp-2">{v.notas_version}</p>}
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <AprobDot label="Ops" ok={v.aprobado_ops} />
-                            <AprobDot label="Cli" ok={v.aprobado_cliente} />
-                            <AprobDot label="Dir" ok={v.aprobado_director} />
+                            <div className="flex items-center gap-2 shrink-0">
+                              {/* Botón Editar (solo si es la versión actual y no está aprobada por todos?) */}
+                              {isUltima && (
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); setShowEditarVersion(true) }}
+                                  className="p-1.5 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition-all"
+                                  title="Editar esta versión"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              <AprobDot label="Ops" ok={v.aprobado_ops} />
+                              <AprobDot label="Cli" ok={v.aprobado_cliente} />
+                              <AprobDot label="Dir" ok={v.aprobado_director} />
+                            </div>
                           </div>
-                        </div>
-                        {/* BOM preview */}
-                        {v.bom_data && (
-                          <div className="mt-3 pt-3 border-t border-slate-100">
-                            {Array.isArray(v.bom_data) ? (
-                              <div className="flex flex-wrap gap-1.5">
-                                <p className="w-full text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">BOM (Vista Clásica)</p>
-                                {(v.bom_data as any[]).slice(0, 5).map((item, i) => (
-                                  <span key={i} className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[9px] font-medium">
-                                    {item.material_nombre} · {item.cantidad} {item.unidad}
-                                  </span>
-                                ))}
-                                {v.bom_data.length > 5 && <span className="text-[9px] text-slate-400 font-bold">+{v.bom_data.length - 5}</span>}
-                              </div>
-                            ) : typeof v.bom_data === 'object' ? (
-                              <>
-                                <div className="flex items-center justify-between mb-1.5">
-                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">BOM & Costos</p>
-                                  {(v.bom_data as any).costo_estimado > 0 && (
-                                    <span className="text-[10px] font-black text-slate-900">{formatCurrency((v.bom_data as any).costo_estimado)}</span>
-                                  )}
-                                </div>
+                          {/* BOM preview */}
+                          {v.bom_data && (
+                            <div className="mt-3 pt-3 border-t border-slate-100">
+                              {Array.isArray(v.bom_data) ? (
                                 <div className="flex flex-wrap gap-1.5">
-                                  {/* Materiales */}
-                                  {((v.bom_data as any).materiales || []).slice(0, 3).map((item: any, i: number) => (
-                                    <span key={i} className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[9px] font-bold">
+                                  <p className="w-full text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">BOM (Vista Clásica)</p>
+                                  {(v.bom_data as any[]).map((item, i) => (
+                                    <span key={i} className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[9px] font-medium">
                                       {item.material_nombre} · {item.cantidad} {item.unidad}
                                     </span>
                                   ))}
-                                  {/* Servicios */}
-                                  {((v.bom_data as any).servicios || []).slice(0, 3).map((item: any, i: number) => (
-                                    <span key={i} className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[9px] font-bold">
-                                      {item.servicio_nombre} · {item.cantidad} ud
-                                    </span>
-                                  ))}
-                                  {((((v.bom_data as any).materiales?.length || 0) + ((v.bom_data as any).servicios?.length || 0)) > 6) && (
-                                    <span className="text-[9px] text-slate-400 font-bold uppercase">+ más</span>
-                                  )}
                                 </div>
-                              </>
-                            ) : null}
-                          </div>
-                        )}
+                              ) : typeof v.bom_data === 'object' ? (
+                                <>
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">BOM & Costos</p>
+                                    {(v.bom_data as any).costo_estimado > 0 && (
+                                      <span className="text-[10px] font-black text-slate-900">{formatCurrency((v.bom_data as any).costo_estimado)}</span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {/* Materiales */}
+                                    {((v.bom_data as any).materiales || []).map((item: any, i: number) => (
+                                      <div key={i} className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[9px] font-bold">
+                                        {item.material_nombre} · {item.cantidad} {item.unidad}
+                                      </div>
+                                    ))}
+                                    {/* Servicios */}
+                                    {((v.bom_data as any).servicios || []).map((item: any, i: number) => (
+                                      <div key={i} className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[9px] font-bold">
+                                        {item.servicio_nombre} · {item.cantidad} ud
+                                      </div>
+                                    ))}
+                                  </div>
+                                  {/* Medidas (opcional en card) */}
+                                  {v.cuadro_medidas && (
+                                    <div className="mt-2 flex items-center gap-2">
+                                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Medidas OK</span>
+                                      <div className="flex gap-1">
+                                        {Object.keys(v.cuadro_medidas as any).map(m => (
+                                          <div key={m} className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </>
+                              ) : null}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Checklist de Validación Pre-Ops */}
+                  {status === 'draft' && (
+                    <div className="mt-6 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm space-y-4">
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Checklist de Entrega a Ops</p>
+                        <p className="text-[11px] text-slate-500">Asegúrate de cumplir con estos requisitos para habilitar la revisión de viabilidad.</p>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <CheckItem label="BOM Completo" ok={hasBom} />
+                        <CheckItem label="Medidas Cargadas" ok={hasMedidas} />
+                        <CheckItem label="Archivo Optitex" ok={hasOptitex} />
+                        <CheckItem label="Fotos Muestra" ok={hasFotos} />
+                        <CheckItem label="Etiquetas / Marquillas" ok={hasEtiquetas} />
+                        <CheckItem label="Ficha Técnica" ok={hasFicha} />
+                      </div>
+                      {!canMoveToOps && (
+                        <div className="flex items-center gap-2 text-[10px] text-amber-600 font-bold bg-amber-50 p-2.5 rounded-xl border border-amber-100">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                          <span>Faltan requisitos para enviar a revisión operativa.</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* TAB: BOM & Costos (Solo lectura de la versión seleccionada) */}
+          {activeTab === 'bom' && versionSeleccionada && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                    BOM de la versión v{versionSeleccionada.version_n}
+                  </p>
+                  <p className="text-xs text-slate-500">Consulta los materiales y servicios definidos para esta iteración específica.</p>
+                </div>
+                {(versionSeleccionada.bom_data as any)?.costo_estimado > 0 && (
+                  <div className="bg-slate-900 text-white px-4 py-2 rounded-xl text-right">
+                    <p className="text-[9px] font-black uppercase opacity-60">Costo Estimado</p>
+                    <p className="text-lg font-black">{formatCurrency((versionSeleccionada.bom_data as any).costo_estimado)}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Lista Materiales */}
+                <div className="space-y-3">
+                  <h4 className="text-[11px] font-black text-slate-900 uppercase flex items-center gap-2">
+                    <div className="w-1.5 h-4 bg-blue-500 rounded-full" /> Materias Primas
+                  </h4>
+                  <div className="space-y-2">
+                    {((versionSeleccionada.bom_data as any)?.materiales || []).map((m: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold text-slate-900 truncate">{m.material_nombre}</p>
+                          <p className="text-[10px] text-slate-400">{m.referencia} · {m.cantidad} {m.unidad} × {formatCurrency(m.costo_unit)}</p>
+                        </div>
+                        <div className="text-xs font-black text-slate-900 ml-4">
+                          {formatCurrency(m.cantidad * m.costo_unit)}
+                        </div>
                       </div>
                     ))}
+                    {((versionSeleccionada.bom_data as any)?.materiales?.length === 0) && (
+                      <p className="text-xs text-slate-400 italic py-2">Sin materiales registrados</p>
+                    )}
                   </div>
-                </>
+                </div>
+
+                {/* Lista Servicios */}
+                <div className="space-y-3">
+                  <h4 className="text-[11px] font-black text-slate-900 uppercase flex items-center gap-2">
+                    <div className="w-1.5 h-4 bg-purple-500 rounded-full" /> Servicios Operativos
+                  </h4>
+                  <div className="space-y-2">
+                    {((versionSeleccionada.bom_data as any)?.servicios || []).map((s: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold text-slate-900 truncate">{s.servicio_nombre}</p>
+                          <p className="text-[10px] text-purple-600 font-bold uppercase tracking-tighter">{s.tipo_proceso}</p>
+                          <p className="text-[10px] text-slate-400">{s.cantidad} ud × {formatCurrency(s.tarifa_unitaria)}</p>
+                        </div>
+                        <div className="text-xs font-black text-slate-900 ml-4">
+                          {formatCurrency(s.cantidad * s.tarifa_unitaria)}
+                        </div>
+                      </div>
+                    ))}
+                    {((versionSeleccionada.bom_data as any)?.servicios?.length === 0) && (
+                      <p className="text-xs text-slate-400 italic py-2">Sin servicios registrados</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Comportamiento Tela */}
+              {versionSeleccionada.comportamiento_tela && (
+                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100">
+                  <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1.5">Comportamiento de Tela</p>
+                  <p className="text-sm text-amber-900 leading-relaxed">{versionSeleccionada.comportamiento_tela}</p>
+                </div>
               )}
             </div>
           )}
@@ -753,11 +970,21 @@ function InfoRow({ label, value, capitalize }: { label: string; value: string; c
   )
 }
 
-function AprobDot({ label, ok }: { label: string; ok: boolean }) {
+function AprobDot({ label, ok }: { label: string, ok: boolean }) {
   return (
-    <div className="flex items-center gap-0.5">
-      <div className={cn('w-2 h-2 rounded-full', ok ? 'bg-green-400' : 'bg-slate-200')} />
-      <span className="text-[9px] text-slate-400 font-medium">{label}</span>
+    <div className="flex flex-col items-center gap-0.5">
+      <div className={cn('w-2 h-2 rounded-full', ok ? 'bg-green-500' : 'bg-slate-200')} />
+      <span className="text-[8px] font-bold text-slate-400 uppercase">{label}</span>
+    </div>
+  )
+}
+
+function CheckItem({ label, ok }: { label: string, ok: boolean }) {
+  return (
+    <div className={cn('flex items-center gap-2 p-2 rounded-lg border text-[10px] font-bold uppercase tracking-widest transition-colors',
+      ok ? 'bg-green-50 border-green-100 text-green-700' : 'bg-slate-50 border-slate-100 text-slate-400')}>
+      <div className={cn('w-2 h-2 rounded-full', ok ? 'bg-green-500' : 'bg-slate-300 shadow-inner')} />
+      {label}
     </div>
   )
 }
