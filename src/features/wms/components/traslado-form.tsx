@@ -244,7 +244,16 @@ export function TrasladoForm({ bodegas, bodegaOrigen }: Props) {
                       onChange={e => updateItem(item.id, 'producto_id', e.target.value)}
                     />
                   </div>
-                  <div className="w-32">
+                  <div className="w-24">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase ml-1">Talla</span>
+                    <input 
+                      className="w-full px-3 py-2 bg-white rounded-xl border border-neu-300 text-sm outline-none" 
+                      placeholder="S, M, L..."
+                      value={item.talla || ''}
+                      onChange={e => updateItem(item.id, 'talla', e.target.value)}
+                    />
+                  </div>
+                  <div className="w-24">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase ml-1">Cantidad</span>
                     <input 
                       type="number"

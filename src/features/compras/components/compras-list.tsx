@@ -57,6 +57,11 @@ export async function ComprasList() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-semibold text-foreground text-body-md">{oc.codigo}</span>
                       <OCDocBadge estado={oc.estado_documental} />
+                      {(oc as unknown as { es_muestra?: boolean }).es_muestra && (
+                        <span className="text-[8px] font-black bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded border border-violet-200 uppercase tracking-tighter">
+                          MUESTRA
+                        </span>
+                      )}
                     </div>
                     <p className="text-muted-foreground text-body-sm mt-0.5">
                       {oc.terceros?.nombre ?? 'Sin proveedor'}

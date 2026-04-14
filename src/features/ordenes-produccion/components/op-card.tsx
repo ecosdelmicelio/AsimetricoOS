@@ -56,7 +56,17 @@ export function OPCard({
               {codigo}
             </Link>
             <OPStatusBadge estado={estado} labelOverride={getOPStatusLabel(opPayload)} />
-            
+
+            {opPayload?.es_muestra && (
+              <Link
+                href={opPayload?.desarrollo_id ? `/desarrollo/${opPayload.desarrollo_id}` : '#'}
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                className="text-[8px] font-black bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded border border-violet-200 uppercase tracking-tighter hover:bg-violet-200 transition-colors"
+              >
+                MUESTRA
+              </Link>
+            )}
+
             <span className="text-[8px] font-black bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded border border-slate-100 uppercase tracking-tighter">
               {ovCodigo}
             </span>

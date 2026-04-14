@@ -278,7 +278,22 @@ export async function confirmarTraslado(
     // Actualizar bodega_id y posicion_id del bin
     const targetPosId = traslado.notas?.match(/\[TARGET_POS:(.*?)\]/)?.[1]
     
-    const { error: binError } = await supabase
+    if (targetPosId) {
+      // VALIDAR CAPACIDAD DE LA POSICIÓN DESTINO
+      const { data: posCapData } = await supabase
+        .from('bodega_posiciones')
+        .select('capacidad_bines, bines:bines(count)')
+        .eq('id', targetPosId)
+        .single() as any
+        
+      const capacity = posCapData?.capacidad_bines || 4
+      const occupied = posCapData?.bines?.[0]?.count || 0
+      
+      if (occupied >= capacity) {
+        return { error: `Posición destino llena (${capacity}). No se puede completar el traslado.` }
+      }
+
+      const { error: binError } = await supabase
       .from('bines')
       .update({ 
         bodega_id: traslado.bodega_destino,
@@ -289,7 +304,8 @@ export async function confirmarTraslado(
     if (binError) {
       return { error: `Error actualizando bin: ${binError.message}` }
     }
-  } else if (traslado.tipo === 'bin_a_bin') {
+  }
+} else if (traslado.tipo === 'bin_a_bin') {
     // Bin a Bin: items específicos de traslado_items, REASIGNACION movimientos
     if (!tipos.reasignacionBinSalida || !tipos.reasignacionBinEntrada) {
       return { error: 'Tipos de movimiento REASIGNACION no encontrados' }
@@ -355,6 +371,28 @@ export async function confirmarTraslado(
 
   if (updateError) {
     return { error: `Error actualizando traslado: ${updateError.message}` }
+  }
+
+  // 5. Auto-limpieza: Si el bin origen queda vacío y no es fijo, borrarlo (Solicitud usuario)
+  if (traslado.tipo === 'bin_a_bin' && traslado.bin_origen_id) {
+    const { data: stockRestante } = await supabase
+      .from('kardex')
+      .select('cantidad')
+      .eq('bin_id', traslado.bin_origen_id) as any
+    
+    const total = (stockRestante || []).reduce((acc: number, cur: any) => acc + cur.cantidad, 0)
+    
+    if (total <= 0) {
+      const { data: binInfo } = await supabase
+        .from('bines')
+        .select('es_fijo')
+        .eq('id', traslado.bin_origen_id)
+        .single() as any
+        
+      if (binInfo && !binInfo.es_fijo) {
+        await supabase.from('bines').delete().eq('id', traslado.bin_origen_id)
+      }
+    }
   }
 
   revalidatePath('/wms')

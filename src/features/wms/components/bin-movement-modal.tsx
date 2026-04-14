@@ -39,11 +39,22 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
     setError(null)
     try {
       const data = await getOCItemsGrid(activeOC.id)
-      setItems(data)
+      
+      // DESGLOSE DE GRUPOS: Si un item es un grupo, lo expandimos a sus hijos (tallas)
+      const flattenedItems: any[] = []
+      data.forEach(item => {
+        if (item.metadata?.isGroup && item.metadata?.children) {
+          flattenedItems.push(...item.metadata.children)
+        } else {
+          flattenedItems.push(item)
+        }
+      })
+
+      setItems(flattenedItems)
       
       // Inicializar cantidades con el total pendiente
       const initialQtys: Record<string, number> = {}
-      data.forEach(item => {
+      flattenedItems.forEach(item => {
         initialQtys[item.id] = item.count
       })
       setQuantities(initialQtys)

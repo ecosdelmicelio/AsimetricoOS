@@ -22,6 +22,9 @@ interface Producto {
   precio_base: number | null
   categoria: string | null
   origen_usa: boolean
+  minimo_orden: number | null
+  multiplo_orden: number | null
+  leadtime_dias: number | null
 }
 
 type GrupoProducto = {
@@ -130,6 +133,9 @@ export function OVForm({ clientes, productos, initialData }: Props) {
   const [nombreBaseSeleccionado, setNombreBaseSeleccionado] = useState('')
   const [colorSeleccionado, setColorSeleccionado] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [condicionesMap, setCondicionesMap] = useState<Record<string, {
+    minimo_orden: number | null; multiplo_orden: number | null; leadtime_dias: number | null; nombre: string
+  }>>({})
 
   // Grupos derivados del catálogo
   const grupos = useMemo(() => derivarGrupos(productos), [productos])
@@ -175,6 +181,17 @@ export function OVForm({ clientes, productos, initialData }: Props) {
       precio_unitario: producto.precio_base ?? 0,
       cantidades: Object.fromEntries(TALLAS_STANDARD.map(t => [t, 0])),
     }
+
+    // Store conditions for validation
+    setCondicionesMap(prev => ({
+      ...prev,
+      [productoId]: {
+        minimo_orden: producto.minimo_orden,
+        multiplo_orden: producto.multiplo_orden,
+        leadtime_dias: producto.leadtime_dias,
+        nombre: nombreBase,
+      }
+    }))
 
     setProductosEnForm(prev => [...prev, nuevoProducto])
   }
@@ -387,6 +404,43 @@ export function OVForm({ clientes, productos, initialData }: Props) {
           onAgregarColor={agregarProductoPorId}
         />
       </div>
+
+      {/* Validaciones de condiciones */}
+      {productosEnForm.length > 0 && (() => {
+        const warnings: string[] = []
+        for (const p of productosEnForm) {
+          const cond = condicionesMap[p.producto_id]
+          if (!cond) continue
+          const totalUds = Object.values(p.cantidades).reduce((s, q) => s + q, 0)
+          if (totalUds === 0) continue
+          if (cond.minimo_orden && totalUds < cond.minimo_orden) {
+            warnings.push(`${cond.nombre}: mínimo ${cond.minimo_orden} uds (solicitado: ${totalUds})`)
+          }
+          if (cond.multiplo_orden && cond.multiplo_orden > 0 && totalUds % cond.multiplo_orden !== 0) {
+            warnings.push(`${cond.nombre}: debe ser múltiplo de ${cond.multiplo_orden} (solicitado: ${totalUds})`)
+          }
+        }
+        if (fechaEntrega) {
+          for (const p of productosEnForm) {
+            const cond = condicionesMap[p.producto_id]
+            if (!cond?.leadtime_dias) continue
+            const diasDisponibles = Math.ceil((new Date(fechaEntrega).getTime() - Date.now()) / (1000 * 3600 * 24))
+            if (diasDisponibles < cond.leadtime_dias) {
+              warnings.push(`${cond.nombre}: requiere ${cond.leadtime_dias} días de anticipación (disponible: ${diasDisponibles}d)`)
+            }
+          }
+        }
+        if (warnings.length === 0) return null
+        return (
+          <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 space-y-1">
+            <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1.5">⚠ Advertencias de Condiciones</p>
+            {warnings.map((w, i) => (
+              <p key={i} className="text-xs text-amber-700">{w}</p>
+            ))}
+            <p className="text-[10px] text-amber-500 mt-1">Puedes continuar, pero revisa con el equipo de compras/producción.</p>
+          </div>
+        )
+      })()}
 
       {/* Total y submit */}
       {productosEnForm.length > 0 && (

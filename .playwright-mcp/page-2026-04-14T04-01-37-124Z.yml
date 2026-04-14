@@ -1,0 +1,117 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - img "Asimétrico" [ref=e6]
+      - navigation [ref=e7]:
+        - link "Torre de Control" [ref=e8] [cursor=pointer]:
+          - /url: /torre-control
+          - img [ref=e9]
+        - link "Órdenes de Venta" [ref=e14] [cursor=pointer]:
+          - /url: /ordenes-venta
+          - img [ref=e15]
+        - link "Desarrollo" [ref=e17] [cursor=pointer]:
+          - /url: /desarrollo
+          - img [ref=e18]
+        - link "Producción" [ref=e20] [cursor=pointer]:
+          - /url: /ordenes-produccion
+          - img [ref=e21]
+        - link "Calidad" [ref=e23] [cursor=pointer]:
+          - /url: /calidad
+          - img [ref=e24]
+        - link "Catálogo" [ref=e27] [cursor=pointer]:
+          - /url: /catalogo
+          - img [ref=e28]
+        - link "Gestión de Bodegas" [ref=e32] [cursor=pointer]:
+          - /url: /wms
+          - img [ref=e33]
+        - link "Kardex" [ref=e36] [cursor=pointer]:
+          - /url: /kardex
+          - img [ref=e37]
+        - link "Despachos" [ref=e38] [cursor=pointer]:
+          - /url: /despachos
+          - img [ref=e39]
+        - link "Compras" [ref=e44] [cursor=pointer]:
+          - /url: /compras
+          - img [ref=e45]
+        - link "Terceros" [ref=e49] [cursor=pointer]:
+          - /url: /terceros
+          - img [ref=e50]
+        - link "Configuración" [ref=e55] [cursor=pointer]:
+          - /url: /configuracion
+          - img [ref=e56]
+        - link "Mi Taller" [ref=e59] [cursor=pointer]:
+          - /url: /taller
+          - img [ref=e60]
+      - button "Expandir menú" [ref=e63] [cursor=pointer]:
+        - img [ref=e64]
+    - main [ref=e66]:
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - link [ref=e70] [cursor=pointer]:
+            - /url: /desarrollo
+            - img [ref=e71]
+          - generic [ref=e73]:
+            - generic [ref=e74]:
+              - generic [ref=e75]: DEV-2026-001
+              - generic [ref=e76]: Borrador
+              - generic [ref=e77]: media
+              - generic [ref=e78]: v1
+            - heading "Camiseta Oversize Verano 2026 — Test" [level=1] [ref=e79]
+            - generic [ref=e80]:
+              - generic [ref=e81]: Camiseta
+              - generic [ref=e82]: ·
+              - generic [ref=e83]: fabricado
+              - generic [ref=e84]: ·
+              - generic [ref=e85]: media
+        - generic [ref=e87]:
+          - generic [ref=e88]:
+            - generic [ref=e89]: Borrador
+            - img [ref=e90]
+          - generic [ref=e92]:
+            - generic [ref=e93]: Revisión Ops
+            - img [ref=e94]
+          - generic [ref=e96]:
+            - generic [ref=e97]: Muestreo
+            - img [ref=e98]
+          - generic [ref=e100]:
+            - generic [ref=e101]: Fitting
+            - img [ref=e102]
+          - generic [ref=e104]:
+            - generic [ref=e105]: Revisión Cliente
+            - img [ref=e106]
+          - generic [ref=e108]:
+            - generic [ref=e109]: Aprobado
+            - img [ref=e110]
+          - generic [ref=e113]: Graduado
+        - generic [ref=e115]:
+          - generic [ref=e116]: Mover a →
+          - button "Revisión Ops" [ref=e117] [cursor=pointer]
+          - button "Cancelar" [ref=e118] [cursor=pointer]
+          - button "Nueva versión" [ref=e119] [cursor=pointer]:
+            - img [ref=e120]
+            - text: Nueva versión
+        - generic [ref=e121]:
+          - generic [ref=e122]:
+            - button "General" [ref=e123] [cursor=pointer]
+            - button "Versiones 1" [ref=e124] [cursor=pointer]:
+              - text: Versiones
+              - generic [ref=e125]: "1"
+            - button "Fotos & Archivos" [ref=e126] [cursor=pointer]
+            - button "Hallazgos" [ref=e127] [cursor=pointer]
+            - button "Historial" [ref=e128] [cursor=pointer]
+          - generic [ref=e131]:
+            - generic [ref=e132]:
+              - paragraph [ref=e133]: Fecha compromiso
+              - paragraph [ref=e134]: —
+            - generic [ref=e135]:
+              - paragraph [ref=e136]: Creado por
+              - paragraph [ref=e137]: alejandro.guevara@asimetrico.co
+            - generic [ref=e138]:
+              - paragraph [ref=e139]: Complejidad
+              - paragraph [ref=e140]: media
+            - generic [ref=e141]:
+              - paragraph [ref=e142]: Última actualización
+              - paragraph [ref=e143]: 13/4/2026
+  - button "Open Next.js Dev Tools" [ref=e149] [cursor=pointer]:
+    - img [ref=e150]
+  - alert [ref=e153]

@@ -277,11 +277,17 @@ export async function getBinItemsGrid(binId: string): Promise<GridItem[]> {
   if (!contenido) return []
   
   return contenido.items.map(i => ({
-    id: i.producto_id || i.recepcion_id,
+    id: `${i.producto_id || i.recepcion_id}|${i.talla}`,
     label: i.nombre,
     sublabel: `${i.talla} — ${i.referencia}`,
     count: i.cantidad,
-    icon: 'Package'
+    icon: 'Package',
+    metadata: {
+      producto_id: i.producto_id,
+      talla: i.talla,
+      referencia: i.referencia,
+      unidad: i.unidad || 'unidades'
+    }
   }))
 }
 
@@ -332,8 +338,14 @@ export async function processUnifiedMovement(input: {
   notas?: string
   bodegaId?: string
   metadata?: any
+  items?: Array<{
+    producto_id: string
+    talla: string
+    cantidad: number
+    unidad: string
+  }>
 }) {
-  const { mode, sourceId, targetId, itemId, cantidad, precioUnitario, notas, bodegaId, metadata } = input
+  const { mode, sourceId, targetId, itemId, cantidad, precioUnitario, notas, bodegaId, metadata, items } = input
 
   // Handle Virtual "New Bin" creation if requested
   let finalTargetId = targetId
@@ -349,14 +361,15 @@ export async function processUnifiedMovement(input: {
         const { getOrdenCompraById } = await import('@/features/compras/services/compras-actions')
         const oc = await getOrdenCompraById(sourceId)
         
-        const ocNum = (oc as any)?.data?.numero_orden || (sourceId.length > 8 ? sourceId.substring(0, 8) : sourceId)
+        const ocData = (oc as any)?.data
+        const ocNum = ocData?.codigo || (sourceId.length > 8 ? sourceId.substring(0, 8) : sourceId)
         const tipo = metadata?.producto_id ? 'COM' : 'FAB'
         
         // Limpiamos el nombre del producto para el código
         const rawName = metadata?.label || 'ITEM'
-        const cleanName = rawName.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '')
+        const cleanName = rawName.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '').substring(0, 8)
         
-        descriptiveCode = `${ocNum}-${tipo}-${cleanName}`.toUpperCase()
+        descriptiveCode = `${ocNum}-BIN-${cleanName}`.toUpperCase()
       } catch (err) {
         console.error('Error in naming cerebro:', err)
       }
@@ -394,7 +407,7 @@ export async function processUnifiedMovement(input: {
       const { crearTraslado, confirmarTraslado } = await import('@/features/wms/services/traslados-actions')
       const meta = metadata || {}
       
-      const tipo = cantidad === 0 ? 'bin_completo' : 'bin_a_bin'
+      const tipo = (cantidad === 0 && (!items || items.length === 0)) ? 'bin_completo' : 'bin_a_bin'
       
       // FIX: Si es traslado de bin completo a posición, bin_destino_id debe ser null para evitar FK Error.
       // Guardamos la posición destino en las notas para que confirmarTraslado la use.
@@ -404,16 +417,19 @@ export async function processUnifiedMovement(input: {
         bodega_destino_id: bodegaId || '',
         bin_origen_id: sourceId,
         bin_destino_id: tipo === 'bin_completo' ? undefined : targetId, 
-        items: cantidad > 0 ? [{ 
+        items: items && items.length > 0 ? items : (cantidad > 0 ? [{ 
           producto_id: meta.producto_id, 
           talla: meta.talla, 
           cantidad, 
           unidad: 'unidades' 
-        }] : [],
+        }] : []),
         notas: (notas || 'Traslado rápido Command Center') + (tipo === 'bin_completo' ? ` [TARGET_POS:${targetId}]` : '')
       })
       
-      if (res.data) await confirmarTraslado(res.data.id)
+      if (res.data) {
+        const confRes = await confirmarTraslado(res.data.id)
+        if (confRes?.error) return { error: confRes.error }
+      }
       return res
     }
 

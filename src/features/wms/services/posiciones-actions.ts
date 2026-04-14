@@ -201,10 +201,22 @@ export async function getSugerenciaPosicionInteligente(
     const binIds = binesSimilares.map(b => b.bin_id)
     const { data: posSimilares } = await supabase
       .from('bines')
-      .select('posicion_id')
+      .select(`
+        posicion_id,
+        bodega_posiciones!inner(capacidad_bines, bines:bines(count))
+      `)
       .in('id', binIds) as { data: any[] | null }
 
-    const suggestedPosIds = Array.from(new Set((posSimilares || []).map(p => p.posicion_id).filter(Boolean)))
+    const suggestedPosIds = Array.from(new Set(
+      (posSimilares || [])
+        .filter(p => {
+          const cap = p.bodega_posiciones?.capacidad_bines || 4
+          const occ = p.bodega_posiciones?.bines?.[0]?.count || 0
+          return occ < cap
+        })
+        .map(p => p.posicion_id)
+        .filter(Boolean)
+    ))
     
     return { data: suggestedPosIds as string[] }
   } catch (err: any) {

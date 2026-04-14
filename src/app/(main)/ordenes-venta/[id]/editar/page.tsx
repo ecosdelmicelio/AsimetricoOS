@@ -17,6 +17,9 @@ type Producto = {
   precio_base: number | null
   categoria: string | null
   origen_usa: boolean
+  minimo_orden: number | null
+  multiplo_orden: number | null
+  leadtime_dias: number | null
 }
 
 interface Props {
@@ -51,7 +54,7 @@ export default function EditarOVPage({ params }: Props) {
             .order('nombre'),
           supabase
             .from('productos')
-            .select('id, nombre, referencia, precio_base, categoria, origen_usa, color')
+            .select('id, nombre, referencia, precio_base, categoria, origen_usa, color, minimo_orden, multiplo_orden, leadtime_dias')
             .eq('estado', 'activo')
             .order('nombre'),
         ])

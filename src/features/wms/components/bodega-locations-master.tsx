@@ -32,6 +32,8 @@ import {
 import { BinMovementModal } from './bin-movement-modal'
 import { BinAdjustmentModal } from './bin-adjustment-modal'
 import { TransferConfirmationModal } from './transfer-confirmation-modal'
+import { BinToBinTransferModal } from './bin-to-bin-modal'
+import { ConfirmActionModal } from './confirm-action-modal'
 import type { Bodega, Zona, Posicion } from '@/features/wms/types'
 import type { Bin } from '@/features/bines/types'
 
@@ -54,8 +56,14 @@ export function BodegaLocationsMaster() {
   const [pendientes, setPendientes] = useState<any[]>([])
   const [transferSource, setTransferSource] = useState<any>(null)
   const [suggestedPos, setSuggestedPos] = useState<string[]>([])
-  const [adjustmentTarget, setAdjustmentTarget] = useState<any>(null)
+  const [adjustmentTarget, setAdjustmentTarget] = useState<any | null>(null)
+  const [confirmDeleteBin, setConfirmDeleteBin] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [feedback, setFeedback] = useState<{ title: string, description: string, variant: 'danger' | 'warning' | 'info' } | null>(null)
   const [confirmTransfer, setConfirmTransfer] = useState<{ source: any, target: any } | null>(null)
+  const [expandedBinId, setExpandedBinId] = useState<string | null>(null)
+  const [binContents, setBinContents] = useState<Record<string, any[]>>({})
+  const [binToBinTarget, setBinToBinTarget] = useState<any | null>(null)
   const [bodegaStats, setBodegaStats] = useState<Record<string, { units: number, value: number, capacity: number, occupied: number }>>({})
   const [zonaStats, setZonaStats] = useState<Record<string, { capacity: number, occupied: number }>>({})
   const [posicionStats, setPosicionStats] = useState<Record<string, { units: number, value: number, capacity: number, occupied: number }>>({})
@@ -105,15 +113,31 @@ export function BodegaLocationsMaster() {
   }, [selPosicionId])
 
   useEffect(() => {
-    if (mode === 'OPERACI\u00D3N' && selBodegaId) {
+    if (mode === 'OPERACIÓN' && selBodegaId) {
       cargarPendientes()
     }
     // Limpiar estados de transferencia al cambiar de modo
-    if (mode === 'DISE\u00D1O') {
+    if (mode === 'DISEÑO') {
       setTransferSource(null)
       setSuggestedPos([])
     }
   }, [mode, selBodegaId])
+
+  useEffect(() => {
+    const handlePartialTransfer = (e: any) => {
+      const { sourceBin, targetPos } = e.detail;
+      setTransferSource(sourceBin);
+      // Creamos un bin virtual o usamos el de la posición si existe
+      setBinToBinTarget({ 
+        id: `NEW_BIN|${targetPos.id}|${targetPos.nombre || targetPos.codigo}`, 
+        codigo: 'NUEVO CONTENEDOR',
+        bodega_id: selBodegaId 
+      });
+    };
+
+    window.addEventListener('OPEN_PARTIAL_TRANSFER', handlePartialTransfer);
+    return () => window.removeEventListener('OPEN_PARTIAL_TRANSFER', handlePartialTransfer);
+  }, [selBodegaId]);
 
   // --- FUNCIONES DE CARGA ---
   const cargarPendientes = async () => {
@@ -173,8 +197,15 @@ export function BodegaLocationsMaster() {
 
   const cargarBines = async (pid: string) => {
     const { getBinesByPosicion } = await import('@/features/bines/services/bines-actions')
+    const { getBinItemsGrid } = await import('@/features/wms/services/center-actions')
     const data = await getBinesByPosicion(pid)
     setBines(data)
+
+    // AUTO-CARGAR CONTENIDO SIEMPRE (X-RAY MODE)
+    data.forEach(async (bin) => {
+      const items = await getBinItemsGrid(bin.id)
+      setBinContents(prev => ({ ...prev, [bin.id]: items }))
+    })
   }
 
   const handleStartTransfer = async (bin: any) => {
@@ -194,7 +225,7 @@ export function BodegaLocationsMaster() {
     if (!newNames.bodega) return
     const { createBodega } = await import('@/features/wms/services/bodegas-actions')
     const { data, error } = await createBodega({ nombre: newNames.bodega, tipo: 'principal' })
-    if (error) alert(error)
+    if (error) setFeedback({ title: 'Error al Crear Bodega', description: error, variant: 'danger' })
     else {
       await cargarBodegas()
       setNewNames(prev => ({ ...prev, bodega: '' }))
@@ -207,7 +238,7 @@ export function BodegaLocationsMaster() {
     if (!newNames.zona || !selBodegaId) return
     const { crearZona } = await import('@/features/wms/services/zonas-actions')
     const { error } = await crearZona({ nombre: newNames.zona, bodega_id: selBodegaId })
-    if (error) alert(error)
+    if (error) setFeedback({ title: 'Error al Crear Zona', description: error, variant: 'danger' })
     else {
       await cargarZonas(selBodegaId)
       setNewNames(prev => ({ ...prev, zona: '' }))
@@ -224,7 +255,7 @@ export function BodegaLocationsMaster() {
       bodega_id: selBodegaId,
       capacidad_bines: newNames.posicionCapacidad || 4
     })
-    if (error) alert(error)
+    if (error) setFeedback({ title: 'Error al Crear Posición', description: error, variant: 'danger' })
     else {
       await cargarPosiciones(selZonaId)
       setNewNames(prev => ({ ...prev, posicion: '' }))
@@ -236,14 +267,23 @@ export function BodegaLocationsMaster() {
     const { crearBin } = await import('@/features/bines/services/bines-actions')
     if (!selPosicionId) return
     let codigoFinal = undefined
+    const baseCode = activeOC ? activeOC.codigo : (posiciones.find(p => p.id === selPosicionId)?.codigo || 'BN')
     const sufijo = newNames.productoSeleccionado?.referencia || newNames.binSufijo
+    
     if (sufijo.trim()) {
-      const pos = posiciones.find(p => p.id === selPosicionId)
-      codigoFinal = `${pos?.codigo || 'BN'}-${sufijo.trim().toUpperCase()}`
+      codigoFinal = `${baseCode}-${sufijo.trim().toUpperCase()}`
+    } else if (activeOC) {
+      // Si no hay sufijo pero hay OC, generar uno con timestamp corto
+      codigoFinal = `${activeOC.codigo}-${Date.now().toString().slice(-4)}`
     }
 
-    const { error, data } = await crearBin(selPosicionId, codigoFinal, 'interno', newNames.binFijo)
-    if (error) alert(error)
+    const { error, data } = await crearBin({
+      posicion_id: selPosicionId,
+      codigo: codigoFinal,
+      bodega_id: selBodegaId,
+      es_fijo: newNames.binFijo
+    })
+    if (error) setFeedback({ title: 'Límite de Aforo', description: error, variant: 'danger' })
     else {
       await cargarBines(selPosicionId)
       setNewNames(prev => ({ ...prev, binSufijo: '', binFijo: false, productoSeleccionado: null }))
@@ -256,11 +296,42 @@ export function BodegaLocationsMaster() {
     }
   }
 
-  const handleEliminarBin = async (id: string) => {
-    const { eliminarBin } = await import('@/features/bines/services/bines-actions')
-    if(confirm('¿Eliminar este bin?')) {
-      await eliminarBin(id)
-      cargarBines(selPosicionId)
+  const handleEliminarBin = (id: string) => {
+    setConfirmDeleteBin(id)
+  }
+
+  const execDeleteBin = async () => {
+    if (!confirmDeleteBin) return
+    setIsDeleting(true)
+    try {
+      const { eliminarBin } = await import('@/features/bines/services/bines-actions')
+      const { error } = await eliminarBin(confirmDeleteBin)
+      if (error) setFeedback({ title: 'Error al Eliminar', description: error, variant: 'danger' })
+      else {
+        setConfirmDeleteBin(null) // Cerrar inmediatamente
+        await Promise.all([
+          cargarBines(selPosicionId),
+          cargarPosicionStats(selPosicionId),
+          cargarWarehouseStats(selBodegaId)
+        ])
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const toggleBinExpansion = async (binId: string) => {
+    if (expandedBinId === binId) {
+      setExpandedBinId(null)
+      return
+    }
+    setExpandedBinId(binId)
+    if (!binContents[binId]) {
+      const { getBinItemsGrid } = await import('@/features/wms/services/center-actions')
+      const items = await getBinItemsGrid(binId)
+      setBinContents(prev => ({ ...prev, [binId]: items }))
     }
   }
 
@@ -327,6 +398,30 @@ export function BodegaLocationsMaster() {
           </div>
         </div>
       </div>
+
+      {/* BANNER DE TRASLADO ACTIVO */}
+      {transferSource && (
+        <div className="bg-primary-600 px-6 py-3 rounded-[24px] shadow-lg shadow-primary-200 border border-primary-500 animate-in slide-in-from-top-4 duration-500 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center animate-pulse">
+              <Package className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black text-primary-100 uppercase tracking-widest leading-none">Traslado en Curso</p>
+              <h4 className="text-sm font-black text-white mt-1">Origen: {transferSource.codigo}</h4>
+            </div>
+          </div>
+          <div className="flex items-center gap-6">
+            <p className="hidden md:block text-[10px] font-bold text-primary-100 uppercase italic">Seleccione un bin destino para mover unidades o una posición vacía para mover el bulto completo.</p>
+            <button 
+              onClick={() => { setTransferSource(null); setSuggestedPos([]); }}
+              className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/20"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* DASHBOARD GRID 100% VIEWPORT */}
       <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
@@ -442,7 +537,7 @@ export function BodegaLocationsMaster() {
            <div className="flex items-center justify-between mb-4">
               <h3 className="text-[9px] font-black uppercase tracking-widest text-slate-800">Posiciones</h3>
               <button onClick={() => {
-                if(!selZonaId) alert('Selecciona una Zona primero para crear posiciones.');
+                if(!selZonaId) setFeedback({ title: 'Aviso', description: 'Selecciona una Zona primero para crear posiciones.', variant: 'warning' });
                 else setShowForms({...showForms, posicion: !showForms.posicion});
               }} className={`p-1.5 bg-primary-600 text-white rounded-lg hover:scale-110 transition-all ${!selZonaId ? 'opacity-30' : ''}`}><Plus className="w-3 h-3"/></button>
            </div>
@@ -458,13 +553,18 @@ export function BodegaLocationsMaster() {
            )}
            <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-1">
              {!selZonaId ? <div className="h-full flex flex-col items-center justify-center opacity-10"><MapPin className="w-12 h-12" /></div> :
-              posiciones.map(pos => (
-               <button 
-                 key={pos.id} 
-                 onClick={() => transferSource ? handleConfirmTransfer(pos) : setSelPosicionId(pos.id)}
-                 className={`w-full p-4 rounded-[24px] flex items-center gap-4 transition-all border ${selPosicionId === pos.id ? 'bg-primary-50 border-primary-500 ring-4 ring-primary-100' : 'bg-white border-slate-100 hover:border-primary-200'} ${transferSource && !suggestedPos.includes(pos.id) ? 'opacity-40 grayscale' : ''}`}
-               >
-                  <div className={`p-2 rounded-xl border relative ${selPosicionId === pos.id ? 'bg-primary-600 text-white border-primary-400' : 'bg-slate-50 text-slate-400 border-slate-100'} ${suggestedPos.includes(pos.id) ? 'ring-2 ring-amber-400 ring-offset-2' : ''}`}>
+              posiciones.map(pos => {
+                 const stats = posicionStats[pos.id];
+                 const isFull = stats && stats.occupied >= stats.capacity;
+                 
+                 return (
+                  <button 
+                    key={pos.id} 
+                    disabled={!!transferSource && isFull}
+                    onClick={() => setSelPosicionId(pos.id)}
+                    className={`w-full p-4 rounded-[24px] flex items-center gap-4 transition-all border ${selPosicionId === pos.id ? 'bg-primary-50 border-primary-500 ring-4 ring-primary-100' : 'bg-white border-slate-100 hover:border-primary-200'} ${transferSource && !suggestedPos.includes(pos.id) ? 'opacity-40 grayscale' : ''} ${transferSource && isFull ? 'opacity-20 cursor-not-allowed grayscale scale-95' : ''}`}
+                  >
+                     <div className={`p-2 rounded-xl border relative ${selPosicionId === pos.id ? 'bg-primary-600 text-white border-primary-400' : 'bg-slate-50 text-slate-400 border-slate-100'} ${suggestedPos.includes(pos.id) ? 'ring-2 ring-amber-400 ring-offset-2' : ''} ${isFull ? 'ring-2 ring-red-500/20' : ''}`}>
                      <MapPin className="w-4 h-4" />
                      {suggestedPos.includes(pos.id) && (
                        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-[6px] font-black px-1 rounded-sm uppercase whitespace-nowrap shadow-sm">Sug. Afin.</div>
@@ -492,7 +592,7 @@ export function BodegaLocationsMaster() {
                    </div>
                  </div>
                </button>
-             ))}
+             )})}
            </div>
         </div>
 
@@ -546,9 +646,31 @@ export function BodegaLocationsMaster() {
                  </div>
                </div>
 
-               {/* PANEL DE OPERACIÓN DINÁMICO */}
-               <div className="mb-6">
-                 {mode === 'DISE\u00D1O' ? (
+                 {/* PANEL DE OPERACIÓN DINÁMICO */}
+                 <div className="mb-6">
+                   {transferSource ? (
+                     <div className="bg-primary-600/10 border-2 border-dashed border-primary-500 p-6 rounded-[32px] animate-in zoom-in-95 duration-300">
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="w-12 h-12 bg-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
+                            <ArrowRight className="w-6 h-6 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest leading-none">Aterrizaje en {posSeleccionada?.nombre}</p>
+                            <h4 className="text-sm font-black text-slate-200 mt-1">¿Qué tipo de traslado harás?</h4>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 gap-3">
+                           <button 
+                             onClick={() => handleConfirmTransfer(posSeleccionada)}
+                             className="w-full py-4 bg-primary-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl hover:bg-primary-700 active:scale-95 transition-all flex items-center justify-center gap-2"
+                           >
+                              <Archive className="w-4 h-4" /> Mover Bin Completo Aquí
+                           </button>
+                           <p className="text-[9px] font-bold text-slate-500 text-center uppercase tracking-widest py-1">O selecciona un bin debajo para mover unidades</p>
+                        </div>
+                     </div>
+                   ) : mode === 'DISEÑO' ? (
                     <div className="bg-slate-800/80 p-5 rounded-3xl border border-slate-700 space-y-4">
                        <div className="relative">
                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -573,7 +695,15 @@ export function BodegaLocationsMaster() {
                             </div>
                          )}
                        </div>
-                       <button onClick={handleCreateBin} className="w-full py-3 bg-primary-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-700 active:scale-95 transition-all">Crear Contenedor {newNames.binSufijo ? `(${newNames.binSufijo})` : ''}</button>
+                        <button 
+                          disabled={posicionStats[posSeleccionada?.id || '']?.occupied >= posicionStats[posSeleccionada?.id || '']?.capacity}
+                          onClick={handleCreateBin} 
+                          className="w-full py-3 bg-primary-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-700 active:scale-95 transition-all disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed disabled:scale-100"
+                        >
+                          {posicionStats[posSeleccionada?.id || '']?.occupied >= posicionStats[posSeleccionada?.id || '']?.capacity 
+                            ? 'Posición Llena (Aforo Completo)' 
+                            : `Crear Contenedor ${newNames.binSufijo ? `(${newNames.binSufijo})` : ''}`}
+                        </button>
                     </div>
                  ) : activeOC ? (
                     <div className="bg-amber-600 p-5 rounded-3xl shadow-lg ring-4 ring-amber-600/20">
@@ -606,29 +736,77 @@ export function BodegaLocationsMaster() {
                     <span className="text-[9px] font-black text-slate-700 bg-slate-800 px-2 rounded-lg">{bines.length}</span>
                   </div>
                   {bines.map(bin => (
-                    <div key={bin.id} className="p-4 bg-slate-800/40 border border-slate-700 rounded-2xl flex items-center justify-between group hover:bg-slate-800 hover:border-slate-500 transition-all">
-                       <div className="flex items-center gap-4">
-                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${bin.es_fijo ? 'bg-amber-900/10 border-amber-900/40 text-amber-500' : 'bg-slate-700/50 border-slate-600 text-slate-400'}`}>
-                           <Box className="w-5 h-5 shadow-sm" />
+                    <div key={bin.id} className="space-y-2">
+                      <div 
+                         onClick={() => {
+                           if (transferSource && transferSource.id !== bin.id) {
+                             setBinToBinTarget(bin)
+                           }
+                         }}
+                         className={`p-4 bg-slate-800/40 border rounded-2xl flex items-center justify-between group transition-all ${transferSource && transferSource.id !== bin.id ? 'border-primary-500/50 bg-primary-500/5 hover:bg-primary-500/10 cursor-alias ring-2 ring-primary-500/20' : 'border-slate-700 hover:bg-slate-800 hover:border-slate-500'}`}
+                      >
+                          <div className="flex items-center gap-4 flex-1">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${bin.es_fijo ? 'bg-amber-900/10 border-amber-900/40 text-amber-500' : 'bg-slate-700/50 border-slate-600 text-slate-400'}`}>
+                              <Box className="w-5 h-5 shadow-sm" />
+                            </div>
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-black text-slate-100 uppercase leading-none tracking-tight">{bin.codigo}</span>
+                                {binContents[bin.id]?.length > 0 ? (
+                                   <span className="px-1.5 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded-md text-[7px] font-black uppercase tracking-widest">
+                                     {binContents[bin.id].reduce((acc: number, item: any) => acc + item.count, 0)} ITEMS
+                                   </span>
+                                ) : (
+                                  <span className="px-1.5 py-0.5 bg-red-500/10 text-red-500 border border-red-500/20 rounded-md text-[7px] font-black uppercase tracking-widest">
+                                    VACÍO
+                                  </span>
+                                )}
+                              </div>
+                              <span className={`text-[7px] font-black uppercase mt-1.5 px-1.5 py-0.5 rounded-full inline-block w-fit ${bin.es_fijo ? 'bg-amber-900/40 text-amber-400 border border-amber-800' : 'bg-slate-700 text-slate-400'}`}>{bin.es_fijo ? 'Fijo' : 'Var'}</span>
+                            </div>
+                          </div>
+                         
+                         <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
+                            {mode === 'OPERACI\u00D3N' && activeOC && (
+                              <button onClick={(e)=>{e.stopPropagation(); setModalTargetBin(bin); setModalOpen(true)}} className="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg hover:bg-amber-500 active:scale-95 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Recibir</button>
+                            )}
+                            {mode === 'OPERACI\u00D3N' && !activeOC && !transferSource && (
+                              <>
+                                <button onClick={(e)=>{e.stopPropagation(); setAdjustmentTarget(bin)}} title="Ajustar Inventario" className="p-2 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600"><Wrench className="w-3.5 h-3.5" /></button>
+                                <button onClick={(e)=>{e.stopPropagation(); handleStartTransfer(bin)}} title="Mover Bin" className="p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500"><SquareArrowOutUpRight className="w-3.5 h-3.5" /></button>
+                              </>
+                            )}
+                            <button onClick={(e)=>{e.stopPropagation(); handleEliminarBin(bin.id)}} className="p-2 text-slate-600 hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
+                          </div>
+                      </div>
+
+                      {/* DETALLE INLINE SIEMPRE VISIBLE */}
+                      <div className="mx-2 mb-4 p-4 bg-slate-900 border border-slate-700 rounded-2xl animate-in zoom-in-95 duration-200">
+                         <h5 className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-3 border-b border-slate-800 pb-2">Contenido Real-Time</h5>
+                         <div className="space-y-3">
+                            {!binContents[bin.id] ? (
+                              <div className="flex items-center gap-2 py-2">
+                                 <div className="w-3 h-3 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                                 <span className="text-[9px] font-bold text-slate-500 uppercase">Consultando Kardex...</span>
+                              </div>
+                            ) : binContents[bin.id].length === 0 ? (
+                              <div className="text-[9px] font-bold text-slate-600 uppercase py-2">Bin Vacío</div>
+                            ) : (
+                              binContents[bin.id].map((item, idx) => (
+                                <div key={idx} className="flex items-center justify-between group/item">
+                                   <div className="flex flex-col">
+                                      <span className="text-[10px] font-black text-slate-200 uppercase leading-none">{item.label}</span>
+                                      <span className="text-[7px] font-bold text-slate-500 uppercase mt-1 truncate max-w-[120px]">{item.sublabel}</span>
+                                   </div>
+                                   <div className="px-2 py-1 bg-slate-800 border border-slate-700 rounded-lg">
+                                      <span className="text-[10px] font-black text-primary-400">{item.count}</span>
+                                      <span className="text-[7px] font-bold text-slate-500 ml-1 uppercase">{item.metadata?.unidad || 'un'}</span>
+                                   </div>
+                                </div>
+                              ))
+                            )}
                          </div>
-                         <div className="flex flex-col">
-                           <span className="text-[11px] font-black text-slate-100 uppercase leading-none tracking-tight">{bin.codigo}</span>
-                           <span className={`text-[7px] font-black uppercase mt-1.5 px-1.5 py-0.5 rounded-full inline-block w-fit ${bin.es_fijo ? 'bg-amber-900/40 text-amber-400 border border-amber-800' : 'bg-slate-700 text-slate-400'}`}>{bin.es_fijo ? 'Fijo' : 'Var'}</span>
-                         </div>
-                       </div>
-                       
-                       <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
-                          {mode === 'OPERACI\u00D3N' && activeOC && (
-                            <button onClick={()=>{setModalTargetBin(bin); setModalOpen(true)}} className="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg hover:bg-amber-500 active:scale-95 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Recibir</button>
-                          )}
-                          {mode === 'OPERACI\u00D3N' && !activeOC && !transferSource && (
-                            <>
-                              <button onClick={()=>setAdjustmentTarget(bin)} title="Ajustar Inventario" className="p-2 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600"><Wrench className="w-3.5 h-3.5" /></button>
-                              <button onClick={()=>handleStartTransfer(bin)} title="Mover Bin" className="p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500"><SquareArrowOutUpRight className="w-3.5 h-3.5" /></button>
-                            </>
-                          )}
-                          <button onClick={()=>handleEliminarBin(bin.id)} className="p-2 text-slate-600 hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
-                        </div>
+                      </div>
                     </div>
                   ))}
                </div>
@@ -687,6 +865,42 @@ export function BodegaLocationsMaster() {
           if (confirmTransfer?.target?.id) cargarPosicionStats(confirmTransfer.target.id)
           setConfirmTransfer(null)
         }}
+      />
+
+      {/* MODAL TRASLADO ENTRE BINES */}
+      <BinToBinTransferModal 
+        isOpen={!!binToBinTarget}
+        onClose={() => setBinToBinTarget(null)}
+        sourceBin={transferSource}
+        targetBin={binToBinTarget}
+        onSuccess={() => {
+          setTransferSource(null)
+          setSuggestedPos([])
+          cargarBines(selPosicionId)
+          cargarWarehouseStats(selBodegaId)
+          setBinToBinTarget(null)
+        }}
+      />
+
+      <ConfirmActionModal 
+        isOpen={!!confirmDeleteBin}
+        onClose={() => setConfirmDeleteBin(null)}
+        onConfirm={execDeleteBin}
+        isLoading={isDeleting}
+        title="Eliminar Contenedor"
+        description="¿Estás seguro de que deseas eliminar este bin? Esta acción no se puede deshacer y fallará si el bin tiene movimientos históricos."
+        confirmText="Eliminar permanentemente"
+        variant="danger"
+      />
+
+      {/* MODAL FEEDBACK / ALERTAS */}
+      <ConfirmActionModal 
+        isOpen={!!feedback}
+        onClose={() => setFeedback(null)}
+        title={feedback?.title || ''}
+        description={feedback?.description || ''}
+        variant={feedback?.variant || 'info'}
+        confirmText="Entendido"
       />
 
       {/* FLOATING ACTION BAR: TRANSFER MODE */}

@@ -1,0 +1,214 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - img "Asimétrico" [ref=e6]
+      - navigation [ref=e7]:
+        - link "Torre de Control" [ref=e8] [cursor=pointer]:
+          - /url: /torre-control
+          - img [ref=e9]
+        - link "Órdenes de Venta" [ref=e14] [cursor=pointer]:
+          - /url: /ordenes-venta
+          - img [ref=e15]
+        - link "Desarrollo" [ref=e17] [cursor=pointer]:
+          - /url: /desarrollo
+          - img [ref=e18]
+        - link "Producción" [ref=e20] [cursor=pointer]:
+          - /url: /ordenes-produccion
+          - img [ref=e21]
+        - link "Calidad" [ref=e23] [cursor=pointer]:
+          - /url: /calidad
+          - img [ref=e24]
+        - link "Catálogo" [ref=e27] [cursor=pointer]:
+          - /url: /catalogo
+          - img [ref=e28]
+        - link "Gestión de Bodegas" [ref=e32] [cursor=pointer]:
+          - /url: /wms
+          - img [ref=e33]
+        - link "Kardex" [ref=e36] [cursor=pointer]:
+          - /url: /kardex
+          - img [ref=e37]
+        - link "Despachos" [ref=e38] [cursor=pointer]:
+          - /url: /despachos
+          - img [ref=e39]
+        - link "Compras" [ref=e44] [cursor=pointer]:
+          - /url: /compras
+          - img [ref=e45]
+        - link "Terceros" [ref=e49] [cursor=pointer]:
+          - /url: /terceros
+          - img [ref=e50]
+        - link "Configuración" [ref=e55] [cursor=pointer]:
+          - /url: /configuracion
+          - img [ref=e56]
+      - generic [ref=e62]:
+        - button "Expandir menú" [ref=e63] [cursor=pointer]:
+          - img [ref=e64]
+        - button "Cerrar Sesión" [ref=e155] [cursor=pointer]:
+          - img [ref=e156]
+    - main [ref=e66]:
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - link [ref=e70] [cursor=pointer]:
+            - /url: /desarrollo
+            - img [ref=e71]
+          - generic [ref=e73]:
+            - generic [ref=e74]:
+              - generic [ref=e75]: DEV-2026-001
+              - generic [ref=e76]: Borrador
+              - generic [ref=e77]: media
+              - generic [ref=e78]: v1
+            - heading "Camiseta Oversize Verano 2026 — Test" [level=1] [ref=e79]
+            - generic [ref=e80]:
+              - generic [ref=e81]: Camiseta
+              - generic [ref=e82]: ·
+              - generic [ref=e83]: fabricado
+              - generic [ref=e84]: ·
+              - generic [ref=e85]: media
+        - generic [ref=e87]:
+          - generic [ref=e88]:
+            - generic [ref=e89]: Borrador
+            - img [ref=e90]
+          - generic [ref=e92]:
+            - generic [ref=e93]: Revisión Ops
+            - img [ref=e94]
+          - generic [ref=e96]:
+            - generic [ref=e97]: Muestreo
+            - img [ref=e98]
+          - generic [ref=e100]:
+            - generic [ref=e101]: Fitting
+            - img [ref=e102]
+          - generic [ref=e104]:
+            - generic [ref=e105]: Revisión Cliente
+            - img [ref=e106]
+          - generic [ref=e108]:
+            - generic [ref=e109]: Aprobado
+            - img [ref=e110]
+          - generic [ref=e113]: Graduado
+        - generic [ref=e115]:
+          - generic [ref=e116]: Mover a →
+          - button "Revisión Ops" [ref=e117] [cursor=pointer]
+          - button "Cancelar" [ref=e118] [cursor=pointer]
+          - button "Nueva versión" [active] [ref=e119] [cursor=pointer]:
+            - img [ref=e120]
+            - text: Nueva versión
+        - generic [ref=e121]:
+          - generic [ref=e122]:
+            - button "General" [ref=e123] [cursor=pointer]
+            - button "Versiones 1" [ref=e124] [cursor=pointer]:
+              - text: Versiones
+              - generic [ref=e125]: "1"
+            - button "Fotos & Archivos" [ref=e126] [cursor=pointer]
+            - button "Hallazgos" [ref=e127] [cursor=pointer]
+            - button "Historial" [ref=e128] [cursor=pointer]
+          - generic [ref=e160]:
+            - generic [ref=e161]:
+              - generic [ref=e162]: ¿Qué cambió en esta versión? *
+              - 'textbox "Ej: Se ajustó el cuello, se cambió la tela de 180g a 200g, se corrigió largo de manga..." [ref=e163]'
+            - generic [ref=e164]:
+              - generic [ref=e165]:
+                - generic [ref=e166]: BOM — Materiales
+                - button "Agregar material" [ref=e167] [cursor=pointer]:
+                  - img [ref=e168]
+                  - text: Agregar material
+              - generic [ref=e170]:
+                - textbox "Material" [ref=e171]
+                - textbox "Ref" [ref=e172]
+                - spinbutton [ref=e173]
+                - combobox [ref=e174]:
+                  - option "m" [selected]
+                  - option "kg"
+                  - option "und"
+                  - option "pcs"
+                - button [ref=e175] [cursor=pointer]:
+                  - img [ref=e176]
+            - generic [ref=e179]:
+              - generic [ref=e180]: Cuadro de Medidas (cm)
+              - table [ref=e182]:
+                - rowgroup [ref=e183]:
+                  - row "Medida XS S M L XL XXL" [ref=e184]:
+                    - columnheader "Medida" [ref=e185]
+                    - columnheader "XS" [ref=e186]
+                    - columnheader "S" [ref=e187]
+                    - columnheader "M" [ref=e188]
+                    - columnheader "L" [ref=e189]
+                    - columnheader "XL" [ref=e190]
+                    - columnheader "XXL" [ref=e191]
+                - rowgroup [ref=e192]:
+                  - row "largo" [ref=e193]:
+                    - cell "largo" [ref=e194]
+                    - cell [ref=e195]:
+                      - textbox "—" [ref=e196]
+                    - cell [ref=e197]:
+                      - textbox "—" [ref=e198]
+                    - cell [ref=e199]:
+                      - textbox "—" [ref=e200]
+                    - cell [ref=e201]:
+                      - textbox "—" [ref=e202]
+                    - cell [ref=e203]:
+                      - textbox "—" [ref=e204]
+                    - cell [ref=e205]:
+                      - textbox "—" [ref=e206]
+                  - row "ancho" [ref=e207]:
+                    - cell "ancho" [ref=e208]
+                    - cell [ref=e209]:
+                      - textbox "—" [ref=e210]
+                    - cell [ref=e211]:
+                      - textbox "—" [ref=e212]
+                    - cell [ref=e213]:
+                      - textbox "—" [ref=e214]
+                    - cell [ref=e215]:
+                      - textbox "—" [ref=e216]
+                    - cell [ref=e217]:
+                      - textbox "—" [ref=e218]
+                    - cell [ref=e219]:
+                      - textbox "—" [ref=e220]
+                  - row "manga" [ref=e221]:
+                    - cell "manga" [ref=e222]
+                    - cell [ref=e223]:
+                      - textbox "—" [ref=e224]
+                    - cell [ref=e225]:
+                      - textbox "—" [ref=e226]
+                    - cell [ref=e227]:
+                      - textbox "—" [ref=e228]
+                    - cell [ref=e229]:
+                      - textbox "—" [ref=e230]
+                    - cell [ref=e231]:
+                      - textbox "—" [ref=e232]
+                    - cell [ref=e233]:
+                      - textbox "—" [ref=e234]
+                  - row "cuello" [ref=e235]:
+                    - cell "cuello" [ref=e236]
+                    - cell [ref=e237]:
+                      - textbox "—" [ref=e238]
+                    - cell [ref=e239]:
+                      - textbox "—" [ref=e240]
+                    - cell [ref=e241]:
+                      - textbox "—" [ref=e242]
+                    - cell [ref=e243]:
+                      - textbox "—" [ref=e244]
+                    - cell [ref=e245]:
+                      - textbox "—" [ref=e246]
+                    - cell [ref=e247]:
+                      - textbox "—" [ref=e248]
+                  - row "pecho" [ref=e249]:
+                    - cell "pecho" [ref=e250]
+                    - cell [ref=e251]:
+                      - textbox "—" [ref=e252]
+                    - cell [ref=e253]:
+                      - textbox "—" [ref=e254]
+                    - cell [ref=e255]:
+                      - textbox "—" [ref=e256]
+                    - cell [ref=e257]:
+                      - textbox "—" [ref=e258]
+                    - cell [ref=e259]:
+                      - textbox "—" [ref=e260]
+                    - cell [ref=e261]:
+                      - textbox "—" [ref=e262]
+            - generic [ref=e263]:
+              - generic [ref=e264]: Comportamiento de Tela
+              - 'textbox "Ej: Encoge 3% en lavado, elongación lateral 8%..." [ref=e265]'
+            - generic [ref=e266]:
+              - button "Crear Nueva Versión" [ref=e267] [cursor=pointer]
+              - button "Cancelar" [ref=e268] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e149] [cursor=pointer]:
+    - img [ref=e150]
+  - alert [ref=e153]

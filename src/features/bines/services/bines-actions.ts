@@ -60,6 +60,20 @@ export async function crearBin(
       .eq('id', posicionId)
       .single() as { data: any }
 
+    // Validar CAPACIDAD de la posición
+    const { data: posCapData } = await supabase
+      .from('bodega_posiciones')
+      .select('capacidad_bines, bines:bines(count)')
+      .eq('id', posicionId)
+      .single() as { data: any }
+    
+    const capacity = posCapData?.capacidad_bines || 4
+    const occupied = posCapData?.bines?.[0]?.count || 0
+
+    if (occupied >= capacity) {
+      return { error: `Capacidad máxima alcanzada (${capacity}). No se pueden agregar más bines a esta posición.` }
+    }
+
     const { data, error } = await supabase
       .from('bines')
       .insert({
@@ -81,46 +95,66 @@ export async function crearBin(
 
 export async function getContenidoBin(binId: string): Promise<BinContenido | null> {
   const supabase = db(await createClient())
+  
+  // 1. Obtener info básica del bin
   const { data: bin } = await supabase
     .from('bines')
-    .select(
-      `
+    .select(`
       id,
       codigo,
       estado,
       created_at,
       bodegas (nombre)
-    `
-    )
+    `)
     .eq('id', binId)
     .single() as { data: any }
+
   if (!bin) return null
-  const { data: items } = await supabase
-    .from('recepcion_oc')
-    .select(
-      `
-      id,
+
+  // 2. Obtener INVENTARIO REAL desde Kardex agrupado por producto y talla
+  const { data: kardexItems } = await supabase
+    .from('kardex')
+    .select(`
       producto_id,
       talla,
-      cantidad_recibida,
+      cantidad,
       productos (referencia, nombre, color)
-    `
-    )
-    .eq('bin_id', binId)
-    .not('producto_id', 'is', null) as { data: any[] | null }
+    `)
+    .eq('bin_id', binId) as { data: any[] | null }
+
+  // 3. Agrupar items por Producto + Talla (Kardex tiene movimientos individuales)
+  const inventoryMap = new Map<string, any>()
+  
+  ;(kardexItems ?? []).forEach(item => {
+    const cleanTalla = (!item.talla || item.talla === '...' || item.talla === '') ? 'ÚNICA' : item.talla
+    const key = `${item.producto_id}-${cleanTalla}`
+    
+    if (inventoryMap.has(key)) {
+      const existing = inventoryMap.get(key)
+      existing.cantidad += Number(item.cantidad)
+    } else {
+      inventoryMap.set(key, {
+        producto_id: item.producto_id,
+        referencia: item.productos?.referencia || 'N/A',
+        nombre: item.productos?.nombre || 'Producto Desconocido',
+        color: item.productos?.color || null,
+        talla: cleanTalla,
+        cantidad: Number(item.cantidad)
+      })
+    }
+  })
+
+  // Filtrar solo los que tienen stock positivo
+  const items = Array.from(inventoryMap.values()).filter(i => i.cantidad > 0)
+
   return {
     id: bin.id,
     codigo: bin.codigo,
     bodega_nombre: bin.bodegas?.nombre,
     created_at: bin.created_at,
-    items: (items ?? []).map(item => ({
-      producto_id: item.producto_id,
-      referencia: item.productos?.referencia || '',
-      nombre: item.productos?.nombre || '',
-      color: item.productos?.color || null,
-      talla: item.talla || null,
-      cantidad: Number(item.cantidad_recibida),
-      recepcion_id: item.id,
+    items: items.map((item, index) => ({
+      ...item,
+      recepcion_id: `${item.producto_id}-${index}` // ID temporal para compatibilidad
     })),
   }
 }
@@ -187,22 +221,36 @@ export async function getBinesByPosicion(posicionId: string): Promise<Bin[]> {
 
 export async function eliminarBin(id: string): Promise<{ error?: string }> {
   const supabase = db(await createClient())
-  
-  // Primero verificamos si tiene stock relacionado en recepcion_oc
-  const { count } = await supabase
-    .from('recepcion_oc')
-    .select('*', { count: 'exact', head: true })
-    .eq('bin_id', id)
-  
-  if (count && count > 0) {
-    return { error: 'No se puede eliminar un bin que tiene movimientos o stock histórico.' }
-  }
+  try {
+    const { data: bin } = await supabase.from('bines').select('es_fijo, codigo').eq('id', id).single()
+    
+    if (!bin) return { error: 'Bin no encontrado' }
+    if (bin.es_fijo) {
+      return { error: 'Este bin es parte de la estructura fija. Para eliminarlo, debes ir al editor de diseño y cambiar su tipo a variable.' }
+    }
 
-  const { error } = await supabase
-    .from('bines')
-    .delete()
-    .eq('id', id)
-  
-  if (error) return { error: error.message }
-  return {}
+    // Estrategia "Ghost": Desvinculamos inmediatamente para que desaparezca de la vista del usuario.
+    // Esto evita bloqueos por FK o historial de Kardex que el usuario no necesita ver ahora.
+    const { error: unlinkError } = await supabase
+      .from('bines')
+      .update({ 
+        posicion_id: null,
+        // Cambiamos el código para liberar el nombre original si el usuario quiere crear uno nuevo con el mismo ID
+        codigo: `${bin.codigo}_ARCHIVED_${Date.now()}`
+      })
+      .eq('id', id)
+    
+    if (unlinkError) {
+      console.error('Error in Ghost Unlink:', unlinkError)
+      return { error: unlinkError.message }
+    }
+
+    // Intentamos borrado físico por si acaso no tiene historia, pero no bloqueamos al usuario
+    await supabase.from('bines').delete().eq('id', id)
+
+    return {} // Éxito total para el usuario
+  } catch (err: any) {
+    console.error('CRITICAL ERROR in eliminarBin:', err)
+    return { error: 'Error del sistema: ' + (err.message || String(err)) }
+  }
 }

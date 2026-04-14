@@ -21,7 +21,8 @@ import {
   Menu,
   Warehouse,
   BarChart2,
-  Truck
+  Truck,
+  FlaskConical
 } from 'lucide-react'
 import Image from 'next/image'
 import type { UserRole } from '@/shared/types'
@@ -29,6 +30,7 @@ import type { UserRole } from '@/shared/types'
 const NAV_ITEMS: { href: string; label: string; icon: React.ElementType; roles: UserRole[] }[] = [
   { href: '/torre-control',       label: 'Torre de Control', icon: LayoutDashboard, roles: ['orquestador'] },
   { href: '/ordenes-venta',       label: 'Órdenes de Venta', icon: DollarSign,      roles: ['orquestador'] },
+  { href: '/desarrollo',          label: 'Desarrollo',       icon: FlaskConical,    roles: ['orquestador'] },
   { href: '/ordenes-produccion',  label: 'Producción',       icon: Factory,         roles: ['orquestador', 'jefe_piso'] },
   { href: '/calidad',             label: 'Calidad',          icon: ShieldCheck,     roles: ['orquestador', 'inspector'] },
   { href: '/catalogo',            label: 'Catálogo',         icon: Package,         roles: ['orquestador'] },
