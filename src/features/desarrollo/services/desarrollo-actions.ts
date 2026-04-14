@@ -142,9 +142,12 @@ export async function cambiarStatusDesarrollo(
       .order('version_n', { ascending: false })
       .limit(1)
 
-    const ultima = versiones?.[0]
-    const hasBom = Array.isArray(ultima?.bom_data) && (ultima.bom_data as any[]).length > 0
-    if (!hasBom) {
+    const ultimaVersion = versiones?.[0]
+    const bom = ultimaVersion?.bom_data as any
+    const hasBomData = Array.isArray(bom) 
+      ? bom.length > 0 
+      : (bom && typeof bom === 'object' && Array.isArray(bom.materiales) && bom.materiales.length > 0)
+    if (!hasBomData) {
       return { error: 'No se puede pasar a Revisión Ops sin definir un BOM (materiales) en la versión actual.' }
     }
 

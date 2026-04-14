@@ -19,10 +19,9 @@ export interface ServicioOperativo {
   id: string
   codigo: string
   nombre: string
-  tipo_proceso: 'corte' | 'confeccion' | 'maquillado' | 'lavanderia' | 'otro'
   tarifa_unitaria: number
-  descripcion: string | null
-  activo: boolean
+  tipo_proceso?: string
+  atributo1?: { valor: string }
 }
 
 export interface BOMLineaMaterial {
@@ -70,10 +69,13 @@ export async function getServiciosOperativos(): Promise<ServicioOperativo[]> {
   const supabase = db(await createClient())
   const { data } = await supabase
     .from('servicios_operativos')
-    .select('*')
-    .eq('activo', true)
-    .order('tipo_proceso, codigo') as { data: ServicioOperativo[] | null }
-  return data ?? []
+    .select('*, atributo1:atributo1_id(*)')
+    .order('codigo') as { data: any[] | null }
+  
+  return (data ?? []).map(s => ({
+    ...s,
+    tipo_proceso: s.atributo1?.nombre || 'otro'
+  }))
 }
 
 export async function getBOMProducto(producto_id: string): Promise<BOMResumen> {

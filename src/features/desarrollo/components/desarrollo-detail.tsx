@@ -23,6 +23,7 @@ import {
   SECUENCIA_STATUS,
 } from '@/features/desarrollo/types'
 import type { StatusDesarrollo, Prioridad, DesarrolloViabilidadOps } from '@/features/desarrollo/types'
+import type { Material, ServicioOperativo } from '@/features/productos/services/bom-actions'
 
 const TRANSICIONES_PERMITIDAS: Record<StatusDesarrollo, StatusDesarrollo[]> = {
   draft:         ['ops_review', 'cancelled'],
@@ -98,9 +99,13 @@ interface Props {
   desarrollo: DesarrolloData
   talleres:   Tercero[]
   proveedores: Tercero[]
+  catalogoMateriales: Material[]
+  catalogoServicios:  ServicioOperativo[]
 }
-
-export function DesarrolloDetail({ desarrollo, talleres, proveedores }: Props) {
+ 
+export function DesarrolloDetail({ 
+  desarrollo, talleres, proveedores, catalogoMateriales, catalogoServicios 
+}: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [activeTab, setActiveTab]             = useState<Tab>('info')
@@ -134,7 +139,10 @@ export function DesarrolloDetail({ desarrollo, talleres, proveedores }: Props) {
   const esFabricado = desarrollo.tipo_producto === 'fabricado'
   const tercerosMuestra = esFabricado ? talleres : proveedores
 
-  const hasBom = Array.isArray(ultimaVersion?.bom_data) && (ultimaVersion.bom_data as any[]).length > 0
+  const bom = ultimaVersion?.bom_data as any
+  const hasBom = Array.isArray(bom) 
+    ? bom.length > 0 
+    : (bom && typeof bom === 'object' && Array.isArray(bom.materiales) && bom.materiales.length > 0)
   const hasCondiciones = esFabricado
     ? desarrollo.desarrollo_condiciones_material.length > 0
     : desarrollo.desarrollo_condiciones && (Array.isArray(desarrollo.desarrollo_condiciones) ? desarrollo.desarrollo_condiciones.length > 0 : !!desarrollo.desarrollo_condiciones)
@@ -323,10 +331,11 @@ export function DesarrolloDetail({ desarrollo, talleres, proveedores }: Props) {
               desarrolloId={desarrollo.id}
               versionId={ultimaVersion?.id || ''}
               tipoProducto={desarrollo.tipo_producto as 'fabricado' | 'comercializado'}
-              bomData={(ultimaVersion?.bom_data as any[]) || []}
+              bomData={Array.isArray(ultimaVersion?.bom_data) ? (ultimaVersion?.bom_data || []) : ((ultimaVersion?.bom_data as any)?.materiales || [])}
               condicionesExistentes={Array.isArray(desarrollo.desarrollo_condiciones) ? desarrollo.desarrollo_condiciones[0] : desarrollo.desarrollo_condiciones}
               materialCondicionesExistentes={desarrollo.desarrollo_condiciones_material}
               proveedores={proveedores}
+              catalogoMateriales={catalogoMateriales}
             />
           )}
 
@@ -336,6 +345,8 @@ export function DesarrolloDetail({ desarrollo, talleres, proveedores }: Props) {
               {showNuevaVersion ? (
                 <NuevaVersionForm
                   desarrolloId={desarrollo.id}
+                  catalogoMateriales={catalogoMateriales}
+                  catalogoServicios={catalogoServicios}
                   onCreated={() => { setShowNuevaVersion(false); router.refresh() }}
                   onCancel={() => setShowNuevaVersion(false)}
                 />
@@ -366,19 +377,45 @@ export function DesarrolloDetail({ desarrollo, talleres, proveedores }: Props) {
                           </div>
                         </div>
                         {/* BOM preview */}
-                        {Array.isArray(v.bom_data) && v.bom_data.length > 0 && (
+                        {v.bom_data && (
                           <div className="mt-3 pt-3 border-t border-slate-100">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">BOM</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {(v.bom_data as Array<{ material_nombre: string; cantidad: number; unidad: string }>).slice(0, 5).map((item, i) => (
-                                <span key={i} className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-medium">
-                                  {item.material_nombre} · {item.cantidad} {item.unidad}
-                                </span>
-                              ))}
-                              {(v.bom_data as unknown[]).length > 5 && (
-                                <span className="text-[10px] text-slate-400">+{(v.bom_data as unknown[]).length - 5} más</span>
-                              )}
-                            </div>
+                            {Array.isArray(v.bom_data) ? (
+                              <div className="flex flex-wrap gap-1.5">
+                                <p className="w-full text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">BOM (Vista Clásica)</p>
+                                {(v.bom_data as any[]).slice(0, 5).map((item, i) => (
+                                  <span key={i} className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[9px] font-medium">
+                                    {item.material_nombre} · {item.cantidad} {item.unidad}
+                                  </span>
+                                ))}
+                                {v.bom_data.length > 5 && <span className="text-[9px] text-slate-400 font-bold">+{v.bom_data.length - 5}</span>}
+                              </div>
+                            ) : typeof v.bom_data === 'object' ? (
+                              <>
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">BOM & Costos</p>
+                                  {(v.bom_data as any).costo_estimado > 0 && (
+                                    <span className="text-[10px] font-black text-slate-900">{formatCurrency((v.bom_data as any).costo_estimado)}</span>
+                                  )}
+                                </div>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {/* Materiales */}
+                                  {((v.bom_data as any).materiales || []).slice(0, 3).map((item: any, i: number) => (
+                                    <span key={i} className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[9px] font-bold">
+                                      {item.material_nombre} · {item.cantidad} {item.unidad}
+                                    </span>
+                                  ))}
+                                  {/* Servicios */}
+                                  {((v.bom_data as any).servicios || []).slice(0, 3).map((item: any, i: number) => (
+                                    <span key={i} className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[9px] font-bold">
+                                      {item.servicio_nombre} · {item.cantidad} ud
+                                    </span>
+                                  ))}
+                                  {((((v.bom_data as any).materiales?.length || 0) + ((v.bom_data as any).servicios?.length || 0)) > 6) && (
+                                    <span className="text-[9px] text-slate-400 font-bold uppercase">+ más</span>
+                                  )}
+                                </div>
+                              </>
+                            ) : null}
                           </div>
                         )}
                       </div>

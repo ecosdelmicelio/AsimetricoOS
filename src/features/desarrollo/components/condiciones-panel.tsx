@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Save, AlertCircle, Trash2, Plus } from 'lucide-react'
 import { guardarCondicionesMaterial, guardarCondiciones } from '@/features/desarrollo/services/muestra-actions'
 import { cn } from '@/shared/lib/utils'
+import type { Material } from '@/features/productos/services/bom-actions'
 
 interface Props {
   desarrolloId: string
@@ -14,6 +15,7 @@ interface Props {
   condicionesExistentes: any | null
   materialCondicionesExistentes: any[]
   proveedores: { id: string; nombre: string }[]
+  catalogoMateriales: Material[]
 }
 
 export function CondicionesPanel({
@@ -24,6 +26,7 @@ export function CondicionesPanel({
   condicionesExistentes,
   materialCondicionesExistentes,
   proveedores,
+  catalogoMateriales,
 }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -54,7 +57,7 @@ export function CondicionesPanel({
           leadtime_material_dias: m.leadtime_material_dias,
         }))
       : bomData.map(b => ({
-          material_id: b.id || '', // Si el BOM tiene IDs de materiales reales
+          material_id: b.material_id || '', // Si el BOM tiene IDs de materiales reales
           material_nombre: b.material_nombre,
           moq_material: 0,
           moq_unidad: b.unidad || 'metros',
