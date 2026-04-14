@@ -330,8 +330,12 @@ export function DesarrolloDetail({
 
               if (isOps && !canMoveToOps) {
                 blocked = true
-                if (!hasBom) reason.push('Falta definir BOM (materiales)')
-                if (!hasCondiciones) reason.push('Faltan condiciones de abastecimiento (MOQ/LT)')
+                if (!hasBom) reason.push('Falta definir BOM')
+                if (!hasMedidas) reason.push('Faltan medidas técnicas')
+                if (!hasOptitex) reason.push('Falta archivo Optitex')
+                if (!hasEtiquetas) reason.push('Faltan etiquetas/marquillas')
+                if (!hasFotos) reason.push('Faltan fotos de referencia')
+                if (!hasFicha) reason.push('Falta ficha técnica')
               } else if (isSampling && !canMoveToSampling) {
                 blocked = true
                 reason.push('Requiere Aprobación Ops (Panel Aprobaciones)')
