@@ -14,13 +14,16 @@ export async function generarOpMuestra(
   input: {
     taller_id:       string
     fecha_promesa:   string
-    cantidad_muestra?: number
+    sin_costo?:      boolean
     notas?:          string
   }
 ) {
   const supabase = db(await createClient())
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
+
+  // Obtener temp_id para las notas
+  const { data: dev } = await supabase.from('desarrollo').select('temp_id').eq('id', desarrolloId).single()
 
   // Verificar que no haya ya una OP de muestra activa para esta versión
   const { data: existente } = await supabase
@@ -40,7 +43,7 @@ export async function generarOpMuestra(
 
   const codigo = codigoData ?? `OP-M-${new Date().getFullYear()}-001`
 
-  // Crear OP sin ov_id (nullable)
+  // Crear OP
   const { data: op, error: opError } = await supabase
     .from('ordenes_produccion')
     .insert({
@@ -51,7 +54,7 @@ export async function generarOpMuestra(
       estado:         'programada',
       es_muestra:     true,
       desarrollo_id:  desarrolloId,
-      notas:          input.notas ?? `OP de muestra — Desarrollo ${desarrolloId}`,
+      notas:          input.notas ?? `OP muestra: ${dev?.temp_id}${input.sin_costo ? ' (SIN COSTO)' : ''}`,
       creado_por:     user.id,
     })
     .select('id, codigo')
@@ -66,6 +69,7 @@ export async function generarOpMuestra(
     tipo_orden:    'op_muestra',
     op_id:         op.id,
     estado:        'programada',
+    sin_costo:     input.sin_costo ?? false,
   })
 
   revalidatePath(`/desarrollo/${desarrolloId}`)
@@ -73,20 +77,22 @@ export async function generarOpMuestra(
   return { data: op, error: null }
 }
 
-// ─── GENERAR OC DE MUESTRA (comercializados) ─────────────────────────────────
-
 export async function generarOcMuestra(
   desarrolloId: string,
   versionId: string,
   input: {
     proveedor_id:      string
     fecha_entrega_est: string
+    sin_costo?:        boolean
     notas?:            string
   }
 ) {
   const supabase = db(await createClient())
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
+
+  // Obtener temp_id para las notas
+  const { data: dev } = await supabase.from('desarrollo').select('temp_id').eq('id', desarrolloId).single()
 
   // Verificar que no haya ya una OC de muestra activa para esta versión
   const { data: existente } = await supabase
@@ -119,7 +125,7 @@ export async function generarOcMuestra(
       fecha_entrega_est: input.fecha_entrega_est,
       es_muestra:        true,
       desarrollo_id:     desarrolloId,
-      notas:             input.notas ?? `OC de muestra — Desarrollo ${desarrolloId}`,
+      notas:             input.notas ?? `OC muestra: ${dev?.temp_id}${input.sin_costo ? ' (SIN COSTO)' : ''}`,
       creado_por:        user.id,
     })
     .select('id, codigo')
@@ -134,6 +140,7 @@ export async function generarOcMuestra(
     tipo_orden:    'oc_muestra',
     oc_id:         oc.id,
     estado:        'pendiente',
+    sin_costo:     input.sin_costo ?? false,
   })
 
   revalidatePath(`/desarrollo/${desarrolloId}`)

@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, ChevronRight, AlertTriangle, Plus, FlaskConical } from 'lucide-react'
 import Link from 'next/link'
-import { cn } from '@/shared/lib/utils'
+import { cn, formatCurrency } from '@/shared/lib/utils'
 import { DesarrolloStatusBadge } from './desarrollo-status-badge'
 import { NuevaVersionForm } from './nueva-version-form'
 import { HallazgosPanel } from './hallazgos-panel'
@@ -148,6 +148,9 @@ export function DesarrolloDetail({
     : desarrollo.desarrollo_condiciones && (Array.isArray(desarrollo.desarrollo_condiciones) ? desarrollo.desarrollo_condiciones.length > 0 : !!desarrollo.desarrollo_condiciones)
  
   const canMoveToOps = hasBom && hasCondiciones
+  const canMoveToSampling = !!ultimaVersion?.aprobado_ops
+  const canMoveToApproved = !!ultimaVersion?.aprobado_cliente
+  const canMoveToGraduated = !!ultimaVersion?.aprobado_director
 
   // Viabilidad and ordenes from data
   const viabilidadOps = desarrollo.desarrollo_viabilidad_ops?.[0] as DesarrolloViabilidadOps | undefined
@@ -253,7 +256,29 @@ export function DesarrolloDetail({
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">Mover a →</span>
             {transicionesPermitidas.filter(s => s !== 'cancelled').map(s => {
               const isOps = s === 'ops_review'
-              const isDisabled = isPending || (isOps && !canMoveToOps)
+              const isSampling = s === 'sampling'
+              const isApproved = s === 'approved'
+              const isGraduated = s === 'graduated'
+
+              let blocked = false
+              let reason: string[] = []
+
+              if (isOps && !canMoveToOps) {
+                blocked = true
+                if (!hasBom) reason.push('Falta definir BOM (materiales)')
+                if (!hasCondiciones) reason.push('Faltan condiciones de abastecimiento (MOQ/LT)')
+              } else if (isSampling && !canMoveToSampling) {
+                blocked = true
+                reason.push('Requiere Aprobación Ops (Panel Aprobaciones)')
+              } else if (isApproved && !canMoveToApproved) {
+                blocked = true
+                reason.push('Requiere Aprobación del Cliente')
+              } else if (isGraduated && !canMoveToGraduated) {
+                blocked = true
+                reason.push('Requiere Aprobación del Director de Diseño')
+              }
+
+              const isDisabled = isPending || blocked
               
               return (
                 <div key={s} className="group relative">
@@ -261,10 +286,9 @@ export function DesarrolloDetail({
                     className="px-4 py-2 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-primary-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
                     {STATUS_LABELS[s]}
                   </button>
-                  {isOps && !canMoveToOps && (
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 p-2 bg-slate-800 text-[9px] text-white rounded-lg shadow-xl z-20 text-center animate-in fade-in slide-in-from-bottom-1">
-                      {!hasBom && "• Falta definir BOM (materiales)\n"}
-                      {!hasCondiciones && "• Faltan condiciones de abastecimiento (MOQ/LT)"}
+                  {blocked && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 p-2 bg-slate-800 text-[9px] text-white rounded-lg shadow-xl z-20 text-center animate-in fade-in slide-in-from-bottom-1 border border-slate-700">
+                      {reason.map((r, i) => <p key={i}>• {r}</p>)}
                     </div>
                   )}
                 </div>

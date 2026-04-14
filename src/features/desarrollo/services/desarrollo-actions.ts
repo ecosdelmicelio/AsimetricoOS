@@ -65,16 +65,41 @@ export async function getDesarrolloById(id: string) {
 
 // ─── CREATE ───────────────────────────────────────────────────────────────────
 
+async function generateSmartTempId(supabase: any, temporada: string, categoria: string) {
+  const prefix = `${temporada.replace('-', '')}-${categoria.substring(0, 3).toUpperCase()}`
+  
+  // Buscar el último correlativo para este prefijo
+  const { data } = await supabase
+    .from('desarrollo')
+    .select('temp_id')
+    .like('temp_id', `${prefix}-%`)
+    .order('temp_id', { ascending: false })
+    .limit(1)
+
+  let nextNum = 1
+  if (data && data.length > 0) {
+    const lastId = data[0].temp_id
+    const parts = lastId.split('-')
+    const lastNum = parseInt(parts[parts.length - 1])
+    if (!isNaN(lastNum)) nextNum = lastNum + 1
+  }
+
+  return `${prefix}-${nextNum.toString().padStart(3, '0')}`
+}
+
 export async function createDesarrollo(input: CreateDesarrolloInput) {
   const supabase = db(await createClient())
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
+
+  const smartId = await generateSmartTempId(supabase, input.temporada, input.categoria_producto)
 
   const { data, error } = await supabase
     .from('desarrollo')
     .insert({
       nombre_proyecto:    input.nombre_proyecto,
       categoria_producto: input.categoria_producto,
+      temp_id:            smartId,
       complejidad:        input.complejidad,
       tipo_producto:      input.tipo_producto,
       prioridad:          input.prioridad,

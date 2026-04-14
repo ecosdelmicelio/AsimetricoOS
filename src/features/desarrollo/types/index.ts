@@ -87,9 +87,12 @@ export interface DesarrolloConRelaciones extends Desarrollo {
   profiles: { full_name: string } | null
 }
 
+export type Temporada = '2025-A' | '2025-B' | '2026-A' | '2026-B' | 'PERMANENTE'
+
 export interface CreateDesarrolloInput {
   nombre_proyecto:    string
   categoria_producto: CategoriaProducto
+  temporada:          Temporada
   complejidad:        Complejidad
   tipo_producto:      TipoProducto
   prioridad:          Prioridad

@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createDesarrollo } from '@/features/desarrollo/services/desarrollo-actions'
-import type { CategoriaProducto, Complejidad, TipoProducto, Prioridad } from '@/features/desarrollo/types'
+import type { CategoriaProducto, Complejidad, TipoProducto, Prioridad, Temporada } from '@/features/desarrollo/types'
 
 interface Cliente {
   id: string
@@ -20,6 +20,7 @@ export function DesarrolloForm({ clientes }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   const [nombreProyecto, setNombreProyecto]     = useState('')
+  const [temporada, setTemporada]               = useState<Temporada>('2026-A')
   const [categoria, setCategoria]               = useState<CategoriaProducto>('camiseta')
   const [complejidad, setComplejidad]           = useState<Complejidad>('media')
   const [tipoProducto, setTipoProducto]         = useState<TipoProducto>('fabricado')
@@ -41,6 +42,7 @@ export function DesarrolloForm({ clientes }: Props) {
       const result = await createDesarrollo({
         nombre_proyecto:    nombreProyecto.trim(),
         categoria_producto: categoria,
+        temporada,
         complejidad,
         tipo_producto:      tipoProducto,
         prioridad,
@@ -74,8 +76,25 @@ export function DesarrolloForm({ clientes }: Props) {
         />
       </div>
 
-      {/* Categoria + Tipo */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Temporada + Categoria + Tipo */}
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+            Temporada <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={temporada}
+            onChange={e => setTemporada(e.target.value as Temporada)}
+            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:border-primary-400"
+          >
+            <option value="2025-A">2025-A</option>
+            <option value="2025-B">2025-B</option>
+            <option value="2026-A">2026-A</option>
+            <option value="2026-B">2026-B</option>
+            <option value="PERMANENTE">Permanente</option>
+          </select>
+        </div>
+
         <div>
           <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
             Categoría <span className="text-red-500">*</span>

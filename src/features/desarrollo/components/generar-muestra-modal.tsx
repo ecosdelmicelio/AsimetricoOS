@@ -31,6 +31,8 @@ export function GenerarMuestraModal({
   const [fechaEntrega, setFechaEntrega] = useState('')
   const [notasOc, setNotasOc]         = useState('')
 
+  const [sinCosto, setSinCosto]       = useState(false)
+
   const esFabricado = tipoProducto === 'fabricado'
 
   function handleSubmit(e: React.FormEvent) {
@@ -41,7 +43,7 @@ export function GenerarMuestraModal({
       if (!tallerId || !fechaPromesa) { setError('Selecciona taller y fecha promesa.'); return }
       startTransition(async () => {
         const result = await generarOpMuestra(desarrolloId, versionId, {
-          taller_id: tallerId, fecha_promesa: fechaPromesa, notas: notasOp || undefined
+          taller_id: tallerId, fecha_promesa: fechaPromesa, notas: notasOp || undefined, sin_costo: sinCosto
         })
         if (result.error) { setError(result.error); return }
         onCreado(result.data!.codigo, 'op')
@@ -50,7 +52,7 @@ export function GenerarMuestraModal({
       if (!proveedorId || !fechaEntrega) { setError('Selecciona proveedor y fecha de entrega.'); return }
       startTransition(async () => {
         const result = await generarOcMuestra(desarrolloId, versionId, {
-          proveedor_id: proveedorId, fecha_entrega_est: fechaEntrega, notas: notasOc || undefined
+          proveedor_id: proveedorId, fecha_entrega_est: fechaEntrega, notas: notasOc || undefined, sin_costo: sinCosto
         })
         if (result.error) { setError(result.error); return }
         onCreado(result.data!.codigo, 'oc')
@@ -122,6 +124,20 @@ export function GenerarMuestraModal({
               </div>
             </>
           )}
+
+          {/* Opción Sin Costo */}
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-50 border border-amber-100 mb-2">
+            <input
+              type="checkbox"
+              id="sinCosto"
+              checked={sinCosto}
+              onChange={e => setSinCosto(e.target.checked)}
+              className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-amber-300"
+            />
+            <label htmlFor="sinCosto" className="text-[11px] font-bold text-amber-800 cursor-pointer select-none">
+              Muestra sin costo (donación/bonificación de proveedor)
+            </label>
+          </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
