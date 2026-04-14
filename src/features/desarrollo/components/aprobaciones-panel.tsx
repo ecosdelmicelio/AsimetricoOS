@@ -43,35 +43,36 @@ export function AprobacionesPanel({
       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Triple Aprobación</p>
 
       <div className="space-y-2">
-        {/* Ops — Gate 1 */}
+        {/* Ops — Solo en ops_review */}
         <AprobacionRow
           label="Director de Operaciones"
-          sublabel="Viabilidad de cadena de suministro (ANTES de la muestra)"
+          sublabel="Viabilidad de cadena de suministro (Fase: Revisión Ops)"
           aprobado={ops}
           gate={1}
-          disabled={isGraduated || isPending}
+          disabled={isGraduated || isPending || statusDesarrollo !== 'ops_review'}
+          gateBlockedReason={statusDesarrollo !== 'ops_review' && !ops ? 'Solo habilitado en fase de Revisión Ops' : undefined}
           onToggle={() => toggle('aprobado_ops', ops, setOps)}
         />
-
-        {/* Cliente — Gate 2 */}
+ 
+        {/* Cliente — Solo en client_review */}
         <AprobacionRow
           label="Cliente"
-          sublabel="Revisión visual/física de la muestra"
+          sublabel="Revisión visual/física de la muestra (Fase: Revisión Cliente)"
           aprobado={cliente}
           gate={2}
-          disabled={isGraduated || isPending || !ops}
-          gateBlockedReason={!ops ? 'Ops debe aprobar primero' : undefined}
+          disabled={isGraduated || isPending || !ops || statusDesarrollo !== 'client_review'}
+          gateBlockedReason={!ops ? 'Ops debe aprobar primero' : (statusDesarrollo !== 'client_review' && !cliente ? 'Solo habilitado en fase de Revisión Cliente' : undefined)}
           onToggle={() => toggle('aprobado_cliente', cliente, setCliente)}
         />
-
-        {/* Director de Diseño — Gate 3 */}
+ 
+        {/* Director de Diseño — Solo en approved/graduating */}
         <AprobacionRow
           label="Director de Diseño"
-          sublabel="Validación técnica y de calidad antes de graduar"
+          sublabel="Validación técnica y de calidad (Fase: Aprobado)"
           aprobado={director}
           gate={3}
-          disabled={isGraduated || isPending || !cliente}
-          gateBlockedReason={!cliente ? 'Cliente debe aprobar primero' : undefined}
+          disabled={isGraduated || isPending || !cliente || statusDesarrollo !== 'approved'}
+          gateBlockedReason={!cliente ? 'Cliente debe aprobar primero' : (statusDesarrollo !== 'approved' && !director ? 'Solo habilitado en fase de Aprobado' : undefined)}
           onToggle={() => toggle('aprobado_director', director, setDirector)}
         />
       </div>

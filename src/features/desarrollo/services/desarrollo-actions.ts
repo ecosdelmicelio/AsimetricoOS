@@ -52,6 +52,8 @@ export async function getDesarrolloById(id: string) {
       desarrollo_transiciones ( *, profiles ( full_name ) ),
       desarrollo_ordenes ( * ),
       desarrollo_viabilidad_ops ( * ),
+      desarrollo_condiciones ( * ),
+      desarrollo_condiciones_material ( *, materiales(nombre) ),
       profiles ( full_name )
     `)
     .eq('id', id)
@@ -130,6 +132,50 @@ export async function cambiarStatusDesarrollo(
     ? Math.floor((Date.now() - new Date(current.updated_at).getTime()) / 1000)
     : null
 
+  // Validar Gate de Draft -> Ops Review
+  if (nuevoStatus === 'ops_review') {
+    // 1. Verificar BOM en la última versión
+    const { data: versiones } = await supabase
+      .from('desarrollo_versiones')
+      .select('bom_data')
+      .eq('desarrollo_id', id)
+      .order('version_n', { ascending: false })
+      .limit(1)
+
+    const ultima = versiones?.[0]
+    const hasBom = Array.isArray(ultima?.bom_data) && (ultima.bom_data as any[]).length > 0
+    if (!hasBom) {
+      return { error: 'No se puede pasar a Revisión Ops sin definir un BOM (materiales) en la versión actual.' }
+    }
+
+    // 2. Verificar condiciones (dependiendo del tipo)
+    const { data: dev } = await supabase
+      .from('desarrollo')
+      .select('tipo_producto')
+      .eq('id', id)
+      .single() as { data: { tipo_producto: string } | null }
+
+    if (dev?.tipo_producto === 'fabricado') {
+      const { count } = await supabase
+        .from('desarrollo_condiciones_material')
+        .select('*', { count: 'exact', head: true })
+        .eq('desarrollo_id', id)
+      
+      if (!count || count === 0) {
+        return { error: 'Faltan las condiciones de mínimos de las materias primas para avanzar.' }
+      }
+    } else {
+      const { count } = await supabase
+        .from('desarrollo_condiciones')
+        .select('*', { count: 'exact', head: true })
+        .eq('desarrollo_id', id)
+      
+      if (!count || count === 0) {
+        return { error: 'Faltan las condiciones comerciales del proveedor para avanzar.' }
+      }
+    }
+  }
+
   // Actualizar estado
   const { error: updateError } = await supabase
     .from('desarrollo')
@@ -188,7 +234,7 @@ export async function getClientesParaDesarrollo() {
   const { data, error } = await supabase
     .from('terceros')
     .select('id, nombre')
-    .eq('tipo', 'cliente')
+    .overlaps('tipos', ['cliente'])
     .order('nombre')
 
   if (error) return { data: [], error: error.message }

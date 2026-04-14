@@ -12,6 +12,7 @@ import { AssetUploader } from './asset-uploader'
 import { GaleriaLightroom } from './galeria-lightroom'
 import { AprobacionesPanel } from './aprobaciones-panel'
 import { ViabilidadOpsPanel } from './viabilidad-ops-panel'
+import { CondicionesPanel } from './condiciones-panel'
 import { GenerarMuestraModal } from './generar-muestra-modal'
 import { cambiarStatusDesarrollo } from '@/features/desarrollo/services/desarrollo-actions'
 import { graduarDesarrollo } from '@/features/desarrollo/services/graduacion-actions'
@@ -34,7 +35,7 @@ const TRANSICIONES_PERMITIDAS: Record<StatusDesarrollo, StatusDesarrollo[]> = {
   cancelled:     [],
 }
 
-type Tab = 'info' | 'versiones' | 'muestra' | 'assets' | 'hallazgos' | 'historial'
+type Tab = 'info' | 'versiones' | 'condiciones' | 'muestra' | 'assets' | 'hallazgos' | 'historial'
 
 interface Tercero { id: string; nombre: string }
 
@@ -88,6 +89,8 @@ interface DesarrolloData {
   desarrollo_transiciones: Transicion[]
   desarrollo_ordenes: OrdenMuestra[]
   desarrollo_viabilidad_ops: DesarrolloViabilidadOps[]
+  desarrollo_condiciones: any[]
+  desarrollo_condiciones_material: any[]
   profiles: { full_name: string } | null
 }
 
@@ -131,6 +134,13 @@ export function DesarrolloDetail({ desarrollo, talleres, proveedores }: Props) {
   const esFabricado = desarrollo.tipo_producto === 'fabricado'
   const tercerosMuestra = esFabricado ? talleres : proveedores
 
+  const hasBom = Array.isArray(ultimaVersion?.bom_data) && (ultimaVersion.bom_data as any[]).length > 0
+  const hasCondiciones = esFabricado
+    ? desarrollo.desarrollo_condiciones_material.length > 0
+    : desarrollo.desarrollo_condiciones && (Array.isArray(desarrollo.desarrollo_condiciones) ? desarrollo.desarrollo_condiciones.length > 0 : !!desarrollo.desarrollo_condiciones)
+ 
+  const canMoveToOps = hasBom && hasCondiciones
+
   // Viabilidad and ordenes from data
   const viabilidadOps = desarrollo.desarrollo_viabilidad_ops?.[0] as DesarrolloViabilidadOps | undefined
   const ordenMuestra = desarrollo.desarrollo_ordenes?.find(
@@ -169,12 +179,13 @@ export function DesarrolloDetail({ desarrollo, talleres, proveedores }: Props) {
   }
 
   const TABS: { id: Tab; label: string; badge?: number }[] = [
-    { id: 'info',      label: 'General' },
-    { id: 'versiones', label: 'Versiones', badge: desarrollo.desarrollo_versiones.length },
-    { id: 'muestra',   label: 'Muestra' },
-    { id: 'assets',    label: 'Fotos & Archivos', badge: versionSeleccionada?.desarrollo_assets.length },
-    { id: 'hallazgos', label: 'Hallazgos', badge: versionSeleccionada?.desarrollo_hallazgos.filter(h => !h.resuelto).length },
-    { id: 'historial', label: 'Historial' },
+    { id: 'info',        label: 'General' },
+    { id: 'versiones',   label: 'Versiones', badge: desarrollo.desarrollo_versiones.length },
+    { id: 'condiciones', label: 'Condiciones' },
+    { id: 'muestra',     label: 'Muestra' },
+    { id: 'assets',      label: 'Fotos & Archivos', badge: versionSeleccionada?.desarrollo_assets.length },
+    { id: 'hallazgos',   label: 'Hallazgos', badge: versionSeleccionada?.desarrollo_hallazgos.filter(h => !h.resuelto).length },
+    { id: 'historial',   label: 'Historial' },
   ]
 
   return (
@@ -232,12 +243,25 @@ export function DesarrolloDetail({ desarrollo, talleres, proveedores }: Props) {
         <div className="rounded-2xl bg-white border border-slate-100 shadow-sm px-4 py-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">Mover a →</span>
-            {transicionesPermitidas.filter(s => s !== 'cancelled').map(s => (
-              <button key={s} onClick={() => iniciarTransicion(s)} disabled={isPending}
-                className="px-4 py-2 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-primary-600 transition-all disabled:opacity-50">
-                {STATUS_LABELS[s]}
-              </button>
-            ))}
+            {transicionesPermitidas.filter(s => s !== 'cancelled').map(s => {
+              const isOps = s === 'ops_review'
+              const isDisabled = isPending || (isOps && !canMoveToOps)
+              
+              return (
+                <div key={s} className="group relative">
+                  <button onClick={() => iniciarTransicion(s)} disabled={isDisabled}
+                    className="px-4 py-2 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-primary-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+                    {STATUS_LABELS[s]}
+                  </button>
+                  {isOps && !canMoveToOps && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 p-2 bg-slate-800 text-[9px] text-white rounded-lg shadow-xl z-20 text-center animate-in fade-in slide-in-from-bottom-1">
+                      {!hasBom && "• Falta definir BOM (materiales)\n"}
+                      {!hasCondiciones && "• Faltan condiciones de abastecimiento (MOQ/LT)"}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
             <button onClick={() => setShowCancelModal(true)} disabled={isPending}
               className="px-4 py-2 rounded-xl border border-red-200 text-red-600 text-[10px] font-black uppercase tracking-widest hover:bg-red-50 transition-all disabled:opacity-50">
               Cancelar
@@ -291,6 +315,19 @@ export function DesarrolloDetail({ desarrollo, talleres, proveedores }: Props) {
                 </div>
               )}
             </div>
+          )}
+
+          {/* TAB: Condiciones */}
+          {activeTab === 'condiciones' && (
+            <CondicionesPanel
+              desarrolloId={desarrollo.id}
+              versionId={ultimaVersion?.id || ''}
+              tipoProducto={desarrollo.tipo_producto as 'fabricado' | 'comercializado'}
+              bomData={(ultimaVersion?.bom_data as any[]) || []}
+              condicionesExistentes={Array.isArray(desarrollo.desarrollo_condiciones) ? desarrollo.desarrollo_condiciones[0] : desarrollo.desarrollo_condiciones}
+              materialCondicionesExistentes={desarrollo.desarrollo_condiciones_material}
+              proveedores={proveedores}
+            />
           )}
 
           {/* TAB: Versiones */}

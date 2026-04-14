@@ -334,3 +334,69 @@ export async function getAllTerceros() {
     .order('nombre')
   return { data: (data ?? []) as { id: string; nombre: string; tipos: string[] }[] }
 }
+
+// ─── RESTRICCIONES POR MATERIAL (MOQs) ───────────────────────────────────────
+
+export interface MaterialCondicionInput {
+  material_id:            string
+  material_nombre?:       string
+  proveedor_id?:          string
+  moq_material:           number
+  moq_unidad:             string
+  consumo_por_unidad:     number
+  leadtime_material_dias: number
+  notas?:                 string
+}
+
+export async function guardarCondicionesMaterial(
+  desarrolloId: string,
+  input: MaterialCondicionInput[]
+) {
+  const supabase = db(await createClient())
+
+  // Eliminar existentes para este desarrollo
+  await supabase.from('desarrollo_condiciones_material').delete().eq('desarrollo_id', desarrolloId)
+
+  if (input.length === 0) return { error: null }
+
+  // Insertar nuevos
+  const { error } = await supabase.from('desarrollo_condiciones_material').insert(
+    input.map(item => ({
+      desarrollo_id:          desarrolloId,
+      material_id:            item.material_id,
+      proveedor_id:           item.proveedor_id ?? null,
+      moq_material:           item.moq_material,
+      moq_unidad:             item.moq_unidad,
+      consumo_por_unidad:     item.consumo_por_unidad,
+      moq_implicito_producto: item.consumo_por_unidad > 0 ? Math.ceil(item.moq_material / item.consumo_por_unidad) : 0,
+      leadtime_material_dias: item.leadtime_material_dias,
+      notas:                  item.notas ?? null,
+    }))
+  )
+
+  if (error) return { error: error.message }
+
+  revalidatePath(`/desarrollo/${desarrolloId}`)
+  return { error: null }
+}
+
+export async function getCondicionesMaterial(desarrolloId: string) {
+  const supabase = db(await createClient())
+  const { data } = await supabase
+    .from('desarrollo_condiciones_material')
+    .select('*, materiales(nombre)')
+    .eq('desarrollo_id', desarrolloId)
+  
+  return { data: (data ?? []) }
+}
+
+export async function getCondicionesGenerales(desarrolloId: string) {
+  const supabase = db(await createClient())
+  const { data } = await supabase
+    .from('desarrollo_condiciones')
+    .select('*')
+    .eq('desarrollo_id', desarrolloId)
+    .maybeSingle()
+  
+  return { data }
+}
