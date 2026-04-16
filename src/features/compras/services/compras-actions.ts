@@ -556,13 +556,42 @@ export async function crearRecepcionesOCConBins(
       })
     }
     
-    // Auto-check status: Toda orden con ingresos pasa a 'en_proceso' automáticamente
-    await updateOCStatus(recepcion.ocId, 'en_proceso')
+    // Auto-check status inteligente basado en cantidades pactadas vs recibidas
+    await autoCheckOCStatus(recepcion.ocId)
   }
 
   revalidatePath('/compras')
   revalidatePath('/wms')
   return resultados
+}
+
+export async function autoCheckOCStatus(ocId: string): Promise<void> {
+  const supabase = db(await createClient())
+  
+  // 1. Obtener cantidades esperadas
+  const { data: pt } = await supabase.from('oc_detalle').select('cantidad').eq('oc_id', ocId)
+  const { data: mp } = await supabase.from('oc_detalle_mp').select('cantidad').eq('oc_id', ocId)
+  
+  const expectedPT = (pt || []).reduce((sum: number, row: any) => sum + Number(row.cantidad), 0)
+  const expectedMP = (mp || []).reduce((sum: number, row: any) => sum + Number(row.cantidad), 0)
+  const totalExpected = expectedPT + expectedMP
+
+  // 2. Obtener cantidades recibidas (excluyendo revertidas)
+  const { data: receivedData } = await supabase
+    .from('recepcion_oc')
+    .select('cantidad_recibida')
+    .eq('oc_id', ocId)
+    .neq('estado', 'revertida')
+    
+  const totalReceived = (receivedData || []).reduce((sum: number, row: any) => sum + Number(row.cantidad_recibida), 0)
+
+  // 3. Evaluar y actualizar
+  const newStatus = totalReceived >= totalExpected ? 'completada' : 'en_proceso'
+  
+  await supabase
+    .from('ordenes_compra')
+    .update({ estado_documental: newStatus })
+    .eq('id', ocId)
 }
 
 export async function updateOCStatus(id: string, estado: string): Promise<{ error?: string }> {

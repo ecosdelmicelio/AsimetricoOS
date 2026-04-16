@@ -1,4 +1,4 @@
-export type EstadoDocumental = 'pendiente_afidavit' | 'cargado' | 'na' | 'en_proceso'
+export type EstadoDocumental = 'pendiente_afidavit' | 'cargado' | 'na' | 'en_proceso' | 'completada' | 'finalizada'
 export type EstadoGreige = 'en_crudo' | 'para_tejer' | 'otros'
 
 export interface OrdenCompra {

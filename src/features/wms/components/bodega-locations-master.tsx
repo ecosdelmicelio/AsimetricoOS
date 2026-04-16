@@ -708,22 +708,34 @@ export function BodegaLocationsMaster() {
                             : `Crear Contenedor ${newNames.binSufijo ? `(${newNames.binSufijo})` : ''}`}
                         </button>
                     </div>
-                 ) : activeOC ? (
-                    <div className="bg-amber-600 p-5 rounded-3xl shadow-lg ring-4 ring-amber-600/20">
+                  ) : activeOC ? (
+                        <div className="bg-amber-600 p-5 rounded-3xl shadow-lg ring-4 ring-amber-600/20 mb-4 animate-in fade-in slide-in-from-top-4">
                        <div className="flex items-center justify-between gap-4 mb-4">
                          <div className="flex items-center gap-3">
                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"><ShoppingCart className="w-5 h-5 text-white" /></div>
-                           <div><p className="text-[8px] font-black text-amber-200 uppercase leading-none">Procesando</p><h5 className="text-sm font-black text-white">{activeOC.codigo}</h5></div>
+                           <div><p className="text-[8px] font-black text-amber-200 uppercase leading-none">Orden Pendiente</p><h5 className="text-sm font-black text-white">{activeOC.codigo}</h5></div>
                          </div>
+                       </div>
+                       
+                       <div className="flex flex-col gap-2">
                          <button 
                             onClick={() => {
-                              setNewNames(prev => ({ ...prev, binSufijo: activeOC.codigo.split('-').pop() || 'RC', binFijo: false }))
-                              setMode('DISE\u00D1O')
+                              setModalTargetBin({ 
+                                id: `NEW_BIN|${posSeleccionada?.id}|${posSeleccionada?.nombre}`, 
+                                codigo: 'NUEVO CONTENEDOR (Auto)', 
+                                bodega_id: posSeleccionada?.bodega_id || '' 
+                              } as any)
+                              setModalOpen(true)
                             }}
-                            className="p-2.5 bg-white text-amber-600 rounded-xl hover:scale-110 transition-all shadow-md"><Plus className="w-4 h-4 text-black" /></button>
+                            className="w-full py-3 bg-white text-amber-600 rounded-xl hover:scale-[1.02] active:scale-95 transition-all shadow-md flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                         >
+                            <Box className="w-4 h-4" /> Recibir Nueva Caja Aquí
+                         </button>
+                         <p className="text-[8px] font-bold text-amber-100 opacity-80 uppercase leading-tight text-center">
+                           O dale clic a "Recibir" sobre un Bin existente debajo para mezclar inventario.
+                         </p>
                        </div>
-                       <p className="text-[9px] font-bold text-amber-100 opacity-80 uppercase leading-tight">Usa un bin existente o crea uno nuevo para esta OC en {posSeleccionada?.nombre}.</p>
-                    </div>
+                     </div>
                  ) : (
                     <div className="p-8 flex flex-col items-center justify-center border-2 border-dashed border-slate-700 rounded-3xl text-slate-500 opacity-50">
                        <ArrowRight className="w-8 h-8 mb-2 animate-pulse" />

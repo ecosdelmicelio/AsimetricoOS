@@ -205,26 +205,51 @@ export async function getOCItemsGrid(ocId: string): Promise<GridItem[]> {
     if (!oc) return [{ id: 'error', label: 'OC No Encontrada', sublabel: `ID: ${ocId}`, icon: 'AlertCircle' }]
     
     const items: GridItem[] = []
+    const supabase = await createClient()
+
+    // Obtener lo ya recibido para deducirlo de lo esperado
+    const { data: recibidos } = await supabase
+      .from('recepcion_oc')
+      .select('producto_id, talla, material_id, cantidad_recibida, estado')
+      .eq('oc_id', ocId)
+      .neq('estado', 'revertida')
+      
+    // Mapa de recibido: key -> cantidad
+    const recMap = new Map<string, number>()
+    if (recibidos) {
+      recibidos.forEach(r => {
+        let key = ''
+        if (oc.tipo === 'producto_terminado') key = `${r.producto_id}_${r.talla}`
+        else if (oc.tipo === 'materia_prima') key = `${r.material_id}`
+        
+        recMap.set(key, (recMap.get(key) || 0) + Number(r.cantidad_recibida))
+      })
+    }
 
     // PT (Producto Terminado) - Agrupado por Referencia
     if (oc.oc_detalle && oc.oc_detalle.length > 0) {
       const grouped = new Map<string, any[]>()
       oc.oc_detalle.forEach(d => {
-        const list = grouped.get(d.producto_id) || []
-        list.push(d)
-        grouped.set(d.producto_id, list)
+        // Calcular pendiente
+        const received = recMap.get(`${d.producto_id}_${d.talla}`) || 0
+        const pending = d.cantidad - received
+        if (pending > 0) {
+          const list = grouped.get(d.producto_id) || []
+          list.push({ ...d, cantidad_pendiente: pending })
+          grouped.set(d.producto_id, list)
+        }
       })
 
       grouped.forEach((details, prodId) => {
         const first = details[0]
-        const totalQty = details.reduce((sum, d) => sum + d.cantidad, 0)
-        const tallasStr = details.map(d => `${d.talla}(${d.cantidad})`).join(' · ')
+        const totalPendingQty = details.reduce((sum, d) => sum + d.cantidad_pendiente, 0)
+        const tallasStr = details.map(d => `${d.talla}(${d.cantidad_pendiente})`).join(' · ')
         
         items.push({
           id: `GROUP|${prodId}`,
           label: first.productos?.nombre || 'Producto',
-          sublabel: `${first.productos?.referencia}\n${tallasStr}`,
-          count: totalQty,
+          sublabel: `${first.productos?.referencia}\nFaltan: ${tallasStr}`,
+          count: totalPendingQty,
           price: first.precio_pactado, 
           icon: 'Shirt',
           metadata: { 
@@ -234,7 +259,7 @@ export async function getOCItemsGrid(ocId: string): Promise<GridItem[]> {
               id: d.id,
               label: `${first.productos?.nombre} (${d.talla})`,
               sublabel: `${first.productos?.referencia} — ${d.talla}`,
-              count: d.cantidad,
+              count: d.cantidad_pendiente,
               price: d.precio_pactado,
               metadata: { producto_id: d.producto_id, talla: d.talla }
             }))
@@ -246,15 +271,19 @@ export async function getOCItemsGrid(ocId: string): Promise<GridItem[]> {
     // MP (Materia Prima) - Se mantiene individual por rollo/ítem
     if (oc.oc_detalle_mp && oc.oc_detalle_mp.length > 0) {
       oc.oc_detalle_mp.forEach(d => {
-        items.push({
-          id: d.id,
-          label: d.materiales?.nombre || 'Material',
-          sublabel: `${d.materiales?.codigo} — ${d.materiales?.unidad}`,
-          count: d.cantidad,
-          price: d.precio_unitario,
-          icon: 'Package',
-          metadata: { material_id: d.material_id, talla: 'UNICA' }
-        })
+        const received = recMap.get(`${d.material_id}`) || 0
+        const pending = d.cantidad - received
+        if (pending > 0) {
+          items.push({
+            id: d.id,
+            label: d.materiales?.nombre || 'Material',
+            sublabel: `${d.materiales?.codigo} — ${d.materiales?.unidad}`,
+            count: pending,
+            price: d.precio_unitario,
+            icon: 'Package',
+            metadata: { material_id: d.material_id, talla: 'UNICA' }
+          })
+        }
       })
     }
     
@@ -365,11 +394,12 @@ export async function processUnifiedMovement(input: {
         const ocNum = ocData?.codigo || (sourceId.length > 8 ? sourceId.substring(0, 8) : sourceId)
         const tipo = metadata?.producto_id ? 'COM' : 'FAB'
         
-        // Limpiamos el nombre del producto para el código
-        const rawName = metadata?.label || 'ITEM'
-        const cleanName = rawName.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '').substring(0, 8)
+        // Limpiamos el nombre del producto para el código (opcional)
+        const rawName = metadata?.label || 'CAJA'
+        const cleanName = rawName.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '').substring(0, 4)
+        const hash = Math.random().toString(36).substring(2, 6).toUpperCase()
         
-        descriptiveCode = `${ocNum}-BIN-${cleanName}`.toUpperCase()
+        descriptiveCode = `${ocNum}-${cleanName}-${hash}`.toUpperCase()
       } catch (err) {
         console.error('Error in naming cerebro:', err)
       }
@@ -387,12 +417,21 @@ export async function processUnifiedMovement(input: {
   switch (mode) {
     case 'INGRESAR': {
       const { crearRecepcionesOCConBins } = await import('@/features/compras/services/compras-actions')
-      const meta = (input as any).metadata || {}
       
-      return await crearRecepcionesOCConBins([{
-        ocId: sourceId,
-        bodegaId: bodegaId || '', 
-        items: [{ 
+      let receiptItems = []
+      
+      if (input.items && input.items.length > 0) {
+        receiptItems = input.items.map((i: any) => ({
+          producto_id: i.producto_id || null,
+          material_id: i.material_id || null,
+          talla: i.talla || '...',
+          cantidad: i.cantidad,
+          bin_id: finalTargetId,
+          precio_unitario: i.precio_unitario || precioUnitario
+        }))
+      } else {
+        const meta = input.metadata || {}
+        receiptItems = [{ 
           producto_id: meta.producto_id || null, 
           material_id: meta.material_id || null,
           talla: meta.talla || '...', 
@@ -400,6 +439,12 @@ export async function processUnifiedMovement(input: {
           bin_id: finalTargetId,
           precio_unitario: precioUnitario
         }]
+      }
+      
+      return await crearRecepcionesOCConBins([{
+        ocId: sourceId,
+        bodegaId: bodegaId || '', 
+        items: receiptItems
       }])
     }
 

@@ -27,10 +27,12 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
   const [processing, setProcessing] = useState(false)
   const [quantities, setQuantities] = useState<Record<string, number>>({})
   const [error, setError] = useState<string | null>(null)
+  const [markCompleted, setMarkCompleted] = useState(false)
 
   useEffect(() => {
     if (isOpen && activeOC) {
       loadItems()
+      setMarkCompleted(false)
     }
   }, [isOpen, activeOC])
 
@@ -70,27 +72,39 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
     setError(null)
     
     try {
-      // Procesamos cada item que tenga cantidad > 0
-      const promises = Object.entries(quantities)
+      const selectedItems = Object.entries(quantities)
         .filter(([_, qty]) => qty > 0)
         .map(([itemId, qty]) => {
           const item = items.find(i => i.id === itemId)
-          return processUnifiedMovement({
-            mode: 'INGRESAR',
-            sourceId: activeOC.id,
-            targetId: targetBin.id,
-            itemId: itemId.startsWith('GROUP|') ? undefined : itemId,
+          return {
+            producto_id: item?.metadata?.producto_id || undefined,
+            material_id: item?.metadata?.material_id || undefined,
+            talla: item?.metadata?.talla || '...',
             cantidad: qty,
-            metadata: item?.metadata,
-            bodegaId: targetBin.bodega_id
-          })
+            precio_unitario: item?.price || 0,
+            unidad: item?.metadata?.unidad || 'unidades'
+          }
         })
 
-      const results = await Promise.all(promises)
-      const firstError = results.find(r => r.error)
-      
-      if (firstError) {
-        setError(firstError.error)
+      if (selectedItems.length === 0) {
+        setError('Debes ingresar al menos una unidad')
+        setProcessing(false)
+        return
+      }
+
+      // Enviar todo en un solo lote para que si es NEW_BIN, cree un solo bin contenedor de todos
+      const result = await processUnifiedMovement({
+        mode: 'INGRESAR',
+        sourceId: activeOC.id,
+        targetId: targetBin.id,
+        bodegaId: targetBin.bodega_id,
+        cantidad: 0, // Ignorado porque usamos items array
+        metadata: { label: items.find(i => quantities[i.id] > 0)?.label || 'CAJAS' },
+        items: selectedItems as any
+      })
+
+      if (result && result.error) {
+        setError(result.error)
       } else {
         onSuccess()
         onClose()
@@ -164,7 +178,9 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
                     <div className="flex flex-wrap items-center gap-3">
                       {group.groupChildren.map((child: any) => (
                         <div key={child.id} className="flex flex-col items-center bg-slate-50 border border-slate-200 rounded-2xl p-2 min-w-[70px]">
-                           <span className="text-[10px] font-black text-slate-500 uppercase mb-1">{child.metadata?.talla || child.label}</span>
+                           <span className="text-[10px] font-black text-slate-500 uppercase leading-none">{child.metadata?.talla || child.label}</span>
+                           <span className="text-[8px] font-bold text-slate-400 mb-1.5">${(child.price || 0).toLocaleString()}</span>
+                           
                            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg overflow-hidden w-full">
                               <button 
                                 onClick={() => setQuantities(q => ({ ...q, [child.id]: Math.max(0, (q[child.id] || 0) - 1) }))}
@@ -192,16 +208,33 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
 
         {/* Footer */}
         <div className="p-8 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-          <div className="flex flex-col">
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Unidades</span>
-            <span className="text-lg font-black text-slate-800">
-              {Object.values(quantities).reduce((a, b) => a + b, 0)} <span className="text-xs text-slate-400">ítems</span>
-            </span>
+          <div className="flex items-center gap-8">
+            <div className="flex flex-col">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Unidades</span>
+              <span className="text-lg font-black text-slate-800">
+                {Object.values(quantities).reduce((a, b) => a + b, 0)} <span className="text-xs text-slate-400">ítems</span>
+              </span>
+            </div>
+            
+            <div className="flex flex-col pl-8 border-l border-slate-200">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Valor Factura (Esperado)</span>
+              <span className="text-lg font-black text-slate-800">
+                ${items.reduce((acc, item) => acc + ((item.price || 0) * (item.count || 0)), 0).toLocaleString()}
+              </span>
+            </div>
+            
+            <div className="flex flex-col pl-8 border-l border-slate-200">
+              <span className="text-[9px] font-black text-primary-500 uppercase tracking-widest">Valor Recepción Actual</span>
+              <span className="text-lg font-black text-primary-700">
+                ${Object.entries(quantities).reduce((acc, [id, qty]) => acc + (qty * (items.find(i => i.id === id)?.price || 0)), 0).toLocaleString()}
+              </span>
+            </div>
           </div>
           
           <div className="flex gap-3">
             <button 
               onClick={onClose}
+              disabled={processing}
               className="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-slate-700"
             >
               Cancelar
@@ -209,7 +242,7 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
             <button 
               onClick={handleProcess}
               disabled={processing || loading || items.length === 0}
-              className="px-10 py-3 bg-primary-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary-900/20 hover:bg-primary-700 active:scale-95 transition-all flex items-center gap-2"
+              className="px-10 py-3 bg-primary-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary-900/20 hover:bg-primary-700 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50"
             >
               {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
               Procesar Ingreso
