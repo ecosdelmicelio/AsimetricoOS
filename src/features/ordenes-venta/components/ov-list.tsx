@@ -110,59 +110,94 @@ export async function OVList({ filters }: Props) {
         </div>
       )}
 
-      {/* OV Cards */}
+      {/* Kanban Board for OV */}
       {ovs.length > 0 && (
-        <div className="space-y-2">
-          {ovs.map((ov) => {
-            // ── Compute metrics server-side ────────────────────────────
-            const totalUnidades = ov.ov_detalle.reduce((s, d) => s + d.cantidad, 0)
-            const totalValor = ov.ov_detalle.reduce((s, d) => s + d.cantidad * d.precio_pactado, 0)
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pb-6 mt-4">
+          {[
+            { id: 'comercial', title: 'Por Iniciar', color: 'bg-slate-400', states: ['borrador', 'confirmada'] },
+            { id: 'produccion', title: 'En Producción', color: 'bg-amber-400', states: ['en_produccion', 'terminada'] },
+            { id: 'logistica', title: 'En Logística', color: 'bg-indigo-500', states: ['despachada'] },
+            { id: 'finalizado', title: 'Finalizadas', color: 'bg-emerald-500', states: ['completada', 'entregada', 'cancelada'] }
+          ].map(col => {
+            // Process the items for this column
+            const items = ovs.map(ov => {
+              const totalUnidades = ov.ov_detalle.reduce((s, d) => s + d.cantidad, 0)
+              const totalValor = ov.ov_detalle.reduce((s, d) => s + d.cantidad * d.precio_pactado, 0)
 
-            // Days since creation (proxy for T+Xd on confirmed+ orders)
-            const daysSinceConfirm = (ov.estado !== 'borrador' && ov.created_at)
-              ? Math.max(0, Math.ceil((now.getTime() - new Date(ov.created_at).getTime()) / (1000 * 3600 * 24)))
-              : undefined
-            
-            const fechaConfirmacion = ov.estado !== 'borrador' ? ov.created_at || undefined : undefined
+              const daysSinceConfirm = (ov.estado !== 'borrador' && ov.created_at)
+                ? Math.max(0, Math.ceil((now.getTime() - new Date(ov.created_at).getTime()) / (1000 * 3600 * 24)))
+                : undefined
+              
+              const fechaConfirmacion = ov.estado !== 'borrador' ? ov.created_at || undefined : undefined
 
-            // Produced units (OPs with terminado/completada/entregada state)
-            const PROD_DONE_STATES = ['terminado', 'completada', 'entregada', 'liquidada']
-            const unidadesProducidas = ov.ordenes_produccion
-              .filter(op => PROD_DONE_STATES.includes(op.estado))
-              .reduce((s, op) => s + op.op_detalle.reduce((ss, d) => ss + d.cantidad_asignada, 0), 0)
+              const PROD_DONE_STATES = ['terminado', 'completada', 'entregada', 'liquidada']
+              const unidadesProducidas = ov.ordenes_produccion
+                .filter(op => PROD_DONE_STATES.includes(op.estado))
+                .reduce((s, op) => s + op.op_detalle.reduce((ss, d) => ss + d.cantidad_asignada, 0), 0)
 
-            // Dispatched units — now available from the query join
-            const unidadesDespachadas = ov.despachos?.reduce(
-              (sum, desp) => sum + (desp.despacho_detalle?.reduce((s, d) => s + d.cantidad, 0) || 0),
-              0
-            ) || 0
+              const unidadesDespachadas = ov.despachos?.reduce(
+                (sum, desp) => sum + (desp.despacho_detalle?.reduce((s, d) => s + d.cantidad, 0) || 0),
+                0
+              ) || 0
 
-            const displayStatus = deriveStatus(ov, unidadesDespachadas, unidadesProducidas, totalUnidades)
+              const displayStatus = deriveStatus(ov, unidadesDespachadas, unidadesProducidas, totalUnidades)
 
-            // OP data for expanded panel
-            const ops = ov.ordenes_produccion.map(op => ({
-              id: op.id,
-              codigo: op.codigo,
-              estado: op.estado,
-              unidades: op.op_detalle.reduce((s, d) => s + d.cantidad_asignada, 0),
-            }))
+              return {
+                ov, displayStatus, totalUnidades, totalValor, 
+                unidadesProducidas, unidadesDespachadas, daysSinceConfirm, 
+                fechaConfirmacion
+              }
+            }).filter(item => col.states.includes(item.displayStatus))
 
             return (
-              <OVCard
-                key={ov.id}
-                id={ov.id}
-                codigo={ov.codigo}
-                clienteNombre={ov.terceros?.nombre ?? 'Cliente no definido'}
-                estado={ov.estado}
-                displayStatus={displayStatus}
-                totalUnidades={totalUnidades}
-                totalValor={totalValor}
-                unidadesProducidas={unidadesProducidas}
-                unidadesDespachadas={unidadesDespachadas}
-                daysSinceConfirm={daysSinceConfirm}
-                fechaConfirmacion={fechaConfirmacion}
-                ops={ops}
-              />
+              <div key={col.id} className="flex flex-col bg-slate-50/50 rounded-[32px] border border-slate-200/60 shadow-sm min-w-0">
+                {/* Column Header */}
+                <div className="p-5 flex items-center justify-between border-b border-slate-200/50">
+                  <div className="flex items-center gap-3">
+                    <span className={`w-3 h-3 rounded-full shadow-inner shrink-0 ${col.color.split(' ')[0]}`} />
+                    <h3 className="font-black text-slate-700 text-sm tracking-tight truncate">{col.title}</h3>
+                  </div>
+                  <span className="text-[10px] font-black text-slate-500 bg-slate-200/50 px-2.5 py-1 rounded-xl shrink-0">
+                    {items.length}
+                  </span>
+                </div>
+
+                {/* Cards Container */}
+                <div className="flex-1 p-4 space-y-4 overflow-y-auto custom-scrollbar h-[60vh]">
+                  {items.map(({ ov, displayStatus, totalUnidades, totalValor, unidadesProducidas, unidadesDespachadas, daysSinceConfirm, fechaConfirmacion }) => {
+                    const ops = ov.ordenes_produccion.map(op => ({
+                      id: op.id,
+                      codigo: op.codigo,
+                      estado: op.estado,
+                      unidades: op.op_detalle.reduce((s, d) => s + d.cantidad_asignada, 0),
+                    }))
+
+                    return (
+                      <OVCard
+                        key={ov.id}
+                        id={ov.id}
+                        codigo={ov.codigo}
+                        clienteNombre={ov.terceros?.nombre ?? 'Cliente no definido'}
+                        estado={ov.estado}
+                        displayStatus={displayStatus}
+                        totalUnidades={totalUnidades}
+                        totalValor={totalValor}
+                        unidadesProducidas={unidadesProducidas}
+                        unidadesDespachadas={unidadesDespachadas}
+                        daysSinceConfirm={daysSinceConfirm}
+                        fechaConfirmacion={fechaConfirmacion}
+                        ops={ops}
+                      />
+                    )
+                  })}
+
+                  {items.length === 0 && (
+                    <div className="h-24 flex items-center justify-center border-2 border-dashed border-slate-200/60 rounded-3xl text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      Vacío
+                    </div>
+                  )}
+                </div>
+              </div>
             )
           })}
         </div>

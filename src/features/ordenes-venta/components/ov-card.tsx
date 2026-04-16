@@ -78,45 +78,52 @@ export function OVCard({
         )} />
 
         {/* Core info */}
-        <div className="flex-1 min-w-0">
-          {/* Row 1: Code + badge + client + metrics */}
-          <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex-1 min-w-0 pr-1">
+          {/* Header Line: Code + aging */}
+          <div className="flex items-start justify-between gap-2 mb-1">
             <Link
               href={`/ordenes-venta/${id}`}
-              className="font-black text-[12px] text-slate-900 whitespace-nowrap hover:text-primary-600 transition-colors"
+              className="font-black text-sm text-slate-800 tracking-tighter hover:text-primary-600 transition-colors truncate"
               onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               {codigo}
             </Link>
-            <OVStatusBadge estado={displayStatus} />
             
-            {/* Operational Timing: Date + Aging */}
+            {/* Operational Timing */}
             {(fechaConfirmacion || daysSinceConfirm !== undefined) && (
-              <span className="text-[8px] font-black bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded border border-slate-100 uppercase tracking-tighter">
+              <span className="text-[8px] font-black bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded border border-slate-100 uppercase tracking-tighter shrink-0">
                 {fechaConfirmacion && new Date(fechaConfirmacion).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
                 {daysSinceConfirm !== undefined && ` · ${daysSinceConfirm}d`}
               </span>
             )}
+          </div>
 
-            <span className="text-[9px] font-bold text-slate-400 uppercase truncate max-w-[120px]">{clienteNombre}</span>
-            <div className="flex items-center gap-4 ml-auto shrink-0">
-              <div className="flex flex-col items-end">
-                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Unid.</span>
-                <span className="text-[11px] font-black text-slate-700 leading-none">
-                  {unidadesDespachadas}/{totalUnidades}
-                </span>
-              </div>
-              <div className="flex flex-col items-end">
-                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Valor</span>
-                <span className="text-[11px] font-black text-slate-900 leading-none">
-                  {formatCurrency(totalValor)}
-                </span>
-              </div>
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide truncate mb-2" title={clienteNombre}>
+            {clienteNombre}
+          </p>
+
+          <div className="mb-3">
+            <OVStatusBadge estado={displayStatus} />
+          </div>
+
+          {/* Metrics Block */}
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 flex flex-col justify-between">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Unidades</span>
+              <span className="text-xs font-black text-slate-800 leading-none">
+                {unidadesDespachadas} / {totalUnidades}
+              </span>
+            </div>
+            <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 flex flex-col justify-between">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Valor Venta</span>
+              <span className="text-xs font-black text-slate-800 leading-none truncate">
+                {formatCurrency(totalValor)}
+              </span>
             </div>
           </div>
 
-          {/* Row 2: Mini Stepper */}
-          <div className="mt-2">
+          {/* Mini Stepper */}
+          <div className="mt-1">
             <OVMiniStepper
               currentStatus={displayStatus}
               daysSinceConfirm={daysSinceConfirm}
@@ -125,7 +132,7 @@ export function OVCard({
         </div>
 
         {/* Expand chevron */}
-        <div className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 transition-all group-open:bg-primary-50 group-open:border-primary-100">
+        <div className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 self-start transition-all group-open:bg-primary-50 group-open:border-primary-100">
           <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform group-open:rotate-180 group-open:text-primary-500" />
         </div>
       </summary>

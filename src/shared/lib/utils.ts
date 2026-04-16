@@ -34,5 +34,8 @@ export function formatCurrency(value: number): string {
     style: 'currency',
     currency: 'COP',
     minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+    notation: 'compact',
+    compactDisplay: 'short'
   }).format(value)
 }

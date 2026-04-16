@@ -303,7 +303,7 @@ export async function getDespachosList(filtros?: {
       ordenes_venta (
         codigo,
         terceros!cliente_id ( nombre, nit ),
-        ov_detalle ( producto_id, talla, precio_unitario )
+        ov_detalle ( producto_id, talla, precio_pactado )
       )
     `)
     .order('fecha_despacho', { ascending: false })
@@ -318,10 +318,10 @@ export async function getDespachosList(filtros?: {
     query = query.lte('fecha_despacho', filtros.hasta + 'T23:59:59')
   }
 
-  const { data, error } = await query as { data: any[] | null; error: { message: string } | null }
+  const { data, error } = await query as { data: any[] | null; error: any }
 
   if (error) {
-    console.error('getDespachosList error:', error)
+    console.error('getDespachosList error:', JSON.stringify(error))
     return []
   }
   if (!data) return []
@@ -331,7 +331,7 @@ export async function getDespachosList(filtros?: {
     const ovDetalle = row.ordenes_venta?.ov_detalle || []
     const priceMap = new Map<string, number>()
     ovDetalle.forEach((d: any) => {
-      priceMap.set(`${d.producto_id}-${d.talla}`, d.precio_unitario || 0)
+      priceMap.set(`${d.producto_id}-${d.talla}`, d.precio_pactado || 0)
     })
     
     let total_valor = 0
