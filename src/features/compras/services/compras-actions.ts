@@ -25,7 +25,13 @@ export async function getOrdenesCompra(): Promise<OCListItem[]> {
   const supabase = db(await createClient())
   const { data } = await supabase
     .from('ordenes_compra')
-    .select('*, terceros!proveedor_id(nombre), rollos(id)')
+    .select(`
+      *, 
+      terceros!proveedor_id(nombre), 
+      rollos(id),
+      oc_detalle(cantidad, precio_pactado, productos(referencia, nombre)),
+      oc_detalle_mp(cantidad, precio_unitario, materiales(codigo, nombre))
+    `)
     .order('created_at', { ascending: false }) as { data: OCListItem[] | null }
   return data ?? []
 }
@@ -486,6 +492,13 @@ export async function crearRecepcionesOCConBins(
   const resultados: Array<{ binId: string; contenido: any }> = []
 
   for (const recepcion of recepciones) {
+    // Generar el Auto-Lote Encriptado (Basado en la OC y fecha de recepción)
+    const { data: ocInfo } = await supabase.from('ordenes_compra').select('codigo').eq('id', recepcion.ocId).single()
+    const baseCode = ocInfo ? ocInfo.codigo.substring(0, 5) : 'OCXXX'
+    const today = new Date()
+    const cryptoHash = Math.random().toString(36).substring(2, 5).toUpperCase()
+    const loteInterno = `${baseCode}-${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}-${cryptoHash}`
+
     // Si la recepción viene con un bin_id global o en el primer item, lo usamos
     const firstBinId = recepcion.items[0]?.bin_id
     let commonBin: any = null
@@ -503,14 +516,16 @@ export async function crearRecepcionesOCConBins(
       precio_unitario: item.precio_unitario ?? 0,
       bin_id: item.bin_id || commonBin?.id,
       recibido_por: usuarioId,
-      fecha_recepcion: new Date().toISOString(),
+      fecha_recepcion: today.toISOString(),
+      lote_interno: loteInterno, // INYECCIÓN DEL AUTO-LOTE AQUI
+      lote_proveedor: (item as any).lote_proveedor || null,
     }))
 
     const { data: recepciones_creadas, error } = await supabase
       .from('recepcion_oc')
       .insert(inserts)
-      .select('id, producto_id, talla, cantidad_recibida, precio_unitario') as {
-        data: Array<{ id: string; producto_id: string; talla: string; cantidad_recibida: number; precio_unitario: number }> | null
+      .select('id, producto_id, talla, cantidad_recibida, precio_unitario, lote_interno, lote_proveedor') as {
+        data: Array<{ id: string; producto_id: string; talla: string; cantidad_recibida: number; precio_unitario: number, lote_interno?: string, lote_proveedor?: string }> | null
         error: { message: string } | null
       }
 
@@ -520,7 +535,7 @@ export async function crearRecepcionesOCConBins(
 
     const selectedBinId = inserts[0].bin_id
     
-    // Generar kardex ENTRADA_OC para cada recepción
+    // Generar kardex ENTRADA_OC persistiendo el rastreo del Lote
     const movimientosKardex = recepciones_creadas.map(rec => ({
       producto_id: rec.producto_id || null,
       material_id: (rec as any).material_id || null,
@@ -532,6 +547,7 @@ export async function crearRecepcionesOCConBins(
       unidad: 'unidades',
       costo_unitario: rec.precio_unitario ?? 0,
       costo_total: (rec.cantidad_recibida * (rec.precio_unitario ?? 0)),
+      lote_interno: rec.lote_interno,
       saldo_ponderado: rec.precio_unitario ?? 0,
       bin_id: selectedBinId,
       talla: rec.talla,

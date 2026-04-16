@@ -5,6 +5,8 @@ const DOC_CONFIG: Record<EstadoDocumental, { label: string; className: string }>
   pendiente_afidavit: { label: 'Afidávit pendiente', className: 'bg-yellow-100 text-yellow-700' },
   cargado:            { label: 'Afidávit cargado',   className: 'bg-green-100 text-green-700' },
   en_proceso:         { label: 'En proceso',         className: 'bg-blue-100 text-blue-700' },
+  completada:         { label: 'Completada',         className: 'bg-teal-100 text-teal-700' },
+  finalizada:         { label: 'Finalizada',         className: 'bg-slate-800 text-slate-100' },
 }
 
 const GREIGE_CONFIG: Record<EstadoGreige, { label: string; icon: string }> = {

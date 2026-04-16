@@ -57,6 +57,8 @@ export interface OrdenCompraConDetalle extends OrdenCompra {
 export interface OCListItem extends OrdenCompra {
   terceros: { nombre: string } | null
   rollos: { id: string }[]
+  oc_detalle?: { cantidad: number; precio_pactado: number; productos: { nombre: string; referencia: string } | null }[]
+  oc_detalle_mp?: { cantidad: number; precio_unitario: number; materiales: { codigo: string; nombre: string } | null }[]
 }
 
 export interface OCDetalle {

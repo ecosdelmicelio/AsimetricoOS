@@ -26,6 +26,7 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
   const [loading, setLoading] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [quantities, setQuantities] = useState<Record<string, number>>({})
+  const [loteProveedor, setLoteProveedor] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   const [markCompleted, setMarkCompleted] = useState(false)
 
@@ -82,7 +83,8 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
             talla: item?.metadata?.talla || '...',
             cantidad: qty,
             precio_unitario: item?.price || 0,
-            unidad: item?.metadata?.unidad || 'unidades'
+            unidad: item?.metadata?.unidad || 'unidades',
+            lote_proveedor: loteProveedor || undefined
           }
         })
 
@@ -155,6 +157,18 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
               <p className="text-xs font-bold">{error}</p>
             </div>
           ) : (
+            <div className="space-y-6">
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col gap-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Lote Físico del Proveedor (Opcional)</label>
+                <input
+                  type="text"
+                  value={loteProveedor}
+                  onChange={(e) => setLoteProveedor(e.target.value)}
+                  placeholder="Ej: LTR-2026-XQ..."
+                  className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all uppercase"
+                />
+              </div>
+
               <div className="grid grid-cols-1 gap-4">
                 {Object.values(
                   items.reduce((acc: any, item) => {
@@ -203,6 +217,7 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
                   </div>
                 ))}
               </div>
+            </div>
           )}
         </div>
 
