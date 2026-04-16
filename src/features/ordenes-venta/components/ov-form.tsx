@@ -86,9 +86,18 @@ interface Cliente {
   nombre: string
 }
 
+export type ProductoAlias = {
+  producto_id: string
+  cliente_id: string
+  sku_cliente: string
+  nombre_comercial_cliente: string | null
+  precio_acordado: number | null
+}
+
 interface Props {
   clientes: Cliente[]
   productos: Producto[]
+  aliases?: ProductoAlias[]
   initialData?: OVConDetalle
 }
 
@@ -96,7 +105,7 @@ interface Props {
 // Componente
 // ---------------------------------------------------------------------------
 
-export function OVForm({ clientes, productos, initialData }: Props) {
+export function OVForm({ clientes, productos, aliases = [], initialData }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -137,8 +146,32 @@ export function OVForm({ clientes, productos, initialData }: Props) {
     minimo_orden: number | null; multiplo_orden: number | null; leadtime_dias: number | null; nombre: string
   }>>({})
 
-  // Grupos derivados del catálogo
-  const grupos = useMemo(() => derivarGrupos(productos), [productos])
+  // Lógica inteligente de Catálogo "Private Label" / Aliases B2B
+  const productosFiltrados = useMemo(() => {
+    if (!clienteId) return productos
+
+    // Buscar si este cliente tiene AL MENOS UN alias configurado
+    const aliasDelCliente = aliases.filter(a => a.cliente_id === clienteId)
+    
+    // Si no tiene aliases, mostramos todo el catálogo por defecto (para no bloquear cuentas nuevas)
+    if (aliasDelCliente.length === 0) return productos
+
+    // Si tiene aliases, cruzamos los IDs y forzamos nombres y referencias custom B2B (Private Label Override)
+    const allowedIds = new Set(aliasDelCliente.map(a => a.producto_id))
+    return productos.filter(p => allowedIds.has(p.id)).map(p => {
+      // Si el cliente quiere llamarlo de otra forma, aplicamos overrides de Alias
+      const aliasData = aliasDelCliente.find(a => a.producto_id === p.id)!
+      return {
+        ...p,
+        nombre: aliasData.nombre_comercial_cliente ?? p.nombre, // Sobrescribe el nombre por el B2B
+        referencia: aliasData.sku_cliente ?? p.referencia,       // Sobrescribe el SKU por el B2B
+        precio_base: aliasData.precio_acordado ?? p.precio_base  // Congela el Precio Pactado B2B
+      }
+    })
+  }, [productos, aliases, clienteId])
+
+  // Grupos derivados del catálogo (ahora usa solo productosFiltrados)
+  const grupos = useMemo(() => derivarGrupos(productosFiltrados), [productosFiltrados])
   const grupoActual = grupos.find(g => g.nombreBase === nombreBaseSeleccionado)
   const coloresDisponibles = grupoActual?.opciones.filter(
     opt => !productosEnForm.some(pf => pf.producto_id === opt.productoId)
@@ -165,7 +198,7 @@ export function OVForm({ clientes, productos, initialData }: Props) {
   // ---------------------------------------------------------------------------
 
   function agregarProductoPorId(productoId: string) {
-    const producto = productos.find(p => p.id === productoId)
+    const producto = productosFiltrados.find(p => p.id === productoId)
     if (!producto) return
 
     if (productosEnForm.some(p => p.producto_id === productoId)) return
@@ -176,9 +209,9 @@ export function OVForm({ clientes, productos, initialData }: Props) {
     const nuevoProducto: ProductoEnMatriz = {
       producto_id: producto.id,
       referencia: producto.referencia,
-      nombre: nombreBase,
+      nombre: nombreBase, // Alias name or Base name
       color: colorReal,
-      precio_unitario: producto.precio_base ?? 0,
+      precio_unitario: producto.precio_base ?? 0, // Alias price or Base price
       cantidades: Object.fromEntries(TALLAS_STANDARD.map(t => [t, 0])),
     }
 

@@ -20,9 +20,18 @@ type Producto = {
   leadtime_dias: number | null
 }
 
+export type ProductoAlias = {
+  producto_id: string
+  cliente_id: string
+  sku_cliente: string
+  nombre_comercial_cliente: string | null
+  precio_acordado: number | null
+}
+
 export default function NuevaOVPage() {
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [productos, setProductos] = useState<Producto[]>([])
+  const [aliases, setAliases] = useState<ProductoAlias[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -30,7 +39,7 @@ export default function NuevaOVPage() {
       try {
         const supabase = createClient()
 
-        const [clientesRes, productosRes] = await Promise.all([
+        const [clientesRes, productosRes, aliasesRes] = await Promise.all([
           supabase
             .from('terceros')
             .select('id, nombre, tipos')
@@ -41,6 +50,10 @@ export default function NuevaOVPage() {
             .select('id, nombre, referencia, precio_base, categoria, origen_usa, color, minimo_orden, multiplo_orden, leadtime_dias')
             .eq('estado', 'activo')
             .order('nombre'),
+          supabase
+            .from('producto_clientes')
+            .select('producto_id, cliente_id, sku_cliente, nombre_comercial_cliente, precio_acordado')
+            .eq('activo', true)
         ])
 
         const filteredClientes: Cliente[] = (clientesRes.data as any[])
@@ -48,9 +61,11 @@ export default function NuevaOVPage() {
           .map(t => ({ id: t.id, nombre: t.nombre })) || []
 
         const filteredProductos: Producto[] = productosRes.data as Producto[] || []
+        const fetchedAliases: ProductoAlias[] = (aliasesRes.data as any[]) || []
 
         setClientes(filteredClientes)
         setProductos(filteredProductos)
+        setAliases(fetchedAliases)
       } catch (error) {
         console.error('Error loading data:', error)
       } finally {
@@ -88,7 +103,7 @@ export default function NuevaOVPage() {
         </div>
       </div>
 
-      <OVForm clientes={clientes} productos={productos} />
+      <OVForm clientes={clientes} productos={productos} aliases={aliases} />
     </div>
   )
 }
