@@ -433,21 +433,34 @@ export function BodegaLocationsMaster() {
         <div className="w-[18%] flex flex-col bg-white/60 backdrop-blur-md rounded-[32px] border border-slate-200 p-4 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between mb-4 px-1">
             <h3 className="text-[9px] font-black uppercase tracking-[0.1em] text-slate-400 flex items-center gap-2">
-               <ShoppingCart className="w-3.5 h-3.5 text-amber-500" /> Pendientes OC
+               <ArrowRightLeft className="w-3.5 h-3.5 text-amber-500" /> Tráfico Entrante
             </h3>
             <span className="text-[9px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">{pendientes.length}</span>
           </div>
           <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-1">
-            {pendientes.map(oc => (
-              <button 
-                key={oc.id}
-                onClick={() => setActiveOC(activeOC?.id === oc.id ? null : oc)}
-                className={`w-full p-3 rounded-[20px] text-left border transition-all ${activeOC?.id === oc.id ? 'bg-amber-50 border-amber-400 shadow-md ring-2 ring-amber-100' : 'bg-white border-slate-100 hover:border-amber-200 hover:shadow-sm'}`}
-              >
-                <p className="text-[10px] font-black text-slate-800">{oc.codigo}</p>
-                <p className="text-[8px] font-bold text-slate-400 mt-0.5 truncate uppercase">{oc.sublabel_formatted?.split('|')[0]}</p>
-              </button>
-            ))}
+            {pendientes.map(item => {
+              const isOC = item.tipo === 'OC'
+              const bgActive = isOC ? 'bg-amber-50 border-amber-400 shadow-md ring-2 ring-amber-100' : 'bg-blue-50 border-blue-400 shadow-md ring-2 ring-blue-100'
+              const codeColor = isOC ? 'text-amber-600' : 'text-blue-600'
+              
+              return (
+                <button 
+                  key={item.id}
+                  onClick={() => setActiveOC(activeOC?.id === item.id ? null : item)}
+                  className={\`w-full p-3 rounded-[20px] text-left border transition-all flex flex-col gap-1 \${activeOC?.id === item.id ? bgActive : 'bg-white border-slate-100 hover:border-slate-300 hover:shadow-sm'}\`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <p className={\`text-[10px] font-black \${activeOC?.id === item.id ? codeColor : 'text-slate-800'}\`}>{item.codigo}</p>
+                    <span className={\`text-[7px] font-black px-1.5 py-0.5 rounded-full \${isOC ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}\`}>
+                      {isOC ? 'COMPRA' : 'TRASLADO'}
+                    </span>
+                  </div>
+                  <p className="text-[8px] font-bold text-slate-400 mt-0.5 truncate uppercase">
+                    {item.sublabel_formatted?.split('|')[0] || item.sublabel_formatted}
+                  </p>
+                </button>
+              )
+            })}
             {pendientes.length === 0 && <div className="h-20 flex items-center justify-center opacity-20"><Search className="w-8 h-8" /></div>}
           </div>
         </div>

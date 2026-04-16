@@ -3,9 +3,6 @@
 import React, { useRef } from 'react'
 import { Printer } from 'lucide-react'
 
-// Render simple manual SVG QR
-import { QRCodeSVG } from 'qrcode.react' 
-
 interface BinLabelPrinterProps {
   bin: {
     codigo: string
