@@ -222,10 +222,14 @@ export async function getOPsByOV(ovId: string) {
   return data ?? []
 }
 
-export async function getOrdenesProduccion() {
+export async function getOrdenesProduccion(filtros?: {
+  estado?: string
+  desde?: string
+  hasta?: string
+}) {
   try {
     const supabase = db(await createClient())
-    const { data, error } = await supabase
+    let query = supabase
       .from('ordenes_produccion')
       .select(`
         *,
@@ -249,8 +253,22 @@ export async function getOrdenesProduccion() {
         liquidaciones ( costo_total ),
         reporte_corte ( id )
       `)
-      .neq('estado', 'cancelada')
       .order('created_at', { ascending: false })
+
+    if (filtros?.estado) query = query.eq('estado', filtros.estado)
+    if (filtros?.desde) query = query.gte('created_at', filtros.desde)
+    if (filtros?.hasta) query = query.lte('created_at', filtros.hasta + 'T23:59:59')
+
+    // 🏆 AUTO-ARCHIVE RULE (15 days)
+    // Applies if no explicit filters were requested.
+    if (!filtros?.estado && !filtros?.desde && !filtros?.hasta) {
+      const cutoff = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
+      // Show ALL active orders. For CLOSED orders (liquidada, completada, entregada, cancelada),
+      // ONLY show them if they were created or updated within the last 15 days.
+      query = query.or(`estado.not.in.(liquidada,completada,entregada,cancelada),updated_at.gte.${cutoff},created_at.gte.${cutoff}`)
+    }
+
+    const { data, error } = await query as { data: any[] | null; error: any }
 
     if (error) {
       console.error(' [OP_SERVICE] Error fetching OPs:', error.message)

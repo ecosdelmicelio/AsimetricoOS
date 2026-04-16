@@ -318,6 +318,12 @@ export async function getDespachosList(filtros?: {
     query = query.lte('fecha_despacho', filtros.hasta + 'T23:59:59')
   }
 
+  // 🏆 AUTO-ARCHIVE RULE (15 days)
+  if (!filtros?.estado && !filtros?.desde && !filtros?.hasta) {
+    const cutoff = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
+    query = query.or(`estado.not.in.(entregado,cancelado),updated_at.gte.${cutoff},created_at.gte.${cutoff}`)
+  }
+
   const { data, error } = await query as { data: any[] | null; error: any }
 
   if (error) {

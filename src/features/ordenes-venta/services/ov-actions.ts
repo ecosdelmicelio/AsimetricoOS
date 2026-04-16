@@ -202,6 +202,12 @@ export async function getOrdenesVenta(filters?: OVFilters) {
     query = query.lte('fecha_entrega', filters.fechaFin)
   }
 
+  // 🏆 AUTO-ARCHIVE RULE (15 days)
+  if (!filters?.estado && !filters?.fechaInicio && !filters?.fechaFin) {
+      const cutoff = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
+      query = query.or(`estado.not.in.(completada,entregada,cancelada),updated_at.gte.${cutoff},created_at.gte.${cutoff}`)
+  }
+
   const { data, error } = await query.order('created_at', { ascending: false }) as {
     data: (OrdenVenta & {
       terceros: { nombre: string } | null
