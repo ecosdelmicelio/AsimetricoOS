@@ -124,33 +124,67 @@ export async function OPList() {
         </div>
       )}
 
-      {/* Lista */}
+      {/* Kanban Board for OP */}
       {ops.length > 0 && (
-        <div className="space-y-2">
-          {ops.map((op) => {
-            const totalUnidades = op.op_detalle.reduce((s, d) => s + d.cantidad_asignada, 0)
-            const unidadesEntregadas = op.entregas.reduce((s, e) => 
-               s + e.entrega_detalle.reduce((sd, d) => sd + d.cantidad_entregada, 0), 0
-            )
-            const valorOrden = op.liquidaciones?.costo_total || 0
-            const costoEstandar = op.op_detalle.reduce((s, d) => s + (d.cantidad_asignada * (d.productos?.precio_base ?? 0)), 0)
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pb-6 mt-4">
+          {[
+            { id: 'planificacion', title: 'Planificación', color: 'bg-slate-400', states: ['borrador', 'confirmada'] },
+            { id: 'taller', title: 'En Taller', color: 'bg-amber-400', states: ['en_corte', 'en_confeccion', 'dupro_pendiente', 'en_terminado', 'terminado'] },
+            { id: 'logistica', title: 'Logística Interna', color: 'bg-indigo-500', states: ['en_entregas', 'entregada'] },
+            { id: 'cierres', title: 'Cierres Operativos', color: 'bg-emerald-500', states: ['completada', 'liquidada', 'cancelada'] }
+          ].map(col => {
+            // Process items for this column
+            const items = ops.filter(op => col.states.includes(op.estado))
 
             return (
-              <OPCard
-                key={op.id}
-                id={op.id}
-                codigo={op.codigo}
-                tallerNombre={op.terceros?.nombre ?? 'Taller no definido'}
-                clienteNombre={op.ordenes_venta?.terceros?.nombre ?? 'Cliente no definido'}
-                ovCodigo={op.ordenes_venta?.codigo ?? 'SIN OV'}
-                estado={op.estado}
-                totalUnidades={totalUnidades}
-                unidadesEntregadas={unidadesEntregadas}
-                valorOrden={valorOrden}
-                costoEstandar={costoEstandar}
-                fechaCreacion={op.created_at || new Date().toISOString()}
-                opPayload={op}
-              />
+              <div key={col.id} className="flex flex-col bg-slate-50/50 rounded-[32px] border border-slate-200/60 shadow-sm min-w-0">
+                {/* Column Header */}
+                <div className="p-5 flex items-center justify-between border-b border-slate-200/50">
+                  <div className="flex items-center gap-3">
+                    <span className={`w-3 h-3 rounded-full shadow-inner shrink-0 ${col.color.split(' ')[0]}`} />
+                    <h3 className="font-black text-slate-700 text-sm tracking-tight truncate">{col.title}</h3>
+                  </div>
+                  <span className="text-[10px] font-black text-slate-500 bg-slate-200/50 px-2.5 py-1 rounded-xl shrink-0">
+                    {items.length}
+                  </span>
+                </div>
+
+                {/* Cards Container */}
+                <div className="flex-1 p-4 space-y-4 overflow-y-auto custom-scrollbar h-[60vh]">
+                  {items.map((op) => {
+                    const totalUnidades = op.op_detalle.reduce((s, d) => s + d.cantidad_asignada, 0)
+                    const unidadesEntregadas = op.entregas.reduce((s, e) => 
+                       s + e.entrega_detalle.reduce((sd, d) => sd + d.cantidad_entregada, 0), 0
+                    )
+                    const valorOrden = op.liquidaciones?.costo_total || 0
+                    const costoEstandar = op.op_detalle.reduce((s, d) => s + (d.cantidad_asignada * (d.productos?.precio_base ?? 0)), 0)
+
+                    return (
+                      <OPCard
+                        key={op.id}
+                        id={op.id}
+                        codigo={op.codigo}
+                        tallerNombre={op.terceros?.nombre ?? 'Taller no definido'}
+                        clienteNombre={op.ordenes_venta?.terceros?.nombre ?? 'Cliente no definido'}
+                        ovCodigo={op.ordenes_venta?.codigo ?? 'SIN OV'}
+                        estado={op.estado}
+                        totalUnidades={totalUnidades}
+                        unidadesEntregadas={unidadesEntregadas}
+                        valorOrden={valorOrden}
+                        costoEstandar={costoEstandar}
+                        fechaCreacion={op.created_at || new Date().toISOString()}
+                        opPayload={op}
+                      />
+                    )
+                  })}
+
+                  {items.length === 0 && (
+                    <div className="h-24 flex items-center justify-center border-2 border-dashed border-slate-200/60 rounded-3xl text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      Vacío
+                    </div>
+                  )}
+                </div>
+              </div>
             )
           })}
         </div>

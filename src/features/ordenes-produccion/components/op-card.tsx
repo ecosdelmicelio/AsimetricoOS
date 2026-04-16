@@ -46,60 +46,69 @@ export function OPCard({
         )} />
 
         {/* Core info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Link
-              href={`/ordenes-produccion/${id}`}
-              className="font-black text-[12px] text-slate-900 whitespace-nowrap hover:text-primary-600 transition-colors"
-              onClick={(e: React.MouseEvent) => e.stopPropagation()}
-            >
-              {codigo}
-            </Link>
-            <OPStatusBadge estado={estado} labelOverride={getOPStatusLabel(opPayload)} />
-
-            {opPayload?.es_muestra && (
+        <div className="flex-1 min-w-0 pr-1">
+          {/* Header Line: Code + OV Info */}
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <div className="flex items-center gap-2">
               <Link
-                href={opPayload?.desarrollo_id ? `/desarrollo/${opPayload.desarrollo_id}` : '#'}
+                href={`/ordenes-produccion/${id}`}
+                className="font-black text-sm text-slate-800 tracking-tighter hover:text-primary-600 transition-colors truncate"
                 onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                className="text-[8px] font-black bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded border border-violet-200 uppercase tracking-tighter hover:bg-violet-200 transition-colors"
               >
-                MUESTRA
+                {codigo}
               </Link>
-            )}
-
-            <span className="text-[8px] font-black bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded border border-slate-100 uppercase tracking-tighter">
+              {opPayload?.es_muestra && (
+                <Link
+                  href={opPayload?.desarrollo_id ? `/desarrollo/${opPayload.desarrollo_id}` : '#'}
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                  className="text-[8px] font-black bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded border border-violet-200 uppercase tracking-tighter hover:bg-violet-200 transition-colors shrink-0"
+                >
+                  MUESTRA
+                </Link>
+              )}
+            </div>
+            
+            <span className="text-[8px] font-black bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded border border-slate-100 uppercase tracking-tighter shrink-0" title="Orden de Venta Origen">
               {ovCodigo}
             </span>
+          </div>
 
-            <span className="text-[9px] font-bold text-slate-400 uppercase truncate max-w-[120px]">{tallerNombre}</span>
-            
-            <div className="flex items-center gap-4 ml-auto shrink-0 text-right">
-               <div className="flex flex-col items-end">
-                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Avance</span>
-                <span className="text-[11px] font-black text-slate-700 leading-none">
-                  {unidadesEntregadas}/{totalUnidades}
-                </span>
-              </div>
-              <div className="flex flex-col items-end">
-                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Real/Estándar</span>
-                <span className={cn(
-                  "text-[11px] font-black leading-none",
-                  valorOrden > costoEstandar ? "text-rose-600" : "text-slate-900"
-                )}>
-                  {formatCurrency(valorOrden)}
-                </span>
-              </div>
+          {/* Sub Header: Taller */}
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide truncate mb-2" title={tallerNombre}>
+            {tallerNombre}
+          </p>
+
+          <div className="mb-3">
+            <OPStatusBadge estado={estado} labelOverride={getOPStatusLabel(opPayload)} />
+          </div>
+
+          {/* Metrics Block */}
+          <div className="grid grid-cols-2 gap-2 mb-3">
+             <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 flex flex-col justify-between">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Avance</span>
+              <span className="text-xs font-black text-slate-800 leading-none">
+                {unidadesEntregadas} / {totalUnidades}
+              </span>
+            </div>
+            <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 flex flex-col justify-between">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Real / Est</span>
+              <span className={cn(
+                "text-xs font-black leading-none truncate",
+                valorOrden > costoEstandar ? "text-rose-600" : "text-slate-800"
+              )}>
+                {formatCurrency(valorOrden)}
+              </span>
             </div>
           </div>
 
           {/* Mini Stepper */}
-          <div className="mt-2">
+          <div className="mt-1">
             <OPMiniStepper currentStatus={estado} />
           </div>
         </div>
 
         {/* Expand chevron */}
-        <div className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 transition-all group-open:bg-primary-50 group-open:border-primary-100">
+        <div className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 self-start transition-all group-open:bg-primary-50 group-open:border-primary-100">
           <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform group-open:rotate-180 group-open:text-primary-500" />
         </div>
       </summary>
