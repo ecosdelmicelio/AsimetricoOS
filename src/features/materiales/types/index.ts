@@ -14,9 +14,12 @@ export interface Material {
   rendimiento_kg: number | null
   es_tela: boolean
   saldo: number
-  minimo_orden: number
-  multiplo_orden: number
-  leadtime_dias: number
+  minimo_compra: number | null
+  multiplo_compra: number | null
+  leadtime_dias: number | null
+  stock_seguridad: number | null
+  tolerancia_recepcion_pct: number | null
+  unidad_empaque: string | null
   created_at: string
   updated_at: string
 }
@@ -30,9 +33,13 @@ export interface CreateMaterialInput {
   partida_arancelaria?: string
   tipo_mp?: TipoMP
   rendimiento_kg?: number | null
-  minimo_orden?: number
-  multiplo_orden?: number
+  atributos?: Record<string, string>
+  minimo_compra?: number
+  multiplo_compra?: number
   leadtime_dias?: number
+  stock_seguridad?: number
+  tolerancia_recepcion_pct?: number
+  unidad_empaque?: string
   schema_id?: string
   autoRefs?: Array<{ segmento_id: string; longitud: number }>
 }
@@ -45,8 +52,11 @@ export interface UpdateMaterialInput {
   partida_arancelaria?: string
   tipo_mp?: TipoMP
   rendimiento_kg?: number | null
-  minimo_orden?: number
-  multiplo_orden?: number
+  minimo_compra?: number
+  multiplo_compra?: number
   leadtime_dias?: number
+  stock_seguridad?: number
+  tolerancia_recepcion_pct?: number
+  unidad_empaque?: string
   activo?: boolean
 }

@@ -178,6 +178,13 @@ function MaterialForm({
   const [partidaArancelaria, setPartidaArancelaria] = useState(material?.partida_arancelaria ?? '')
   const [rendimientoKg, setRendimientoKg] = useState(material?.rendimiento_kg?.toString() ?? '')
 
+  const [minimoCompra, setMinimoCompra] = useState(material?.minimo_compra?.toString() ?? '')
+  const [multiploCompra, setMultiploCompra] = useState(material?.multiplo_compra?.toString() ?? '')
+  const [leadtimeDias, setLeadtimeDias] = useState(material?.leadtime_dias?.toString() ?? '')
+  const [stockSeguridad, setStockSeguridad] = useState(material?.stock_seguridad?.toString() ?? '')
+  const [toleranciaRecepcionPct, setToleranciaRecepcionPct] = useState(material?.tolerancia_recepcion_pct?.toString() ?? '')
+  const [unidadEmpaque, setUnidadEmpaque] = useState(material?.unidad_empaque ?? '')
+
   // Atributos
   const [atributosPorTipo, setAtributosPorTipo] = useState<Record<TipoAtributoMP, AtributoMP[]>>({
     tipo: [],
@@ -257,6 +264,15 @@ function MaterialForm({
     setError(null)
     startTransition(async () => {
       const rendimientoNum = rendimientoKg ? parseFloat(rendimientoKg) : null
+      const variablesLogisticas = {
+        minimo_compra: minimoCompra ? parseFloat(minimoCompra) : undefined,
+        multiplo_compra: multiploCompra ? parseFloat(multiploCompra) : undefined,
+        leadtime_dias: leadtimeDias ? parseInt(leadtimeDias, 10) : undefined,
+        stock_seguridad: stockSeguridad ? parseFloat(stockSeguridad) : undefined,
+        tolerancia_recepcion_pct: toleranciaRecepcionPct ? parseFloat(toleranciaRecepcionPct) : undefined,
+        unidad_empaque: unidadEmpaque.trim() || undefined,
+      }
+
       const res = isEdit
         ? await updateMaterial(material.id, {
             nombre,
@@ -266,7 +282,8 @@ function MaterialForm({
             partida_arancelaria: partidaArancelaria || undefined,
             tipo_mp: tipoMP,
             activo,
-            rendimiento_kg: rendimientoNum
+            rendimiento_kg: rendimientoNum,
+            ...variablesLogisticas
           })
         : await createMaterial({
             codigo,
@@ -278,6 +295,7 @@ function MaterialForm({
             tipo_mp: tipoMP,
             rendimiento_kg: rendimientoNum,
             atributos: atributosSeleccionados,
+            ...variablesLogisticas
           })
       if (res.error) { setError(res.error); return }
       onDone()
@@ -438,7 +456,7 @@ function MaterialForm({
         </div>
       </div>
 
-      {/* Row 4: Costo + Partida Arancelaria + Rendimiento */}
+      {/* Row 4: Costo, Rendimiento y Arancel */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="space-y-1">
           <label className="text-xs font-medium text-foreground">Costo/unidad (COP) *</label>
@@ -485,6 +503,98 @@ function MaterialForm({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Row 5: Parámetros de Cadena de Suministro */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 border-t border-black/5 pt-3">
+        <div className="space-y-1">
+          <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Unidad Empaque Prov.</label>
+          <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5 flex items-center gap-1.5">
+            <Package className="w-3.5 h-3.5 text-muted-foreground" />
+            <input
+              type="text"
+              value={unidadEmpaque}
+              onChange={e => setUnidadEmpaque(e.target.value)}
+              placeholder="Ej: Rollo x50m, Caja x500"
+              className="w-full bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+        
+        <div className="space-y-1">
+          <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Mínimo (MOQ)</label>
+          <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={minimoCompra}
+              onChange={e => setMinimoCompra(e.target.value)}
+              placeholder="0"
+              className="w-full bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Múltiplo</label>
+          <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={multiploCompra}
+              onChange={e => setMultiploCompra(e.target.value)}
+              placeholder="0"
+              className="w-full bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Stock Seguridad</label>
+          <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={stockSeguridad}
+              onChange={e => setStockSeguridad(e.target.value)}
+              placeholder="Alertar bajo..."
+              className="w-full bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">LeadTime (Días)</label>
+          <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+            <input
+              type="number"
+              min="0"
+              value={leadtimeDias}
+              onChange={e => setLeadtimeDias(e.target.value)}
+              placeholder="0 días"
+              className="w-full bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Tolerancia Recep. (%)</label>
+          <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              value={toleranciaRecepcionPct}
+              onChange={e => setToleranciaRecepcionPct(e.target.value)}
+              placeholder="+/- %"
+              className="w-full bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Footer: Estado y Acciones */}

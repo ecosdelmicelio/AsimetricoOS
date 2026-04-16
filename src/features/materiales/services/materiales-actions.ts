@@ -52,6 +52,12 @@ export async function createMaterial(input: CreateMaterialInput & {
       tipo_mp: input.tipo_mp ?? 'nacional',
       rendimiento_kg: input.rendimiento_kg ?? null,
       schema_id: input.schema_id ?? null,
+      minimo_compra: input.minimo_compra ?? null,
+      multiplo_compra: input.multiplo_compra ?? null,
+      leadtime_dias: input.leadtime_dias ?? null,
+      stock_seguridad: input.stock_seguridad ?? null,
+      tolerancia_recepcion_pct: input.tolerancia_recepcion_pct ?? null,
+      unidad_empaque: input.unidad_empaque?.trim() || null,
     })
     .select('id')
     .single() as { data: { id: string } | null; error: { message: string } | null }
@@ -89,6 +95,12 @@ export async function updateMaterial(
       ...(input.tipo_mp !== undefined && { tipo_mp: input.tipo_mp }),
       ...(input.activo !== undefined && { activo: input.activo }),
       ...(input.rendimiento_kg !== undefined && { rendimiento_kg: input.rendimiento_kg }),
+      ...(input.minimo_compra !== undefined && { minimo_compra: input.minimo_compra }),
+      ...(input.multiplo_compra !== undefined && { multiplo_compra: input.multiplo_compra }),
+      ...(input.leadtime_dias !== undefined && { leadtime_dias: input.leadtime_dias }),
+      ...(input.stock_seguridad !== undefined && { stock_seguridad: input.stock_seguridad }),
+      ...(input.tolerancia_recepcion_pct !== undefined && { tolerancia_recepcion_pct: input.tolerancia_recepcion_pct }),
+      ...(input.unidad_empaque !== undefined && { unidad_empaque: input.unidad_empaque?.trim() || null }),
     })
     .eq('id', id) as { error: { message: string } | null }
   if (error) return { error: error.message }

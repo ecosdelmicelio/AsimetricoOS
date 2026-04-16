@@ -59,6 +59,9 @@ export function ProductoForm({ atributosPT, marcas }: Props) {
   const [precioN1, setPrecioN1] = useState('')
   const [precioN2, setPrecioN2] = useState('')
   const [precioN3, setPrecioN3] = useState('')
+  const [minimoOrden, setMinimoOrden] = useState('')
+  const [multiploOrden, setMultiploOrden] = useState('')
+  const [leadtimeDias, setLeadtimeDias] = useState('')
   const [referenciaCliente, setReferenciaCliente] = useState('')
   const [nombreComercial, setNombreComercial] = useState('')
   const [partidaArancelaria, setPartidaArancelaria] = useState('')
@@ -114,6 +117,9 @@ export function ProductoForm({ atributosPT, marcas }: Props) {
         referencia_cliente: referenciaCliente.trim() || undefined,
         nombre_comercial: nombreComercial.trim() || undefined,
         partida_arancelaria: partidaArancelaria.trim() || undefined,
+        minimo_orden: minimoOrden ? parseInt(minimoOrden, 10) : undefined,
+        multiplo_orden: multiploOrden ? parseInt(multiploOrden, 10) : undefined,
+        leadtime_dias: leadtimeDias ? parseInt(leadtimeDias, 10) : undefined,
         tipo_producto: tipoProducto,
         tipo_distribucion: tipoDistribucion,
         marca_id: marcaSeleccionada || undefined,
@@ -366,17 +372,61 @@ export function ProductoForm({ atributosPT, marcas }: Props) {
         </div>
       </div>
 
-      {/* Row 6: Partida Arancelaria al final */}
-      <div className="space-y-1">
-        <label className="text-xs font-medium text-muted-foreground">Partida Arancelaria</label>
-        <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
-          <input
-            type="text"
-            value={partidaArancelaria}
-            onChange={e => setPartidaArancelaria(e.target.value)}
-            placeholder="Ej: 6109.10.00.00"
-            className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
-          />
+      {/* Row 6: Logística Comercial y Aduanas */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Partida Arancelaria</label>
+          <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+            <input
+              type="text"
+              value={partidaArancelaria}
+              onChange={e => setPartidaArancelaria(e.target.value)}
+              placeholder="Ej: 6109.10.00.00"
+              className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Minimo Orden (MOQ)</label>
+          <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+            <input
+              type="number"
+              min={0}
+              value={minimoOrden}
+              onChange={e => setMinimoOrden(e.target.value)}
+              placeholder="Ej: 100"
+              className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Múltiplo de Venta</label>
+          <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+            <input
+              type="number"
+              min={1}
+              value={multiploOrden}
+              onChange={e => setMultiploOrden(e.target.value)}
+              placeholder="Ej: 6"
+              className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">LeadTime Pcto (Días)</label>
+          <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
+            <input
+              type="number"
+              min={0}
+              value={leadtimeDias}
+              onChange={e => setLeadtimeDias(e.target.value)}
+              placeholder="Ej: 45"
+              className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
         </div>
       </div>
 

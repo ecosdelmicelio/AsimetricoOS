@@ -68,6 +68,9 @@ export async function createProducto(
       tipo_distribucion: input.tipo_distribucion ?? 'MTS',
       marca_id: input.marca_id ?? null,
       schema_id: input.schema_id ?? null,
+      minimo_orden: input.minimo_orden ?? null,
+      multiplo_orden: input.multiplo_orden ?? null,
+      leadtime_dias: input.leadtime_dias ?? null,
     })
     .select()
     .single() as { data: Producto | null; error: { message: string } | null }
@@ -111,6 +114,9 @@ export async function updateProducto(
   if (input.color !== undefined) payload.color = input.color || null
   if (input.origen_usa !== undefined) payload.origen_usa = input.origen_usa
   if (input.marca_id !== undefined) payload.marca_id = input.marca_id || null
+  if (input.minimo_orden !== undefined) payload.minimo_orden = input.minimo_orden || null
+  if (input.multiplo_orden !== undefined) payload.multiplo_orden = input.multiplo_orden || null
+  if (input.leadtime_dias !== undefined) payload.leadtime_dias = input.leadtime_dias || null
 
   const { error } = await supabase
     .from('productos')
