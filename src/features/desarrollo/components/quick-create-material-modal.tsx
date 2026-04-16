@@ -22,8 +22,7 @@ export function QuickCreateMaterialModal({ desarrolloId, proveedores, onCreated,
   const [moq, setMoq] = useState('')
   const [multiplo, setMultiplo] = useState('1')
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  function handleSubmit() {
     setError(null)
 
     if (!nombre || !costo || !proveedorId || !moq) {
@@ -59,7 +58,7 @@ export function QuickCreateMaterialModal({ desarrolloId, proveedores, onCreated,
           <h3 className="font-black text-slate-900 uppercase tracking-tight">Crear MP Temporal (Draft)</h3>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           <div>
             <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Nombre del Material *</label>
             <input
@@ -140,7 +139,8 @@ export function QuickCreateMaterialModal({ desarrolloId, proveedores, onCreated,
 
           <div className="flex gap-3 pt-2">
             <button
-              type="submit"
+              type="button"
+              onClick={handleSubmit}
               disabled={isPending}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all disabled:opacity-50"
             >
@@ -154,7 +154,7 @@ export function QuickCreateMaterialModal({ desarrolloId, proveedores, onCreated,
               Cancelar
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   )

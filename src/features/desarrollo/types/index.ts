@@ -56,11 +56,8 @@ export const SECUENCIA_STATUS: StatusDesarrollo[] = [
 
 export type CategoriaProducto =
   | 'camiseta' | 'polo' | 'pantalon' | 'hoodie'
-  | 'chaqueta' | 'vestido' | 'falda' | 'accesorio' | 'otro'
-
-export type Complejidad = 'baja' | 'media' | 'alta'
-export type TipoProducto = 'fabricado' | 'comercializado'
-export type Prioridad = 'baja' | 'media' | 'alta' | 'urgente'
+  | 'chaqueta' | 'vestido' | 'falda' | 'accesorio'
+  | 'body' | 'leggings' | 'top' | 'bikini' | 'short' | 'otro'
 
 export const CATEGORIA_LABELS: Record<CategoriaProducto, string> = {
   camiseta:  'Camiseta',
@@ -71,8 +68,17 @@ export const CATEGORIA_LABELS: Record<CategoriaProducto, string> = {
   vestido:   'Vestido',
   falda:     'Falda',
   accesorio: 'Accesorio',
+  body:      'Body',
+  leggings:  'Leggings',
+  top:       'Top',
+  bikini:    'Bikini',
+  short:     'Short',
   otro:      'Otro',
 }
+
+export type Complejidad = 'baja' | 'media' | 'alta'
+export type TipoProducto = 'fabricado' | 'comercializado'
+export type Prioridad = 'baja' | 'media' | 'alta' | 'urgente'
 
 export const PRIORIDAD_COLORS: Record<Prioridad, string> = {
   baja:    'bg-gray-100 text-gray-500',
@@ -99,4 +105,19 @@ export interface CreateDesarrolloInput {
   fecha_compromiso?:  string
   cliente_id?:        string
   notas?:             string
+}
+
+export interface DesarrolloMedidaTemplate {
+  id: string
+  categoria_producto: CategoriaProducto
+  cliente_id: string | null
+  nombre_fit: string
+  is_default: boolean
+  puntos_medida: {
+    label: string
+    tolerancia?: number
+    base_cm?: number
+  }[]
+  created_at: string
+  updated_at: string
 }

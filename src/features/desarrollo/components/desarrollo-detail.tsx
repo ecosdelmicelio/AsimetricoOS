@@ -452,6 +452,8 @@ export function DesarrolloDetail({
               {showNuevaVersion ? (
                 <NuevaVersionForm
                   desarrolloId={desarrollo.id}
+                  categoria={desarrollo.categoria_producto as any}
+                  clienteId={desarrollo.cliente_id}
                   catalogoMateriales={catalogoMateriales}
                   catalogoServicios={catalogoServicios}
                   proveedores={proveedores}
@@ -464,6 +466,8 @@ export function DesarrolloDetail({
                   mode="edit"
                   versionId={ultimaVersion.id}
                   desarrolloId={desarrollo.id}
+                  categoria={desarrollo.categoria_producto as any}
+                  clienteId={desarrollo.cliente_id}
                   catalogoMateriales={catalogoMateriales}
                   catalogoServicios={catalogoServicios}
                   proveedores={proveedores}
