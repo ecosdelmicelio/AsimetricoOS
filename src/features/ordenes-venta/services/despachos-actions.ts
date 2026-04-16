@@ -273,6 +273,8 @@ export interface DespachoListItem {
   cliente_nombre: string
   cliente_nit: string | null
   total_unidades: number
+  total_valor: number
+  despacho_detalle?: any[]
 }
 
 /**
@@ -297,10 +299,11 @@ export async function getDespachosList(filtros?: {
       total_bultos,
       notas,
       ov_id,
-      despacho_detalle ( cantidad ),
+      despacho_detalle ( *, productos ( nombre, referencia, color ) ),
       ordenes_venta (
         codigo,
-        terceros!cliente_id ( nombre, nit )
+        terceros!cliente_id ( nombre, nit ),
+        ov_detalle ( producto_id, talla, precio_unitario )
       )
     `)
     .order('fecha_despacho', { ascending: false })
@@ -323,21 +326,38 @@ export async function getDespachosList(filtros?: {
   }
   if (!data) return []
 
-  return data.map(row => ({
-    id: row.id,
-    fecha_despacho: row.fecha_despacho,
-    estado: row.estado as EstadoDespacho,
-    tipo_envio: row.tipo_envio as TipoEnvio,
-    transportadora: row.transportadora ?? null,
-    guia_seguimiento: row.guia_seguimiento ?? null,
-    total_bultos: row.total_bultos || 0,
-    notas: row.notas ?? null,
-    ov_id: row.ov_id,
-    ov_codigo: row.ordenes_venta?.codigo ?? '—',
-    cliente_nombre: row.ordenes_venta?.terceros?.nombre ?? '—',
-    cliente_nit: row.ordenes_venta?.terceros?.nit ?? null,
-    total_unidades: (row.despacho_detalle ?? []).reduce((sum: number, d: any) => sum + (d.cantidad || 0), 0),
-  }))
+  return data.map(row => {
+    // Calcular valor cruzando despacho_detalle con ov_detalle
+    const ovDetalle = row.ordenes_venta?.ov_detalle || []
+    const priceMap = new Map<string, number>()
+    ovDetalle.forEach((d: any) => {
+      priceMap.set(`${d.producto_id}-${d.talla}`, d.precio_unitario || 0)
+    })
+    
+    let total_valor = 0
+    const detalles = row.despacho_detalle || []
+    detalles.forEach((d: any) => {
+      total_valor += (d.cantidad || 0) * (priceMap.get(`${d.producto_id}-${d.talla}`) || 0)
+    })
+
+    return {
+      id: row.id,
+      fecha_despacho: row.fecha_despacho,
+      estado: row.estado as EstadoDespacho,
+      tipo_envio: row.tipo_envio as TipoEnvio,
+      transportadora: row.transportadora ?? null,
+      guia_seguimiento: row.guia_seguimiento ?? null,
+      total_bultos: row.total_bultos || 0,
+      notas: row.notas ?? null,
+      ov_id: row.ov_id,
+      ov_codigo: row.ordenes_venta?.codigo ?? '—',
+      cliente_nombre: row.ordenes_venta?.terceros?.nombre ?? '—',
+      cliente_nit: row.ordenes_venta?.terceros?.nit ?? null,
+      total_unidades: detalles.reduce((sum: number, d: any) => sum + (d.cantidad || 0), 0),
+      total_valor,
+      despacho_detalle: detalles,
+    }
+  })
 }
 
 /**

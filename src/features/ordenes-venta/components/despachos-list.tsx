@@ -4,11 +4,11 @@ import { useState, useTransition, useMemo } from 'react'
 import Link from 'next/link'
 import {
   Truck, Package, CheckCircle2, Clock, ArrowRight, Printer,
-  FileText, MapPin, ClipboardList, Search, Filter
+  FileText, MapPin, ClipboardList, Search, Filter, Box
 } from 'lucide-react'
 import { updateEstadoDespachoGlobal, type EstadoDespacho, type DespachoListItem } from '../services/despachos-actions'
 import { Badge } from '@/shared/components/ui/badge'
-import { formatDate } from '@/shared/lib/utils'
+import { formatCurrency, formatDate } from '@/shared/lib/utils'
 
 interface Props {
   despachos: DespachoListItem[]
@@ -37,15 +37,16 @@ const ESTADO_CONFIG: Record<EstadoDespacho, { label: string; color: string; next
   },
 }
 
-function StatCard({ label, value, icon: Icon, color }: { label: string; value: number; icon: React.ElementType; color: string }) {
+function StatCard({ label, value, subtext, icon: Icon, color }: { label: string; value: string | number; subtext?: string; icon: React.ElementType; color: string }) {
   return (
-    <div className={`rounded-2xl border p-5 flex items-center gap-4 ${color}`}>
-      <div className="p-3 rounded-xl bg-white/60">
+    <div className={`rounded-3xl border p-5 flex items-center gap-4 ${color}`}>
+      <div className="p-3.5 rounded-2xl bg-white/60 shadow-sm">
         <Icon className="w-5 h-5" />
       </div>
       <div>
-        <p className="text-2xl font-black leading-none">{value}</p>
-        <p className="text-[10px] font-bold uppercase tracking-widest mt-1 opacity-70">{label}</p>
+        <p className="text-2xl font-black tracking-tighter leading-none">{value}</p>
+        <p className="text-[10px] font-black uppercase tracking-widest mt-1.5 opacity-80">{label}</p>
+        {subtext && <p className="text-[9px] font-bold mt-0.5 opacity-60 leading-tight">{subtext}</p>}
       </div>
     </div>
   )
@@ -57,12 +58,14 @@ export function DespachosList({ despachos }: Props) {
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  const stats = useMemo(() => ({
-    total: despachos.length,
-    preparacion: despachos.filter(d => d.estado === 'preparacion').length,
-    enviados: despachos.filter(d => d.estado === 'enviado').length,
-    entregados: despachos.filter(d => d.estado === 'entregado').length,
-  }), [despachos])
+  const stats = useMemo(() => {
+    const totalDespachado = despachos.filter(d => d.estado === 'entregado').reduce((s, d) => s + (d.total_valor || 0), 0)
+    const totalEnRuta = despachos.filter(d => ['preparacion', 'enviado'].includes(d.estado)).reduce((s, d) => s + (d.total_valor || 0), 0)
+    const unidadesEntregadas = despachos.filter(d => d.estado === 'entregado').reduce((s, d) => s + (d.total_unidades || 0), 0)
+    const bultosTotales = despachos.filter(d => d.estado !== 'cancelado').reduce((s, d) => s + (d.total_bultos || 0), 0)
+
+    return { totalDespachado, totalEnRuta, unidadesEntregadas, bultosTotales }
+  }, [despachos])
 
   const filtered = useMemo(() => {
     let result = despachos
@@ -95,12 +98,36 @@ export function DespachosList({ despachos }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total" value={stats.total} icon={Package} color="border-black/10 bg-neu-50 text-foreground" />
-        <StatCard label="En Preparación" value={stats.preparacion} icon={Clock} color="border-amber-200 bg-amber-50 text-amber-700" />
-        <StatCard label="Enviados" value={stats.enviados} icon={Truck} color="border-blue-200 bg-blue-50 text-blue-700" />
-        <StatCard label="Entregados" value={stats.entregados} icon={CheckCircle2} color="border-green-200 bg-green-50 text-green-700" />
+      {/* Stats Dashboard */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard 
+          label="Valor Despachado (Ent)" 
+          value={formatCurrency(stats.totalDespachado)} 
+          subtext="Capital efectivizado"
+          icon={CheckCircle2} 
+          color="border-green-200 bg-green-50 text-green-800" 
+        />
+        <StatCard 
+          label="Capital en Ruta" 
+          value={formatCurrency(stats.totalEnRuta)} 
+          subtext="Prep. o Enviado (Pendiente)"
+          icon={Truck} 
+          color="border-amber-200 bg-amber-50 text-amber-800" 
+        />
+        <StatCard 
+          label="Unidades Entregadas" 
+          value={`${stats.unidadesEntregadas} uds`} 
+          subtext="Rendimiento del periodo"
+          icon={Package} 
+          color="border-blue-200 bg-blue-50 text-blue-800" 
+        />
+        <StatCard 
+          label="Tráfico Logístico" 
+          value={`${stats.bultosTotales} bultos`} 
+          subtext="Volumen despachado vivo"
+          icon={Box} 
+          color="border-slate-200 bg-slate-50 text-slate-800" 
+        />
       </div>
 
       {/* Filtros */}
@@ -134,129 +161,142 @@ export function DespachosList({ despachos }: Props) {
         </span>
       </div>
 
-      {/* Lista */}
-      {filtered.length === 0 ? (
-        <div className="rounded-3xl border-2 border-dashed border-black/5 py-20 text-center bg-white/50">
-          <Package className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
-          <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest">No hay despachos</p>
-        </div>
-      ) : (
-        <div className="grid gap-4">
-          {filtered.map(desp => {
-            const config = ESTADO_CONFIG[desp.estado]
-            const isUpdating = isPending && pendingId === desp.id
+      {/* Kanban Board */}
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pb-6 mt-4">
+        {['preparacion', 'enviado', 'entregado', 'cancelado'].map(stateCode => {
+          const st = stateCode as EstadoDespacho
+          const colConfig = ESTADO_CONFIG[st]
+          const items = filtered.filter(d => d.estado === st)
+          
+          return (
+            <div key={st} className="flex flex-col bg-slate-50/50 rounded-[32px] border border-slate-200/60 shadow-sm min-w-0">
+              {/* Header Columna */}
+              <div className="p-5 flex items-center justify-between border-b border-slate-200/50">
+                <div className="flex items-center gap-3">
+                  <span className={`w-3 h-3 rounded-full shadow-inner shrink-0 ${colConfig.color.split(' ')[0]}`} />
+                  <h3 className="font-black text-slate-700 text-sm tracking-tight truncate">{colConfig.label}</h3>
+                </div>
+                <span className="text-[10px] font-black text-slate-500 bg-slate-200/50 px-2.5 py-1 rounded-xl shrink-0">
+                  {items.length}
+                </span>
+              </div>
 
-            return (
-              <div
-                key={desp.id}
-                className="rounded-2xl bg-white border border-black/5 shadow-sm hover:shadow-md transition-all overflow-hidden"
-              >
-                {/* Header */}
-                <div className="px-5 py-4 flex flex-wrap items-center justify-between gap-3 border-b border-black/5 bg-black/[0.015]">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white border border-black/10 flex items-center justify-center shadow-sm">
-                      <Truck className="w-5 h-5 text-primary-600" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-black text-sm font-mono tracking-tight">
-                          DESP-{desp.id.slice(0, 8).toUpperCase()}
-                        </span>
-                        <Badge className={`text-[9px] font-black uppercase border ${config.color} bg-transparent`}>
-                          {config.label}
-                        </Badge>
+              {/* Contenedor de Fichas */}
+              <div className="flex-1 p-4 space-y-4 overflow-y-auto custom-scrollbar h-[60vh]">
+                {items.map(desp => {
+                  const isUpdating = isPending && pendingId === desp.id
+                  
+                  // Calcular abstract del detalle para mostrar la realidad
+                  const details = desp.despacho_detalle || []
+                  const previewNames = [...new Set(details.map((d: any) => d.productos?.nombre || 'Producto'))]
+                  const previewStr = previewNames.slice(0, 2).join(' + ') + (previewNames.length > 2 ? '...' : '')
+                  
+                  return (
+                    <div 
+                      key={desp.id}
+                      className="group rounded-3xl bg-white border border-slate-100 p-5 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-300 relative overflow-hidden flex flex-col gap-3"
+                    >
+                      {/* Ficha Header */}
+                      <div className="flex justify-between items-start">
+                        <div className="min-w-0">
+                          <span className="font-black text-slate-800 text-sm tracking-tighter truncate block flex items-center gap-1.5">
+                            <Truck className={`w-4 h-4 ${st === 'entregado' ? 'text-green-500' : 'text-primary-500'}`} />
+                            DESP-{desp.id.slice(0, 8).toUpperCase()}
+                          </span>
+                          <p className="text-[9px] font-bold text-slate-500 mt-0.5 uppercase tracking-wider truncate" title={desp.cliente_nombre}>
+                            {desp.cliente_nombre}
+                          </p>
+                        </div>
                         <Link
                           href={`/ordenes-venta/${desp.ov_id}`}
-                          className="text-[10px] font-bold text-primary-600 hover:underline uppercase"
+                          className="text-[8px] font-black px-2 py-1 rounded-lg border uppercase tracking-widest shrink-0 bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 transition-colors"
                         >
                           {desp.ov_codigo}
                         </Link>
                       </div>
-                      <p className="text-[10px] text-muted-foreground font-medium mt-0.5">
-                        {formatDate(desp.fecha_despacho)} · {desp.tipo_envio === 'interno' ? 'Entrega Propia' : 'Flota Externa'}
-                      </p>
+
+                      <div className="flex items-center gap-1.5 mb-1 -mt-1">
+                        <span className="text-xl font-black text-slate-800 tracking-tighter">
+                          {formatCurrency(desp.total_valor)}
+                        </span>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">Valor Venta</span>
+                      </div>
+
+                      {/* Logística Preview */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 flex flex-col gap-1">
+                           <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Contenido Real</p>
+                           <p className="text-[9px] font-bold text-slate-600 uppercase leading-tight line-clamp-2">
+                             {previewStr || 'Sin detalle de ítems'}
+                           </p>
+                        </div>
+                        <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 flex flex-col justify-between">
+                           <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Volumen</p>
+                           <p className="text-[10px] font-black text-slate-800 leading-none">
+                             {desp.total_bultos} Bultos / {desp.total_unidades} Uds
+                           </p>
+                        </div>
+                      </div>
+
+                      {/* Guía & Track */}
+                      {desp.transportadora && (
+                        <div className="flex items-center gap-2 text-[9px] font-bold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                          <MapPin className="w-3 h-3 text-primary-500 shrink-0" />
+                          <span className="truncate">{desp.transportadora}</span>
+                          {desp.guia_seguimiento && (
+                            <>
+                              <span className="opacity-50">•</span>
+                              <span className="truncate font-mono text-slate-700">{desp.guia_seguimiento}</span>
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Config/Acciones Bottom */}
+                      <div className="mt-1 pt-3 flex items-center justify-between border-t border-slate-100">
+                        <div className="flex items-center gap-1">
+                          <Link
+                            href={`/ordenes-venta/reportes/packlist/${desp.id}`}
+                            target="_blank"
+                            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                            title="Imprimir Packlist"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[8px] font-bold text-slate-400 uppercase">{formatDate(desp.fecha_despacho).substring(0,6)}</span>
+                          {colConfig.next && (
+                            <button
+                              onClick={() => handleAdvanceEstado(desp)}
+                              disabled={isUpdating}
+                              className="flex items-center gap-1 pl-2 pr-1.5 py-1 rounded-md bg-primary-50 text-primary-600 hover:bg-primary-100 text-[8px] font-black uppercase tracking-wider transition-colors disabled:opacity-50"
+                              title={colConfig.nextLabel}
+                            >
+                              {isUpdating ? '...' : (
+                                <>
+                                  {colConfig.nextLabel?.split(' ')[1]}
+                                  <ArrowRight className="w-2.5 h-2.5" />
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )
+                })}
 
-                  {/* Acciones */}
-                  <div className="flex items-center gap-2">
-                    {config.next && (
-                      <button
-                        onClick={() => handleAdvanceEstado(desp)}
-                        disabled={isUpdating}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 text-white text-[10px] font-black uppercase tracking-wider hover:bg-primary-700 transition-colors disabled:opacity-50"
-                      >
-                        {isUpdating ? '...' : (
-                          <>
-                            <ArrowRight className="w-3 h-3" />
-                            {config.nextLabel}
-                          </>
-                        )}
-                      </button>
-                    )}
-                    <Link
-                      href={`/ordenes-venta/reportes/packlist/${desp.id}`}
-                      target="_blank"
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-black/10 text-[10px] font-black uppercase tracking-wider text-muted-foreground hover:bg-black/5 transition-colors"
-                    >
-                      <Printer className="w-3 h-3" />
-                      Packlist
-                    </Link>
-                    <Link
-                      href={`/ordenes-venta/reportes/packlist/${desp.id}`}
-                      target="_blank"
-                      className="p-2 rounded-lg bg-primary-50 text-primary-600 hover:bg-primary-100 transition-colors"
-                    >
-                      <FileText className="w-4 h-4" />
-                    </Link>
+                {items.length === 0 && (
+                  <div className="h-24 flex items-center justify-center border-2 border-dashed border-slate-200/60 rounded-3xl text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    Sin despachos
                   </div>
-                </div>
-
-                {/* Body */}
-                <div className="px-5 py-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Cliente</p>
-                    <p className="text-xs font-bold truncate">{desp.cliente_nombre}</p>
-                    {desp.cliente_nit && (
-                      <p className="text-[10px] text-muted-foreground font-mono">{desp.cliente_nit}</p>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Transporte</p>
-                    <p className="text-xs font-bold flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-primary-500" />
-                      {desp.transportadora || 'N/A'}
-                    </p>
-                    {desp.guia_seguimiento && (
-                      <p className="text-[10px] font-mono text-muted-foreground flex items-center gap-1">
-                        <ClipboardList className="w-2.5 h-2.5" />
-                        {desp.guia_seguimiento}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Bultos / Unidades</p>
-                    <p className="text-sm font-black">
-                      <span className="text-foreground">{desp.total_bultos}</span>
-                      <span className="text-muted-foreground font-medium text-xs"> bultos</span>
-                    </p>
-                    <p className="text-[10px] text-primary-600 font-bold">{desp.total_unidades} unidades</p>
-                  </div>
-                  <div className="flex items-end justify-end">
-                    <Link
-                      href={`/ordenes-venta/${desp.ov_id}`}
-                      className="inline-flex items-center gap-1.5 text-[10px] font-black text-primary-600 hover:text-primary-700 uppercase tracking-wider group"
-                    >
-                      Ver OV
-                      <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                  </div>
-                </div>
+                )}
               </div>
-            )
-          })}
-        </div>
-      )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
