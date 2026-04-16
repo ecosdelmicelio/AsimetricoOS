@@ -20,7 +20,12 @@ import {
   CheckCircle2,
   ExternalLink,
   Wrench,
-  SquareArrowOutUpRight
+  SquareArrowOutUpRight,
+  AlertCircle,
+  Eye,
+  Grid3X3,
+  List,
+  ArrowRightLeft
 } from 'lucide-react'
 import { 
   getCenterPendingPurchases, 
@@ -447,11 +452,11 @@ export function BodegaLocationsMaster() {
                 <button 
                   key={item.id}
                   onClick={() => setActiveOC(activeOC?.id === item.id ? null : item)}
-                  className={\`w-full p-3 rounded-[20px] text-left border transition-all flex flex-col gap-1 \${activeOC?.id === item.id ? bgActive : 'bg-white border-slate-100 hover:border-slate-300 hover:shadow-sm'}\`}
+                  className={`w-full p-3 rounded-[20px] text-left border transition-all flex flex-col gap-1 ${activeOC?.id === item.id ? bgActive : 'bg-white border-slate-100 hover:border-slate-300 hover:shadow-sm'}`}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <p className={\`text-[10px] font-black \${activeOC?.id === item.id ? codeColor : 'text-slate-800'}\`}>{item.codigo}</p>
-                    <span className={\`text-[7px] font-black px-1.5 py-0.5 rounded-full \${isOC ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}\`}>
+                    <p className={`text-[10px] font-black ${activeOC?.id === item.id ? codeColor : 'text-slate-800'}`}>{item.codigo}</p>
+                    <span className={`text-[7px] font-black px-1.5 py-0.5 rounded-full ${isOC ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
                       {isOC ? 'COMPRA' : 'TRASLADO'}
                     </span>
                   </div>
