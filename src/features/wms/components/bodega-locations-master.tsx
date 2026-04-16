@@ -268,21 +268,24 @@ export function BodegaLocationsMaster() {
     if (!selPosicionId) return
     let codigoFinal = undefined
     const baseCode = activeOC ? activeOC.codigo : (posiciones.find(p => p.id === selPosicionId)?.codigo || 'BN')
-    const sufijo = newNames.productoSeleccionado?.referencia || newNames.binSufijo
     
-    if (sufijo.trim()) {
-      codigoFinal = `${baseCode}-${sufijo.trim().toUpperCase()}`
+    // Safely get the suffix and trim
+    const rawSufijo = newNames.productoSeleccionado?.referencia || newNames.binSufijo || ''
+    const sufijo = rawSufijo.trim()
+    
+    if (sufijo) {
+      codigoFinal = `${baseCode}-${sufijo.toUpperCase()}`
     } else if (activeOC) {
-      // Si no hay sufijo pero hay OC, generar uno con timestamp corto
+      // Automatic generation with 4-digit timestamp suffix for uniqueness
       codigoFinal = `${activeOC.codigo}-${Date.now().toString().slice(-4)}`
     }
 
-    const { error, data } = await crearBin({
-      posicion_id: selPosicionId,
-      codigo: codigoFinal,
-      bodega_id: selBodegaId,
-      es_fijo: newNames.binFijo
-    })
+    const { error, data } = await crearBin(
+      selPosicionId,
+      codigoFinal,
+      'interno',
+      newNames.binFijo || false
+    )
     if (error) setFeedback({ title: 'Límite de Aforo', description: error, variant: 'danger' })
     else {
       await cargarBines(selPosicionId)

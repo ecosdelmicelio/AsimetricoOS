@@ -141,54 +141,52 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
               <p className="text-xs font-bold">{error}</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-3">
-                {items.map(item => (
-                  <div key={item.id} className="p-5 bg-slate-50 border border-slate-100 rounded-[24px] flex items-center justify-between group hover:border-primary-200 transition-all">
-                    <div className="flex items-center gap-4">
-                      <div className="p-2.5 bg-white border border-slate-200 rounded-xl shadow-sm">
-                        {item.icon === 'Shirt' ? <Shirt className="w-4 h-4 text-primary-600" /> : <Package className="w-4 h-4 text-slate-500" />}
+              <div className="grid grid-cols-1 gap-4">
+                {Object.values(
+                  items.reduce((acc: any, item) => {
+                    const prodId = item.metadata?.producto_id || item.id;
+                    if (!acc[prodId]) acc[prodId] = { ...item, originalLabel: item.label.split(' (')[0], groupChildren: [] };
+                    acc[prodId].groupChildren.push(item);
+                    return acc;
+                  }, {})
+                ).map((group: any) => (
+                  <div key={group.id} className="p-5 bg-white border border-slate-200 shadow-sm rounded-[24px] flex flex-col gap-4 group-hover:border-primary-200 transition-all">
+                    <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+                      <div className="p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                        {group.icon === 'Shirt' ? <Shirt className="w-4 h-4 text-primary-600" /> : <Package className="w-4 h-4 text-slate-500" />}
                       </div>
                       <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-black text-slate-800">{item.label}</span>
-                          {item.price > 0 && (
-                            <span className="text-[8px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md border border-slate-200">
-                              Val: ${item.price.toLocaleString()}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide leading-tight whitespace-pre-line">{item.sublabel}</span>
+                        <span className="text-xs font-black text-slate-800">{group.originalLabel}</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{group.sublabel.split(' — ')[0]}</span>
                       </div>
                     </div>
                     
-                    <div className="flex flex-col items-end gap-2">
-                       <span className="text-[9px] font-black text-slate-400 uppercase">Cantidad a recibir</span>
-                       <div className="flex items-center gap-3">
-                          <button 
-                            onClick={() => setQuantities(q => ({ ...q, [item.id]: Math.max(0, (q[item.id] || 0) - 1) }))}
-                            className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-500 hover:border-primary-400 hover:text-primary-600 transition-all font-black"
-                          >
-                            -
-                          </button>
-                          <input 
-                            type="number" 
-                            className="w-16 h-8 text-center bg-transparent border-b-2 border-slate-200 text-sm font-black focus:border-primary-500 outline-none"
-                            value={quantities[item.id] || 0}
-                            onChange={e => setQuantities(q => ({ ...q, [item.id]: parseInt(e.target.value) || 0 }))}
-                          />
-                          <button 
-                            onClick={() => setQuantities(q => ({ ...q, [item.id]: (q[item.id] || 0) + 1 }))}
-                            className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-500 hover:border-primary-400 hover:text-primary-600 transition-all font-black"
-                          >
-                            +
-                          </button>
-                       </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      {group.groupChildren.map((child: any) => (
+                        <div key={child.id} className="flex flex-col items-center bg-slate-50 border border-slate-200 rounded-2xl p-2 min-w-[70px]">
+                           <span className="text-[10px] font-black text-slate-500 uppercase mb-1">{child.metadata?.talla || child.label}</span>
+                           <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg overflow-hidden w-full">
+                              <button 
+                                onClick={() => setQuantities(q => ({ ...q, [child.id]: Math.max(0, (q[child.id] || 0) - 1) }))}
+                                className="w-6 h-6 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all font-black"
+                              >-</button>
+                              <input 
+                                type="number" 
+                                className="w-8 h-6 text-center bg-transparent text-xs font-black focus:outline-none"
+                                value={quantities[child.id] || 0}
+                                onChange={e => setQuantities(q => ({ ...q, [child.id]: parseInt(e.target.value) || 0 }))}
+                              />
+                              <button 
+                                onClick={() => setQuantities(q => ({ ...q, [child.id]: (q[child.id] || 0) + 1 }))}
+                                className="w-6 h-6 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all font-black"
+                              >+</button>
+                           </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
           )}
         </div>
 
