@@ -38,6 +38,7 @@ const NAV_ITEMS: { href: string; label: string; icon: React.ElementType; roles: 
   { href: '/kardex',              label: 'Kardex',           icon: BarChart2,       roles: ['orquestador'] },
   { href: '/despachos',            label: 'Despachos',        icon: Truck,           roles: ['orquestador'] },
   { href: '/compras',             label: 'Compras',          icon: ShoppingCart,    roles: ['orquestador'] },
+  { href: '/finanzas',            label: 'Finanzas/Inteligencia', icon: BarChart2,   roles: ['orquestador'] },
   { href: '/terceros',            label: 'Terceros',         icon: Users,           roles: ['orquestador'] },
   { href: '/configuracion',       label: 'Configuración',    icon: Settings2,       roles: ['orquestador'] },
   { href: '/taller',              label: 'Mi Taller',        icon: Factory,         roles: ['taller'] },

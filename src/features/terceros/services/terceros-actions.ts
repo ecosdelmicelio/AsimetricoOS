@@ -45,6 +45,8 @@ export async function createTercero(
       calificacion:              input.calificacion ?? null,
       descuento_pago_anticipado: input.descuento_pago_anticipado ?? null,
       bodega_taller_id:          input.bodega_taller_id ?? null,
+      nivel_cliente:             input.nivel_cliente ?? null,
+      plazo_pago_dias:           input.plazo_pago_dias ?? null,
       estado:                    'activo',
     })
     .select()
@@ -77,6 +79,8 @@ export async function updateTercero(
   if (input.calificacion !== undefined)              p.calificacion = input.calificacion || null
   if (input.descuento_pago_anticipado !== undefined) p.descuento_pago_anticipado = input.descuento_pago_anticipado ?? null
   if (input.bodega_taller_id !== undefined)          p.bodega_taller_id = input.bodega_taller_id || null
+  if (input.nivel_cliente !== undefined)             p.nivel_cliente = input.nivel_cliente || null
+  if (input.plazo_pago_dias !== undefined)           p.plazo_pago_dias = input.plazo_pago_dias || null
 
   const { error } = await supabase
     .from('terceros')
@@ -105,4 +109,40 @@ export async function getBodegaDelTercero(tercero_id: string): Promise<{ id: str
     .single() as { data: { id: string; nombre: string } | null }
 
   return bodega
+}
+
+/**
+ * Calcula la sugerencia de nivel de cliente basado en el volumen histórico
+ * Umbrales por defecto: N2 > 500, N3 > 5000 unidades/año
+ */
+export async function getSugerenciaNivel(terceroId: string): Promise<{ sugerencia: 'N1' | 'N2' | 'N3'; unidades_anuales: number }> {
+  const supabase = db(await createClient())
+  
+  // 1. Obtener umbrales de ajustes_sistema
+  const { data: ajustes } = await supabase
+    .from('ajustes_sistema')
+    .select('id, valor')
+    .in('id', ['finanzas_umbral_n2_unidades', 'finanzas_umbral_n3_unidades'])
+  
+  const umbralN2 = Number(ajustes?.find(a => a.id === 'finanzas_umbral_n2_unidades')?.valor) || 500
+  const umbralN3 = Number(ajustes?.find(a => a.id === 'finanzas_umbral_n3_unidades')?.valor) || 5000
+
+  // 2. Sumar unidades despachadas en el último año para este cliente
+  // Asumimos que podemos sumar ov_detalle vinculadas a OVs del cliente creadas en los últimos 365 días
+  const unAnioAtras = new Date()
+  unAnioAtras.setFullYear(unAnioAtras.getFullYear() - 1)
+  
+  const { data: unidades } = await supabase
+    .from('ov_detalle')
+    .select('cantidad, ordenes_venta!inner(cliente_id, created_at)')
+    .eq('ordenes_venta.cliente_id', terceroId)
+    .gte('ordenes_venta.created_at', unAnioAtras.toISOString())
+  
+  const totalUnidades = (unidades as any[] || []).reduce((acc, curr) => acc + (Number(curr.cantidad) || 0), 0)
+
+  let sugerencia: 'N1' | 'N2' | 'N3' = 'N1'
+  if (totalUnidades >= umbralN3) sugerencia = 'N3'
+  else if (totalUnidades >= umbralN2) sugerencia = 'N2'
+
+  return { sugerencia, unidades_anuales: totalUnidades }
 }

@@ -84,6 +84,7 @@ function calcularTotalUds(productos: ProductoEnMatriz[]): number {
 interface Cliente {
   id: string
   nombre: string
+  plazo_pago_dias: number | null
 }
 
 export type ProductoAlias = {
@@ -111,6 +112,7 @@ export function OVForm({ clientes, productos, aliases = [], initialData }: Props
 
   const [clienteId, setClienteId] = useState(initialData?.cliente_id ?? '')
   const [fechaEntrega, setFechaEntrega] = useState(initialData?.fecha_entrega ?? '')
+  const [plazoPago, setPlazoPago] = useState(initialData?.plazo_pago_dias ?? 30)
   const [notas, setNotas] = useState(initialData?.notas ?? '')
   const [productosEnForm, setProductosEnForm] = useState<ProductoEnMatriz[]>(() => {
     if (!initialData) return []
@@ -285,9 +287,10 @@ export function OVForm({ clientes, productos, aliases = [], initialData }: Props
     }
 
     startTransition(async () => {
-      const payload = {
+        const payload = {
         cliente_id: clienteId,
         fecha_entrega: fechaEntrega,
+        plazo_pago_dias: plazoPago,
         notas: notas || undefined,
         lineas: lineasValidas,
       }
@@ -325,7 +328,12 @@ export function OVForm({ clientes, productos, aliases = [], initialData }: Props
             <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
               <select
                 value={clienteId}
-                onChange={e => setClienteId(e.target.value)}
+                onChange={e => {
+                  const id = e.target.value
+                  setClienteId(id)
+                  const c = clientes.find(x => x.id === id)
+                  if (c?.plazo_pago_dias != null) setPlazoPago(c.plazo_pago_dias)
+                }}
                 className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none"
                 required
               >
@@ -334,6 +342,22 @@ export function OVForm({ clientes, productos, aliases = [], initialData }: Props
                   <option key={c.id} value={c.id}>{c.nombre}</option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          {/* Plazo de pago */}
+          <div className="space-y-1.5">
+            <label className="text-body-sm font-medium text-foreground">
+              Plazo de Pago (Días)
+            </label>
+            <div className="rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5">
+              <input
+                type="number"
+                value={plazoPago}
+                onChange={e => setPlazoPago(parseInt(e.target.value) || 0)}
+                className="w-full bg-transparent text-body-sm text-foreground outline-none"
+                placeholder="30"
+              />
             </div>
           </div>
 

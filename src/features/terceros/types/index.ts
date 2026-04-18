@@ -1,5 +1,6 @@
 export type EstadoTercero = 'activo' | 'suspendido' | 'en_evaluacion'
 export type TipoTercero = 'cliente' | 'satelite' | 'proveedor_mp'
+export type NivelCliente = 'N1' | 'N2' | 'N3'
 
 export interface Tercero {
   id: string
@@ -18,6 +19,8 @@ export interface Tercero {
   calificacion: number | null
   descuento_pago_anticipado: number | null
   bodega_taller_id: string | null
+  nivel_cliente: NivelCliente | null
+  plazo_pago_dias: number | null
   created_at: string
   updated_at: string
 }
@@ -37,6 +40,8 @@ export interface CreateTerceroInput {
   calificacion?: number
   descuento_pago_anticipado?: number
   bodega_taller_id?: string
+  nivel_cliente?: NivelCliente
+  plazo_pago_dias?: number
 }
 
 export interface UpdateTerceroInput extends Partial<CreateTerceroInput> {

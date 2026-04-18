@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Plus, Edit2, Loader2, AlertTriangle, Star, Users, Tag, X, MapPin, Phone, Mail, UserCircle2 } from 'lucide-react'
-import { createTercero, updateTercero } from '@/features/terceros/services/terceros-actions'
+import { Plus, Edit2, Loader2, AlertTriangle, Star, Users, Tag, X, MapPin, Phone, Mail, UserCircle2, ShieldCheck, TrendingUp, Info } from 'lucide-react'
+import { createTercero, updateTercero, getSugerenciaNivel } from '@/features/terceros/services/terceros-actions'
 import { createMarca, updateMarca } from '@/features/configuracion/services/marcas-actions'
 import type { MarcaConTercero } from '@/features/configuracion/services/marcas-actions'
 import { createTerceroDireccion, updateTerceroDireccion } from '@/features/terceros/services/tercero-direcciones-actions'
@@ -12,7 +12,8 @@ import type { TerceroContacto } from '@/features/terceros/services/tercero-conta
 import type { CategoriaContacto } from '@/features/terceros/services/tercero-contactos-constants'
 import { CATEGORIA_LABEL, CATEGORIA_COLOR } from '@/features/terceros/services/tercero-contactos-constants'
 import { useDuplicateCheck } from '@/shared/hooks/use-duplicate-check'
-import type { Tercero, TipoTercero, EstadoTercero } from '@/features/terceros/types'
+import { useEffect } from 'react' // Added useEffect
+import type { Tercero, TipoTercero, EstadoTercero, NivelCliente } from '@/features/terceros/types'
 import {
   TIPO_LABEL,
   TIPO_COLOR,
@@ -218,20 +219,20 @@ function TerceroForm({ tercero, marcas = [], dirs = [], contactos = [], bodegas 
   const [emailFact, setEmailFact] = useState(tercero?.email_facturacion ?? '')
   const [telefono, setTelefono] = useState(tercero?.telefono ?? '')
   const [direccion, setDireccion] = useState(tercero?.direccion ?? '')
-  const [bodegaTallerId, setBodegaTallerId] = useState(tercero?.bodega_taller_id ?? '')
+  // Finanzas
+  const [nivelCliente, setNivelCliente] = useState<NivelCliente>(tercero?.nivel_cliente ?? 'N1')
+  const [plazoPago, setPlazoPago]       = useState(tercero?.plazo_pago_dias?.toString() ?? '30')
+  const [sugerencia, setSugerencia]     = useState<{ sugerencia: NivelCliente; unidades_anuales: number } | null>(null)
 
-  // Satélite
-  const [capDiaria, setCapDiaria]     = useState(tercero?.capacidad_diaria?.toString() ?? '')
-  const [leadTime, setLeadTime]       = useState(tercero?.lead_time_dias?.toString() ?? '')
-  const [valorRef, setValorRef]       = useState(tercero?.valor_servicio_ref?.toString() ?? '')
-
-  // Proveedor
-  const [anticipo, setAnticipo]       = useState(tercero?.porcentaje_anticipo?.toString() ?? '')
-  const [calificacion, setCalificacion] = useState(tercero?.calificacion ?? 0)
-  const [descuento, setDescuento]     = useState(tercero?.descuento_pago_anticipado?.toString() ?? '')
-
+  const esCliente    = tipos.includes('cliente')
   const esSatelite   = tipos.includes('satelite')
   const esProveedor  = tipos.includes('proveedor_mp')
+
+  useEffect(() => {
+    if (isEdit && esCliente) {
+      getSugerenciaNivel(tercero.id).then(setSugerencia)
+    }
+  }, [tercero?.id, esCliente, isEdit])
 
   const { isDuplicate: nombreDuplicado, checking: checkingNombre } = useDuplicateCheck({
     table: 'terceros',
@@ -268,6 +269,8 @@ function TerceroForm({ tercero, marcas = [], dirs = [], contactos = [], bodegas 
       calificacion:              esProveedor && calificacion > 0 ? calificacion : undefined,
       descuento_pago_anticipado: esProveedor && descuento ? parseFloat(descuento) : undefined,
       bodega_taller_id:          bodegaTallerId || undefined,
+      nivel_cliente:             esCliente ? nivelCliente : undefined,
+      plazo_pago_dias:           esCliente ? parseInt(plazoPago) : undefined,
     }
 
     startTransition(async () => {
@@ -443,7 +446,63 @@ function TerceroForm({ tercero, marcas = [], dirs = [], contactos = [], bodegas 
           </div>
         )}
 
-        {/* ── Satélite ── */}
+        {/* ── Cliente (Finanzas) ── */}
+        {esCliente && (
+          <div className="space-y-3 rounded-xl bg-blue-50 border border-blue-100 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Clasificación Financiera</p>
+              {sugerencia && sugerencia.sugerencia !== nivelCliente && (
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold animate-pulse">
+                  <TrendingUp className="w-3 h-3" />
+                  SUGERENCIA: {sugerencia.sugerencia} ({sugerencia.unidades_anuales} uds/año)
+                </div>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-foreground">Nivel de Cliente</label>
+                <div className="flex gap-2">
+                  {(['N1', 'N2', 'N3'] as NivelCliente[]).map(n => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setNivelCliente(n)}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold border-2 transition-all ${
+                        nivelCliente === n 
+                          ? 'border-blue-600 bg-blue-600 text-white shadow-lg shadow-blue-200' 
+                          : 'border-transparent bg-white shadow-neu text-slate-400'
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs font-medium text-foreground">Plazo de Pago (Días)</label>
+                  <div className="group relative">
+                    <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-[9px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-xl">
+                      Plazo por defecto que se cargará en cada nueva orden de venta para este cliente.
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-lg bg-white shadow-neu px-3 py-2">
+                  <input
+                    type="number"
+                    value={plazoPago}
+                    onChange={e => setPlazoPago(e.target.value)}
+                    className="w-full bg-transparent text-body-sm font-bold text-foreground outline-none"
+                    placeholder="30"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {esSatelite && (
           <div className="space-y-2 rounded-xl bg-violet-50 border border-violet-100 px-4 py-3">
             <p className="text-xs font-semibold text-violet-700 uppercase tracking-wide">Datos de Satélite</p>

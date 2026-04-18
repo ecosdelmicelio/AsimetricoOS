@@ -13,6 +13,7 @@ export interface CreateOVInput {
   cliente_id: string
   fecha_entrega: string
   notas?: string
+  plazo_pago_dias?: number
   lineas: LineaOV[]
 }
 
@@ -37,6 +38,7 @@ export async function createOrdenVenta(input: CreateOVInput) {
       notas: input.notas ?? null,
       creado_por: user.id,
       estado: 'borrador',
+      plazo_pago_dias: input.plazo_pago_dias ?? 30,
     })
     .select('id, codigo')
     .single() as { data: Pick<OrdenVenta, 'id' | 'codigo'> | null; error: { message: string } | null }
@@ -81,6 +83,7 @@ export async function updateOrdenVenta(id: string, input: CreateOVInput) {
       cliente_id: input.cliente_id,
       fecha_entrega: input.fecha_entrega,
       notas: input.notas ?? null,
+      plazo_pago_dias: input.plazo_pago_dias ?? 30,
     })
     .eq('id', id) as { error: { message: string } | null }
 
@@ -239,11 +242,11 @@ export async function getClientes() {
   const supabase = db(await createClient())
   const { data } = await supabase
     .from('terceros')
-    .select('id, nombre')
+    .select('id, nombre, plazo_pago_dias')
     .overlaps('tipos', ['cliente'])
     .eq('estado', 'activo')
     .order('nombre')
-  return (data ?? []) as { id: string; nombre: string }[]
+  return (data ?? []) as { id: string; nombre: string; plazo_pago_dias: number | null }[]
 }
 
 export async function getProductos() {

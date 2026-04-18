@@ -5,6 +5,8 @@ import { getOrdenCompraById, getMateriales, getRecepcionesByOC, getBodegaPrincip
 import { getProductosActivos } from '@/features/kardex/services/kardex-actions'
 import { RecepcionOC } from './recepcion-oc'
 import { RecepcionPTManager } from './recepcion-pt-manager'
+import { OCFinancialPanel } from './oc-financial-panel'
+import { getPagosPorDocumento } from '@/features/configuracion/services/pagos-actions'
 import { formatDate, formatCurrency } from '@/shared/lib/utils'
 
 interface Props {
@@ -18,7 +20,10 @@ export async function CompraDetail({ id }: Props) {
     getRecepcionesByOC(id),
     getProductosActivos(),
     getBodegaPrincipal(),
+    getPagosPorDocumento(id)
   ])
+
+  const pagosData = pagosRes.data || []
 
   if (!oc) notFound()
 
@@ -164,6 +169,14 @@ export async function CompraDetail({ id }: Props) {
           </div>
         ) : null
       )}
+
+      {/* Sección Financiera */}
+      <section className="space-y-4">
+        <h2 className="font-semibold text-foreground text-body-md px-2">Gestión de Pago y Facturación</h2>
+        <div className="rounded-2xl bg-neu-base shadow-neu p-6">
+          <OCFinancialPanel oc={oc} pagos={pagosData} />
+        </div>
+      </section>
 
       {/* Recepciones */}
       <RecepcionOC oc={oc} recepciones={recepciones} />

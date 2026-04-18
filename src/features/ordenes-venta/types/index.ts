@@ -19,6 +19,7 @@ export interface HistorialEstado {
 }
 
 export type EstadoOV = 'borrador' | 'confirmada' | 'en_produccion' | 'terminada' | 'despachada' | 'entregada' | 'completada' | 'cancelada'
+export type EstadoPago = 'pendiente' | 'parcial' | 'pagada' | 'vencida'
 
 export interface LineaOV {
   producto_id: string

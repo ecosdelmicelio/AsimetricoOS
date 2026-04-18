@@ -1,5 +1,6 @@
 export type EstadoDocumental = 'pendiente_afidavit' | 'cargado' | 'na' | 'en_proceso' | 'completada' | 'finalizada'
 export type EstadoGreige = 'en_crudo' | 'para_tejer' | 'otros'
+export type EstadoPago = 'pendiente' | 'parcial' | 'pagada' | 'vencida'
 
 export interface OrdenCompra {
   id: string
