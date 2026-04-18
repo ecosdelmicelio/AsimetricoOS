@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { Plus, Filter, TrendingDown, DollarSign, Calendar } from 'lucide-react'
+import { useState } from 'react'
+import { Plus, Filter, TrendingDown, DollarSign, Calendar, X } from 'lucide-react'
 import { GastoForm } from './gasto-form'
-import type { Gasto, CategoriaGasto, AreaNegocio } from '../types'
+import type { Gasto, CategoriaGasto } from '../types'
 
 interface Tercero {
   id: string
@@ -17,10 +17,8 @@ interface Props {
 }
 
 export function GastosPanel({ initialGastos, categorias, terceros }: Props) {
-  const [gastos, setGastos] = useState(initialGastos)
   const [showForm, setShowForm] = useState(false)
   const [filtroArea, setFiltroArea] = useState<string>('todas')
-  const [isPending, startTransition] = useTransition()
 
   const totalesPorArea = initialGastos.reduce((acc, g) => {
     acc[g.area] = (acc[g.area] || 0) + Number(g.monto_total)

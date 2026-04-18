@@ -98,7 +98,7 @@ export function BinLabelPrinter({ bin, items, triggerClassName }: BinLabelPrinte
           </style>
         </head>
         <body>
-          \${content}
+          ${content}
           <script>
             window.onload = () => {
               window.print()
@@ -111,13 +111,13 @@ export function BinLabelPrinter({ bin, items, triggerClassName }: BinLabelPrinte
     printWindow.document.close()
   }
 
-  const deepLink = \`https://os.asimetrico.io/wms/scan?bin=\${bin.codigo}\`
+  const deepLink = `https://os.asimetrico.io/wms/scan?bin=${bin.codigo}`
 
   return (
     <>
       <button 
         onClick={handlePrint}
-        className={\`flex items-center gap-2 \${triggerClassName || 'px-3 py-1.5 bg-slate-800 text-white font-bold text-[10px] rounded-lg tracking-widest uppercase hover:bg-slate-700'}\`}
+        className={`flex items-center gap-2 ${triggerClassName || 'px-3 py-1.5 bg-slate-800 text-white font-bold text-[10px] rounded-lg tracking-widest uppercase hover:bg-slate-700'}`}
       >
         <Printer className="w-4 h-4" />
         Imprimir
@@ -150,7 +150,7 @@ export function BinLabelPrinter({ bin, items, triggerClassName }: BinLabelPrinte
           </div>
           <div className="right-col">
              <div style={{ padding: '2mm', background: 'white', border: '2px solid black', borderRadius: '4px' }}>
-                <img src={\`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=\${encodeURIComponent(deepLink)}\`} style={{ width: '100%', height: '100%', display: 'block' }} alt="QR" />
+                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(deepLink)}`} style={{ width: '100%', height: '100%', display: 'block' }} alt="QR" />
              </div>
           </div>
         </div>

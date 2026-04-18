@@ -69,7 +69,9 @@ export async function getConsolidadoBudget(mes: number, anio: number) {
 
   const consolidado = areas.map(a => {
     const p = presupuestos?.find(x => x.area === a)?.monto_limite || 0
-    const r = gastos?.filter(x => x.area === a).reduce((sum, g) => sum + Number(g.monto_total), 0) || 0
+    const r = (gastos as { area: string; monto_total: number }[] | null)
+      ?.filter((x: { area: string }) => x.area === a)
+      .reduce((sum: number, g: { monto_total: number }) => sum + Number(g.monto_total), 0) || 0
     return {
       area: a,
       presupuestado: p,
