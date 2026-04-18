@@ -190,33 +190,33 @@ export function SaldosPTMatriz({ saldos, tallas = TALLAS_STANDARD, agrupacionPor
 
   if (saldos.length === 0) {
     return (
-      <div className="rounded-2xl bg-neu-base shadow-neu p-8 text-center">
-        <p className="text-body-sm text-muted-foreground">Sin saldos de productos terminados</p>
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-12 text-center">
+        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Sin saldos de productos terminados</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Controles */}
       <div className="flex items-center justify-between gap-4">
-        <div className="flex gap-2">
+        <div className="flex bg-slate-100 p-1.5 rounded-[22px] border border-slate-200">
           <button
             onClick={() => setAgrupacion('referencia')}
-            className={`px-3 py-2 rounded-lg text-body-sm font-medium transition-all ${
+            className={`px-5 py-2.5 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all ${
               agrupacion === 'referencia'
-                ? 'bg-primary-100 text-primary-700 shadow-neu'
-                : 'bg-neu-base shadow-neu text-muted-foreground hover:text-foreground'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             Por Referencia
           </button>
           <button
             onClick={() => setAgrupacion('bodega')}
-            className={`px-3 py-2 rounded-lg text-body-sm font-medium transition-all ${
+            className={`px-5 py-2.5 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all ${
               agrupacion === 'bodega'
-                ? 'bg-primary-100 text-primary-700 shadow-neu'
-                : 'bg-neu-base shadow-neu text-muted-foreground hover:text-foreground'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             Por Bodega
@@ -225,20 +225,20 @@ export function SaldosPTMatriz({ saldos, tallas = TALLAS_STANDARD, agrupacionPor
 
         <button
           onClick={handleExportCSV}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all hover:shadow-neu-lg active:shadow-neu-inset"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest transition-all hover:bg-slate-800 shadow-lg shadow-slate-200"
         >
-          <Download className="w-3.5 h-3.5" />
-          Exportar CSV
+          <Download className="w-4 h-4" />
+          Exportar Matriz (CSV)
         </button>
       </div>
 
       {/* Matriz */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {grupos.map(grupo => {
           const isExpanded = expandedGroups[grupo.referencia] ?? true
 
           return (
-            <div key={grupo.referencia} className="rounded-2xl bg-neu-base shadow-neu overflow-hidden">
+            <div key={grupo.referencia} className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden group">
               {/* Header collapsible */}
               <button
                 type="button"
@@ -248,91 +248,80 @@ export function SaldosPTMatriz({ saldos, tallas = TALLAS_STANDARD, agrupacionPor
                     [grupo.referencia]: !prev[grupo.referencia],
                   }))
                 }
-                className="w-full px-4 py-3 flex items-center justify-between gap-2 hover:bg-black/2 transition-colors"
+                className="w-full px-6 py-5 flex items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors"
               >
-                <div className="flex items-center gap-2 min-w-0">
-                  <ChevronDown
-                    className={`w-4 h-4 text-muted-foreground transition-transform shrink-0 ${
-                      isExpanded ? '' : '-rotate-90'
-                    }`}
-                  />
-                  <span className="font-semibold text-foreground text-body-md">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`p-1.5 rounded-lg bg-slate-50 border border-slate-100 transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'}`}>
+                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <span className="font-black text-slate-900 text-sm tracking-tight truncate">
                     {grupo.referencia}
                   </span>
                 </div>
-                <div className="flex items-center gap-4 text-body-sm shrink-0">
-                  <span className="text-muted-foreground">
-                    <span className="font-semibold text-foreground">{grupo.totalUnidades}</span> uds
-                  </span>
-                  <span className="text-muted-foreground">
-                    <span className="font-semibold text-foreground">
-                      ${(grupo.totalValor || 0).toFixed(2)}
-                    </span>
-                  </span>
+                <div className="flex items-center gap-6 shrink-0">
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Stock Total</p>
+                    <p className="text-sm font-black text-slate-900">{grupo.totalUnidades.toLocaleString()} uts</p>
+                  </div>
+                  <div className="text-right border-l border-slate-100 pl-6">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Valorización</p>
+                    <p className="text-sm font-black text-slate-900">${(grupo.totalValor || 0).toLocaleString('es-CO', { maximumFractionDigits: 0 })}</p>
+                  </div>
                 </div>
               </button>
 
               {/* Contenido: tabla matricial */}
               {isExpanded && (
-                <div className="border-t border-black/5 p-4">
+                <div className="border-t border-slate-50 p-6 bg-slate-50/20">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className="w-full">
                       <thead>
-                        <tr className="border-b border-black/5">
-                          {agrupacion === 'referencia' && (
-                            <th className="text-left px-3 py-2 text-xs font-semibold text-muted-foreground uppercase">
-                              Bodega
-                            </th>
-                          )}
-                          {agrupacion === 'bodega' && (
-                            <th className="text-left px-3 py-2 text-xs font-semibold text-muted-foreground uppercase">
-                              Referencia
-                            </th>
-                          )}
+                        <tr>
+                          <th className="text-left py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                            {agrupacion === 'referencia' ? 'Destino / Bodega' : 'Referencia Prod'}
+                          </th>
                           {tallasReales.map(talla => (
                             <th
                               key={talla}
-                              className="text-center px-3 py-2 text-xs font-semibold text-muted-foreground uppercase"
+                              className="text-center py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest px-2"
                             >
                               {talla}
                             </th>
                           ))}
-                          <th className="text-right px-3 py-2 text-xs font-semibold text-muted-foreground uppercase">
-                            Total
+                          <th className="text-right py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            Subtotal
                           </th>
-                          <th className="text-right px-3 py-2 text-xs font-semibold text-muted-foreground uppercase">
-                            Valor
+                          <th className="text-right py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest pl-6">
+                            Valor Rep.
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-black/5">
+                      <tbody className="divide-y divide-slate-100">
                         {grupo.rows.map(row => (
-                          <tr key={row.id} className="hover:bg-black/2">
-                            <td className="px-3 py-2 text-body-sm">
-                              {agrupacion === 'referencia' ? (
-                                <span className="text-muted-foreground">{row.label}</span>
-                              ) : (
-                                <span className="font-mono font-medium text-foreground">
-                                  {row.label}
-                                </span>
-                              )}
+                          <tr key={row.id} className="hover:bg-white transition-colors group/row">
+                            <td className="py-4 whitespace-nowrap">
+                              <span className="text-xs font-bold text-slate-700 group-hover/row:text-primary-600 transition-colors">
+                                {row.label}
+                              </span>
                             </td>
                             {tallasReales.map(talla => {
                               const saldoParaTalla = row.tallas[talla] || 0
                               return (
                                 <td
                                   key={talla}
-                                  className="text-center px-3 py-2 text-body-sm font-medium text-foreground"
+                                  className={`text-center py-4 px-2 text-xs font-black ${
+                                    saldoParaTalla > 0 ? 'text-slate-900' : 'text-slate-200'
+                                  }`}
                                 >
                                   {saldoParaTalla > 0 ? saldoParaTalla.toFixed(0) : '—'}
                                 </td>
                               )
                             })}
-                            <td className="text-right px-3 py-2 text-body-sm font-medium text-foreground">
-                              {row.total.toFixed(0)} un.
+                            <td className="text-right py-4 whitespace-nowrap">
+                              <p className="text-xs font-black text-slate-900">{row.total.toFixed(0)}</p>
                             </td>
-                            <td className="text-right px-3 py-2 text-body-sm font-medium text-foreground">
-                              ${(row.valor || 0).toFixed(2)}
+                            <td className="text-right py-4 whitespace-nowrap pl-6">
+                              <p className="text-xs font-bold text-slate-400">${(row.valor || 0).toLocaleString('es-CO', { maximumFractionDigits: 0 })}</p>
                             </td>
                           </tr>
                         ))}

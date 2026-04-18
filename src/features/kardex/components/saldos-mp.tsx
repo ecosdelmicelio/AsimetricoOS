@@ -35,63 +35,65 @@ export function SaldosMP({ saldos }: Props) {
 
   if (saldos.length === 0) {
     return (
-      <div className="rounded-2xl bg-neu-base shadow-neu p-8 text-center">
-        <p className="text-body-sm text-muted-foreground">Sin saldos de materias primas</p>
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-12 text-center">
+        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Sin saldos de materias primas</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Header con botón exportar */}
       <div className="flex justify-end">
         <button
           onClick={handleExportCSV}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all hover:shadow-neu-lg active:shadow-neu-inset"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest transition-all hover:bg-slate-800 shadow-lg shadow-slate-200"
         >
-          <Download className="w-3.5 h-3.5" />
-          Exportar CSV
+          <Download className="w-4 h-4" />
+          Exportar Inventario (CSV)
         </button>
       </div>
 
       {/* Tabla */}
-      <div className="rounded-2xl bg-neu-base shadow-neu overflow-hidden">
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-black/5">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">Código</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">Material</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">Bodega</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">Unidad</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">Saldo</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">CPP</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">Valor Total</th>
+              <tr className="bg-slate-50/50 border-b border-slate-100">
+                <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Codificación</th>
+                <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Insumo / Material</th>
+                <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Ubicación Bodega</th>
+                <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">U.M.</th>
+                <th className="text-right px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Existencias</th>
+                <th className="text-right px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">CPP (Cost)</th>
+                <th className="text-right px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Valorización</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-black/5">
+            <tbody className="divide-y divide-slate-50">
               {saldos.map(s => (
-                <tr key={`${s.material_id}-${s.bodega_id}`} className="hover:bg-black/2 transition-colors">
-                  <td className="px-5 py-3">
-                    <p className="text-body-sm font-mono font-medium text-foreground">{s.codigo}</p>
+                <tr key={`${s.material_id}-${s.bodega_id}`} className="hover:bg-slate-50/50 transition-colors group">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <p className="text-xs font-black text-slate-900 group-hover:text-primary-600 transition-colors tracking-tight">{s.codigo}</p>
                   </td>
-                  <td className="px-5 py-3">
-                    <p className="text-body-sm text-foreground">{s.nombre}</p>
+                  <td className="px-6 py-4 min-w-[200px]">
+                    <p className="text-xs font-bold text-slate-700 leading-tight">{s.nombre}</p>
                   </td>
-                  <td className="px-5 py-3">
-                    <p className="text-body-sm text-foreground">{s.bodega_nombre}</p>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex px-2.5 py-1 rounded-lg bg-slate-50 text-[10px] font-black text-slate-500 uppercase tracking-tighter border border-slate-100">
+                      {s.bodega_nombre}
+                    </span>
                   </td>
-                  <td className="px-5 py-3">
-                    <p className="text-body-sm text-muted-foreground">{s.unidad}</p>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">{s.unidad}</p>
                   </td>
-                  <td className="px-5 py-3 text-right">
-                    <p className="text-body-sm font-medium text-foreground">{s.saldo.toFixed(2)}</p>
+                  <td className="px-6 py-4 text-right whitespace-nowrap">
+                    <p className="text-xs font-black text-slate-900">{s.saldo.toLocaleString('es-CO', { minimumFractionDigits: 2 })}</p>
                   </td>
-                  <td className="px-5 py-3 text-right">
-                    <p className="text-body-sm font-medium text-foreground">${(s.costo_promedio ?? 0).toFixed(2)}</p>
+                  <td className="px-6 py-4 text-right whitespace-nowrap">
+                    <p className="text-xs font-bold text-slate-500">${(s.costo_promedio ?? 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</p>
                   </td>
-                  <td className="px-5 py-3 text-right">
-                    <p className="text-body-sm font-medium text-foreground">${(s.valor_total ?? 0).toFixed(2)}</p>
+                  <td className="px-6 py-4 text-right whitespace-nowrap">
+                    <p className="text-xs font-black text-slate-900">${(s.valor_total ?? 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</p>
                   </td>
                 </tr>
               ))}

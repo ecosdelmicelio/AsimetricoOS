@@ -113,140 +113,88 @@ export function HistorialMPFiltrable({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Panel de filtros */}
-      <div className="rounded-2xl bg-neu-base shadow-neu p-4">
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
         <button
           onClick={() => setMostrarFiltros(!mostrarFiltros)}
-          className="w-full flex items-center justify-between px-2 py-1"
+          className="w-full flex items-center justify-between group"
         >
-          <p className="text-xs font-semibold text-muted-foreground uppercase">
-            Filtros ({Object.keys(filtros).filter(k => {
-              const v = filtros[k as keyof typeof filtros]
-              if (k === 'materialesSeleccionados') return (v as Set<string>).size > 0
-              return v && v !== ''
-            }).length})
-          </p>
-          <span className={`transition-transform ${mostrarFiltros ? 'rotate-180' : ''}`}>
-            ▼
+          <div className="flex items-center gap-3">
+             <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100">
+                <BarChart3 className="w-4 h-4 text-slate-400" />
+             </div>
+             <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest">
+                Parámetros de Búsqueda ({Object.keys(filtros).filter(k => {
+                  const v = filtros[k as keyof typeof filtros]
+                  if (k === 'materialesSeleccionados') return (v as Set<string>).size > 0
+                  return v && v !== '' && v !== getDefaultFechaInicio() && v !== new Date().toISOString().split('T')[0]
+                }).length})
+             </p>
+          </div>
+          <span className={`transition-transform duration-300 ${mostrarFiltros ? 'rotate-180' : ''}`}>
+             <ChevronDown className="w-5 h-5 text-slate-400" />
           </span>
         </button>
 
         {mostrarFiltros && (
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
             {/* Búsqueda por código/nombre */}
-            <div className="space-y-1 sm:col-span-2 lg:col-span-1">
-              <label className="text-xs font-medium text-foreground">Código/Material</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Referencia / Insumo</label>
               <input
                 type="text"
-                placeholder="Buscar..."
+                placeholder="Ej: TEL-001..."
                 value={filtros.busqueda}
                 onChange={e => setFiltros({ ...filtros, busqueda: e.target.value })}
-                className="w-full rounded-lg bg-white shadow-neu-inset px-3 py-2 text-body-sm text-foreground outline-none"
+                className="w-full rounded-2xl bg-slate-50 border-none px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary-500 transition-all placeholder:text-slate-300"
               />
             </div>
 
-            {/* Multiselect Material */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-foreground">Materiales Activos</label>
-              <div className="flex gap-1 flex-wrap">
-                {materiales.slice(0, 5).map(m => (
-                  <button
-                    key={m.id}
-                    onClick={() => toggleMaterial(m.id)}
-                    className={`px-2 py-1 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                      filtros.materialesSeleccionados.has(m.id)
-                        ? 'bg-primary-100 text-primary-700 shadow-neu'
-                        : 'bg-white shadow-neu-inset text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    {m.codigo}
-                  </button>
-                ))}
-                {materiales.length > 5 && (
-                  <select
-                    onChange={e => {
-                      if (e.target.value) {
-                        toggleMaterial(e.target.value)
-                        e.target.value = ''
-                      }
-                    }}
-                    className="px-2 py-1 rounded-lg text-xs bg-white shadow-neu-inset text-muted-foreground outline-none"
-                  >
-                    <option value="">+ Más</option>
-                    {materiales.slice(5).map(m => (
-                      <option key={m.id} value={m.id}>
-                        {m.codigo} - {m.nombre}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            </div>
-
             {/* Bodega */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-foreground">Bodega</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ubicación (Bodega)</label>
               <select
                 value={filtros.bodegaId}
                 onChange={e => setFiltros({ ...filtros, bodegaId: e.target.value })}
-                className="w-full rounded-lg bg-white shadow-neu-inset px-3 py-2 text-body-sm text-foreground outline-none"
+                className="w-full rounded-2xl bg-slate-50 border-none px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary-500 transition-all appearance-none"
               >
-                <option value="">Todas</option>
+                <option value="">Todas las bodegas</option>
                 {bodegas.map(b => (
-                  <option key={b.id} value={b.id}>
-                    {b.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Tipo Movimiento */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-foreground">Tipo Movimiento</label>
-              <select
-                value={filtros.tipoMovimientoId}
-                onChange={e => setFiltros({ ...filtros, tipoMovimientoId: e.target.value })}
-                className="w-full rounded-lg bg-white shadow-neu-inset px-3 py-2 text-body-sm text-foreground outline-none"
-              >
-                <option value="">Todos</option>
-                {tiposMovimiento.map(t => (
-                  <option key={t.id} value={t.id}>
-                    {t.nombre}
-                  </option>
+                  <option key={b.id} value={b.id}>{b.nombre}</option>
                 ))}
               </select>
             </div>
 
             {/* Fecha Inicio */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-foreground">Desde</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Desde</label>
               <input
                 type="date"
                 value={filtros.fechaInicio}
                 onChange={e => setFiltros({ ...filtros, fechaInicio: e.target.value })}
-                className="w-full rounded-lg bg-white shadow-neu-inset px-3 py-2 text-body-sm text-foreground outline-none"
+                className="w-full rounded-2xl bg-slate-50 border-none px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary-500 transition-all"
               />
             </div>
 
             {/* Fecha Fin */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-foreground">Hasta</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Hasta</label>
               <input
                 type="date"
                 value={filtros.fechaFin}
                 onChange={e => setFiltros({ ...filtros, fechaFin: e.target.value })}
-                className="w-full rounded-lg bg-white shadow-neu-inset px-3 py-2 text-body-sm text-foreground outline-none"
+                className="w-full rounded-2xl bg-slate-50 border-none px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary-500 transition-all"
               />
             </div>
 
             {/* Botón limpiar filtros */}
-            <div className="flex items-end">
+            <div className="lg:col-span-4 flex justify-end gap-3 mt-4">
               <button
                 onClick={clearFiltros}
-                className="w-full px-3 py-2 rounded-lg bg-white shadow-neu text-muted-foreground font-medium text-body-sm transition-all hover:shadow-neu-lg"
+                className="px-6 py-3 rounded-2xl bg-white border border-slate-200 text-slate-500 font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
               >
-                Limpiar filtros
+                Resetear Filtros
               </button>
             </div>
           </div>
@@ -257,95 +205,75 @@ export function HistorialMPFiltrable({
       <div className="flex justify-end">
         <button
           onClick={handleExportCSV}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all hover:shadow-neu-lg active:shadow-neu-inset"
+          className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest transition-all hover:bg-slate-800 shadow-lg shadow-slate-200"
         >
-          <Download className="w-3.5 h-3.5" />
-          Exportar CSV
+          <Download className="w-4 h-4" />
+          Descargar Reporte (CSV)
         </button>
       </div>
 
       {/* Tabla */}
       {historialFiltrado.length === 0 ? (
-        <div className="rounded-2xl bg-neu-base shadow-neu p-8 text-center">
-          <p className="text-body-sm text-muted-foreground">Sin movimientos en el período</p>
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-12 text-center">
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Sin movimientos en el período seleccionado</p>
         </div>
       ) : (
-        <div className="rounded-2xl bg-neu-base shadow-neu overflow-hidden">
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full">
               <thead>
-                <tr className="border-b border-black/5">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
-                    Fecha
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
-                    Código
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
-                    Material
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
-                    Bodega
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
-                    Tipo Movimiento
-                  </th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
-                    Cantidad
-                  </th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
-                    Costo Unitario
-                  </th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
-                    Costo Total
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
-                    Registrado por
-                  </th>
+                <tr className="bg-slate-50/50 border-b border-slate-100">
+                  <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Fecha / Registro</th>
+                  <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Referencia</th>
+                  <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Material</th>
+                  <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Origen / Bodega</th>
+                  <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Tipo OPE</th>
+                  <th className="text-right px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Cantidad</th>
+                  <th className="text-right px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Costo Total</th>
+                  <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Operador</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-black/5">
+              <tbody className="divide-y divide-slate-50">
                 {historialFiltrado.map(h => (
-                  <tr key={h.id} className="hover:bg-black/2 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">
+                  <tr key={h.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-slate-200" />
+                        <span className="text-xs font-bold text-slate-500 tracking-tight">
                           {formatDate(h.fecha_movimiento)}
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <p className="text-body-sm font-mono font-medium text-foreground">{h.codigo}</p>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <p className="text-xs font-black text-slate-900 group-hover:text-primary-600 transition-colors">{h.codigo}</p>
                     </td>
-                    <td className="px-4 py-3">
-                      <p className="text-body-sm text-foreground">{h.nombre}</p>
+                    <td className="px-6 py-4 min-w-[150px]">
+                      <p className="text-xs font-bold text-slate-700 leading-tight">{h.nombre}</p>
                     </td>
-                    <td className="px-4 py-3">
-                      <p className="text-body-sm text-foreground">{h.bodega_nombre}</p>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-slate-400">
+                      {h.bodega_nombre}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <span
-                        className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
-                          h.cantidad > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        className={`inline-flex px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${
+                          h.cantidad > 0 
+                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+                            : 'bg-rose-50 text-rose-600 border border-rose-100'
                         }`}
                       >
                         {h.tipo_movimiento}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <p className={`text-body-sm font-medium ${h.cantidad > 0 ? 'text-green-700' : 'text-red-700'}`}>
-                        {h.cantidad.toFixed(2)} {h.unidad}
+                    <td className="px-6 py-4 text-right whitespace-nowrap">
+                      <p className={`text-xs font-black ${h.cantidad > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {h.cantidad > 0 ? '+' : ''}{h.cantidad.toFixed(2)} <span className="text-[10px] font-bold text-slate-400 uppercase ml-0.5">{h.unit_of_measure || h.unidad}</span>
                       </p>
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <p className="text-body-sm text-foreground">${(h.costo_unitario ?? 0).toFixed(2)}</p>
+                    <td className="px-6 py-4 text-right whitespace-nowrap">
+                      <p className="text-xs font-black text-slate-900">${(h.costo_total ?? 0).toLocaleString('es-CO', { maximumFractionDigits: 0 })}</p>
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <p className="text-body-sm font-medium text-foreground">${(h.costo_total ?? 0).toFixed(2)}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <p className="text-xs text-muted-foreground">{h.usuario ?? 'Sistema'}</p>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{h.usuario || 'Sistema'}</p>
                     </td>
                   </tr>
                 ))}

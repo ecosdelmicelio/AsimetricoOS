@@ -45,28 +45,28 @@ export function ProductosTabs({
         icon={Package}
       />
 
-      {/* Tabs */}
-      <div className="flex gap-3">
+      {/* Tabs Premium */}
+      <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
         {TABS.map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left ${
+            className={`flex items-center gap-4 px-6 py-4 rounded-[28px] transition-all min-w-[280px] group border-2 ${
               tab === t.id
-                ? 'bg-neu-base shadow-neu-inset border-2 border-primary-400'
-                : 'bg-neu-base shadow-neu border-2 border-transparent hover:shadow-neu-lg'
+                ? 'bg-white border-slate-900 shadow-xl shadow-slate-100 scale-[1.02]'
+                : 'bg-white border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 opacity-70 hover:opacity-100'
             }`}
           >
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-              tab === t.id ? 'bg-primary-100' : 'bg-neu-base shadow-neu-inset'
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform duration-500 group-hover:scale-110 ${
+              tab === t.id ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-400'
             }`}>
-              <t.Icon className={`w-4 h-4 ${tab === t.id ? 'text-primary-600' : 'text-muted-foreground'}`} />
+              <t.Icon className="w-5 h-5" />
             </div>
-            <div>
-              <p className={`text-body-sm font-semibold ${tab === t.id ? 'text-primary-700' : 'text-foreground'}`}>
+            <div className="min-w-0">
+              <p className={`text-[11px] font-black uppercase tracking-widest leading-none mb-1.5 ${tab === t.id ? 'text-slate-900' : 'text-slate-400'}`}>
                 {t.label}
               </p>
-              <p className="text-xs text-muted-foreground">{t.sub}</p>
+              <p className="text-[10px] text-slate-400 font-bold tracking-tight truncate uppercase opacity-80">{t.sub}</p>
             </div>
           </button>
         ))}

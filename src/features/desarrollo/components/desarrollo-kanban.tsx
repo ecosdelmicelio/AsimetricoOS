@@ -25,32 +25,27 @@ const COLUMNAS_KANBAN: StatusDesarrollo[] = [
 export function DesarrolloKanbanBoard({ desarrollos }: Props) {
   return (
     <div className="w-full">
-      {/* 
-        Para evitar scroll horizontal, usamos 'grid' que se adapte según la pantalla.
-        En Full HD / Pantallas anchas (xl/2xl) mostrará 7 columnas (grid-cols-7).
-        En Laptops (lg) mostrará 4 o 5, y el resto bajan abajo envolviéndose.
-      */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-6">
         {COLUMNAS_KANBAN.map((status) => {
           const cards = desarrollos.filter(d => d.status === status)
           
           return (
-            <div key={status} className="flex flex-col h-full bg-neu-base/50 rounded-2xl pb-4">
+            <div key={status} className="flex flex-col h-full bg-slate-50/50 rounded-[32px] border border-slate-200/50 shadow-sm min-w-0">
               {/* Kanban Column Header */}
-              <div className="sticky top-0 z-10 p-3 mb-2 flex items-center justify-between border-b border-border/40">
-                <div className="flex items-center gap-2">
-                  <div className={`w-2.5 h-2.5 rounded-full ${STATUS_COLORS[status].split(' ')[0]}`} />
-                  <h3 className="font-semibold text-foreground text-sm">
+              <div className="sticky top-0 z-10 p-5 mb-2 flex items-center justify-between border-b border-slate-200/50">
+                <div className="flex items-center gap-3">
+                  <div className={`w-3 h-3 rounded-full shadow-inner shrink-0 ${STATUS_COLORS[status].split(' ')[0]}`} />
+                  <h3 className="font-black text-slate-700 text-[11px] uppercase tracking-widest leading-none truncate">
                     {STATUS_LABELS[status]}
                   </h3>
                 </div>
-                <span className="text-xs font-bold text-muted-foreground bg-neu-base px-2 py-0.5 rounded-full shadow-neu-inset">
+                <span className="text-[10px] font-black text-slate-500 bg-slate-200/50 px-2.5 py-1 rounded-xl shrink-0">
                   {cards.length}
                 </span>
               </div>
 
               {/* Kanban Cards */}
-              <div className="flex flex-col gap-3 px-2">
+              <div className="flex flex-col gap-4 px-3 pb-6 flex-1">
                 {cards.map(card => {
                   const diasActivo = Math.floor((Date.now() - new Date(card.created_at || 0).getTime()) / (1000 * 60 * 60 * 24))
                   const isUrgente = card.prioridad === 'urgente'
@@ -60,64 +55,63 @@ export function DesarrolloKanbanBoard({ desarrollos }: Props) {
                     <Link
                       key={card.id}
                       href={`/desarrollo/${card.id}`}
-                      className="group flex flex-col p-3 rounded-xl bg-neu-base shadow-neu hover:shadow-neu-lg hover:-translate-y-0.5 transition-all outline-none"
+                      className="group flex flex-col p-4 rounded-3xl bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:border-slate-300 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden outline-none"
                     >
+                      {/* Status Accent */}
+                      {isUrgente && (
+                        <div className="absolute top-0 inset-x-0 h-1 bg-red-500" />
+                      )}
+
                       {/* Header de la Tarjeta */}
-                      <div className="flex items-start justify-between mb-2 gap-2">
-                        <span className="text-[10px] font-bold text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded uppercase tracking-wider truncate max-w-[80%]">
+                      <div className="flex items-start justify-between mb-3 gap-2">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate max-w-[85%]">
                           {card.temp_id}
                         </span>
                         {isDisonancia && (
-                          <AlertCircle className="w-3.5 h-3.5 text-red-500 fill-red-100 shrink-0" />
+                          <div className="w-4 h-4 rounded-full bg-rose-50 flex items-center justify-center border border-rose-100 shrink-0">
+                             <AlertCircle className="w-2.5 h-2.5 text-rose-500" />
+                          </div>
                         )}
                       </div>
 
                       {/* Título de Proyecto */}
-                      <h4 className="font-semibold text-sm text-foreground leading-snug group-hover:text-primary-700 transition-colors mb-2">
+                      <h4 className="font-black text-[13px] text-slate-900 leading-snug group-hover:text-primary-600 transition-colors mb-3 tracking-tight">
                         {card.nombre_proyecto}
                       </h4>
 
-                      {/* Info de Chasis / Producto */}
-                      {card.productos ? (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
-                          <Package className="w-3.5 h-3.5" />
-                          <span className="truncate">Chasis: {card.productos.referencia}</span>
+                      {/* Info de Producto */}
+                      <div className="bg-slate-50/50 rounded-2xl p-2.5 border border-slate-100 mb-3">
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
+                          <Package className="w-3.5 h-3.5 opacity-50" />
+                          <span className="truncate">
+                            {card.productos ? `${card.productos.referencia}` : `${card.categoria_producto}`}
+                          </span>
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
-                          <Package className="w-3.5 h-3.5" />
-                          <span className="truncate">{card.categoria_producto} (Nuevo)</span>
-                        </div>
-                      )}
+                      </div>
 
                       {/* Footer Info */}
-                      <div className="mt-auto pt-2 border-t border-border/40 flex items-center justify-between text-[11px] font-medium">
-                        <div className="flex items-center gap-1 text-muted-foreground">
+                      <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-slate-400 tracking-tighter">
                           <Clock className="w-3 h-3" />
                           <span>{diasActivo}d trans.</span>
                         </div>
                         
                         {(card as any).tipo_muestra_asignada ? (
-                          <span className="bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded font-bold">
-                            TIPO {(card as any).tipo_muestra_asignada}
+                          <span className="bg-slate-900 text-white px-2 py-0.5 rounded-lg font-black text-[9px] uppercase tracking-widest">
+                            { (card as any).tipo_muestra_asignada }
                           </span>
                         ) : (
-                          <span className="text-gray-400">Sin Tipo</span>
+                          <span className="text-slate-200 font-black text-[9px] uppercase tracking-widest">S/T</span>
                         )}
                       </div>
-                      
-                      {/* Indicator line for urgents */}
-                      {isUrgente && (
-                        <div className="mt-2 w-full h-1 bg-red-400 rounded-full" />
-                      )}
                     </Link>
                   )
                 })}
 
-                {/* Empty State visual por columna */}
+                {/* Empty State per column */}
                 {cards.length === 0 && (
-                  <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-border/40 rounded-xl bg-transparent">
-                    <p className="text-xs font-medium text-muted-foreground text-center">Sin muestras</p>
+                  <div className="flex flex-col items-center justify-center py-10 border-2 border-dashed border-slate-200/50 rounded-[28px] bg-transparent transition-colors hover:bg-slate-100/30 group">
+                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest group-hover:text-slate-400 transition-colors">Vacio</p>
                   </div>
                 )}
               </div>

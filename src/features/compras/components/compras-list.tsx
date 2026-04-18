@@ -103,20 +103,20 @@ export async function ComprasList() {
       )}
 
       {ocs.length === 0 ? (
-        <div className="rounded-2xl bg-neu-base shadow-neu p-12 flex flex-col items-center text-center">
-          <div className="w-16 h-16 rounded-3xl bg-neu-base shadow-neu-inset flex items-center justify-center mb-4">
-            <ShoppingCart className="w-8 h-8 text-muted-foreground" />
+        <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm p-24 flex flex-col items-center text-center max-w-2xl mx-auto mt-12 group">
+          <div className="w-24 h-24 rounded-[32px] bg-slate-50 flex items-center justify-center mb-8 border border-slate-100 shadow-inner group-hover:scale-110 transition-transform duration-500">
+            <ShoppingCart className="w-10 h-10 text-slate-300" />
           </div>
-          <p className="text-foreground font-black text-xl">Tablero Vacío</p>
-          <p className="text-muted-foreground text-sm mt-1 max-w-sm">
-            Tus órdenes fluirán por este tablero. Comienza registrando la primera a tu proveedor.
+          <p className="text-slate-900 font-black text-2xl tracking-tighter uppercase">Terminal de Adquisiciones Vacío</p>
+          <p className="text-slate-400 text-sm mt-3 max-w-sm font-medium leading-relaxed">
+            Todas tus órdenes de compra fluirán por este tablero. Comienza registrando la primera interacción con tus proveedores de MP o PT.
           </p>
           <Link
             href="/compras/nueva"
-            className="mt-6 flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary-600 text-white font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary-500/30"
+            className="mt-10 flex items-center gap-3 px-8 py-4 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
           >
-            <Plus className="w-4 h-4" />
-            Crear primera OC
+            <Plus className="w-5 h-5" />
+            Emitir Nueva Orden (OC)
           </Link>
         </div>
       ) : (

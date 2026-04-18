@@ -59,64 +59,71 @@ export function IndicadoresDesarrolloHeader({ desarrollos }: Props) {
   }, [])
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       {/* 1. Pipeline */}
-      <div className="bg-neu-base rounded-2xl shadow-neu p-4">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 rounded-xl bg-blue-100 text-blue-700">
-            <Activity className="w-5 h-5" />
+      <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group">
+        <div className="absolute -right-4 -top-4 w-20 h-20 bg-blue-50/50 rounded-full group-hover:scale-150 transition-transform duration-700" />
+        <div className="flex items-center gap-3 mb-6 relative">
+          <div className="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center border border-blue-100">
+            <Activity className="w-5 h-5 text-blue-600" />
           </div>
-          <h3 className="font-semibold text-foreground text-body-sm">Pipeline & Flujo</h3>
+          <h3 className="font-black text-slate-900 text-xs uppercase tracking-widest leading-none">Pipeline & Flujo</h3>
         </div>
-        <div className="flex items-end justify-between mt-4">
+        <div className="flex items-end justify-between relative">
           <div>
-            <p className="text-display-sm font-bold text-foreground">{pipelineStats.activos}</p>
-            <p className="text-muted-foreground text-xs font-medium">Activos en Muestreo</p>
+            <p className="text-4xl font-black text-slate-900 tracking-tighter">{pipelineStats.activos}</p>
+            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Activos en Muestreo</p>
           </div>
           <div className="text-right">
-            <p className="text-body-sm font-semibold text-foreground">{pipelineStats.total} Históricos</p>
-            <p className="text-xs text-red-600 font-bold">{pipelineStats.urgentes} Urgentes</p>
+            <p className="text-xs font-black text-slate-900 tracking-tight">{pipelineStats.total} Históricos</p>
+            <div className="inline-flex px-2 py-0.5 mt-1 rounded-lg bg-rose-50 border border-rose-100 text-[9px] font-black text-rose-600 uppercase tracking-widest">
+              {pipelineStats.urgentes} Urgentes
+            </div>
           </div>
         </div>
       </div>
 
       {/* 2. LeadTime I+D */}
-      <div className="bg-neu-base rounded-2xl shadow-neu p-4">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 rounded-xl bg-purple-100 text-purple-700">
-            <Clock className="w-5 h-5" />
+      <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group">
+        <div className="absolute -right-4 -top-4 w-20 h-20 bg-violet-50/50 rounded-full group-hover:scale-150 transition-transform duration-700" />
+        <div className="flex items-center gap-3 mb-6 relative">
+          <div className="w-10 h-10 rounded-2xl bg-violet-50 flex items-center justify-center border border-violet-100">
+            <Clock className="w-5 h-5 text-violet-600" />
           </div>
-          <h3 className="font-semibold text-foreground text-body-sm">Tiempos Muestreo (I+D)</h3>
+          <h3 className="font-black text-slate-900 text-xs uppercase tracking-widest leading-none">Tiempos I+D (PLM)</h3>
         </div>
-        <div className="flex items-end justify-between mt-4">
+        <div className="flex items-end justify-between relative">
           <div>
-            <p className="text-display-sm font-bold text-foreground">{leadTimeStats.promedio} <span className="text-body-sm text-muted-foreground font-normal">días</span></p>
-            <p className="text-muted-foreground text-xs font-medium">Promedio Global (Recientes)</p>
+            <div className="flex items-baseline gap-1">
+              <p className="text-4xl font-black text-slate-900 tracking-tighter">{leadTimeStats.promedio}</p>
+              <p className="text-slate-400 text-sm font-bold tracking-tight">días</p>
+            </div>
+            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Promedio de Cierre</p>
           </div>
-          <div className="text-right">
-            <p className="text-xs font-semibold text-muted-foreground mb-1">{leadTimeStats.muestrasD} Comerciales (Tipo D)</p>
-            <p className="text-xs font-semibold text-muted-foreground">{leadTimeStats.muestrasA} Internas (Tipo A)</p>
+          <div className="text-right space-y-1">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{leadTimeStats.muestrasD} Comerciales (T-D)</p>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{leadTimeStats.muestrasA} Internas (T-A)</p>
           </div>
         </div>
       </div>
 
       {/* 3. Innovación Comercial ROI */}
-      <div className="bg-neu-base rounded-2xl shadow-neu p-4">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 rounded-xl bg-green-100 text-green-700">
-            <TrendingUp className="w-5 h-5" />
+      <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group">
+        <div className="absolute -right-4 -top-4 w-20 h-20 bg-emerald-50/50 rounded-full group-hover:scale-150 transition-transform duration-700" />
+        <div className="flex items-center gap-3 mb-6 relative">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-50 flex items-center justify-center border border-emerald-100">
+            <TrendingUp className="w-5 h-5 text-emerald-600" />
           </div>
-          <h3 className="font-semibold text-foreground text-body-sm">Retorno de Innovación (ROI)</h3>
+          <h3 className="font-black text-slate-900 text-xs uppercase tracking-widest leading-none">Impacto Comercial</h3>
         </div>
-        <div className="flex items-end justify-between mt-4">
+        <div className="flex items-end justify-between relative">
           <div>
-            {/* The format should be x.x% */}
-            <p className="text-display-sm font-bold text-foreground">{kpiInnovacion}%</p>
-            <p className="text-muted-foreground text-xs font-medium">% Ventas sobre Nvos Productos</p>
+            <p className="text-4xl font-black text-slate-900 tracking-tighter">{kpiInnovacion}%</p>
+            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">ROI Nuevos Productos</p>
           </div>
           <div className="text-right">
-            <p className="text-xs font-semibold text-muted-foreground mb-1">Últimos 24 meses</p>
-            <p className="text-[10px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full inline-block">VIVO OVs</p>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Últimos 24 meses</p>
+            <div className="inline-flex px-2 py-0.5 rounded-lg bg-emerald-50 border border-emerald-100 text-[9px] font-black text-emerald-600 uppercase tracking-widest">VIVO OVs</div>
           </div>
         </div>
       </div>
