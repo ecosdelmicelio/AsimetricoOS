@@ -124,8 +124,8 @@ export async function getSugerenciaNivel(terceroId: string): Promise<{ sugerenci
     .select('id, valor')
     .in('id', ['finanzas_umbral_n2_unidades', 'finanzas_umbral_n3_unidades'])
   
-  const umbralN2 = Number(ajustes?.find(a => a.id === 'finanzas_umbral_n2_unidades')?.valor) || 500
-  const umbralN3 = Number(ajustes?.find(a => a.id === 'finanzas_umbral_n3_unidades')?.valor) || 5000
+  const umbralN2 = Number(ajustes?.find((a: any) => a.id === 'finanzas_umbral_n2_unidades')?.valor) || 500
+  const umbralN3 = Number(ajustes?.find((a: any) => a.id === 'finanzas_umbral_n3_unidades')?.valor) || 5000
 
   // 2. Sumar unidades despachadas en el último año para este cliente
   // Asumimos que podemos sumar ov_detalle vinculadas a OVs del cliente creadas en los últimos 365 días

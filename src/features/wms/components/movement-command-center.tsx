@@ -78,7 +78,7 @@ export function MovementCommandCenter({ bodegas }: Props) {
     
     // Configuración inicial según modo
     if (mode === 'INGRESAR') {
-      const ocs = await getCenterPendingPurchases()
+      const ocs = await getCenterPendingPurchases(activeBodegaId)
       setSource({
         level: 'PURCHASE_ORDERS',
         breadcrumb: ['Ingresos'],
@@ -141,8 +141,8 @@ export function MovementCommandCenter({ bodegas }: Props) {
     setLoading(true)
     let nextLevel: HierarchyLevel = currentState.level
     let nextItems: GridItem[] = []
-    // Si ya estamos en el nivel terminal o es un elemento de acción final (ITEMS, REASONS, BINES)
-    if (currentState.level === 'ITEMS' || currentState.level === 'REASONS' || currentState.level === 'BINES') {
+    // Si ya estamos en el nivel terminal o es un elemento de acción final (ITEMS, REASONS)
+    if (currentState.level === 'ITEMS' || currentState.level === 'REASONS') {
       setState(prev => ({ ...prev, id: item.id })) // Marcamos el ID activo
       if (panel === 'source' && mode === 'INGRESAR') {
         const meta = item.metadata || {}

@@ -79,7 +79,7 @@ export function BinAdjustmentModal({ isOpen, onClose, bin, onSuccess }: Props) {
         }
       })
       
-      if (res.error) {
+      if (res && 'error' in res && res.error) {
         setError(res.error)
       } else {
         onSuccess()

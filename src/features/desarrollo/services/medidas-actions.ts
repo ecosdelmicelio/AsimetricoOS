@@ -80,9 +80,9 @@ export async function guardarMedidasTemplate(template: Omit<DesarrolloMedidaTemp
       is_default:         template.is_default,
       puntos_medida:      template.puntos_medida,
       updated_at:         new Date().toISOString()
-    }, {
+    } as any, {
       onConflict: 'categoria_producto, cliente_id, nombre_fit'
-    })
+    } as any)
     .select()
     .single()
 

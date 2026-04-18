@@ -22,6 +22,7 @@ export interface Producto {
   minimo_orden: number
   multiplo_orden: number
   leadtime_dias: number
+  partida_arancelaria: string | null
   created_at: string
   updated_at: string
 }

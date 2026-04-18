@@ -20,7 +20,7 @@ export function ProductoEstadoToggle({ productoId, estadoActual }: Props) {
   function handleToggle() {
     startTransition(async () => {
       await updateProducto(productoId, {
-        estado: esActivo ? 'descontinuado' : 'activo',
+        estado: esActivo ? 'inactivo' : 'activo',
       })
       router.refresh()
     })

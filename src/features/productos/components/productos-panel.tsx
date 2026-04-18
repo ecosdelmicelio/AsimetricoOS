@@ -179,9 +179,9 @@ function ProductRow({
       <td className="px-3 py-2 min-w-[150px]">
         <div className="flex items-center gap-2">
           {p.tipo_producto === 'fabricado' ? (
-            <Wrench className="w-3 h-3 text-primary-500 shrink-0" title="Fabricado" />
+            <Wrench className="w-3 h-3 text-primary-500 shrink-0" />
           ) : (
-            <Package className="w-3 h-3 text-amber-500 shrink-0" title="Comercializado" />
+            <Package className="w-3 h-3 text-amber-500 shrink-0" />
           )}
           <p className="text-xs font-medium text-foreground truncate max-w-[150px] sm:max-w-[250px]">{p.nombre}</p>
         </div>
@@ -366,15 +366,15 @@ function ProductForm({
             nombre,
             tipo_producto: tipo,
             tipo_distribucion: tipoDistribucion,
-            referencia_cliente: referenciaCliente ? referenciaCliente : null,
-            marca_id: marcaId ? marcaId : null,
+            referencia_cliente: referenciaCliente ? referenciaCliente : undefined,
+            marca_id: marcaId ? marcaId : undefined,
             estado,
             color: color ? color : undefined,
-            nombre_comercial: nombreComercial ? nombreComercial : null,
-            precio_base: precioN1 ? parseFloat(precioN1) : null,
-            precio_estandar: precioN2 ? parseFloat(precioN2) : null,
-            precio_n3: precioN3 ? parseFloat(precioN3) : null,
-            partida_arancelaria: partidaArancelaria.trim() || null,
+            nombre_comercial: nombreComercial ? nombreComercial : undefined,
+            precio_base: precioN1 ? parseFloat(precioN1) : undefined,
+            precio_estandar: precioN2 ? parseFloat(precioN2) : undefined,
+            precio_n3: precioN3 ? parseFloat(precioN3) : undefined,
+            partida_arancelaria: partidaArancelaria.trim() || undefined,
             atributos: atributosSeleccionados,
           })
         : await createProducto({
@@ -382,14 +382,14 @@ function ProductForm({
             nombre,
             tipo_producto: tipo,
             tipo_distribucion: tipoDistribucion,
-            referencia_cliente: referenciaCliente ? referenciaCliente : null,
-            marca_id: marcaId ? marcaId : null,
+            referencia_cliente: referenciaCliente ? referenciaCliente : undefined,
+            marca_id: marcaId ? marcaId : undefined,
             color: color ? color : undefined,
-            nombre_comercial: nombreComercial ? nombreComercial : null,
-            precio_base: precioN1 ? parseFloat(precioN1) : null,
-            precio_estandar: precioN2 ? parseFloat(precioN2) : null,
-            precio_n3: precioN3 ? parseFloat(precioN3) : null,
-            partida_arancelaria: partidaArancelaria.trim() || null,
+            nombre_comercial: nombreComercial ? nombreComercial : undefined,
+            precio_base: precioN1 ? parseFloat(precioN1) : undefined,
+            precio_estandar: precioN2 ? parseFloat(precioN2) : undefined,
+            precio_n3: precioN3 ? parseFloat(precioN3) : undefined,
+            partida_arancelaria: partidaArancelaria.trim() || undefined,
             atributos: atributosSeleccionados,
           })
 

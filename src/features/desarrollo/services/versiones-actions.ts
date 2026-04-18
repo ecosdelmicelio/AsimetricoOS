@@ -13,7 +13,7 @@ export async function crearNuevaVersion(
   desarrolloId: string,
   input: {
     notas_version: string
-    bom_data?: Record<string, unknown>[]
+    bom_data?: Record<string, any>
     cuadro_medidas?: Record<string, unknown>
     comportamiento_tela?: string
   }
@@ -61,7 +61,7 @@ export async function actualizarVersion(
   versionId: string,
   desarrolloId: string,
   updates: Partial<{
-    bom_data: Record<string, unknown>[]
+    bom_data: Record<string, any>
     cuadro_medidas: Record<string, unknown>
     comportamiento_tela: string
     notas_version: string

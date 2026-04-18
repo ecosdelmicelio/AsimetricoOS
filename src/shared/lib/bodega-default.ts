@@ -13,7 +13,7 @@ export async function getBodegaDefault() {
     .from('configuracion')
     .select('valor')
     .eq('clave', 'bodega_default_id')
-    .single()
+    .single() as { data: { valor: string } | null }
 
   if (!configData?.valor) {
     throw new Error('bodega_default_id no configurada en tabla configuracion')
@@ -47,7 +47,7 @@ export async function getBodegaDefaultId(): Promise<string> {
     .from('configuracion')
     .select('valor')
     .eq('clave', 'bodega_default_id')
-    .single()
+    .single() as { data: { valor: string } | null }
 
   if (!data?.valor) {
     throw new Error('bodega_default_id no configurada en tabla configuracion')

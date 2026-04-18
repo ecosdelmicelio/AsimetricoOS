@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      activos_fijos: {
+        Row: {
+          created_at: string | null
+          depreciacion_mes: number | null
+          estado: string
+          fecha_compra: string
+          id: string
+          nombre: string
+          valor_compra: number
+          vida_util_meses: number
+        }
+        Insert: {
+          created_at?: string | null
+          depreciacion_mes?: number | null
+          estado?: string
+          fecha_compra: string
+          id?: string
+          nombre: string
+          valor_compra: number
+          vida_util_meses?: number
+        }
+        Update: {
+          created_at?: string | null
+          depreciacion_mes?: number | null
+          estado?: string
+          fecha_compra?: string
+          id?: string
+          nombre?: string
+          valor_compra?: number
+          vida_util_meses?: number
+        }
+        Relationships: []
+      }
       ajuste_items: {
         Row: {
           ajuste_id: string
@@ -126,6 +159,27 @@ export type Database = {
           },
         ]
       }
+      ajustes_sistema: {
+        Row: {
+          descripcion: string | null
+          id: string
+          updated_at: string | null
+          valor: Json
+        }
+        Insert: {
+          descripcion?: string | null
+          id: string
+          updated_at?: string | null
+          valor: Json
+        }
+        Update: {
+          descripcion?: string | null
+          id?: string
+          updated_at?: string | null
+          valor?: Json
+        }
+        Relationships: []
+      }
       atributos_mp: {
         Row: {
           abreviacion: string | null
@@ -177,6 +231,27 @@ export type Database = {
           id?: string
           tipo?: string
           valor?: string
+        }
+        Relationships: []
+      }
+      balance_config: {
+        Row: {
+          clave: string
+          created_at: string | null
+          nota: string | null
+          valor: number | null
+        }
+        Insert: {
+          clave: string
+          created_at?: string | null
+          nota?: string | null
+          valor?: number | null
+        }
+        Update: {
+          clave?: string
+          created_at?: string | null
+          nota?: string | null
+          valor?: number | null
         }
         Relationships: []
       }
@@ -444,6 +519,35 @@ export type Database = {
         }
         Relationships: []
       }
+      categorias_gastos: {
+        Row: {
+          created_at: string | null
+          id: string
+          nombre: string
+          parent_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          nombre: string
+          parent_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          nombre?: string
+          parent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categorias_gastos_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_gastos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       codigo_schemas: {
         Row: {
           bloqueado: boolean | null
@@ -577,59 +681,126 @@ export type Database = {
         }
         Relationships: []
       }
+      cuentas_bancarias: {
+        Row: {
+          activa: boolean | null
+          created_at: string | null
+          entidad: string | null
+          id: string
+          moneda: string | null
+          nombre: string
+          numero_cuenta: string | null
+          saldo_actual: number | null
+          tipo: string
+          updated_at: string | null
+        }
+        Insert: {
+          activa?: boolean | null
+          created_at?: string | null
+          entidad?: string | null
+          id?: string
+          moneda?: string | null
+          nombre: string
+          numero_cuenta?: string | null
+          saldo_actual?: number | null
+          tipo: string
+          updated_at?: string | null
+        }
+        Update: {
+          activa?: boolean | null
+          created_at?: string | null
+          entidad?: string | null
+          id?: string
+          moneda?: string | null
+          nombre?: string
+          numero_cuenta?: string | null
+          saldo_actual?: number | null
+          tipo?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       desarrollo: {
         Row: {
           categoria_producto: string
+          chasis_producto_id: string | null
           cliente_id: string | null
           complejidad: string
           creado_por: string | null
           created_at: string | null
+          disonancia_activa: boolean | null
+          estado_cierre: string | null
           fecha_compromiso: string | null
+          fecha_vencimiento_hold_dt: string | null
           id: string
+          json_alta_resolucion: Json | null
+          json_auditoria: Json | null
           nombre_proyecto: string
           notas: string | null
           prioridad: string
           producto_final_id: string | null
           status: string
           temp_id: string
+          tipo_muestra_asignada: string | null
           tipo_producto: string
           updated_at: string | null
         }
         Insert: {
           categoria_producto: string
+          chasis_producto_id?: string | null
           cliente_id?: string | null
           complejidad?: string
           creado_por?: string | null
           created_at?: string | null
+          disonancia_activa?: boolean | null
+          estado_cierre?: string | null
           fecha_compromiso?: string | null
+          fecha_vencimiento_hold_dt?: string | null
           id?: string
+          json_alta_resolucion?: Json | null
+          json_auditoria?: Json | null
           nombre_proyecto: string
           notas?: string | null
           prioridad?: string
           producto_final_id?: string | null
           status?: string
           temp_id?: string
+          tipo_muestra_asignada?: string | null
           tipo_producto: string
           updated_at?: string | null
         }
         Update: {
           categoria_producto?: string
+          chasis_producto_id?: string | null
           cliente_id?: string | null
           complejidad?: string
           creado_por?: string | null
           created_at?: string | null
+          disonancia_activa?: boolean | null
+          estado_cierre?: string | null
           fecha_compromiso?: string | null
+          fecha_vencimiento_hold_dt?: string | null
           id?: string
+          json_alta_resolucion?: Json | null
+          json_auditoria?: Json | null
           nombre_proyecto?: string
           notas?: string | null
           prioridad?: string
           producto_final_id?: string | null
           status?: string
           temp_id?: string
+          tipo_muestra_asignada?: string | null
           tipo_producto?: string
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "desarrollo_chasis_producto_id_fkey"
+            columns: ["chasis_producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "desarrollo_cliente_id_fkey"
             columns: ["cliente_id"]
@@ -930,6 +1101,47 @@ export type Database = {
             columns: ["version_id"]
             isOneToOne: false
             referencedRelation: "desarrollo_versiones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      desarrollo_medidas_templates: {
+        Row: {
+          categoria_producto: string
+          cliente_id: string | null
+          created_at: string | null
+          id: string
+          is_default: boolean | null
+          nombre_fit: string
+          puntos_medida: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          categoria_producto: string
+          cliente_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          nombre_fit: string
+          puntos_medida?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          categoria_producto?: string
+          cliente_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          nombre_fit?: string
+          puntos_medida?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "desarrollo_medidas_templates_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "terceros"
             referencedColumns: ["id"]
           },
         ]
@@ -1278,6 +1490,45 @@ export type Database = {
           },
         ]
       }
+      empleados: {
+        Row: {
+          area: Database["public"]["Enums"]["area_negocio"]
+          cargo: string
+          created_at: string | null
+          estado: string
+          fecha_ingreso: string
+          id: string
+          nivel_riesgo_arl: number
+          nombre: string
+          salario_base: number
+          tipo_contrato: string | null
+        }
+        Insert: {
+          area: Database["public"]["Enums"]["area_negocio"]
+          cargo: string
+          created_at?: string | null
+          estado?: string
+          fecha_ingreso?: string
+          id?: string
+          nivel_riesgo_arl?: number
+          nombre: string
+          salario_base?: number
+          tipo_contrato?: string | null
+        }
+        Update: {
+          area?: Database["public"]["Enums"]["area_negocio"]
+          cargo?: string
+          created_at?: string | null
+          estado?: string
+          fecha_ingreso?: string
+          id?: string
+          nivel_riesgo_arl?: number
+          nombre?: string
+          salario_base?: number
+          tipo_contrato?: string | null
+        }
+        Relationships: []
+      }
       entrega_detalle: {
         Row: {
           cantidad_entregada: number
@@ -1382,6 +1633,69 @@ export type Database = {
             columns: ["reporte_corte_id"]
             isOneToOne: false
             referencedRelation: "reporte_corte"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gastos: {
+        Row: {
+          area: Database["public"]["Enums"]["area_negocio"]
+          cantidad: number
+          categoria_id: string | null
+          costo_unitario: number
+          created_at: string | null
+          descripcion: string
+          es_cif: boolean
+          fecha: string
+          id: string
+          monto_total: number
+          registrado_por: string | null
+          tercero_id: string | null
+          tipo: Database["public"]["Enums"]["tipo_gasto"]
+        }
+        Insert: {
+          area: Database["public"]["Enums"]["area_negocio"]
+          cantidad?: number
+          categoria_id?: string | null
+          costo_unitario?: number
+          created_at?: string | null
+          descripcion: string
+          es_cif?: boolean
+          fecha?: string
+          id?: string
+          monto_total?: number
+          registrado_por?: string | null
+          tercero_id?: string | null
+          tipo: Database["public"]["Enums"]["tipo_gasto"]
+        }
+        Update: {
+          area?: Database["public"]["Enums"]["area_negocio"]
+          cantidad?: number
+          categoria_id?: string | null
+          costo_unitario?: number
+          created_at?: string | null
+          descripcion?: string
+          es_cif?: boolean
+          fecha?: string
+          id?: string
+          monto_total?: number
+          registrado_por?: string | null
+          tercero_id?: string | null
+          tipo?: Database["public"]["Enums"]["tipo_gasto"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gastos_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_gastos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gastos_tercero_id_fkey"
+            columns: ["tercero_id"]
+            isOneToOne: false
+            referencedRelation: "terceros"
             referencedColumns: ["id"]
           },
         ]
@@ -1580,6 +1894,7 @@ export type Database = {
           documento_tipo: string | null
           fecha_movimiento: string | null
           id: string
+          lote_interno: string | null
           material_id: string | null
           notas: string | null
           oc_id: string | null
@@ -1602,6 +1917,7 @@ export type Database = {
           documento_tipo?: string | null
           fecha_movimiento?: string | null
           id?: string
+          lote_interno?: string | null
           material_id?: string | null
           notas?: string | null
           oc_id?: string | null
@@ -1624,6 +1940,7 @@ export type Database = {
           documento_tipo?: string | null
           fecha_movimiento?: string | null
           id?: string
+          lote_interno?: string | null
           material_id?: string | null
           notas?: string | null
           oc_id?: string | null
@@ -1977,14 +2294,20 @@ export type Database = {
           created_at: string | null
           es_tela: boolean | null
           id: string
+          leadtime_dias: number | null
+          minimo_compra: number | null
+          multiplo_compra: number | null
           nombre: string
           partida_arancelaria: string | null
           referencia_proveedor: string | null
           rendimiento_kg: number | null
           saldo: number | null
           schema_id: string | null
+          stock_seguridad: number | null
           tipo_mp: string | null
+          tolerancia_recepcion_pct: number | null
           unidad: string
+          unidad_empaque: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1994,14 +2317,20 @@ export type Database = {
           created_at?: string | null
           es_tela?: boolean | null
           id?: string
+          leadtime_dias?: number | null
+          minimo_compra?: number | null
+          multiplo_compra?: number | null
           nombre: string
           partida_arancelaria?: string | null
           referencia_proveedor?: string | null
           rendimiento_kg?: number | null
           saldo?: number | null
           schema_id?: string | null
+          stock_seguridad?: number | null
           tipo_mp?: string | null
+          tolerancia_recepcion_pct?: number | null
           unidad?: string
+          unidad_empaque?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -2011,14 +2340,20 @@ export type Database = {
           created_at?: string | null
           es_tela?: boolean | null
           id?: string
+          leadtime_dias?: number | null
+          minimo_compra?: number | null
+          multiplo_compra?: number | null
           nombre?: string
           partida_arancelaria?: string | null
           referencia_proveedor?: string | null
           rendimiento_kg?: number | null
           saldo?: number | null
           schema_id?: string | null
+          stock_seguridad?: number | null
           tipo_mp?: string | null
+          tolerancia_recepcion_pct?: number | null
           unidad?: string
+          unidad_empaque?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -2027,6 +2362,63 @@ export type Database = {
             columns: ["schema_id"]
             isOneToOne: false
             referencedRelation: "codigo_schemas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      movimientos_tesoreria: {
+        Row: {
+          categoria: string | null
+          concepto: string
+          created_at: string | null
+          cuenta_id: string | null
+          documento_referencia: string | null
+          fecha: string | null
+          id: string
+          monto: number
+          registrado_por: string | null
+          tercero_id: string | null
+          tipo: string
+        }
+        Insert: {
+          categoria?: string | null
+          concepto: string
+          created_at?: string | null
+          cuenta_id?: string | null
+          documento_referencia?: string | null
+          fecha?: string | null
+          id?: string
+          monto: number
+          registrado_por?: string | null
+          tercero_id?: string | null
+          tipo: string
+        }
+        Update: {
+          categoria?: string | null
+          concepto?: string
+          created_at?: string | null
+          cuenta_id?: string | null
+          documento_referencia?: string | null
+          fecha?: string | null
+          id?: string
+          monto?: number
+          registrado_por?: string | null
+          tercero_id?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movimientos_tesoreria_cuenta_id_fkey"
+            columns: ["cuenta_id"]
+            isOneToOne: false
+            referencedRelation: "cuentas_bancarias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimientos_tesoreria_tercero_id_fkey"
+            columns: ["tercero_id"]
+            isOneToOne: false
+            referencedRelation: "terceros"
             referencedColumns: ["id"]
           },
         ]
@@ -2268,12 +2660,20 @@ export type Database = {
           es_muestra: boolean | null
           estado_documental: string
           estado_greige: string
+          estado_pago: string | null
           fecha_entrega_est: string
+          fecha_factura_proveedor: string | null
           fecha_oc: string
+          fecha_ultimo_pago: string | null
+          fecha_vencimiento: string | null
           id: string
           notas: string | null
+          numero_factura_proveedor: string | null
+          plazo_pago_dias: number | null
           proveedor_id: string | null
           tipo: string
+          total_facturado: number | null
+          total_pagado: number | null
           updated_at: string
         }
         Insert: {
@@ -2284,12 +2684,20 @@ export type Database = {
           es_muestra?: boolean | null
           estado_documental?: string
           estado_greige?: string
+          estado_pago?: string | null
           fecha_entrega_est: string
+          fecha_factura_proveedor?: string | null
           fecha_oc?: string
+          fecha_ultimo_pago?: string | null
+          fecha_vencimiento?: string | null
           id?: string
           notas?: string | null
+          numero_factura_proveedor?: string | null
+          plazo_pago_dias?: number | null
           proveedor_id?: string | null
           tipo?: string
+          total_facturado?: number | null
+          total_pagado?: number | null
           updated_at?: string
         }
         Update: {
@@ -2300,12 +2708,20 @@ export type Database = {
           es_muestra?: boolean | null
           estado_documental?: string
           estado_greige?: string
+          estado_pago?: string | null
           fecha_entrega_est?: string
+          fecha_factura_proveedor?: string | null
           fecha_oc?: string
+          fecha_ultimo_pago?: string | null
+          fecha_vencimiento?: string | null
           id?: string
           notas?: string | null
+          numero_factura_proveedor?: string | null
+          plazo_pago_dias?: number | null
           proveedor_id?: string | null
           tipo?: string
+          total_facturado?: number | null
+          total_pagado?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -2339,8 +2755,8 @@ export type Database = {
           fecha_promesa: string
           id: string
           notas: string | null
-          ov_id: string
-          taller_id: string
+          ov_id: string | null
+          taller_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -2356,8 +2772,8 @@ export type Database = {
           fecha_promesa: string
           id?: string
           notas?: string | null
-          ov_id: string
-          taller_id: string
+          ov_id?: string | null
+          taller_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -2373,8 +2789,8 @@ export type Database = {
           fecha_promesa?: string
           id?: string
           notas?: string | null
-          ov_id?: string
-          taller_id?: string
+          ov_id?: string | null
+          taller_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -2429,10 +2845,18 @@ export type Database = {
           creado_por: string | null
           created_at: string | null
           estado: string
+          estado_pago: string | null
           fecha_entrega: string
+          fecha_factura: string | null
           fecha_pedido: string
+          fecha_ultimo_pago: string | null
+          fecha_vencimiento: string | null
           id: string
           notas: string | null
+          numero_factura: string | null
+          plazo_pago_dias: number | null
+          total_facturado: number | null
+          total_pagado: number | null
           updated_at: string | null
         }
         Insert: {
@@ -2441,10 +2865,18 @@ export type Database = {
           creado_por?: string | null
           created_at?: string | null
           estado?: string
+          estado_pago?: string | null
           fecha_entrega: string
+          fecha_factura?: string | null
           fecha_pedido?: string
+          fecha_ultimo_pago?: string | null
+          fecha_vencimiento?: string | null
           id?: string
           notas?: string | null
+          numero_factura?: string | null
+          plazo_pago_dias?: number | null
+          total_facturado?: number | null
+          total_pagado?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -2453,10 +2885,18 @@ export type Database = {
           creado_por?: string | null
           created_at?: string | null
           estado?: string
+          estado_pago?: string | null
           fecha_entrega?: string
+          fecha_factura?: string | null
           fecha_pedido?: string
+          fecha_ultimo_pago?: string | null
+          fecha_vencimiento?: string | null
           id?: string
           notas?: string | null
+          numero_factura?: string | null
+          plazo_pago_dias?: number | null
+          total_facturado?: number | null
+          total_pagado?: number | null
           updated_at?: string | null
         }
         Relationships: [
@@ -2521,6 +2961,128 @@ export type Database = {
           },
         ]
       }
+      pagos: {
+        Row: {
+          created_at: string | null
+          documento_id: string | null
+          documento_tipo: string
+          fecha_pago: string
+          id: string
+          metodo_pago: string
+          monto: number
+          notas: string | null
+          referencia_bancaria: string | null
+          registrado_por: string | null
+          tercero_id: string | null
+          tipo: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          documento_id?: string | null
+          documento_tipo: string
+          fecha_pago?: string
+          id?: string
+          metodo_pago: string
+          monto?: number
+          notas?: string | null
+          referencia_bancaria?: string | null
+          registrado_por?: string | null
+          tercero_id?: string | null
+          tipo: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          documento_id?: string | null
+          documento_tipo?: string
+          fecha_pago?: string
+          id?: string
+          metodo_pago?: string
+          monto?: number
+          notas?: string | null
+          referencia_bancaria?: string | null
+          registrado_por?: string | null
+          tercero_id?: string | null
+          tipo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagos_tercero_id_fkey"
+            columns: ["tercero_id"]
+            isOneToOne: false
+            referencedRelation: "terceros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prestamos: {
+        Row: {
+          created_at: string | null
+          cuota_mensual: number
+          descripcion: string
+          entidad: string
+          estado: string
+          fecha_inicio: string
+          id: string
+          monto_inicial: number
+          plazo_meses: number
+          saldo_actual: number
+          tasa_interes_mes: number
+        }
+        Insert: {
+          created_at?: string | null
+          cuota_mensual: number
+          descripcion: string
+          entidad: string
+          estado?: string
+          fecha_inicio: string
+          id?: string
+          monto_inicial: number
+          plazo_meses: number
+          saldo_actual: number
+          tasa_interes_mes: number
+        }
+        Update: {
+          created_at?: string | null
+          cuota_mensual?: number
+          descripcion?: string
+          entidad?: string
+          estado?: string
+          fecha_inicio?: string
+          id?: string
+          monto_inicial?: number
+          plazo_meses?: number
+          saldo_actual?: number
+          tasa_interes_mes?: number
+        }
+        Relationships: []
+      }
+      presupuestos_area: {
+        Row: {
+          anio: number
+          area: Database["public"]["Enums"]["area_negocio"]
+          id: string
+          mes: number
+          monto_limite: number
+        }
+        Insert: {
+          anio: number
+          area: Database["public"]["Enums"]["area_negocio"]
+          id?: string
+          mes: number
+          monto_limite?: number
+        }
+        Update: {
+          anio?: number
+          area?: Database["public"]["Enums"]["area_negocio"]
+          id?: string
+          mes?: number
+          monto_limite?: number
+        }
+        Relationships: []
+      }
       producto_atributos: {
         Row: {
           atributo_id: string
@@ -2547,6 +3109,60 @@ export type Database = {
           },
           {
             foreignKeyName: "producto_atributos_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      producto_clientes: {
+        Row: {
+          activo: boolean
+          cliente_id: string
+          created_at: string | null
+          created_por: string | null
+          id: string
+          nombre_comercial_cliente: string | null
+          precio_acordado: number | null
+          producto_id: string
+          sku_cliente: string
+          updated_at: string | null
+        }
+        Insert: {
+          activo?: boolean
+          cliente_id: string
+          created_at?: string | null
+          created_por?: string | null
+          id?: string
+          nombre_comercial_cliente?: string | null
+          precio_acordado?: number | null
+          producto_id: string
+          sku_cliente: string
+          updated_at?: string | null
+        }
+        Update: {
+          activo?: boolean
+          cliente_id?: string
+          created_at?: string | null
+          created_por?: string | null
+          id?: string
+          nombre_comercial_cliente?: string | null
+          precio_acordado?: number | null
+          producto_id?: string
+          sku_cliente?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "producto_clientes_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "terceros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "producto_clientes_producto_id_fkey"
             columns: ["producto_id"]
             isOneToOne: false
             referencedRelation: "productos"
@@ -2773,6 +3389,8 @@ export type Database = {
           estado: string | null
           fecha_recepcion: string | null
           id: string
+          lote_interno: string | null
+          lote_proveedor: string | null
           material_id: string | null
           notas: string | null
           oc_id: string
@@ -2790,6 +3408,8 @@ export type Database = {
           estado?: string | null
           fecha_recepcion?: string | null
           id?: string
+          lote_interno?: string | null
+          lote_proveedor?: string | null
           material_id?: string | null
           notas?: string | null
           oc_id: string
@@ -2807,6 +3427,8 @@ export type Database = {
           estado?: string | null
           fecha_recepcion?: string | null
           id?: string
+          lote_interno?: string | null
+          lote_proveedor?: string | null
           material_id?: string | null
           notas?: string | null
           oc_id?: string
@@ -3244,6 +3866,27 @@ export type Database = {
           },
         ]
       }
+      socios: {
+        Row: {
+          aporte: number | null
+          created_at: string | null
+          id: string
+          nombre: string
+        }
+        Insert: {
+          aporte?: number | null
+          created_at?: string | null
+          id?: string
+          nombre: string
+        }
+        Update: {
+          aporte?: number | null
+          created_at?: string | null
+          id?: string
+          nombre?: string
+        }
+        Relationships: []
+      }
       tercero_contactos: {
         Row: {
           activo: boolean | null
@@ -3338,6 +3981,7 @@ export type Database = {
           lead_time_dias: number | null
           nit: string | null
           nombre: string
+          plazo_pago_dias: number | null
           porcentaje_anticipo: number | null
           telefono: string | null
           tipos: string[]
@@ -3358,6 +4002,7 @@ export type Database = {
           lead_time_dias?: number | null
           nit?: string | null
           nombre: string
+          plazo_pago_dias?: number | null
           porcentaje_anticipo?: number | null
           telefono?: string | null
           tipos?: string[]
@@ -3378,6 +4023,7 @@ export type Database = {
           lead_time_dias?: number | null
           nit?: string | null
           nombre?: string
+          plazo_pago_dias?: number | null
           porcentaje_anticipo?: number | null
           telefono?: string | null
           tipos?: string[]
@@ -3627,7 +4273,9 @@ export type Database = {
         Returns: undefined
       }
       generate_desarrollo_temp_id: { Args: never; Returns: string }
+      generate_oc_muestra_codigo: { Args: never; Returns: string }
       generate_op_codigo: { Args: never; Returns: string }
+      generate_op_muestra_codigo: { Args: never; Returns: string }
       generate_ov_codigo: { Args: never; Returns: string }
       get_auth_uid_safe: { Args: never; Returns: string }
       get_saldos_por_bin: {
@@ -3648,11 +4296,21 @@ export type Database = {
       }
       get_user_role: { Args: never; Returns: string }
       get_user_taller_id: { Args: never; Returns: string }
+      kpi_innovacion_comercial: { Args: never; Returns: number }
       next_ref_numero: { Args: { p_segmento_id: string }; Returns: number }
     }
     Enums: {
+      area_negocio:
+        | "Comercial"
+        | "Mercadeo"
+        | "Administrativo"
+        | "Operaciones"
+        | "Desarrollo"
+        | "Logistica"
+        | "Talento_Humano"
       estado_despacho: "preparacion" | "enviado" | "entregado" | "cancelado"
       tipo_envio: "interno" | "externo"
+      tipo_gasto: "fijo" | "variable" | "semivariable"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3780,8 +4438,19 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      area_negocio: [
+        "Comercial",
+        "Mercadeo",
+        "Administrativo",
+        "Operaciones",
+        "Desarrollo",
+        "Logistica",
+        "Talento_Humano",
+      ],
       estado_despacho: ["preparacion", "enviado", "entregado", "cancelado"],
       tipo_envio: ["interno", "externo"],
+      tipo_gasto: ["fijo", "variable", "semivariable"],
     },
   },
 } as const
+

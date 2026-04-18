@@ -127,7 +127,7 @@ export function BinSelector({ bodegaId, value, onChange, onBinCreated }: Props) 
             <p className="text-xs font-semibold text-foreground">Nuevo bin</p>
             <button
               type="button"
-              onClick={() => { setShowNuevoBin(false); setNuevaPosicion(''); setErrorCrear(null) }}
+              onClick={() => { setShowNuevoBin(false); setErrorCrear(null) }}
               className="p-0.5 hover:bg-neu-200 rounded transition-colors"
             >
               <X className="w-3.5 h-3.5 text-muted-foreground" />

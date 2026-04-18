@@ -78,6 +78,7 @@ export function ServiciosPanel({ servicios, tipos, subtipos, detalles, ejecutore
       const res = await createServicioOperativo(
         atributo1Id,
         atributo2Id,
+        atributo3Id || '',
         nombre,
         tarifaNum,
         descripcion || undefined,
@@ -179,70 +180,31 @@ export function ServiciosPanel({ servicios, tipos, subtipos, detalles, ejecutore
           tipos={tipos}
           subtipos={subtipos}
           detalles={detalles}
-          subtiposFiltrados={subtiposFiltrados}
-          detallesFiltrados={detallesFiltrados}
-          atributo1Id={atributo1Id}
-          atributo2Id={atributo2Id}
-          atributo3Id={atributo3Id}
-          nombre={nombre}
-          tarifa={tarifa}
-          descripcion={descripcion}
-          ejecutorId={ejecutorId}
-          codigoCompleto={codigoCompleto}
           ejecutores={ejecutores}
           pending={pending}
           error={error}
-          onAtributo1Change={(id) => {
-            setAtributo1Id(id)
-            setAtributo2Id(null)
-            setAtributo3Id(null)
-          }}
-          onAtributo2Change={(id) => {
-            setAtributo2Id(id)
-            setAtributo3Id(null)
-          }}
-          onAtributo3Change={setAtributo3Id}
-          onNombreChange={setNombre}
-          onTarifaChange={setTarifa}
-          onDescripcionChange={setDescripcion}
-          onEjecutorChange={setEjecutorId}
-          onCodigoChange={(_codigo, completo) => {
-            setCodigoCompleto(completo)
-          }}
-          onSubmit={(e) => {
+          onSubmit={async (e, data) => {
             e.preventDefault()
             setError(null)
-            if (!atributo1Id || !atributo2Id || !atributo3Id) {
+            if (!data.atributo1Id || !data.atributo2Id || !data.atributo3Id) {
               setError('Tipo, Subtipo y Detalle son obligatorios')
               return
             }
-            if (!nombre.trim() || !tarifa) {
-              setError('Nombre y tarifa son obligatorios')
-              return
-            }
-            const tarifaNum = parseFloat(tarifa)
             startTransition(async () => {
               const res = await createServicioOperativo(
-                atributo1Id,
-                atributo2Id,
-                atributo3Id,
-                nombre,
-                tarifaNum,
-                descripcion || undefined,
-                ejecutorId || undefined
+                data.atributo1Id!,
+                data.atributo2Id!,
+                data.atributo3Id!,
+                data.nombre,
+                data.tarifa,
+                data.descripcion || undefined,
+                data.ejecutorId || undefined
               )
               if (res.error) {
                 setError(res.error)
-                return
+              } else {
+                setShowForm(false)
               }
-              setAtributo1Id(null)
-              setAtributo2Id(null)
-              setAtributo3Id(null)
-              setNombre('')
-              setTarifa('')
-              setDescripcion('')
-              setEjecutorId(null)
-              setShowForm(false)
             })
           }}
           onDone={() => setShowForm(false)}
@@ -361,45 +323,22 @@ export function ServiciosPanel({ servicios, tipos, subtipos, detalles, ejecutore
 }
 
 interface ServicioFormProps {
-  tipos: TipoServicioAtributo[]
-  subtipos: TipoServicioAtributo[]
-  detalles: TipoServicioAtributo[]
-  subtiposFiltrados: TipoServicioAtributo[]
-  detallesFiltrados: TipoServicioAtributo[]
-  atributo1Id: string | null
-  atributo2Id: string | null
-  atributo3Id: string | null
-  nombre: string
-  tarifa: string
-  descripcion: string
-  ejecutorId: string | null
-  codigoCompleto: boolean
-  ejecutores: Array<{ id: string; nombre: string }>
-  pending: boolean
-  error: string | null
-  onAtributo1Change: (id: string | null) => void
-  onAtributo2Change: (id: string | null) => void
-  onAtributo3Change: (id: string | null) => void
-  onNombreChange: (nombre: string) => void
-  onTarifaChange: (tarifa: string) => void
-  onDescripcionChange: (descripcion: string) => void
-  onEjecutorChange: (ejecutorId: string | null) => void
-  onCodigoChange: (codigo: string, completo: boolean) => void
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void
-  onDone: () => void
-}
-
-interface ServicioFormProps {
   servicio?: ServicioOperativo
   tipos: TipoServicioAtributo[]
   subtipos: TipoServicioAtributo[]
   detalles: TipoServicioAtributo[]
-  subtiposFiltrados?: TipoServicioAtributo[]
-  detallesFiltrados?: TipoServicioAtributo[]
   ejecutores: Array<{ id: string; nombre: string }>
   pending: boolean
   error?: string | null
-  onSubmit: (e: React.FormEvent<HTMLFormElement>, data: any) => void
+  onSubmit: (e: React.FormEvent<HTMLFormElement>, data: {
+    atributo1Id: string | null
+    atributo2Id: string | null
+    atributo3Id: string | null
+    nombre: string
+    tarifa: number
+    descripcion: string
+    ejecutorId: string | null
+  }) => void
   onDone: () => void
 }
 
@@ -408,8 +347,6 @@ function ServicioForm({
   tipos,
   subtipos,
   detalles,
-  subtiposFiltrados: initialSubtiposFitrados,
-  detallesFiltrados: initialDetallesFiltrados,
   ejecutores,
   pending,
   error: propError,
@@ -493,7 +430,6 @@ function ServicioForm({
             atributo1Id={atributo1Id}
             atributo2Id={atributo2Id}
             atributo3Id={atributo3Id}
-            descripcion={descripcion}
             onCodigoChange={(_, completo) => setCodigoCompleto(completo)}
             onNombreRecomendado={(rec) => { 
               if (rec.trim() && !nombreEditadoRef.current) setNombre(rec) 

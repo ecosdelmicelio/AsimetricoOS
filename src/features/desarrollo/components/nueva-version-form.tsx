@@ -27,6 +27,10 @@ interface BomServicio {
   tipo_proceso: string
   tarifa_unitaria: number
 }
+interface MedidaEntry {
+  tallas: Record<string, string>
+  tolerancia: number
+}
 
 interface Props {
   desarrolloId: string
@@ -81,7 +85,7 @@ export function NuevaVersionForm({
   const [servQty, setServQty] = useState('')
 
   // Cuadro de medidas (Estructura: { [label]: { tallas: { XS: '', ... }, tolerancia: 0.5 } })
-  const [medidas, setMedidas] = useState<Record<string, any>>(initialMedidas ?? {})
+  const [medidas, setMedidas] = useState<Record<string, MedidaEntry>>(initialMedidas as any ?? {})
   const [templateLoaded, setTemplateLoaded] = useState(false)
 
   // Cargar plantilla si es nueva versión
@@ -139,11 +143,19 @@ export function NuevaVersionForm({
       servicio_id: serv.id,
       servicio_nombre: serv.nombre,
       cantidad: parseFloat(servQty),
-      tipo_proceso: serv.tipo_proceso,
+      tipo_proceso: serv.tipo_proceso || 'otro',
       tarifa_unitaria: serv.tarifa_unitaria
     }])
     setSelectedServId('')
     setServQty('')
+  }
+
+  function removeMaterial(index: number) {
+    setBomMateriales(prev => prev.filter((_, i) => i !== index))
+  }
+
+  function removeServicio(index: number) {
+    setBomServicios(prev => prev.filter((_, i) => i !== index))
   }
 
   function updateMedidaValue(label: string, talla: string, value: string) {
@@ -177,7 +189,7 @@ export function NuevaVersionForm({
       }
 
       const res = mode === 'edit' && versionId
-        ? await actualizarVersion(versionId, payload)
+        ? await actualizarVersion(versionId, desarrolloId, payload)
         : await crearNuevaVersion(desarrolloId, payload)
 
       if (res.error) { setError(res.error) } 
@@ -356,6 +368,7 @@ export function NuevaVersionForm({
 
       {showQuickCreate && (
         <QuickCreateMaterialModal 
+          desarrolloId={desarrolloId}
           onClose={() => setShowQuickCreate(false)} 
           onCreated={(newMat) => {
             setCatalogoMateriales(prev => [newMat, ...prev])

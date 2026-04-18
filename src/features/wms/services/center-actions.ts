@@ -20,6 +20,16 @@ import type {
   BinEnBodega 
 } from '@/features/wms/types'
 
+export interface GridItem {
+  id: string
+  label: string
+  sublabel: string
+  count?: number
+  price?: number
+  icon?: any
+  metadata?: any
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function db(supabase: unknown): any {
   return supabase
@@ -59,6 +69,38 @@ export async function getCenterPendingOperations(bodegaId: string): Promise<any[
     }))
 
   return [...pendingOCs, ...pendingTRs]
+}
+
+/**
+ * Solo OCs pendientes para el grid
+ */
+export async function getCenterPendingPurchases(bodegaId: string): Promise<GridItem[]> {
+  const ops = await getCenterPendingOperations(bodegaId)
+  return ops
+    .filter(op => op.tipo === 'OC')
+    .map(op => ({
+      id: op.id,
+      label: op.codigo,
+      sublabel: op.sublabel_formatted,
+      icon: 'Inbox',
+      metadata: op.metadata
+    }))
+}
+
+/**
+ * Solo OVs pendientes (Ventas)
+ */
+export async function getCenterPendingSales(bodegaId: string): Promise<GridItem[]> {
+  const { data } = await getOrdenesVenta()
+  return (data || [])
+    .filter(ov => !['finalizada', 'cancelada', 'despachada'].includes((ov.estado || 'pendiente').toLowerCase()))
+    .map(ov => ({
+      id: ov.id,
+      label: ov.codigo,
+      sublabel: `${(ov as any).clientes?.nombre || 'Cliente'} — ${(ov as any).tipo_orden}`,
+      icon: 'ShoppingBag',
+      metadata: ov
+    }))
 }
 
 /**
@@ -212,7 +254,7 @@ export async function getOCItemsGrid(ocId: string): Promise<GridItem[]> {
       .from('recepcion_oc')
       .select('producto_id, talla, material_id, cantidad_recibida, estado')
       .eq('oc_id', ocId)
-      .neq('estado', 'revertida')
+      .neq('estado', 'revertida') as { data: any[] | null }
       
     // Mapa de recibido: key -> cantidad
     const recMap = new Map<string, number>()
@@ -315,7 +357,7 @@ export async function getBinItemsGrid(binId: string): Promise<GridItem[]> {
       producto_id: i.producto_id,
       talla: i.talla,
       referencia: i.referencia,
-      unidad: i.unidad || 'unidades'
+      unidad: (i as any).unidad || 'unidades'
     }
   }))
 }

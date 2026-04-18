@@ -34,7 +34,8 @@ export async function OVDetail({ id }: Props) {
     despachos,
     bines,
     progress,
-    milestones
+    milestones,
+    pagosRes
   ] = await Promise.all([
     getDespachosByOV(ov.id),
     getBinesDisponiblesParaOV(ov.id),

@@ -8,7 +8,7 @@ import { OVForm } from '@/features/ordenes-venta/components/ov-form'
 import { createClient } from '@/shared/lib/supabase/client'
 import type { OVConDetalle } from '@/features/ordenes-venta/types'
 
-type Cliente = { id: string; nombre: string }
+type Cliente = { id: string; nombre: string; plazo_pago_dias: number | null }
 type Producto = {
   id: string
   nombre: string
@@ -49,7 +49,7 @@ export default function EditarOVPage({ params }: Props) {
             .single(),
           supabase
             .from('terceros')
-            .select('id, nombre, tipos')
+            .select('id, nombre, tipos, plazo_pago_dias')
             .eq('estado', 'activo')
             .order('nombre'),
           supabase
@@ -71,7 +71,7 @@ export default function EditarOVPage({ params }: Props) {
 
         const filteredClientes: Cliente[] = (clientesRes.data as any[])
           ?.filter(t => Array.isArray(t.tipos) && t.tipos.includes('cliente'))
-          .map(t => ({ id: t.id, nombre: t.nombre })) || []
+          .map(t => ({ id: t.id, nombre: t.nombre, plazo_pago_dias: t.plazo_pago_dias })) || []
 
         setClientes(filteredClientes)
         setProductos(productosRes.data as Producto[] || [])

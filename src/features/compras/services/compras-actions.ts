@@ -504,7 +504,7 @@ export async function crearRecepcionesOCConBins(
     let commonBin: any = null
     
     if (!firstBinId) {
-      commonBin = await crearBin(recepcion.bodegaId, null as any, false, 'interno')
+      commonBin = await crearBin(recepcion.bodegaId, undefined, 'interno', false)
     }
 
     const inserts = recepcion.items.map(item => ({

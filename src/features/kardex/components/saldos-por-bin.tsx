@@ -158,7 +158,7 @@ export function SaldosPorBin({ saldos, bodegas }: Props) {
                         </tr>
                       </thead>
                       <tbody>
-                        {bin.items.map((item, idx) => (
+                        {bin.items.map((item: SaldoBin, idx: number) => (
                           <tr key={idx} className="border-b border-black/5">
                             <td className="py-2">{item.nombre}</td>
                             <td className="py-2 font-mono text-muted-foreground">{item.referencia}</td>

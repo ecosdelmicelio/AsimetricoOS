@@ -272,7 +272,7 @@ export function BinesManagement({ bodegas }: Props) {
                           <p className="text-sm font-black text-foreground">{bin.codigo}</p>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
-                              Stock: {bin.stock_tipo || 'interno'}
+                              Stock: {bin.tipo || 'interno'}
                             </span>
                             <span className={`px-1.5 py-0.5 rounded-[4px] text-[8px] font-black uppercase ${bin.es_fijo ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
                               {bin.es_fijo ? 'Fijo' : 'Variable'}

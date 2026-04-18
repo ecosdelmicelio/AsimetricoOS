@@ -4,8 +4,6 @@ import { WMSPanel } from '@/features/wms/components/wms-panel'
 import { PageHeader } from '@/shared/components/page-header'
 
 export default async function WMSPage() {
-  const bodegas = await getBodegasActivas()
-
   return (
     <div className="space-y-6 h-full">
       <PageHeader
@@ -15,7 +13,7 @@ export default async function WMSPage() {
       />
 
       <div className="flex-1 overflow-hidden">
-        <WMSPanel bodegas={bodegas} />
+        <WMSPanel />
       </div>
     </div>
   )

@@ -52,7 +52,7 @@ export function DesarrolloKanbanBoard({ desarrollos }: Props) {
               {/* Kanban Cards */}
               <div className="flex flex-col gap-3 px-2">
                 {cards.map(card => {
-                  const diasActivo = Math.floor((Date.now() - new Date(card.created_at).getTime()) / (1000 * 60 * 60 * 24))
+                  const diasActivo = Math.floor((Date.now() - new Date(card.created_at || 0).getTime()) / (1000 * 60 * 60 * 24))
                   const isUrgente = card.prioridad === 'urgente'
                   const isDisonancia = (card as any).disonancia_activa
                   

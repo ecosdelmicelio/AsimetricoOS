@@ -322,8 +322,9 @@ function ServiciosTab({
 
   // Agrupar catálogo por tipo_proceso para el select
   const porTipo = catalogo.reduce<Record<string, ServicioOperativo[]>>((acc, s) => {
-    if (!acc[s.tipo_proceso]) acc[s.tipo_proceso] = []
-    acc[s.tipo_proceso].push(s)
+    const tipo = s.tipo_proceso || 'otro'
+    if (!acc[tipo]) acc[tipo] = []
+    acc[tipo].push(s)
     return acc
   }, {})
 
@@ -358,11 +359,11 @@ function ServiciosTab({
           lineaId={l.id}
           productoId={productoId}
           nombre={`${l.servicios_operativos.codigo} — ${l.servicios_operativos.nombre}`}
-          unidad={TIPO_PROCESO_LABEL[l.servicios_operativos.tipo_proceso] ?? l.servicios_operativos.tipo_proceso}
+          unidad={l.servicios_operativos.tipo_proceso ? (TIPO_PROCESO_LABEL[l.servicios_operativos.tipo_proceso] ?? l.servicios_operativos.tipo_proceso) : 'Otro'}
           costoUnit={l.servicios_operativos.tarifa_unitaria}
           cantidad={l.cantidad}
           notas={l.notas}
-          badge={TIPO_PROCESO_LABEL[l.servicios_operativos.tipo_proceso]}
+          badge={l.servicios_operativos.tipo_proceso ? TIPO_PROCESO_LABEL[l.servicios_operativos.tipo_proceso] : 'Otro'}
           onBOMChanged={onBOMChanged}
         />
       ))}

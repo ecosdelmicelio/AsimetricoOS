@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Save, AlertCircle, Trash2, Plus } from 'lucide-react'
 import { guardarCondicionesMaterial, guardarCondiciones, getMaterialInheritedConditions } from '@/features/desarrollo/services/muestra-actions'
+import type { Material } from '@/features/productos/services/bom-actions'
 import { useEffect } from 'react'
 
 interface Props {

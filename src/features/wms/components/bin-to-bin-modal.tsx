@@ -47,7 +47,7 @@ export function BinToBinTransferModal({ isOpen, onClose, sourceBin, targetBin, o
       // "Asi lo quiero": Cantidades totales por defecto para vaciado rápido
       const initialQtys: Record<string, number> = {}
       data.forEach(item => {
-        initialQtys[item.id] = item.count
+        initialQtys[item.id] = item.count || 0
       })
       setQuantities(initialQtys)
     } catch (err: any) {
@@ -95,7 +95,7 @@ export function BinToBinTransferModal({ isOpen, onClose, sourceBin, targetBin, o
         notas: `Transferencia interna de items: ${sourceBin.codigo} -> ${targetBin.codigo}`
       })
       
-      if (res.error) {
+      if (res && 'error' in res && res.error) {
         setError(res.error)
       } else {
         onSuccess()

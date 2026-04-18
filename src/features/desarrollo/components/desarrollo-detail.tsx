@@ -39,7 +39,7 @@ const TRANSICIONES_PERMITIDAS: Record<StatusDesarrollo, StatusDesarrollo[]> = {
   derivado:      [],
 }
 
-type Tab = 'info' | 'versiones' | 'bom' | 'condiciones' | 'muestra' | 'assets' | 'hallazgos' | 'historial'
+type Tab = 'info' | 'versiones' | 'bom' | 'condiciones' | 'muestra' | 'assets' | 'hallazgos' | 'historial' | 'auditoria'
 
 interface Tercero { id: string; nombre: string }
 
@@ -98,6 +98,7 @@ interface DesarrolloData {
   json_alta_resolucion?: any
   tipo_muestra_asignada?: string
   disonancia_activa?: boolean
+  cliente_id?: string | null
   profiles: { full_name: string } | null
 }
 
@@ -200,7 +201,7 @@ export function DesarrolloDetail({
   )
 
   function iniciarTransicion(nuevoEstado: StatusDesarrollo) {
-    if (nuevoEstado === 'cancelled') { setShowCancelModal(true); return }
+    if (nuevoEstado === 'descartado') { setShowCancelModal(true); return }
     setEstadoDestino(nuevoEstado)
     setShowTransicionModal(true)
   }
@@ -218,7 +219,7 @@ export function DesarrolloDetail({
   function confirmarCancelacion() {
     if (!motivoCancelacion.trim()) return
     startTransition(async () => {
-      await cambiarStatusDesarrollo(desarrollo.id, 'cancelled', motivoCancelacion)
+      await cambiarStatusDesarrollo(desarrollo.id, 'descartado', motivoCancelacion)
       setShowCancelModal(false)
       router.refresh()
     })
@@ -256,7 +257,7 @@ export function DesarrolloDetail({
     visibleTabsIds.unshift('auditoria' as any)
   }
 
-  const TABS: { id: Tab | 'auditoria'; label: string; badge?: number }[] = [
+  const TABS = ([
     { id: 'auditoria',   label: 'Auditoría Ops (S7)' },
     { id: 'versiones',   label: 'Diseño & BOM', badge: desarrollo.desarrollo_versiones.length },
     { id: 'bom',         label: 'BOM & Costos' },
@@ -266,7 +267,7 @@ export function DesarrolloDetail({
     { id: 'hallazgos',   label: 'Hallazgos (Prototipo)', badge: versionSeleccionada?.desarrollo_hallazgos.filter(h => !h.resuelto).length },
     { id: 'info',        label: 'Info General' },
     { id: 'historial',   label: 'Historial' },
-  ].filter(t => visibleTabsIds.includes(t.id as any))
+  ] as { id: Tab; label: string; badge?: number }[]).filter(t => visibleTabsIds.includes(t.id as any))
 
   // Auto-switch tab si el actual ya no es visible por cambio de estado
   useEffect(() => {
@@ -319,18 +320,18 @@ export function DesarrolloDetail({
               </div>
             )
           })}
-          {status === 'cancelled' && (
-            <div className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase bg-red-100 text-red-600">Cancelado</div>
+          {status === 'descartado' && (
+            <div className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase bg-red-100 text-red-600">Descartado</div>
           )}
         </div>
       </div>
 
       {/* Acciones de transición */}
-      {status !== 'graduated' && status !== 'cancelled' && (
+      {status !== 'graduated' && status !== 'descartado' && (
         <div className="rounded-2xl bg-white border border-slate-100 shadow-sm px-4 py-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">Mover a →</span>
-            {transicionesPermitidas.filter(s => s !== 'cancelled').map(s => {
+            {transicionesPermitidas.filter(s => s !== 'descartado').map(s => {
               const isOps = s === 'ops_review'
               const isSampling = s === 'sampling'
               const isApproved = s === 'approved'
@@ -543,7 +544,7 @@ export function DesarrolloDetail({
                             </div>
                           </div>
                           {/* BOM preview */}
-                          {v.bom_data && (
+                          {!!v.bom_data && (
                             <div className="mt-3 pt-3 border-t border-slate-100">
                               {Array.isArray(v.bom_data) ? (
                                 <div className="flex flex-wrap gap-1.5">
@@ -752,7 +753,7 @@ export function DesarrolloDetail({
                     <p className="text-xs text-slate-500">
                       Aún no se ha generado {esFabricado ? 'una OP' : 'una OC'} de muestra para este desarrollo.
                     </p>
-                    {status !== 'graduated' && status !== 'cancelled' && ultimaVersion && (
+                    {status !== 'graduated' && status !== 'descartado' && ultimaVersion && (
                       <button onClick={() => setShowMuestraModal(true)}
                         className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-violet-700 transition-all">
                         <FlaskConical className="w-3.5 h-3.5" />

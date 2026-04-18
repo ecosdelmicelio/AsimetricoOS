@@ -14,7 +14,7 @@ interface Props {
 }
 
 export async function CompraDetail({ id }: Props) {
-  const [oc, materiales, recepciones, productosActivos, bodegaPrincipal] = await Promise.all([
+  const [oc, materiales, recepciones, productosActivos, bodegaPrincipal, pagosRes] = await Promise.all([
     getOrdenCompraById(id),
     getMateriales(),
     getRecepcionesByOC(id),

@@ -50,7 +50,7 @@ export function TransferConfirmationModal({ isOpen, onClose, sourceBin, targetPo
         cantidad: 0 // 0 indica "Bin completo" para este modo unificado
       })
       
-      if (res.error) {
+      if (res && 'error' in res && res.error) {
         setError(res.error)
       } else {
         onSuccess()

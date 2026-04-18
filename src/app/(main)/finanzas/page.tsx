@@ -2,8 +2,9 @@ import { Suspense } from 'react'
 import { getGastos, getCategoriasGastos } from '@/features/finanzas/services/gastos-actions'
 import { getPresupuestos, getConsolidadoBudget } from '@/features/finanzas/services/presupuestos-actions'
 import { getAllTerceros } from '@/features/terceros/services/terceros-actions'
-import { getEstadoResultados, getBalanceGeneral, getBreakEven, getCCE } from '@/features/finanzas/services/estados-financieros-actions'
+import { getCCE, getEstadoResultados, getBalanceGeneral, getBreakEven } from '@/features/finanzas/services/estados-financieros-actions'
 import { getFlujoCaja90Dias } from '@/features/finanzas/services/flujo-caja-actions'
+import { getCuentasBancarias, getMovimientosRecent } from '@/features/finanzas/services/tesoreria-actions'
 import { GastosPanel } from '@/features/finanzas/components/gastos-panel'
 import { PresupuestoMonitor } from '@/features/finanzas/components/presupuesto-monitor'
 import { PresupuestoManager } from '@/features/finanzas/components/presupuesto-manager'
@@ -11,6 +12,7 @@ import { EstadoResultados } from '@/features/finanzas/components/estado-resultad
 import { FlujoCajaPanel } from '@/features/finanzas/components/flujo-caja-panel'
 import { BalanceGeneral } from '@/features/finanzas/components/balance-general'
 import { IndicadoresPanel } from '@/features/finanzas/components/indicadores-panel'
+import { TesoreriaPanel } from '@/features/finanzas/components/tesoreria-panel'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 
 export const dynamic = 'force-dynamic'
@@ -30,6 +32,8 @@ export default async function FinanzasPage() {
     breakeven,
     cce,
     flujoCaja,
+    cuentas,
+    movimientosTesoreria,
   ] = await Promise.all([
     getGastos({ mes, anio }),
     getCategoriasGastos(),
@@ -41,6 +45,8 @@ export default async function FinanzasPage() {
     getBreakEven(mes, anio),
     getCCE(mes, anio),
     getFlujoCaja90Dias(),
+    getCuentasBancarias(),
+    getMovimientosRecent(20),
   ])
 
   return (
@@ -54,6 +60,7 @@ export default async function FinanzasPage() {
         <div className="overflow-x-auto pb-2">
           <TabsList className="bg-neu-base shadow-neu p-1 rounded-xl inline-flex gap-1 min-w-max">
             <TabsTrigger value="resultados">Estado de Resultados</TabsTrigger>
+            <TabsTrigger value="tesoreria">Cajas y Bancos</TabsTrigger>
             <TabsTrigger value="flujo">Flujo de Caja 90d</TabsTrigger>
             <TabsTrigger value="balance">Balance General</TabsTrigger>
             <TabsTrigger value="indicadores">Break-Even / CCE</TabsTrigger>
@@ -71,6 +78,12 @@ export default async function FinanzasPage() {
               mes={mes}
               anio={anio}
             />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="tesoreria">
+          <Suspense fallback={<p className="text-muted-foreground text-sm p-8">Cargando tesorería...</p>}>
+            <TesoreriaPanel cuentas={cuentas} movimientos={movimientosTesoreria} />
           </Suspense>
         </TabsContent>
 

@@ -219,10 +219,20 @@ function TerceroForm({ tercero, marcas = [], dirs = [], contactos = [], bodegas 
   const [emailFact, setEmailFact] = useState(tercero?.email_facturacion ?? '')
   const [telefono, setTelefono] = useState(tercero?.telefono ?? '')
   const [direccion, setDireccion] = useState(tercero?.direccion ?? '')
-  // Finanzas
   const [nivelCliente, setNivelCliente] = useState<NivelCliente>(tercero?.nivel_cliente ?? 'N1')
   const [plazoPago, setPlazoPago]       = useState(tercero?.plazo_pago_dias?.toString() ?? '30')
   const [sugerencia, setSugerencia]     = useState<{ sugerencia: NivelCliente; unidades_anuales: number } | null>(null)
+
+  // Satélites
+  const [capDiaria, setCapDiaria] = useState(tercero?.capacidad_diaria?.toString() ?? '')
+  const [leadTime, setLeadTime]   = useState(tercero?.lead_time_dias?.toString() ?? '')
+  const [valorRef, setValorRef]   = useState(tercero?.valor_servicio_ref?.toString() ?? '')
+  const [bodegaTallerId, setBodegaTallerId] = useState(tercero?.bodega_taller_id ?? '')
+
+  // Proveedores
+  const [anticipo, setAnticipo]   = useState(tercero?.porcentaje_anticipo?.toString() ?? '')
+  const [calificacion, setCalificacion] = useState(tercero?.calificacion ?? 0)
+  const [descuento, setDescuento] = useState(tercero?.descuento_pago_anticipado?.toString() ?? '')
 
   const esCliente    = tipos.includes('cliente')
   const esSatelite   = tipos.includes('satelite')

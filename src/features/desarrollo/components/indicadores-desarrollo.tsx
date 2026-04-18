@@ -35,7 +35,7 @@ export function IndicadoresDesarrolloHeader({ desarrollos }: Props) {
     let conteoD = 0
 
     finalizados.forEach(d => {
-      const ms = new Date(d.updated_at).getTime() - new Date(d.created_at).getTime()
+      const ms = new Date(d.updated_at || 0).getTime() - new Date(d.created_at || 0).getTime()
       const dias = Math.max(1, Math.round(ms / (1000 * 60 * 60 * 24)))
       totalDias += dias
       // Assuming 'tipo_muestra_asignada' is typed or accessed like 'A', 'B' ... (we had to cast to any since we didn't inject the schema fully on TS, but it's safe)

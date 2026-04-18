@@ -105,7 +105,7 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
         items: selectedItems as any
       })
 
-      if (result && result.error) {
+      if (result && 'error' in result && result.error) {
         setError(result.error)
       } else {
         onSuccess()
