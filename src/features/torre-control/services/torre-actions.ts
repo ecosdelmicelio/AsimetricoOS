@@ -55,6 +55,12 @@ export interface QualityData {
   novedadesCerradas: number
 }
 
+export interface WIPEtapa {
+  etapa: string
+  unidades: number
+  valor: number
+}
+
 export interface TorreData {
   kpis: {
     ops_activas: number
@@ -64,11 +70,15 @@ export interface TorreData {
     ovs_pendientes: number
     ovs_activas: number
     wip_valor_total: number
+    otif_pct: number
+    eficiencia_programacion: number // Dias promedio de desviacion
+    utilizacion_capacidad: number // % promedio
   }
   ops_activas: OPResumen[]
   ovs_pendientes: OVPendiente[]
   ranking_talleres: TallerRanking[]
   lead_times: LeadTimeData[]
+  wip_etapas: WIPEtapa[]
   calidad: QualityData
   innovation_mix: {
     new_revenue: number
@@ -105,12 +115,13 @@ export async function getTorreData(): Promise<TorreData> {
     novedadesResult, 
     ocsResult, 
     kardexResult,
-    ovDetalleGlobalRes
+    ovDetalleGlobalRes,
+    entregasResult
   ] = await Promise.all([
     // OPs (not cancelled)
     supabase
       .from('ordenes_produccion')
-      .select('id, codigo, estado, fecha_promesa, created_at, updated_at, taller_id, ov_id, terceros!taller_id(nombre, capacidad_diaria), ordenes_venta(codigo, total_facturado, terceros!cliente_id(nombre)), op_detalle(cantidad, producto_id, productos(categoria))')
+      .select('id, codigo, estado, fecha_promesa, created_at, updated_at, taller_id, ov_id, terceros!taller_id(nombre, capacidad_diaria), ordenes_venta(codigo, fecha_entrega, total_facturado, terceros!cliente_id(nombre)), op_detalle(cantidad_asignada, producto_id, productos(categoria, precio_base))')
       .neq('estado', 'cancelada')
       .order('fecha_promesa', { ascending: true }),
 
@@ -145,7 +156,12 @@ export async function getTorreData(): Promise<TorreData> {
     // OV Detalle for Innovation Mix
     supabase
       .from('ov_detalle')
-      .select('precio_pactado, cantidad, productos(created_at)')
+      .select('precio_pactado, cantidad, productos(created_at)'),
+
+    // Entregas for OTIF
+    supabase
+      .from('entregas')
+      .select('id, op_id, fecha_entrega, cantidad_entregada, estado')
   ])
 
   const todasOPs = opsResult.data ?? []
@@ -155,6 +171,7 @@ export async function getTorreData(): Promise<TorreData> {
   const todasOCs = ocsResult.data ?? []
   const kardex = kardexResult.data ?? []
   const ovDetalleGlobal = (ovDetalleGlobalRes as any).data ?? []
+  const todasEntregas = entregasResult.data ?? []
 
   // ---------- KPIs ----------
   const ESTADOS_ACTIVOS = ['programada', 'en_corte', 'en_confeccion', 'dupro_pendiente', 'en_terminado', 'entregada']
@@ -184,8 +201,60 @@ export async function getTorreData(): Promise<TorreData> {
     }
   })
 
-  // WIP Value calculation (Proxy: Sum of total_facturado associated via OV)
-  const wipTotal = opsActivas.reduce((acc, op: any) => acc + (op.ordenes_venta?.total_facturado || 0), 0)
+  // WIP Value and Stages
+  const wipEtapasMap: Record<string, { uds: number; val: number }> = {
+    'Corte': { uds: 0, val: 0 },
+    'Confección': { uds: 0, val: 0 },
+    'Calidad': { uds: 0, val: 0 },
+    'Terminado': { uds: 0, val: 0 }
+  }
+
+  opsActivas.forEach((op: any) => {
+    let etapa = 'Corte'
+    if (op.estado === 'en_confeccion') etapa = 'Confección'
+    if (op.estado === 'dupro_pendiente') etapa = 'Calidad'
+    if (op.estado === 'en_terminado' || op.estado === 'entregada') etapa = 'Terminado'
+
+    const totalUds = op.op_detalle?.reduce((s: number, d: any) => s + (d.cantidad_asignada || 0), 0) || 0
+    const valor = op.ordenes_venta?.total_facturado || (totalUds * 50000) // Default price if no OV
+
+    wipEtapasMap[etapa].uds += totalUds
+    wipEtapasMap[etapa].val += valor
+  })
+
+  const wip_valor_total = Object.values(wipEtapasMap).reduce((acc, v) => acc + v.val, 0)
+
+  // OTIF Calculation
+  let onTime = 0
+  let inFull = 0
+  let both = 0
+  const liquidables = todasOPs.filter((op: any) => op.estado === 'liquidada')
+
+  liquidables.forEach((op: any) => {
+    const entregasOP = todasEntregas.filter((e: any) => e.op_id === op.id)
+    const fechaPromesa = new Date(op.ordenes_venta?.fecha_entrega || op.fecha_promesa)
+    const cantPedida = op.op_detalle?.reduce((s: number, d: any) => s + (d.cantidad_asignada || 0), 0) || 0
+    const cantEntregada = entregasOP.reduce((s: number, e: any) => s + (e.cantidad_entregada || 0), 0)
+    
+    // Check Date
+    const ultEntrega = entregasOP.length > 0 ? new Date(Math.max(...entregasOP.map(e => new Date(e.fecha_entrega).getTime()))) : null
+    const isOT = ultEntrega ? ultEntrega <= fechaPromesa : false
+    
+    // Check Quantity (98% tolerance)
+    const isIF = cantEntregada >= (cantPedida * 0.98)
+
+    if (isOT) onTime++
+    if (isIF) inFull++
+    if (isOT && isIF) both++
+  })
+
+  // Efficiency (Scheduling Deviation)
+  const desviaciones = liquidables.map((op: any) => {
+    const promesa = new Date(op.fecha_promesa)
+    const real = new Date(op.updated_at)
+    return (real.getTime() - promesa.getTime()) / 86_400_000
+  })
+  const eficiencia_programacion = desviaciones.length > 0 ? desviaciones.reduce((a, b) => a + b, 0) / desviaciones.length : 0
 
   const ovsPendientes: OVPendiente[] = todasOVs.map((ov: any) => ({
     id: ov.id,
@@ -202,7 +271,7 @@ export async function getTorreData(): Promise<TorreData> {
     if (!tid) return
     const nombre = op.terceros?.nombre ?? '—'
     const capDiaria = op.terceros?.capacidad_diaria || 0
-    const capMensual = capDiaria * 22 // Asumiendo 22 días hábiles
+    const capMensual = capDiaria * 22 
     
     if (!tallerMap[tid]) {
       tallerMap[tid] = { id: tid, nombre, completadas: 0, activas: 0, enRiesgo: 0, capacidad: capMensual, carga_pct: 0, wip_value: 0 }
@@ -217,14 +286,14 @@ export async function getTorreData(): Promise<TorreData> {
       const { riesgo } = calcularRiesgo(op.fecha_promesa)
       if (riesgo !== 'ok') tallerMap[tid].enRiesgo++
       
-      // Calcular carga (Unidades actuales / Capacidad)
-      const udsActivas = op.op_detalle?.reduce((s: number, d: any) => s + (d.cantidad || 0), 0) || 0
+      const udsActivas = op.op_detalle?.reduce((s: number, d: any) => s + (d.cantidad_asignada || 0), 0) || 0
       if (tallerMap[tid].capacidad > 0) {
         tallerMap[tid].carga_pct += (udsActivas / tallerMap[tid].capacidad) * 100
       }
     }
   })
   const ranking = Object.values(tallerMap).sort((a, b) => b.completadas - a.completadas)
+  const utilizacion_capacidad = ranking.length > 0 ? ranking.reduce((a, b) => a + b.carga_pct, 0) / ranking.length : 0
 
   // ---------- LEAD TIMES ----------
   const leadTimes: LeadTimeData[] = []
@@ -302,12 +371,16 @@ export async function getTorreData(): Promise<TorreData> {
       ops_en_calidad: opsEnCalidad.length,
       ovs_pendientes: ovsPendientes.length,
       ovs_activas: todasOVs.filter((ov: any) => ov.estado === 'en_produccion').length,
-      wip_valor_total: wipTotal,
+      wip_valor_total,
+      otif_pct: liquidables.length > 0 ? (both / liquidables.length) * 100 : 100,
+      eficiencia_programacion,
+      utilizacion_capacidad,
     },
     ops_activas: opsResumen,
     ovs_pendientes: ovsPendientes,
     ranking_talleres: ranking,
     lead_times: leadTimes,
+    wip_etapas: Object.entries(wipEtapasMap).map(([etapa, v]) => ({ etapa, unidades: v.uds, valor: v.val })),
     calidad,
     innovation_mix: {
       new_revenue: newRevenue,

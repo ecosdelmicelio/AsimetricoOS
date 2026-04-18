@@ -31,7 +31,9 @@ export async function GerencialDashboard() {
         title="Dashboard Gerencial"
         subtitle={`Visión ejecutiva 360° · ${new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`}
         icon={LayoutDashboard}
-      /      {/* ═══ MEGA KPIs ═══ */}
+      />
+
+      {/* ═══ MEGA KPIs ═══ */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5">
         {/* Revenue */}
         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group">
