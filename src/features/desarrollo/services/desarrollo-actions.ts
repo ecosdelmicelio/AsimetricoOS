@@ -24,6 +24,7 @@ export async function getDesarrollos() {
     .select(`
       *,
       terceros ( nombre ),
+      productos!chasis_producto_id ( nombre, referencia ),
       desarrollo_versiones ( id, version_n, aprobado_ops, aprobado_cliente, aprobado_director ),
       profiles ( full_name )
     `)
@@ -97,17 +98,18 @@ export async function createDesarrollo(input: CreateDesarrolloInput) {
   const { data, error } = await supabase
     .from('desarrollo')
     .insert({
-      nombre_proyecto:    input.nombre_proyecto,
-      categoria_producto: input.categoria_producto,
-      temp_id:            smartId,
-      complejidad:        input.complejidad,
-      tipo_producto:      input.tipo_producto,
-      prioridad:          input.prioridad,
-      fecha_compromiso:   input.fecha_compromiso ?? null,
-      cliente_id:         input.cliente_id ?? null,
-      notas:              input.notas ?? null,
-      creado_por:         user.id,
-      status:             'draft',
+      nombre_proyecto:      input.nombre_proyecto,
+      categoria_producto:   input.categoria_producto,
+      temp_id:              smartId,
+      tipo_producto:        input.tipo_producto,
+      prioridad:            input.prioridad,
+      fecha_compromiso:     input.fecha_compromiso ?? null,
+      cliente_id:           input.cliente_id ?? null,
+      notas:                input.notas ?? null,
+      chasis_producto_id:   input.chasis_producto_id ?? null,
+      json_alta_resolucion: input.json_alta_resolucion ?? '{}',
+      creado_por:           user.id,
+      status:               'draft',
     })
     .select('id, temp_id')
     .single() as { data: Pick<Desarrollo, 'id' | 'temp_id'> | null; error: { message: string } | null }
@@ -157,9 +159,23 @@ export async function cambiarStatusDesarrollo(
     ? Math.floor((Date.now() - new Date(current.updated_at).getTime()) / 1000)
     : null
 
-  // Validar Gate de Draft -> Ops Review
+  // --- GATES SPRINT 7 ---
+  
+  // 1. Validar Gate de Draft -> Ops Review (Solicitud de Auditoría)
   if (nuevoStatus === 'ops_review') {
-    // 1. Verificar BOM en la última versión
+    // Verificar que existe Alta Resolución comercial
+    const { data: dev } = await supabase
+      .from('desarrollo')
+      .select('json_alta_resolucion, tipo_producto')
+      .eq('id', id)
+      .single() as { data: { json_alta_resolucion: any; tipo_producto: string } | null }
+
+    const ar = dev?.json_alta_resolucion
+    if (!ar || !ar.telas_requeridas || !ar.colores_requeridos) {
+      return { error: 'Faltan datos de Alta Resolución (Comercial) para solicitar auditoría.' }
+    }
+
+    // 1.1 Verificar BOM en la última versión
     const { data: versiones } = await supabase
       .from('desarrollo_versiones')
       .select('bom_data')
@@ -172,17 +188,14 @@ export async function cambiarStatusDesarrollo(
     const hasBomData = Array.isArray(bom) 
       ? bom.length > 0 
       : (bom && typeof bom === 'object' && Array.isArray(bom.materiales) && bom.materiales.length > 0)
+    
+    // NOTA: Podríamos ser flexibles aquí si es solo auditoría comercial, 
+    // pero el sistema anterior requiere BOM para Ops Review.
     if (!hasBomData) {
       return { error: 'No se puede pasar a Revisión Ops sin definir un BOM (materiales) en la versión actual.' }
     }
 
-    // 2. Verificar condiciones (dependiendo del tipo)
-    const { data: dev } = await supabase
-      .from('desarrollo')
-      .select('tipo_producto')
-      .eq('id', id)
-      .single() as { data: { tipo_producto: string } | null }
-
+    // 1.2 Verificar condiciones (dependiendo del tipo)
     if (dev?.tipo_producto === 'fabricado') {
       const { count } = await supabase
         .from('desarrollo_condiciones_material')
@@ -201,6 +214,22 @@ export async function cambiarStatusDesarrollo(
       if (!count || count === 0) {
         return { error: 'Faltan las condiciones comerciales del proveedor para avanzar.' }
       }
+    }
+  }
+
+  // 2. Validar Gate de Ops Review -> Sampling (Certificación Ops)
+  if (nuevoStatus === 'sampling') {
+    const { data: dev } = await supabase
+      .from('desarrollo')
+      .select('tipo_muestra_asignada, disonancia_activa')
+      .eq('id', id)
+      .single() as { data: { tipo_muestra_asignada: string | null; disonancia_activa: boolean } | null }
+
+    if (!dev?.tipo_muestra_asignada) {
+      return { error: 'No se puede pasar a Muestreo sin una Certificación Operativa (Tipo A, B, C o D).' }
+    }
+    if (dev.disonancia_activa) {
+      return { error: 'Disonancia activa deteniendo flujo. Resuelva la auditoría primero.' }
     }
   }
 
@@ -247,11 +276,11 @@ export async function updateDesarrollo(
   return { error: null }
 }
 
-// ─── CANCELAR ────────────────────────────────────────────────────────────────
+// ─── DESCARTAR ────────────────────────────────────────────────────────────────
 
-export async function cancelarDesarrollo(id: string, motivo: string) {
-  if (!motivo.trim()) return { error: 'El motivo de cancelación es obligatorio' }
-  return cambiarStatusDesarrollo(id, 'cancelled', motivo)
+export async function descartarDesarrollo(id: string, motivo: string) {
+  if (!motivo.trim()) return { error: 'El motivo de descarte es obligatorio' }
+  return cambiarStatusDesarrollo(id, 'descartado', motivo)
 }
 
 // ─── CLIENTES (para selector) ─────────────────────────────────────────────────
@@ -267,4 +296,32 @@ export async function getClientesParaDesarrollo() {
 
   if (error) return { data: [], error: error.message }
   return { data: data as { id: string; nombre: string }[], error: null }
+}
+
+// ─── ANALYTICS ────────────────────────────────────────────────────────────────
+
+export async function getKPIInnovacionComercial() {
+  const supabase = db(await createClient())
+
+  const { data, error } = await supabase.rpc('kpi_innovacion_comercial')
+
+  if (error) return { data: 0, error: error.message }
+  return { data: typeof data === 'number' ? data : 0, error: null }
+}
+
+// ─── PRODUCTOS PADRE (Chasis) ──────────────────────────────────────────────────
+
+export async function getProductosPadre() {
+  const supabase = db(await createClient())
+
+  // Por ahora traemos todos los productos activos para que sirvan de Chasis.
+  // En el futuro podemos filtrar por una categoría específica o flag.
+  const { data, error } = await supabase
+    .from('productos')
+    .select('id, nombre, referencia')
+    .eq('estado', 'activo')
+    .order('nombre')
+
+  if (error) return { data: [], error: error.message }
+  return { data, error: null }
 }

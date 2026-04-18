@@ -19,18 +19,22 @@ export type StatusDesarrollo =
   | 'fitting'
   | 'client_review'
   | 'approved'
+  | 'descartado'
+  | 'derivado'
+  | 'hold'
   | 'graduated'
-  | 'cancelled'
 
 export const STATUS_LABELS: Record<StatusDesarrollo, string> = {
   draft:         'Borrador',
-  ops_review:    'Revisión Ops',
+  ops_review:    'Auditoría Ops',
   sampling:      'Muestreo',
   fitting:       'Fitting',
   client_review: 'Revisión Cliente',
   approved:      'Aprobado',
+  descartado:    'Descartado',
+  derivado:      'Derivado',
+  hold:          'En HOLD',
   graduated:     'Graduado',
-  cancelled:     'Cancelado',
 }
 
 export const STATUS_COLORS: Record<StatusDesarrollo, string> = {
@@ -40,8 +44,10 @@ export const STATUS_COLORS: Record<StatusDesarrollo, string> = {
   fitting:       'bg-purple-100 text-purple-700',
   client_review: 'bg-orange-100 text-orange-700',
   approved:      'bg-green-100 text-green-700',
+  descartado:    'bg-red-100 text-red-700',
+  derivado:      'bg-teal-100 text-teal-700',
+  hold:          'bg-rose-100 text-rose-700 border border-rose-300',
   graduated:     'bg-emerald-100 text-emerald-700',
-  cancelled:     'bg-red-100 text-red-600',
 }
 
 export const SECUENCIA_STATUS: StatusDesarrollo[] = [
@@ -53,6 +59,9 @@ export const SECUENCIA_STATUS: StatusDesarrollo[] = [
   'approved',
   'graduated',
 ]
+
+export type TipoMuestra = 'A' | 'B' | 'C' | 'D'
+
 
 export type CategoriaProducto =
   | 'camiseta' | 'polo' | 'pantalon' | 'hoodie'
@@ -89,22 +98,33 @@ export const PRIORIDAD_COLORS: Record<Prioridad, string> = {
 
 export interface DesarrolloConRelaciones extends Desarrollo {
   terceros: { nombre: string } | null
+  productos: { nombre: string; referencia: string } | null
   desarrollo_versiones: Pick<DesarrolloVersion, 'id' | 'version_n' | 'aprobado_ops' | 'aprobado_cliente' | 'aprobado_director'>[]
   profiles: { full_name: string } | null
 }
 
 export type Temporada = '2025-A' | '2025-B' | '2026-A' | '2026-B' | 'PERMANENTE'
 
+export interface JsonAltaResolucion {
+  telas_requeridas: string
+  composicion_gramaje: string
+  colores_requeridos: string
+  tallas_requeridas: string
+  insumos_especiales: string
+  tecnica_confeccion: string
+}
+
 export interface CreateDesarrolloInput {
   nombre_proyecto:    string
   categoria_producto: CategoriaProducto
   temporada:          Temporada
-  complejidad:        Complejidad
   tipo_producto:      TipoProducto
   prioridad:          Prioridad
   fecha_compromiso?:  string
   cliente_id?:        string
   notas?:             string
+  chasis_producto_id?: string
+  json_alta_resolucion?: JsonAltaResolucion
 }
 
 export interface DesarrolloMedidaTemplate {

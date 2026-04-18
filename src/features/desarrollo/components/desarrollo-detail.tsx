@@ -13,6 +13,7 @@ import { GaleriaLightroom } from './galeria-lightroom'
 import { AprobacionesPanel } from './aprobaciones-panel'
 import { ViabilidadOpsPanel } from './viabilidad-ops-panel'
 import { CondicionesPanel } from './condiciones-panel'
+import { AuditoriaMaster } from './auditoria-master'
 import { GenerarMuestraModal } from './generar-muestra-modal'
 import { cambiarStatusDesarrollo } from '@/features/desarrollo/services/desarrollo-actions'
 import { graduarDesarrollo } from '@/features/desarrollo/services/graduacion-actions'
@@ -26,14 +27,16 @@ import type { StatusDesarrollo, Prioridad, DesarrolloViabilidadOps } from '@/fea
 import type { Material, ServicioOperativo } from '@/features/productos/services/bom-actions'
 
 const TRANSICIONES_PERMITIDAS: Record<StatusDesarrollo, StatusDesarrollo[]> = {
-  draft:         ['ops_review', 'cancelled'],
-  ops_review:    ['sampling', 'draft', 'cancelled'],
-  sampling:      ['fitting', 'ops_review', 'cancelled'],
-  fitting:       ['client_review', 'sampling', 'ops_review', 'cancelled'],
-  client_review: ['approved', 'sampling', 'cancelled'],
-  approved:      ['graduated', 'fitting', 'cancelled'],
+  draft:         ['ops_review', 'descartado'],
+  ops_review:    ['sampling', 'draft', 'descartado', 'hold'],
+  sampling:      ['fitting', 'ops_review', 'descartado'],
+  fitting:       ['client_review', 'sampling', 'ops_review', 'descartado'],
+  client_review: ['approved', 'sampling', 'descartado'],
+  approved:      ['graduated', 'fitting', 'descartado'],
+  hold:          ['draft', 'ops_review', 'descartado'],
   graduated:     [],
-  cancelled:     [],
+  descartado:    [],
+  derivado:      [],
 }
 
 type Tab = 'info' | 'versiones' | 'bom' | 'condiciones' | 'muestra' | 'assets' | 'hallazgos' | 'historial'
@@ -92,6 +95,9 @@ interface DesarrolloData {
   desarrollo_viabilidad_ops: DesarrolloViabilidadOps[]
   desarrollo_condiciones: any[]
   desarrollo_condiciones_material: any[]
+  json_alta_resolucion?: any
+  tipo_muestra_asignada?: string
+  disonancia_activa?: boolean
   profiles: { full_name: string } | null
 }
 
@@ -182,10 +188,10 @@ export function DesarrolloDetail({
   const hasFotos = ultimaVersion?.desarrollo_assets?.some(a => a.tipo === 'foto_muestra')
   const hasFicha = ultimaVersion?.desarrollo_assets?.some(a => a.tipo === 'ficha_tecnica')
 
-  const canMoveToOps = hasBom && hasMedidas && hasOptitex && hasEtiquetas && hasFotos && hasFicha
+  const canMoveToOps = hasBom && hasMedidas
   const canMoveToSampling = !!ultimaVersion?.aprobado_ops
   const canMoveToApproved = !!ultimaVersion?.aprobado_cliente
-  const canMoveToGraduated = !!ultimaVersion?.aprobado_director
+  const canMoveToGraduated = !!ultimaVersion?.aprobado_director && hasOptitex && hasEtiquetas && hasFotos && hasFicha
 
   // Viabilidad and ordenes from data
   const viabilidadOps = desarrollo.desarrollo_viabilidad_ops?.[0] as DesarrolloViabilidadOps | undefined
@@ -245,8 +251,13 @@ export function DesarrolloDetail({
   }
 
   const visibleTabsIds = getVisibleTabs(status)
+  
+  if (status === 'ops_review' && !visibleTabsIds.includes('auditoria' as any)) {
+    visibleTabsIds.unshift('auditoria' as any)
+  }
 
-  const TABS: { id: Tab; label: string; badge?: number }[] = [
+  const TABS: { id: Tab | 'auditoria'; label: string; badge?: number }[] = [
+    { id: 'auditoria',   label: 'Auditoría Ops (S7)' },
     { id: 'versiones',   label: 'Diseño & BOM', badge: desarrollo.desarrollo_versiones.length },
     { id: 'bom',         label: 'BOM & Costos' },
     { id: 'condiciones', label: 'Viabilidad Ops' },
@@ -255,7 +266,7 @@ export function DesarrolloDetail({
     { id: 'hallazgos',   label: 'Hallazgos (Prototipo)', badge: versionSeleccionada?.desarrollo_hallazgos.filter(h => !h.resuelto).length },
     { id: 'info',        label: 'Info General' },
     { id: 'historial',   label: 'Historial' },
-  ].filter(t => visibleTabsIds.includes(t.id))
+  ].filter(t => visibleTabsIds.includes(t.id as any))
 
   // Auto-switch tab si el actual ya no es visible por cambio de estado
   useEffect(() => {
@@ -344,7 +355,11 @@ export function DesarrolloDetail({
                 reason.push('Requiere Aprobación del Cliente')
               } else if (isGraduated && !canMoveToGraduated) {
                 blocked = true
-                reason.push('Requiere Aprobación del Director de Diseño')
+                if (!ultimaVersion?.aprobado_director) reason.push('Requiere Aprobación del Director de Diseño')
+                if (!hasOptitex) reason.push('Falta archivo Optitex')
+                if (!hasEtiquetas) reason.push('Faltan etiquetas/marquillas')
+                if (!hasFotos) reason.push('Faltan fotos de referencia')
+                if (!hasFicha) reason.push('Faltan fichas técnicas')
               }
 
               const isDisabled = isPending || blocked
@@ -444,6 +459,17 @@ export function DesarrolloDetail({
               proveedores={proveedores}
               catalogoMateriales={catalogoMateriales}
             />
+          )}
+
+          {/* TAB: Auditoria Master */}
+          {activeTab === ('auditoria' as any) && (
+             <AuditoriaMaster 
+                desarrolloId={desarrollo.id}
+                jsonAltaResolucion={desarrollo.json_alta_resolucion || {}}
+                tipoMuestraActual={desarrollo.tipo_muestra_asignada as any}
+                disonanciaActiva={desarrollo.disonancia_activa}
+                status={desarrollo.status}
+             />
           )}
 
           {/* TAB: Versiones */}
@@ -577,13 +603,18 @@ export function DesarrolloDetail({
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Checklist de Entrega a Ops</p>
                         <p className="text-[11px] text-slate-500">Asegúrate de cumplir con estos requisitos para habilitar la revisión de viabilidad.</p>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <CheckItem label="BOM Completo" ok={hasBom} />
                         <CheckItem label="Medidas Cargadas" ok={hasMedidas} />
-                        <CheckItem label="Archivo Optitex" ok={hasOptitex} />
-                        <CheckItem label="Fotos Muestra" ok={hasFotos} />
-                        <CheckItem label="Etiquetas / Marquillas" ok={hasEtiquetas} />
-                        <CheckItem label="Ficha Técnica" ok={hasFicha} />
+                      </div>
+                      <div className="mt-4">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Mandatorio para Cierre (Graduación)</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                          <CheckItem label="Optitex" ok={hasOptitex} />
+                          <CheckItem label="Fotos Muestra" ok={hasFotos} />
+                          <CheckItem label="Marquillas" ok={hasEtiquetas} />
+                          <CheckItem label="Ficha Técnica" ok={hasFicha} />
+                        </div>
                       </div>
                       {!canMoveToOps && (
                         <div className="flex items-center gap-2 text-[10px] text-amber-600 font-bold bg-amber-50 p-2.5 rounded-xl border border-amber-100">

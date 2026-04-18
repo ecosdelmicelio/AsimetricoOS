@@ -4,6 +4,7 @@ import { getAtributosPT } from '@/features/productos/services/atributo-actions'
 import { getAtributosMP } from '@/features/materiales/services/atributo-actions'
 import { getTipoServicioAtributos } from '@/features/servicios/services/atributo-servicio-actions'
 import { getBodegas, getBodegaDefaultId } from '@/features/wms/services/bodegas-actions'
+import { getAjustes } from '@/features/configuracion/services/ajustes-actions'
 import { ConfiguracionTabs } from '@/features/configuracion/components/configuracion-tabs'
 import { PageHeader } from '@/shared/components/page-header'
 import { Settings2 } from 'lucide-react'
@@ -22,7 +23,7 @@ async function getTiposDefecto() {
 }
 
 export default async function ConfiguracionPage() {
-  const [tiposDefecto, tiposMovimiento, calidadConfig, atributosPT, atributosMP, atributosServicios, bodegas, bodegaDefaultId] = await Promise.all([
+  const [tiposDefecto, tiposMovimiento, calidadConfig, atributosPT, atributosMP, atributosServicios, bodegas, bodegaDefaultId, ajustes] = await Promise.all([
     getTiposDefecto(),
     getTiposMovimiento(),
     getCalidadConfig(),
@@ -31,6 +32,7 @@ export default async function ConfiguracionPage() {
     getTipoServicioAtributos(),
     getBodegas(),
     getBodegaDefaultId(),
+    getAjustes()
   ])
 
   return (
@@ -50,6 +52,7 @@ export default async function ConfiguracionPage() {
         atributosServicios={atributosServicios}
         bodegas={bodegas}
         bodegaDefaultId={bodegaDefaultId}
+        ajustes={ajustes.data || []}
       />
     </div>
   )

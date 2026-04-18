@@ -8,6 +8,7 @@ import { BodegasTab } from '@/features/configuracion/components/bodegas-tab'
 import { AtributosConfig } from '@/features/productos/components/atributos-config'
 import { AtributosConfigMP } from '@/features/materiales/components/atributos-config'
 import { AtributosConfigServicio } from '@/features/servicios/components/atributos-config-servicio'
+import { PlmConfigPanel } from '@/features/configuracion/components/plm-config-panel'
 import type { CalidadConfig } from '@/features/calidad/types'
 import type { TipoMovimiento } from '@/features/configuracion/services/tipos-movimiento-actions'
 import type { Bodega } from '@/features/wms/types'
@@ -15,7 +16,7 @@ import type { AtributoPT } from '@/features/productos/types/atributos'
 import type { AtributoMP } from '@/features/materiales/types/atributos'
 import type { TipoServicioAtributo } from '@/features/servicios/types/servicios'
 
-type Tab = 'defectos' | 'calidad' | 'movimientos' | 'atributos-pt' | 'atributos-mp' | 'atributos-servicios' | 'bodegas'
+type Tab = 'defectos' | 'calidad' | 'movimientos' | 'atributos-pt' | 'atributos-mp' | 'atributos-servicios' | 'bodegas' | 'plm'
 
 const TABS: { id: Tab; label: string; sub: string; icon: 'code' | 'shield' | 'package' }[] = [
   { id: 'bodegas', label: 'Bodegas', sub: 'Gestión de bodegas y default',           icon: 'package' },
@@ -25,6 +26,7 @@ const TABS: { id: Tab; label: string; sub: string; icon: 'code' | 'shield' | 'pa
   { id: 'defectos', label: 'Tipos de Defecto', sub: 'Catálogo para calidad',        icon: 'code'  },
   { id: 'movimientos', label: 'Movimientos', sub: 'Tipos de movimiento kardex',    icon: 'code'  },
   { id: 'calidad',  label: 'Calidad',          sub: 'Parámetros de inspección',     icon: 'shield'},
+  { id: 'plm',      label: 'Parámetros PLM',   sub: 'Días nuevo, reglas',         icon: 'code'  },
 ]
 
 interface Props {
@@ -36,6 +38,7 @@ interface Props {
   atributosServicios: TipoServicioAtributo[]
   bodegas: Bodega[]
   bodegaDefaultId: string | null
+  ajustes: any[]
 }
 
 export function ConfiguracionTabs({
@@ -47,6 +50,7 @@ export function ConfiguracionTabs({
   atributosServicios,
   bodegas,
   bodegaDefaultId,
+  ajustes,
 }: Props) {
   const [tab, setTab] = useState<Tab>('bodegas')
 
@@ -92,6 +96,7 @@ export function ConfiguracionTabs({
       {tab === 'defectos' && <DefectosPanel tiposDefecto={tiposDefecto} />}
       {tab === 'movimientos' && <TiposMovimientoTab tiposMovimiento={tiposMovimiento} />}
       {tab === 'calidad'  && <CalidadConfigForm config={calidadConfig} />}
+      {tab === 'plm'      && <PlmConfigPanel ajustes={ajustes} />}
     </div>
   )
 }
