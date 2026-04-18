@@ -9,24 +9,17 @@ import { AtributosConfig } from '@/features/productos/components/atributos-confi
 import { AtributosConfigMP } from '@/features/materiales/components/atributos-config'
 import { AtributosConfigServicio } from '@/features/servicios/components/atributos-config-servicio'
 import { PlmConfigPanel } from '@/features/configuracion/components/plm-config-panel'
-import { ConfiguracionContablePanel } from '@/features/finanzas/components/configuracion-contable-panel'
-import { EmpleadosManager } from '@/features/finanzas/components/empleados-manager'
 import type { CalidadConfig } from '@/features/calidad/types'
 import type { TipoMovimiento } from '@/features/configuracion/services/tipos-movimiento-actions'
 import type { Bodega } from '@/features/wms/types'
 import type { AtributoPT } from '@/features/productos/types/atributos'
 import type { AtributoMP } from '@/features/materiales/types/atributos'
 import type { TipoServicioAtributo } from '@/features/servicios/types/servicios'
-import type { ActivoFijo } from '@/features/finanzas/services/activos-actions'
-import type { Empleado } from '@/features/finanzas/services/empleados-actions'
-import type { Socio } from '@/features/finanzas/services/socios-actions'
 
-type Tab = 'bodegas' | 'atributos-pt' | 'atributos-mp' | 'atributos-servicios' | 'defectos' | 'movimientos' | 'calidad' | 'plm' | 'finanzas' | 'recursos-humanos'
+type Tab = 'bodegas' | 'atributos-pt' | 'atributos-mp' | 'atributos-servicios' | 'defectos' | 'movimientos' | 'calidad' | 'plm'
 
 const TABS: { id: Tab; label: string; sub: string; icon: any }[] = [
   { id: 'bodegas', label: 'Bodegas', sub: 'Gestión de bodegas y default',           icon: Package },
-  { id: 'finanzas', label: 'Finanzas', sub: 'Balances, Activos y Parafiscales',    icon: Landmark },
-  { id: 'recursos-humanos', label: 'R. Humanos', sub: 'Gestión de empleados y nómina', icon: Users },
   { id: 'atributos-pt', label: 'Atributos PT', sub: 'Tipo, Fit, Color, etc.',       icon: Code2  },
   { id: 'atributos-mp', label: 'Atributos MP', sub: 'Tipo, Subtipo, Color, etc.',   icon: Code2  },
   { id: 'atributos-servicios', label: 'Atributos Servicios', sub: 'Tipo, Subtipo',   icon: Code2  },
@@ -46,12 +39,6 @@ interface Props {
   bodegas: Bodega[]
   bodegaDefaultId: string | null
   ajustes: any[]
-  // Finanzas & HR
-  balanceConfig: { clave: string; valor: number; nota: string }[]
-  activos: ActivoFijo[]
-  empleados: Empleado[]
-  parafiscales: Record<string, number>
-  socios: Socio[]
 }
 
 export function ConfiguracionTabs({
@@ -64,11 +51,6 @@ export function ConfiguracionTabs({
   bodegas,
   bodegaDefaultId,
   ajustes,
-  balanceConfig,
-  activos,
-  empleados,
-  parafiscales,
-  socios
 }: Props) {
   const [tab, setTab] = useState<Tab>('bodegas')
 
@@ -104,8 +86,7 @@ export function ConfiguracionTabs({
       {/* Content */}
       <div className="pt-4 transition-all duration-300">
         {tab === 'bodegas' && <BodegasTab bodegas={bodegas} bodegaDefaultId={bodegaDefaultId} />}
-        {tab === 'finanzas' && <ConfiguracionContablePanel balanceConfig={balanceConfig} activos={activos} parafiscales={parafiscales} socios={socios} />}
-        {tab === 'recursos-humanos' && <EmpleadosManager initialEmpleados={empleados} />}
+
         {tab === 'atributos-pt' && <AtributosConfig atributos={atributosPT} />}
         {tab === 'atributos-mp' && <AtributosConfigMP atributos={atributosMP} />}
         {tab === 'atributos-servicios' && <AtributosConfigServicio atributos={atributosServicios} />}

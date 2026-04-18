@@ -12,6 +12,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
 }
 
+import { Toaster } from 'sonner'
+
 export default function RootLayout({
   children,
 }: {
@@ -19,7 +21,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        {children}
+        <Toaster position="top-right" richColors closeButton />
+      </body>
     </html>
   )
 }

@@ -1,13 +1,12 @@
 import Link from 'next/link'
 import {
   Factory, AlertTriangle, CheckCircle, ShieldCheck,
-  ClipboardList, ChevronRight, Plus, Trophy, TrendingUp,
-  LayoutDashboard
+  ClipboardList, ChevronRight, Plus, Clock, ShoppingCart, Package, Activity
 } from 'lucide-react'
 import { getTorreData } from '@/features/torre-control/services/torre-actions'
 import { OPStatusBadge } from '@/features/ordenes-produccion/components/op-status-badge'
 import { PageHeader } from '@/shared/components/page-header'
-import { formatDate } from '@/shared/lib/utils'
+import { formatDate, formatCurrency } from '@/shared/lib/utils'
 import { SECUENCIA_ESTADOS } from '@/features/ordenes-produccion/types'
 import type { OPResumen, TallerRanking, OVPendiente } from '@/features/torre-control/services/torre-actions'
 
@@ -95,6 +94,12 @@ export async function TorreControlDashboard() {
 
         {/* Columna derecha */}
         <div className="space-y-6">
+          {/* Lead Times */}
+          <PanelLeadTimes leadTimes={data.lead_times} />
+
+          {/* Calidad Detalle */}
+          <PanelCalidad calidad={data.calidad} />
+
           {/* OVs pendientes de OP */}
           <PanelOVsPendientes ovs={ovs_pendientes} />
 
@@ -103,6 +108,28 @@ export async function TorreControlDashboard() {
         </div>
       </div>
     </div>
+  )
+}
+
+function LayoutDashboard(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect width="7" height="9" x="3" y="3" rx="1" />
+      <rect width="7" height="5" x="14" y="3" rx="1" />
+      <rect width="7" height="9" x="14" y="12" rx="1" />
+      <rect width="7" height="5" x="3" y="16" rx="1" />
+    </svg>
   )
 }
 
@@ -233,52 +260,109 @@ function PanelOVsPendientes({ ovs }: { ovs: OVPendiente[] }) {
   )
 }
 
-/* ─── Ranking talleres ──────────────────────────── */
+/* ─── Lead Times ────────────────────────────────── */
+function PanelLeadTimes({ leadTimes }: { leadTimes: any[] }) {
+  const icons: Record<string, React.ReactNode> = {
+    produccion: <Factory className="w-3.5 h-3.5 text-purple-500" />,
+    materia_prima: <Package className="w-3.5 h-3.5 text-blue-500" />,
+    comercializado: <ShoppingCart className="w-3.5 h-3.5 text-emerald-500" />
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Clock className="w-4 h-4 text-muted-foreground" />
+        <h2 className="font-semibold text-foreground text-body-md">Lead Times Reales</h2>
+      </div>
+      <div className="rounded-2xl bg-neu-base shadow-neu p-4 space-y-3">
+        {leadTimes.map((lt, i) => (
+          <div key={`${lt.tipo}-${i}`}>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                {icons[lt.tipo]}
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{lt.categoria}</span>
+              </div>
+              <span className="text-xs font-black text-slate-900">{lt.promedio} días</span>
+            </div>
+            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+               <div className={`h-full rounded-full ${lt.tipo === 'produccion' ? 'bg-purple-400' : lt.tipo === 'materia_prima' ? 'bg-blue-400' : 'bg-emerald-400'}`} style={{ width: `${Math.min((lt.promedio / 45) * 100, 100)}%` }} />
+            </div>
+          </div>
+        ))}
+        {leadTimes.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">Sin datos de entregas recientes</p>}
+      </div>
+    </div>
+  )
+}
+
+/* ─── Calidad Detalle ───────────────────────────── */
+function PanelCalidad({ calidad }: { calidad: any }) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <ShieldCheck className="w-4 h-4 text-muted-foreground" />
+        <h2 className="font-semibold text-foreground text-body-md">Calidad & Defectología</h2>
+      </div>
+      <div className="rounded-2xl bg-neu-base shadow-neu p-4">
+        <div className="flex items-center justify-between mb-6">
+          <div className="text-center flex-1 border-r border-slate-100">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Aprobación</p>
+            <p className="text-xl font-black text-emerald-600">{calidad.tasaAprobacion.toFixed(1)}%</p>
+          </div>
+          <div className="text-center flex-1">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Alertas</p>
+            <p className={`text-xl font-black ${calidad.novedadesAbiertas > 0 ? 'text-rose-500' : 'text-slate-400'}`}>{calidad.novedadesAbiertas}</p>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Top Defectos</p>
+           {calidad.defectosTop.map((d: any) => (
+             <div key={d.tipo} className="flex items-center justify-between group">
+               <span className="text-[10px] font-bold text-slate-600 group-hover:text-slate-900 transition-colors">{d.tipo}</span>
+               <span className="text-[10px] font-black text-slate-400">{d.count} u</span>
+             </div>
+           ))}
+           {calidad.defectosTop.length === 0 && <p className="text-xs text-center text-slate-300 py-2">0 defectos reportados</p>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function PanelRanking({ ranking }: { ranking: TallerRanking[] }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <TrendingUp className="w-4 h-4 text-muted-foreground" />
-        <h2 className="font-semibold text-foreground text-body-md">Ranking Talleres</h2>
+        <Activity className="w-4 h-4 text-muted-foreground" />
+        <h2 className="font-semibold text-foreground text-body-md">Utilización de Talleres</h2>
       </div>
-
-      {ranking.length === 0 ? (
-        <div className="rounded-2xl bg-neu-base shadow-neu px-4 py-6 text-center">
-          <p className="text-muted-foreground text-body-sm">Sin datos aún</p>
-        </div>
-      ) : (
-        <div className="rounded-2xl bg-neu-base shadow-neu overflow-hidden">
-          {ranking.map((taller, i) => (
-            <div
-              key={taller.id}
-              className="flex items-center gap-3 px-4 py-3 border-b border-black/5 last:border-0"
-            >
-              {/* Posición */}
-              <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold
-                ${i === 0 ? 'bg-yellow-100 text-yellow-700' :
-                  i === 1 ? 'bg-gray-100 text-gray-600' :
-                  i === 2 ? 'bg-orange-100 text-orange-700' :
-                  'bg-neu-base shadow-neu-inset text-muted-foreground'}`}>
-                {i === 0 ? <Trophy className="w-3.5 h-3.5" /> : i + 1}
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-foreground text-body-sm truncate">{taller.nombre}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-green-600 font-medium">{taller.completadas} ✓</span>
-                  {taller.activas > 0 && (
-                    <span className="text-xs text-muted-foreground">{taller.activas} activas</span>
-                  )}
-                  {taller.enRiesgo > 0 && (
-                    <span className="text-xs text-yellow-600 font-medium">{taller.enRiesgo} riesgo</span>
-                  )}
+      <div className="rounded-2xl bg-neu-base shadow-neu p-4 space-y-4">
+        {ranking.map((t) => (
+          <div key={t.id} className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black text-slate-800 uppercase tracking-tight leading-none">{t.nombre}</p>
+                <div className="flex gap-2 mt-1">
+                  <span className="text-[9px] font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded capitalize">{t.activas} OPs</span>
+                  <span className="text-[9px] font-black text-emerald-500">{formatCurrency(t.wip_value)} WIP</span>
                 </div>
               </div>
+              <div className="text-right">
+                <p className="text-xs font-black text-slate-900 leading-none">{t.carga_pct.toFixed(1)}%</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">Carga</p>
+              </div>
             </div>
-          ))}
-        </div>
-      )}
+            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+               <div 
+                 className={`h-full rounded-full transition-all duration-1000 ${t.carga_pct > 90 ? 'bg-rose-500' : t.carga_pct > 70 ? 'bg-amber-500' : 'bg-emerald-500'}`} 
+                 style={{ width: `${Math.min(t.carga_pct, 100)}%` }} 
+               />
+            </div>
+          </div>
+        ))}
+        {ranking.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">Sin talleres activos</p>}
+      </div>
     </div>
   )
 }

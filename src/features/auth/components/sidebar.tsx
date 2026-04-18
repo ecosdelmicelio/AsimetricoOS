@@ -27,21 +27,75 @@ import {
 import Image from 'next/image'
 import type { UserRole } from '@/shared/types'
 
-const NAV_ITEMS: { href: string; label: string; icon: React.ElementType; roles: UserRole[] }[] = [
-  { href: '/torre-control',       label: 'Torre de Control', icon: LayoutDashboard, roles: ['orquestador'] },
-  { href: '/ordenes-venta',       label: 'Órdenes de Venta', icon: DollarSign,      roles: ['orquestador'] },
-  { href: '/desarrollo',          label: 'Desarrollo',       icon: FlaskConical,    roles: ['orquestador'] },
-  { href: '/ordenes-produccion',  label: 'Producción',       icon: Factory,         roles: ['orquestador', 'jefe_piso'] },
-  { href: '/calidad',             label: 'Calidad',          icon: ShieldCheck,     roles: ['orquestador', 'inspector'] },
-  { href: '/catalogo',            label: 'Catálogo',         icon: Package,         roles: ['orquestador'] },
-  { href: '/wms',                 label: 'Gestión de Bodegas', icon: Warehouse,       roles: ['orquestador'] },
-  { href: '/kardex',              label: 'Kardex',           icon: BarChart2,       roles: ['orquestador'] },
-  { href: '/despachos',            label: 'Despachos',        icon: Truck,           roles: ['orquestador'] },
-  { href: '/compras',             label: 'Compras',          icon: ShoppingCart,    roles: ['orquestador'] },
-  { href: '/finanzas',            label: 'Finanzas/Inteligencia', icon: BarChart2,   roles: ['orquestador'] },
-  { href: '/terceros',            label: 'Terceros',         icon: Users,           roles: ['orquestador'] },
-  { href: '/configuracion',       label: 'Configuración',    icon: Settings2,       roles: ['orquestador'] },
-  { href: '/taller',              label: 'Mi Taller',        icon: Factory,         roles: ['taller'] },
+interface NavItem {
+  href?: string;
+  label: string;
+  icon: React.ElementType;
+  roles: UserRole[];
+  subItems?: { href: string; label: string; roles: UserRole[] }[];
+}
+
+const NAV_ITEMS: NavItem[] = [
+  {
+    label: 'Torre de Control',
+    icon: LayoutDashboard,
+    roles: ['orquestador'],
+    subItems: [
+      { href: '/torre-control',            label: 'Gerencial',   roles: ['orquestador'] },
+      { href: '/torre-control/operaciones', label: 'Operaciones', roles: ['orquestador'] },
+      { href: '/torre-control/comercial',   label: 'Comercial',   roles: ['orquestador'] },
+      { href: '/torre-control/financiera',  label: 'Financiera',  roles: ['orquestador'] },
+    ]
+  },
+  { 
+    href: '/ordenes-venta', 
+    label: 'Ventas', 
+    icon: DollarSign,      
+    roles: ['orquestador'] 
+  },
+  {
+    label: 'Operaciones',
+    icon: Factory,
+    roles: ['orquestador', 'jefe_piso', 'inspector'],
+    subItems: [
+      { href: '/ordenes-produccion', label: 'Producción', roles: ['orquestador', 'jefe_piso'] },
+      { href: '/calidad',            label: 'Calidad',    roles: ['orquestador', 'inspector'] },
+      { href: '/compras',            label: 'Compras',    roles: ['orquestador'] },
+      { href: '/wms',                label: 'Bodegas',    roles: ['orquestador'] },
+      { href: '/kardex',             label: 'Kardex',     roles: ['orquestador'] },
+      { href: '/despachos',          label: 'Despachos',  roles: ['orquestador'] },
+    ]
+  },
+  {
+    label: 'Desarrollo',
+    icon: FlaskConical,
+    roles: ['orquestador'],
+    subItems: [
+      { href: '/desarrollo', label: 'Muestras/PLM', roles: ['orquestador'] },
+      { href: '/catalogo',   label: 'Catálogo',     roles: ['orquestador'] },
+    ]
+  },
+  { 
+    href: '/finanzas', 
+    label: 'Finanzas', 
+    icon: BarChart2,   
+    roles: ['orquestador'] 
+  },
+  {
+    label: 'Administración',
+    icon: Settings2,
+    roles: ['orquestador'],
+    subItems: [
+      { href: '/terceros',      label: 'Terceros',      roles: ['orquestador'] },
+      { href: '/configuracion', label: 'Configuración', roles: ['orquestador'] },
+    ]
+  },
+  { 
+    href: '/taller', 
+    label: 'Mi Taller', 
+    icon: Factory, 
+    roles: ['taller'] 
+  },
 ]
 
 const ROLE_LABEL: Record<UserRole, string> = {
@@ -159,32 +213,17 @@ export function Sidebar() {
 
         {/* Nav Links */}
         <nav className="flex-1 flex flex-col gap-1 px-3 py-4 overflow-y-auto no-scrollbar overflow-x-hidden">
-          {visibleItems.map((item) => {
-            const Icon = item.icon
-            const isActive = pathname.startsWith(item.href)
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                title={!expanded && !mobileOpen ? item.label : undefined}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-body-sm font-medium transition-all group overflow-hidden',
-                  isActive
-                    ? 'bg-primary-700 text-white shadow-neu-primary-inset'
-                    : 'text-primary-300 hover:bg-primary-800 hover:text-white'
-                )}
-              >
-                <Icon className={cn("w-5 h-5 shrink-0 transition-transform", isActive ? "" : "group-hover:scale-110")} />
-                <span className={cn(
-                  "whitespace-nowrap transition-opacity duration-300", 
-                  (expanded || mobileOpen) ? "opacity-100" : "opacity-0 hidden"
-                )}>
-                  {item.label}
-                </span>
-              </Link>
-            )
-          })}
+          {visibleItems.map((item) => (
+            <SidebarItem
+              key={item.label}
+              item={item}
+              expanded={expanded}
+              mobileOpen={mobileOpen}
+              pathname={pathname}
+              setExpanded={setExpanded}
+              setMobileOpen={setMobileOpen}
+            />
+          ))}
         </nav>
 
         {/* Footer / User Area */}
@@ -221,5 +260,96 @@ export function Sidebar() {
         </div>
       </aside>
     </>
+  )
+}
+
+function SidebarItem({ 
+  item, 
+  expanded, 
+  mobileOpen, 
+  pathname, 
+  setExpanded, 
+  setMobileOpen 
+}: { 
+  item: NavItem; 
+  expanded: boolean; 
+  mobileOpen: boolean; 
+  pathname: string;
+  setExpanded: (v: boolean) => void;
+  setMobileOpen: (v: boolean) => void;
+}) {
+  const Icon = item.icon
+  const hasSubItems = item.subItems && item.subItems.length > 0
+  const isActive = item.href ? pathname.startsWith(item.href) : item.subItems?.some(s => pathname.startsWith(s.href))
+  const [localOpen, setLocalOpen] = useState(isActive)
+
+  return (
+    <div className="flex flex-col gap-1">
+      {item.href ? (
+        <Link
+          href={item.href}
+          onClick={() => setMobileOpen(false)}
+          className={cn(
+            'flex items-center gap-3 px-3 py-2.5 rounded-xl text-body-sm font-medium transition-all group overflow-hidden',
+            isActive
+              ? 'bg-primary-700 text-white shadow-neu-primary-inset'
+              : 'text-primary-300 hover:bg-primary-800 hover:text-white'
+          )}
+        >
+          <Icon className={cn("w-5 h-5 shrink-0 transition-transform", isActive ? "" : "group-hover:scale-110")} />
+          <span className={cn(
+            "whitespace-nowrap transition-opacity duration-300", 
+            (expanded || mobileOpen) ? "opacity-100" : "opacity-0 hidden"
+          )}>
+            {item.label}
+          </span>
+        </Link>
+      ) : (
+        <button
+          onClick={() => {
+            if (!expanded && !mobileOpen) setExpanded(true)
+            setLocalOpen(!localOpen)
+          }}
+          className={cn(
+            'flex items-center gap-3 px-3 py-2.5 rounded-xl text-body-sm font-medium transition-all group overflow-hidden w-full text-left',
+            isActive && !localOpen
+              ? 'bg-primary-800/50 text-white'
+              : 'text-primary-300 hover:bg-primary-800 hover:text-white'
+          )}
+        >
+          <Icon className={cn("w-5 h-5 shrink-0 transition-transform", isActive ? "text-primary-400" : "group-hover:scale-110")} />
+          <div className={cn(
+            "flex-1 flex items-center justify-between transition-opacity duration-300",
+            (expanded || mobileOpen) ? "opacity-100" : "opacity-0 hidden"
+          )}>
+            <span className="whitespace-nowrap">{item.label}</span>
+            <ChevronRight className={cn("w-4 h-4 transition-transform", localOpen ? "rotate-90" : "")} />
+          </div>
+        </button>
+      )}
+
+      {hasSubItems && localOpen && (expanded || mobileOpen) && (
+        <div className="flex flex-col gap-1 ml-9 mt-1 mb-2 border-l border-primary-800/50 pl-2">
+          {item.subItems?.map(sub => {
+            const isSubActive = pathname.startsWith(sub.href)
+            return (
+              <Link
+                key={sub.href}
+                href={sub.href}
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  'px-3 py-2 rounded-lg text-[13px] font-medium transition-all',
+                  isSubActive
+                    ? 'text-white bg-primary-800/50 font-bold'
+                    : 'text-primary-400 hover:text-white hover:bg-primary-800/30'
+                )}
+              >
+                {sub.label}
+              </Link>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
