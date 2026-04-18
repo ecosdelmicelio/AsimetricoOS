@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useTransition, useMemo, useEffect } from 'react'
-import { Plus, Trash2, Edit2, Loader2, Lightbulb } from 'lucide-react'
+import { Plus, Trash2, Edit2, Loader2, Lightbulb, Check, AlertCircle } from 'lucide-react'
+import { cn } from '@/shared/lib/utils'
 import {
   createTipoServicioAtributo,
   updateTipoServicioAtributo,
@@ -254,11 +255,19 @@ export function AtributosConfigServicio({ atributos }: Props) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* TIPOS */}
-      <div className="rounded-2xl bg-neu-base shadow-neu p-6 space-y-4">
+    <div className="space-y-12 text-slate-900">
+      {/* TIPOS PREMIUM */}
+      <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden p-8 space-y-8">
         <div className="flex items-center justify-between">
-          <h3 className="text-body-sm font-semibold text-foreground">Tipos de Servicio</h3>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center">
+              <Plus className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest leading-none">Categorización Primaria</h3>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mt-1">Tipos de Servicio / Operaciones Base</p>
+            </div>
+          </div>
           {!showFormTipo && (
             <button
               onClick={() => {
@@ -267,200 +276,197 @@ export function AtributosConfigServicio({ atributos }: Props) {
                 setAbreviaturaTipo('')
                 setAbreviaturaTipoSugerida(true)
               }}
-              className="px-3 py-1.5 rounded-lg bg-primary-600 text-white font-semibold text-xs hover:bg-primary-700 transition-all flex items-center gap-1"
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
             >
               <Plus className="w-3.5 h-3.5" />
-              Agregar
+              Nuevo Tipo
             </button>
           )}
         </div>
 
-        {showFormTipo ? (
-          <form onSubmit={handleAgregarTipo} className="space-y-4 rounded-xl bg-neu p-4 border border-neu-stroke">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground font-medium">Nombre *</label>
+        {showFormTipo && (
+          <form onSubmit={handleAgregarTipo} className="p-6 rounded-3xl bg-slate-50 border border-slate-100 space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nombre Operativo</label>
                 <input
                   type="text"
                   value={nombreTipo}
                   onChange={e => handleNombreTipoChange(e.target.value)}
-                  placeholder="Ej: Corte"
-                  className="w-full px-3 py-2.5 rounded-xl bg-neu text-body-sm text-foreground outline-none border border-neu-stroke placeholder:text-muted-foreground"
+                  placeholder="EJ: CORTE, CONFECCIÓN, EMPAQUE..."
+                  className="w-full px-4 py-3 rounded-2xl bg-white border border-slate-200 text-xs font-black uppercase tracking-widest text-slate-900 outline-none focus:ring-2 focus:ring-slate-900/5 transition-all"
                 />
               </div>
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs text-muted-foreground font-medium">Abreviatura *</label>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between ml-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Abreviatura Sugerida</label>
                   {abreviaturaTipoSugerida && nombreTipo.trim() && (
-                    <div className="flex items-center gap-1 text-xs text-primary-600">
-                      <Lightbulb className="w-3 h-3" />
-                      <span>sugerida</span>
-                    </div>
+                    <span className="text-[9px] font-black text-indigo-500 uppercase tracking-tighter bg-indigo-50 px-2 py-0.5 rounded-full">Automática</span>
                   )}
                 </div>
                 <input
                   type="text"
                   value={abreviaturaTipo}
                   onChange={e => handleAbreviaturaTipoChange(e.target.value)}
-                  placeholder="Ej: CO"
+                  placeholder="EJ: CO"
                   maxLength={3}
-                  className="w-full px-3 py-2.5 rounded-xl bg-neu text-body-sm text-foreground outline-none border border-neu-stroke placeholder:text-muted-foreground uppercase"
+                  className="w-full px-4 py-3 rounded-2xl bg-white border border-slate-200 text-xs font-mono font-black text-slate-900 outline-none focus:ring-2 focus:ring-slate-900/5 transition-all uppercase"
                 />
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3 pt-2">
               <button
                 type="submit"
                 disabled={pending}
-                className="px-4 py-2.5 rounded-xl bg-primary-600 text-white font-semibold text-body-sm hover:bg-primary-700 transition-all disabled:opacity-50 flex items-center gap-2"
+                className="flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50"
               >
-                {pending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {pending && <Loader2 className="w-4 h-4 animate-spin" />}
                 <Plus className="w-4 h-4" />
-                Agregar Tipo
+                Empadronar Tipo
               </button>
               <button
                 type="button"
                 onClick={() => setShowFormTipo(false)}
-                className="px-4 py-2.5 rounded-xl bg-neu text-foreground font-semibold text-body-sm hover:bg-neu-hover transition-all"
+                className="px-8 py-3.5 rounded-2xl bg-white border border-slate-200 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all"
               >
                 Cancelar
               </button>
             </div>
           </form>
-        ) : null}
+        )}
 
-        {tipos.length === 0 ? (
-          <p className="text-muted-foreground text-body-sm">Sin tipos agregados</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-body-sm">
-              <thead>
-                <tr className="border-b border-neu-stroke">
-                  <th className="text-left py-2 px-3 font-semibold text-foreground">Nombre</th>
-                  <th className="text-left py-2 px-3 font-semibold text-foreground">Abreviatura</th>
-                  <th className="text-center py-2 px-3 font-semibold text-foreground w-16">Estado</th>
-                  <th className="text-right py-2 px-3 font-semibold text-foreground w-24"></th>
+        <div className="overflow-hidden rounded-3xl border border-slate-50">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-slate-50/50">
+                <th className="text-left py-4 px-6 text-[9px] font-black text-slate-400 uppercase tracking-widest">Estructura Nominal</th>
+                <th className="text-left py-4 px-6 text-[9px] font-black text-slate-400 uppercase tracking-widest w-40">Identificador</th>
+                <th className="text-center py-4 px-6 text-[9px] font-black text-slate-400 uppercase tracking-widest w-32">Status</th>
+                <th className="text-right py-4 px-6 w-24"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {tipos.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-12 text-center">
+                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Sectores sin Definición Primaria</p>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {tipos.map(tipo => (
-                  <tr key={tipo.id} className="border-b border-neu-stroke hover:bg-neu-hover transition-colors">
-                    <td className="py-2.5 px-3">
+              ) : (
+                tipos.map(tipo => (
+                  <tr key={tipo.id} className="group/row hover:bg-slate-50/30 transition-all">
+                    <td className="py-4 px-6">
                       {editingId === tipo.id ? (
                         <input
                           type="text"
                           value={editingNombre}
                           onChange={e => setEditingNombre(e.target.value)}
-                          className="w-full px-2 py-1 rounded bg-white border border-neu-stroke text-body-sm"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-[11px] font-black uppercase"
                           autoFocus
                         />
                       ) : (
-                        <span className="text-foreground">{tipo.nombre}</span>
+                        <span className="text-[12px] font-black text-slate-900 uppercase tracking-tight">{tipo.nombre}</span>
                       )}
                     </td>
-                    <td className="py-2.5 px-3">
+                    <td className="py-4 px-6">
                       {editingId === tipo.id ? (
                         <input
                           type="text"
                           value={editingAbreviatura}
                           onChange={e => setEditingAbreviatura(e.target.value)}
                           maxLength={3}
-                          className="w-full px-2 py-1 rounded bg-white border border-neu-stroke text-body-sm uppercase"
+                          className="w-20 px-3 py-2 rounded-xl bg-white border border-slate-300 text-[11px] font-mono font-black uppercase"
                         />
                       ) : (
-                        <span className="text-foreground font-mono font-semibold">{tipo.abreviatura}</span>
+                        <span className="text-[11px] font-mono font-black text-slate-900 bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200/50 uppercase tracking-widest">
+                          {tipo.abreviatura}
+                        </span>
                       )}
                     </td>
-                    <td className="py-2.5 px-3 text-center">
+                    <td className="py-4 px-6 text-center">
                       {editingId !== tipo.id && (
-                        <div className="flex items-center justify-center gap-1">
-                          {(usos[tipo.id] ?? 0) > 0 && (
-                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                              {usos[tipo.id]} uso{usos[tipo.id] !== 1 ? 's' : ''}
-                            </span>
-                          )}
+                        <div className="flex flex-col items-center gap-1.5">
                           <button
                             onClick={() => handleToggleActivo(tipo.id)}
                             disabled={pending}
-                            className={`text-xs font-semibold px-2 py-1 rounded-lg transition-colors disabled:opacity-50 ${
-                              tipo.activo
-                                ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                            }`}
+                            className={cn('text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all',
+                              tipo.activo ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-100 text-slate-400 border-slate-200'
+                            )}
                           >
-                            {tipo.activo ? 'Activo' : 'Inactivo'}
+                            {tipo.activo ? 'Vigente' : 'Inactivo'}
                           </button>
                         </div>
                       )}
                     </td>
-                    <td className="py-2.5 px-3 text-right flex justify-end gap-1">
-                      {editingId === tipo.id ? (
-                        <>
-                          <button
-                            onClick={() => handleEditarGuardar(tipo.id)}
-                            disabled={pending}
-                            className="px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 transition-colors disabled:opacity-50"
-                          >
-                            ✓
-                          </button>
-                          <button
-                            onClick={() => setEditingId(null)}
-                            className="px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
-                          >
-                            ✕
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => {
-                              const usosCount = usos[tipo.id] ?? 0
-                              if (usosCount > 0) {
-                                setError(`No se puede editar este atributo. Se usa en ${usosCount} servicio${usosCount > 1 ? 's' : ''}.`)
-                                setTimeout(() => setError(null), 5000)
-                                return
-                              }
-                              setEditingId(tipo.id)
-                              setEditingNombre(tipo.nombre)
-                              setEditingAbreviatura(tipo.abreviatura)
-                            }}
-                            disabled={pending}
-                            className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                            title={(usos[tipo.id] ?? 0) > 0 ? `No se puede editar. Usado en ${usos[tipo.id]} servicio${(usos[tipo.id] ?? 0) > 1 ? 's' : ''}` : 'Editar'}
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          {(usos[tipo.id] ?? 0) === 0 && (
+                    <td className="py-4 px-6 text-right">
+                      <div className="flex justify-end gap-2">
+                        {editingId === tipo.id ? (
+                          <>
                             <button
-                              onClick={() => handleEliminar(tipo.id)}
+                              onClick={() => handleEditarGuardar(tipo.id)}
                               disabled={pending}
-                              className="text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
-                              title="Eliminar"
+                              className="p-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-all"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Plus className="w-4 h-4 rotate-45 scale-75" />
                             </button>
-                          )}
-                          {(usos[tipo.id] ?? 0) > 0 && (
-                            <div className="text-muted-foreground" title={`No se puede eliminar. Usado en ${usos[tipo.id]} servicio${(usos[tipo.id] ?? 0) > 1 ? 's' : ''}`}>
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </div>
-                          )}
-                        </>
-                      )}
+                            <button
+                              onClick={() => setEditingId(null)}
+                              className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-100 transition-all"
+                            >
+                              <Plus className="w-4 h-4 rotate-45" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => {
+                                const usosCount = usos[tipo.id] ?? 0
+                                if (usosCount > 0) {
+                                  setError(`Restricción: ${usosCount} servicios vinculados.`)
+                                  setTimeout(() => setError(null), 5000)
+                                  return
+                                }
+                                setEditingId(tipo.id)
+                                setEditingNombre(tipo.nombre)
+                                setEditingAbreviatura(tipo.abreviatura)
+                              }}
+                              className="p-2 rounded-xl bg-white border border-slate-100 text-slate-300 hover:text-slate-900 hover:border-slate-200 hover:shadow-sm opacity-0 group-hover/row:opacity-100 transition-all"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            {(usos[tipo.id] ?? 0) === 0 && (
+                              <button
+                                onClick={() => handleEliminar(tipo.id)}
+                                className="p-2 rounded-xl bg-white border border-slate-100 text-slate-300 hover:text-red-500 hover:border-red-100 hover:shadow-sm opacity-0 group-hover/row:opacity-100 transition-all"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* SUBTIPOS */}
-      <div className="rounded-2xl bg-neu-base shadow-neu p-6 space-y-4">
+      {/* SUBTIPOS PREMIUM */}
+      <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden p-8 space-y-8">
         <div className="flex items-center justify-between">
-          <h3 className="text-body-sm font-semibold text-foreground">Subtipos por Tipo</h3>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-500 flex items-center justify-center">
+              <Plus className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest leading-none">Subcategorización por Segmento</h3>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mt-1">Especialización de Procesos Operativos</p>
+            </div>
+          </div>
           {!showFormSubtipo && (
             <button
               onClick={() => {
@@ -469,222 +475,190 @@ export function AtributosConfigServicio({ atributos }: Props) {
                 setAbreviaturaSubtipo('')
                 setAbreviaturaSubtipoSugerida(true)
               }}
-              className="px-3 py-1.5 rounded-lg bg-primary-600 text-white font-semibold text-xs hover:bg-primary-700 transition-all flex items-center gap-1"
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
             >
               <Plus className="w-3.5 h-3.5" />
-              Agregar
+              Nuevo Subtipo
             </button>
           )}
         </div>
 
-        {showFormSubtipo ? (
-          <form onSubmit={handleAgregarSubtipo} className="space-y-4 rounded-xl bg-neu p-4 border border-neu-stroke">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground font-medium">Tipo Padre *</label>
+        {showFormSubtipo && (
+          <form onSubmit={handleAgregarSubtipo} className="p-6 rounded-3xl bg-indigo-50/30 border border-indigo-100 space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Clasificación Superior</label>
                 <select
                   value={tipoSeleccionado || ''}
                   onChange={e => setTipoSeleccionado(e.target.value || null)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-neu text-body-sm text-foreground outline-none border border-neu-stroke"
+                  className="w-full px-4 py-3 rounded-2xl bg-white border border-indigo-100 text-xs font-black uppercase tracking-tight text-slate-900 outline-none focus:ring-2 focus:ring-indigo-600/5 transition-all appearance-none"
                 >
-                  <option value="">Seleccionar...</option>
+                  <option value="">SELECCIONAR TIPO...</option>
                   {tipos.map(tipo => (
-                    <option key={tipo.id} value={tipo.id}>
-                      {tipo.nombre}
-                    </option>
+                    <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
                   ))}
                 </select>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground font-medium">Nombre *</label>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nombre Sub-Operativo</label>
                 <input
                   type="text"
                   value={nombreSubtipo}
                   onChange={e => handleNombreSubtipoChange(e.target.value)}
-                  placeholder="Ej: Recto"
-                  className="w-full px-3 py-2.5 rounded-xl bg-neu text-body-sm text-foreground outline-none border border-neu-stroke placeholder:text-muted-foreground"
+                  placeholder="EJ: RECTO, CIRCULAR..."
+                  className="w-full px-4 py-3 rounded-2xl bg-white border border-indigo-100 text-xs font-black uppercase tracking-widest text-slate-900 outline-none focus:ring-2 focus:ring-indigo-600/5 transition-all outline-none"
                 />
               </div>
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs text-muted-foreground font-medium">Abreviatura *</label>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between ml-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Identificador Sugerido</label>
                   {abreviaturaSubtipoSugerida && nombreSubtipo.trim() && (
-                    <div className="flex items-center gap-1 text-xs text-primary-600">
-                      <Lightbulb className="w-3 h-3" />
-                      <span>sugerida</span>
-                    </div>
+                    <span className="text-[9px] font-black text-indigo-500 uppercase tracking-tighter bg-white px-2 py-0.5 rounded-full border border-indigo-100">AUTO</span>
                   )}
                 </div>
                 <input
                   type="text"
                   value={abreviaturaSubtipo}
                   onChange={e => handleAbreviaturaSubtipoChange(e.target.value)}
-                  placeholder="Ej: RCT"
+                  placeholder="EJ: RCT"
                   maxLength={4}
-                  className="w-full px-3 py-2.5 rounded-xl bg-neu text-body-sm text-foreground outline-none border border-neu-stroke placeholder:text-muted-foreground uppercase"
+                  className="w-full px-4 py-3 rounded-2xl bg-white border border-indigo-100 text-xs font-mono font-black text-slate-900 outline-none focus:ring-2 focus:ring-indigo-600/5 transition-all uppercase"
                 />
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3 pt-2">
               <button
                 type="submit"
                 disabled={pending}
-                className="px-4 py-2.5 rounded-xl bg-primary-600 text-white font-semibold text-body-sm hover:bg-primary-700 transition-all disabled:opacity-50 flex items-center gap-2"
+                className="flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-indigo-600 text-white font-black text-[10px] uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 disabled:opacity-50"
               >
-                {pending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {pending && <Loader2 className="w-4 h-4 animate-spin" />}
                 <Plus className="w-4 h-4" />
-                Agregar Subtipo
+                Registrar Subtipo
               </button>
               <button
                 type="button"
                 onClick={() => setShowFormSubtipo(false)}
-                className="px-4 py-2.5 rounded-xl bg-neu text-foreground font-semibold text-body-sm hover:bg-neu-hover transition-all"
+                className="px-8 py-3.5 rounded-2xl bg-white border border-indigo-100 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:bg-indigo-50 transition-all"
               >
                 Cancelar
               </button>
             </div>
           </form>
-        ) : null}
+        )}
 
-        {subtipos.length === 0 ? (
-          <p className="text-muted-foreground text-body-sm">Sin subtipos agregados</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-body-sm">
-              <thead>
-                <tr className="border-b border-neu-stroke">
-                  <th className="text-left py-2 px-3 font-semibold text-foreground">Nombre</th>
-                  <th className="text-left py-2 px-3 font-semibold text-foreground">Abreviatura</th>
-                  <th className="text-left py-2 px-3 font-semibold text-foreground">Tipo Padre</th>
-                  <th className="text-center py-2 px-3 font-semibold text-foreground w-16">Estado</th>
-                  <th className="text-right py-2 px-3 font-semibold text-foreground w-24"></th>
+        <div className="overflow-hidden rounded-3xl border border-slate-50">
+          <table className="w-full text-[11px]">
+            <thead>
+              <tr className="bg-slate-50/50">
+                <th className="text-left py-4 px-6 text-[9px] font-black text-slate-400 uppercase tracking-widest">Descriptor Segmentado</th>
+                <th className="text-left py-4 px-6 text-[9px] font-black text-slate-400 uppercase tracking-widest w-40">Identificador</th>
+                <th className="text-left py-4 px-6 text-[9px] font-black text-slate-400 uppercase tracking-widest w-40">Taxonomía Padre</th>
+                <th className="text-center py-4 px-6 text-[9px] font-black text-slate-400 uppercase tracking-widest w-32">Status</th>
+                <th className="text-right py-4 px-6 w-24"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {subtipos.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center">
+                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">En espera de definiciones secundarias</p>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {subtipos.map(subtipo => {
+              ) : (
+                subtipos.map(subtipo => {
                   const tipoPadre = tipos.find(t => t.id === subtipo.tipo_padre_id)
                   return (
-                    <tr key={subtipo.id} className="border-b border-neu-stroke hover:bg-neu-hover transition-colors">
-                      <td className="py-2.5 px-3">
+                    <tr key={subtipo.id} className="group/row hover:bg-slate-50/30 transition-all">
+                      <td className="py-4 px-6">
                         {editingId === subtipo.id ? (
                           <input
                             type="text"
                             value={editingNombre}
                             onChange={e => setEditingNombre(e.target.value)}
-                            className="w-full px-2 py-1 rounded bg-white border border-neu-stroke text-body-sm"
+                            className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-[11px] font-black uppercase"
                             autoFocus
                           />
                         ) : (
-                          <span className="text-foreground">{subtipo.nombre}</span>
+                          <span className="font-black text-slate-900 uppercase tracking-tight">{subtipo.nombre}</span>
                         )}
                       </td>
-                      <td className="py-2.5 px-3">
+                      <td className="py-4 px-6">
                         {editingId === subtipo.id ? (
                           <input
                             type="text"
                             value={editingAbreviatura}
                             onChange={e => setEditingAbreviatura(e.target.value)}
                             maxLength={4}
-                            className="w-full px-2 py-1 rounded bg-white border border-neu-stroke text-body-sm uppercase"
+                            className="w-20 px-3 py-2 rounded-xl bg-white border border-slate-300 text-[11px] font-mono font-black uppercase"
                           />
                         ) : (
-                          <span className="text-foreground font-mono font-semibold">{subtipo.abreviatura}</span>
+                          <span className="font-mono font-black text-indigo-500 bg-indigo-50/50 px-2.5 py-1.5 rounded-xl border border-indigo-100/30 uppercase tracking-[0.15em]">
+                            {subtipo.abreviatura}
+                          </span>
                         )}
                       </td>
-                      <td className="py-2.5 px-3">
-                        <span className="text-foreground text-xs bg-neu px-2 py-1 rounded inline-block">{tipoPadre?.nombre || 'N/A'}</span>
+                      <td className="py-4 px-6">
+                        <span className="text-[9px] font-black text-slate-500 bg-white border border-slate-100 px-3 py-1.5 rounded-xl uppercase tracking-widest">{tipoPadre?.nombre || 'N/A'}</span>
                       </td>
-                      <td className="py-2.5 px-3 text-center">
+                      <td className="py-4 px-6 text-center">
                         {editingId !== subtipo.id && (
-                          <div className="flex items-center justify-center gap-1">
-                            {(usos[subtipo.id] ?? 0) > 0 && (
-                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                                {usos[subtipo.id]} uso{usos[subtipo.id] !== 1 ? 's' : ''}
-                              </span>
+                          <button
+                            onClick={() => handleToggleActivo(subtipo.id)}
+                            className={cn('text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all',
+                              subtipo.activo ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-100 text-slate-400 border-slate-200'
                             )}
-                            <button
-                              onClick={() => handleToggleActivo(subtipo.id)}
-                              disabled={pending}
-                              className={`text-xs font-semibold px-2 py-1 rounded-lg transition-colors disabled:opacity-50 ${
-                                subtipo.activo
-                                  ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                              }`}
-                            >
-                              {subtipo.activo ? 'Activo' : 'Inactivo'}
-                            </button>
-                          </div>
+                          >
+                            {subtipo.activo ? 'Activo' : 'Vancante'}
+                          </button>
                         )}
                       </td>
-                      <td className="py-2.5 px-3 text-right flex justify-end gap-1">
-                        {editingId === subtipo.id ? (
-                          <>
-                            <button
-                              onClick={() => handleEditarGuardar(subtipo.id)}
-                              disabled={pending}
-                              className="px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 transition-colors disabled:opacity-50"
-                            >
-                              ✓
-                            </button>
-                            <button
-                              onClick={() => setEditingId(null)}
-                              className="px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
-                            >
-                              ✕
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => {
+                      <td className="py-4 px-6 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => {
+                              if (editingId === subtipo.id) {
+                                handleEditarGuardar(subtipo.id)
+                              } else {
                                 const usosCount = usos[subtipo.id] ?? 0
                                 if (usosCount > 0) {
-                                  setError(`No se puede editar este atributo. Se usa en ${usosCount} servicio${usosCount > 1 ? 's' : ''}.`)
+                                  setError(`Sub-Nivel bloqueado: ${usosCount} servicios.`)
                                   setTimeout(() => setError(null), 5000)
                                   return
                                 }
                                 setEditingId(subtipo.id)
                                 setEditingNombre(subtipo.nombre)
                                 setEditingAbreviatura(subtipo.abreviatura)
-                              }}
-                              disabled={pending}
-                              className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                              title={(usos[subtipo.id] ?? 0) > 0 ? `No se puede editar. Usado en ${usos[subtipo.id]} servicio${(usos[subtipo.id] ?? 0) > 1 ? 's' : ''}` : 'Editar'}
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                            {(usos[subtipo.id] ?? 0) === 0 && (
-                              <button
-                                onClick={() => handleEliminar(subtipo.id)}
-                                disabled={pending}
-                                className="text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
-                                title="Eliminar"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                            {(usos[subtipo.id] ?? 0) > 0 && (
-                              <div className="text-muted-foreground" title={`No se puede eliminar. Usado en ${usos[subtipo.id]} servicio${(usos[subtipo.id] ?? 0) > 1 ? 's' : ''}`}>
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </div>
-                            )}
-                          </>
-                        )}
+                              }
+                            }}
+                            className="p-2 rounded-xl bg-white border border-slate-100 text-slate-300 hover:text-slate-900 hover:border-slate-200 hover:shadow-sm opacity-0 group-hover/row:opacity-100 transition-all"
+                          >
+                            {editingId === subtipo.id ? <Check className="w-4 h-4 scale-75" /> : <Edit2 className="w-4 h-4" />}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* DETALLES */}
-      <div className="rounded-2xl bg-neu-base shadow-neu p-6 space-y-4">
+      {/* DETALLES PREMIUM */}
+      <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden p-8 space-y-8">
         <div className="flex items-center justify-between">
-          <h3 className="text-body-sm font-semibold text-foreground">Detalles por Subtipo</h3>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500 flex items-center justify-center">
+              <Plus className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest leading-none">Matriz de Especificidad</h3>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mt-1">Nivel Atómico de Configuración de Servicio</p>
+            </div>
+          </div>
           {!showFormDetalle && (
             <button
               onClick={() => {
@@ -693,220 +667,192 @@ export function AtributosConfigServicio({ atributos }: Props) {
                 setAbreviaturaDetalle('')
                 setAbreviaturaDetalleSugerida(true)
               }}
-              className="px-3 py-1.5 rounded-lg bg-primary-600 text-white font-semibold text-xs hover:bg-primary-700 transition-all flex items-center gap-1"
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-50"
             >
               <Plus className="w-3.5 h-3.5" />
-              Agregar
+              Nuevo Detalle
             </button>
           )}
         </div>
 
-        {showFormDetalle ? (
-          <form onSubmit={handleAgregarDetalle} className="space-y-4 rounded-xl bg-neu p-4 border border-neu-stroke">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground font-medium">Subtipo Padre *</label>
+        {showFormDetalle && (
+          <form onSubmit={handleAgregarDetalle} className="p-6 rounded-3xl bg-emerald-50/30 border border-emerald-100 space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Subtipo Vinculado</label>
                 <select
                   value={subtipoSeleccionado || ''}
                   onChange={e => setSubtipoSeleccionado(e.target.value || null)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-neu text-body-sm text-foreground outline-none border border-neu-stroke"
+                  className="w-full px-4 py-3 rounded-2xl bg-white border border-emerald-100 text-xs font-black uppercase tracking-tight text-slate-900 outline-none focus:ring-2 focus:ring-emerald-600/5 transition-all appearance-none"
                 >
-                  <option value="">Seleccionar...</option>
+                  <option value="">SELECCIONAR SUBTIPO...</option>
                   {subtipos.map(subtipo => (
-                    <option key={subtipo.id} value={subtipo.id}>
-                      {subtipo.nombre}
-                    </option>
+                    <option key={subtipo.id} value={subtipo.id}>{subtipo.nombre}</option>
                   ))}
                 </select>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground font-medium">Nombre *</label>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Descriptor Atómico</label>
                 <input
                   type="text"
                   value={nombreDetalle}
                   onChange={e => handleNombreDetalleChange(e.target.value)}
-                  placeholder="Ej: Diagonal"
-                  className="w-full px-3 py-2.5 rounded-xl bg-neu text-body-sm text-foreground outline-none border border-neu-stroke placeholder:text-muted-foreground"
+                  placeholder="EJ: DIAGONAL, REFORZADO..."
+                  className="w-full px-4 py-3 rounded-2xl bg-white border border-emerald-100 text-xs font-black uppercase tracking-widest text-slate-900 outline-none focus:ring-2 focus:ring-emerald-600/5 transition-all outline-none"
                 />
               </div>
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs text-muted-foreground font-medium">Abreviatura *</label>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between ml-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Identificador Sugerido</label>
                   {abreviaturaDetalleSugerida && nombreDetalle.trim() && (
-                    <div className="flex items-center gap-1 text-xs text-primary-600">
-                      <Lightbulb className="w-3 h-3" />
-                      <span>sugerida</span>
-                    </div>
+                    <span className="text-[9px] font-black text-emerald-500 uppercase tracking-tighter bg-white px-2 py-0.5 rounded-full border border-emerald-100">AUTO</span>
                   )}
                 </div>
                 <input
                   type="text"
                   value={abreviaturaDetalle}
                   onChange={e => handleAbreviaturaDetalleChange(e.target.value)}
-                  placeholder="Ej: DGN"
+                  placeholder="EJ: DGN"
                   maxLength={4}
-                  className="w-full px-3 py-2.5 rounded-xl bg-neu text-body-sm text-foreground outline-none border border-neu-stroke placeholder:text-muted-foreground uppercase"
+                  className="w-full px-4 py-3 rounded-2xl bg-white border border-emerald-100 text-xs font-mono font-black text-slate-900 outline-none focus:ring-2 focus:ring-emerald-600/5 transition-all uppercase"
                 />
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3 pt-2">
               <button
                 type="submit"
                 disabled={pending}
-                className="px-4 py-2.5 rounded-xl bg-primary-600 text-white font-semibold text-body-sm hover:bg-primary-700 transition-all disabled:opacity-50 flex items-center gap-2"
+                className="flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-emerald-600 text-white font-black text-[10px] uppercase tracking-[0.2em] hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 disabled:opacity-50"
               >
-                {pending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {pending && <Loader2 className="w-4 h-4 animate-spin" />}
                 <Plus className="w-4 h-4" />
-                Agregar Detalle
+                Registrar Detalle
               </button>
               <button
                 type="button"
                 onClick={() => setShowFormDetalle(false)}
-                className="px-4 py-2.5 rounded-xl bg-neu text-foreground font-semibold text-body-sm hover:bg-neu-hover transition-all"
+                className="px-8 py-3.5 rounded-2xl bg-white border border-emerald-100 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:bg-emerald-50 transition-all"
               >
                 Cancelar
               </button>
             </div>
           </form>
-        ) : null}
+        )}
 
-        {detalles.length === 0 ? (
-          <p className="text-muted-foreground text-body-sm">Sin detalles agregados</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-body-sm">
-              <thead>
-                <tr className="border-b border-neu-stroke">
-                  <th className="text-left py-2 px-3 font-semibold text-foreground">Nombre</th>
-                  <th className="text-left py-2 px-3 font-semibold text-foreground">Abreviatura</th>
-                  <th className="text-left py-2 px-3 font-semibold text-foreground">Subtipo Padre</th>
-                  <th className="text-center py-2 px-3 font-semibold text-foreground w-16">Estado</th>
-                  <th className="text-right py-2 px-3 font-semibold text-foreground w-24"></th>
+        <div className="overflow-hidden rounded-3xl border border-slate-50">
+          <table className="w-full text-[11px]">
+            <thead>
+              <tr className="bg-slate-50/50">
+                <th className="text-left py-4 px-6 text-[9px] font-black text-slate-400 uppercase tracking-widest">Descriptor de Especialidad</th>
+                <th className="text-left py-4 px-6 text-[9px] font-black text-slate-400 uppercase tracking-widest w-40">Identificador</th>
+                <th className="text-left py-4 px-6 text-[9px] font-black text-slate-400 uppercase tracking-widest w-40">Taxonomía Padre (Sub)</th>
+                <th className="text-center py-4 px-6 text-[9px] font-black text-slate-400 uppercase tracking-widest w-32">Status</th>
+                <th className="text-right py-4 px-6 w-24"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {detalles.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center">
+                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">En espera de especialidades atómicas</p>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {detalles.map(detalle => {
+              ) : (
+                detalles.map(detalle => {
                   const subtipoPadre = subtipos.find(s => s.id === detalle.subtipo_padre_id)
                   return (
-                    <tr key={detalle.id} className="border-b border-neu-stroke hover:bg-neu-hover transition-colors">
-                      <td className="py-2.5 px-3">
+                    <tr key={detalle.id} className="group/row hover:bg-slate-50/30 transition-all">
+                      <td className="py-4 px-6">
                         {editingId === detalle.id ? (
                           <input
                             type="text"
                             value={editingNombre}
                             onChange={e => setEditingNombre(e.target.value)}
-                            className="w-full px-2 py-1 rounded bg-white border border-neu-stroke text-body-sm"
+                            className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-[11px] font-black uppercase"
                             autoFocus
                           />
                         ) : (
-                          <span className="text-foreground">{detalle.nombre}</span>
+                          <span className="font-black text-slate-900 uppercase tracking-tight">{detalle.nombre}</span>
                         )}
                       </td>
-                      <td className="py-2.5 px-3">
+                      <td className="py-4 px-6">
                         {editingId === detalle.id ? (
                           <input
                             type="text"
                             value={editingAbreviatura}
                             onChange={e => setEditingAbreviatura(e.target.value)}
                             maxLength={4}
-                            className="w-full px-2 py-1 rounded bg-white border border-neu-stroke text-body-sm uppercase"
+                            className="w-20 px-3 py-2 rounded-xl bg-white border border-slate-300 text-[11px] font-mono font-black uppercase"
                           />
                         ) : (
-                          <span className="text-foreground font-mono font-semibold">{detalle.abreviatura}</span>
+                          <span className="font-mono font-black text-emerald-500 bg-emerald-50/50 px-2.5 py-1.5 rounded-xl border border-emerald-100/30 uppercase tracking-[0.15em]">
+                            {detalle.abreviatura}
+                          </span>
                         )}
                       </td>
-                      <td className="py-2.5 px-3">
-                        <span className="text-foreground text-xs bg-neu px-2 py-1 rounded inline-block">{subtipoPadre?.nombre || 'N/A'}</span>
+                      <td className="py-4 px-6">
+                        <span className="text-[9px] font-black text-slate-500 bg-white border border-slate-100 px-3 py-1.5 rounded-xl uppercase tracking-widest">{subtipoPadre?.nombre || 'N/A'}</span>
                       </td>
-                      <td className="py-2.5 px-3 text-center">
+                      <td className="py-4 px-6 text-center">
                         {editingId !== detalle.id && (
-                          <div className="flex items-center justify-center gap-1">
-                            {(usos[detalle.id] ?? 0) > 0 && (
-                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                                {usos[detalle.id]} uso{usos[detalle.id] !== 1 ? 's' : ''}
-                              </span>
-                            )}
-                            <button
-                              onClick={() => handleToggleActivo(detalle.id)}
-                              disabled={pending}
-                              className={`text-xs font-semibold px-2 py-1 rounded-lg transition-colors disabled:opacity-50 ${
-                                detalle.activo
-                                  ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                              }`}
-                            >
-                              {detalle.activo ? 'Activo' : 'Inactivo'}
-                            </button>
+                          <div className={cn('text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border',
+                            detalle.activo ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-100 text-slate-400 border-slate-200'
+                          )}>
+                            {detalle.activo ? 'Activo' : 'Cerrado'}
                           </div>
                         )}
                       </td>
-                      <td className="py-2.5 px-3 text-right flex justify-end gap-1">
-                        {editingId === detalle.id ? (
-                          <>
-                            <button
-                              onClick={() => handleEditarGuardar(detalle.id)}
-                              disabled={pending}
-                              className="px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 transition-colors disabled:opacity-50"
-                            >
-                              ✓
-                            </button>
-                            <button
-                              onClick={() => setEditingId(null)}
-                              className="px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
-                            >
-                              ✕
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => {
+                      <td className="py-4 px-6 text-right">
+                        <div className="flex justify-end">
+                           <button
+                            onClick={() => {
+                              if (editingId === detalle.id) {
+                                handleEditarGuardar(detalle.id)
+                              } else {
                                 const usosCount = usos[detalle.id] ?? 0
                                 if (usosCount > 0) {
-                                  setError(`No se puede editar este atributo. Se usa en ${usosCount} servicio${usosCount > 1 ? 's' : ''}.`)
+                                  setError(`Atómica bloqueada: ${usosCount} servicios.`)
                                   setTimeout(() => setError(null), 5000)
                                   return
                                 }
                                 setEditingId(detalle.id)
                                 setEditingNombre(detalle.nombre)
                                 setEditingAbreviatura(detalle.abreviatura)
-                              }}
-                              disabled={pending}
-                              className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                              title={(usos[detalle.id] ?? 0) > 0 ? `No se puede editar. Usado en ${usos[detalle.id]} servicio${(usos[detalle.id] ?? 0) > 1 ? 's' : ''}` : 'Editar'}
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                            {(usos[detalle.id] ?? 0) === 0 && (
-                              <button
-                                onClick={() => handleEliminar(detalle.id)}
-                                disabled={pending}
-                                className="text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
-                                title="Eliminar"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                            {(usos[detalle.id] ?? 0) > 0 && (
-                              <div className="text-muted-foreground" title={`No se puede eliminar. Usado en ${usos[detalle.id]} servicio${(usos[detalle.id] ?? 0) > 1 ? 's' : ''}`}>
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </div>
-                            )}
-                          </>
-                        )}
+                              }
+                            }}
+                            className="p-2 rounded-xl bg-white border border-slate-100 text-slate-300 hover:text-slate-900 hover:border-slate-200 hover:shadow-sm opacity-0 group-hover/row:opacity-100 transition-all"
+                          >
+                            {editingId === detalle.id ? <Check className="w-4 h-4 scale-75" /> : <Edit2 className="w-4 h-4" />}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-
-      {error && <div className="text-red-600 text-body-sm rounded-xl bg-red-50 p-3">{error}</div>}
-      {successMsg && <div className="text-green-600 text-body-sm rounded-xl bg-green-50 p-3">{successMsg}</div>}
+      
+      {/* ALERTAS DE SISTEMA */}
+      {(error || successMsg) && (
+        <div className="fixed bottom-8 right-8 z-50 animate-in fade-in slide-in-from-bottom-4 duration-500">
+           {error && (
+             <div className="bg-red-600 text-white px-8 py-4 rounded-[30px] shadow-2xl shadow-red-200 flex items-center gap-3">
+               <AlertCircle className="w-5 h-5" />
+               <span className="text-[11px] font-black uppercase tracking-widest">{error}</span>
+             </div>
+           )}
+           {successMsg && (
+             <div className="bg-slate-900 text-white px-8 py-4 rounded-[30px] shadow-2xl shadow-slate-200 flex items-center gap-3">
+               <Check className="w-5 h-5 text-emerald-400" />
+               <span className="text-[11px] font-black uppercase tracking-widest">{successMsg}</span>
+             </div>
+           )}
+        </div>
+      )}
     </div>
   )
 }

@@ -1,7 +1,4 @@
-'use client'
-
-import { useState, useTransition, useCallback, useMemo, useEffect, useRef } from 'react'
-import { Plus, Edit2, Loader2, Package, AlertTriangle, MapPin, Globe } from 'lucide-react'
+import { cn, formatCurrency } from '@/shared/lib/utils'
 import { createMaterial, updateMaterial, toggleMaterialActivo } from '@/features/materiales/services/materiales-actions'
 import { useDuplicateCheck } from '@/shared/hooks/use-duplicate-check'
 import { CodigoPreviewMP } from '@/features/materiales/components/codigo-preview-mp'
@@ -23,9 +20,6 @@ const UNIDAD_LABEL: Record<UnidadMaterial, string> = {
   metros: 'm', kg: 'kg', unidades: 'ud', conos: 'cono', lb: 'lb',
 }
 
-function formatCop(n: number) {
-  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n)
-}
 
 interface Props {
   materiales: Material[]
@@ -43,26 +37,41 @@ export function MaterialesPanel({ materiales, saldosPorMaterial = [] }: Props) {
   const visibles = showInactivos ? materiales.filter(m => !m.activo) : materiales.filter(m => m.activo)
 
   return (
-    <div className="space-y-4">
-      {/* Header acciones */}
-      <div className="flex items-center justify-between">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <div
+    <div className="space-y-6 text-slate-900">
+      {/* Header acciones Premium */}
+      <div className="flex items-center justify-between bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+        <label className="flex items-center gap-3 cursor-pointer group">
+          <button
             onClick={() => setShowInactivos(v => !v)}
-            className={`relative w-9 h-5 rounded-full transition-colors ${showInactivos ? 'bg-primary-500' : 'bg-neu-base shadow-neu-inset'}`}
+            className="group relative flex items-center justify-center shrink-0"
           >
-            <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${showInactivos ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            <div
+              className={cn("w-12 h-6 rounded-full transition-all duration-300 border", 
+                showInactivos ? 'bg-slate-900 border-slate-900' : 'bg-slate-100 border-slate-200 shadow-inner'
+              )}
+            >
+              <div className={cn("absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300", 
+                showInactivos ? 'translate-x-7' : 'translate-x-1'
+              )} />
+            </div>
+          </button>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Visibilidad</span>
+            <span className={cn("text-xs font-black uppercase tracking-tight mt-1", 
+              showInactivos ? 'text-slate-900' : 'text-emerald-600'
+            )}>
+              {showInactivos ? 'Historial de Inactivos' : 'Materiales de Uso Activo'}
+            </span>
           </div>
-          <span className="text-body-sm text-muted-foreground">Ver inactivos</span>
         </label>
 
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg"
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-100"
           >
-            <Plus className="w-3.5 h-3.5" />
-            Nuevo material
+            <Plus className="w-4 h-4" />
+            Empadronar Insumo
           </button>
         )}
       </div>
@@ -72,35 +81,43 @@ export function MaterialesPanel({ materiales, saldosPorMaterial = [] }: Props) {
         <MaterialForm onDone={() => setShowForm(false)} />
       )}
 
-      {/* Lista vacía */}
+      {/* Lista vacía Premium */}
       {visibles.length === 0 && !showForm && (
-        <div className="rounded-2xl bg-neu-base shadow-neu p-12 flex flex-col items-center text-center">
-          <div className="w-14 h-14 rounded-2xl bg-neu-base shadow-neu-inset flex items-center justify-center mb-3">
-            <Package className="w-7 h-7 text-muted-foreground" />
+        <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm p-24 flex flex-col items-center text-center max-w-2xl mx-auto mt-12 group">
+          <div className="w-24 h-24 rounded-[32px] bg-slate-50 flex items-center justify-center mb-8 border border-slate-100 shadow-inner group-hover:scale-110 transition-transform duration-500">
+            <Package className="w-10 h-10 text-slate-300" />
           </div>
-          <p className="font-medium text-foreground">Sin materiales</p>
-          <p className="text-body-sm text-muted-foreground mt-1">Agrega telas, hilos, elásticos e insumos</p>
+          <p className="text-slate-900 font-black text-2xl tracking-tighter uppercase">Sin Insumos Registrados</p>
+          <p className="text-slate-400 text-sm mt-3 max-w-sm font-medium leading-relaxed">
+            No hay materiales que coincidan con el filtro seleccionado. Comienza empadronando telas, hilos o accesorios.
+          </p>
+          <button
+            onClick={() => setShowForm(true)}
+            className="mt-10 flex items-center gap-3 px-8 py-4 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
+          >
+            <Plus className="w-5 h-5" />
+            Registrar Primer Material
+          </button>
         </div>
       )}
 
-      {/* Tabla */}
+      {/* Tabla Premium */}
       {visibles.length > 0 && (
-        <div className="rounded-2xl bg-neu-base shadow-neu overflow-x-auto w-full">
+        <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden group">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="border-b border-black/5 bg-neu-base">
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Creación</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 whitespace-nowrap">Código</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 min-w-[200px]">Nombre</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Unidad</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2">Stock</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 whitespace-nowrap">Costo Unit.</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 whitespace-nowrap">Costo Total</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-center px-3 py-2">Estado</th>
-                <th className="px-3 py-2 w-10" />
+              <tr className="border-b border-slate-50 bg-slate-50/20">
+                <th className="hidden lg:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-24">Registro</th>
+                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-40">Identificación</th>
+                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 min-w-[200px]">Descripción del Insumo / Material</th>
+                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-24">U.M.</th>
+                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-right px-6 py-5 w-24">Saldos</th>
+                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-right px-6 py-5 w-40">Costo & Valorización</th>
+                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center px-6 py-5 w-24">Status</th>
+                <th className="px-6 py-5 w-16" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-black/5">
+            <tbody className="divide-y divide-slate-50">
               {visibles.map(m => {
                 const saldo = saldoMap.get(m.id)
                 return editingId === m.id
@@ -119,39 +136,69 @@ export function MaterialesPanel({ materiales, saldosPorMaterial = [] }: Props) {
 
 function MaterialRow({ material: m, onEdit, onToggleActivo, saldo }: { material: Material; onEdit: () => void; onToggleActivo: () => void; saldo?: SaldoTotalMP }) {
   return (
-    <tr className={!m.activo ? 'opacity-50' : ''}>
-      <td className="px-3 py-2 whitespace-nowrap"><span className="text-xs text-muted-foreground">{m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}</span></td>
-      <td className="px-3 py-2 whitespace-nowrap"><span className="font-mono text-xs font-semibold text-primary-700">{m.codigo}</span></td>
-      <td className="px-3 py-2 min-w-[200px]">
-        <div className="flex items-center gap-2">
-          {m.tipo_mp === 'nacional' ? (
-            <MapPin className="w-3 h-3 text-emerald-500 shrink-0" />
-          ) : (
-            <Globe className="w-3 h-3 text-indigo-500 shrink-0" />
-          )}
-          <p className="text-xs font-medium text-foreground truncate">{m.nombre}</p>
+    <tr className={cn('group/row transition-all hover:bg-slate-50/50', !m.activo ? 'opacity-40 grayscale-[0.5]' : '')}>
+      <td className="hidden lg:table-cell px-6 py-5 whitespace-nowrap">
+        <span className="text-[10px] font-black text-slate-400 tabular-nums">
+          {m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}
+        </span>
+      </td>
+      <td className="px-6 py-5 whitespace-nowrap">
+        <span className="text-[11px] font-black text-slate-900 tracking-wider font-mono bg-slate-100 px-2 py-1 rounded-lg">
+          {m.codigo}
+        </span>
+      </td>
+      <td className="px-6 py-5">
+        <div className="flex items-start gap-4">
+          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border", 
+            m.tipo_mp === 'nacional' ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-indigo-50 border-indigo-100 text-indigo-600"
+          )}>
+            {m.tipo_mp === 'nacional' ? <MapPin className="w-5 h-5" /> : <Globe className="w-5 h-5" />}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-black text-slate-900 truncate tracking-tight uppercase">{m.nombre}</p>
+            {m.referencia_proveedor && (
+              <p className="text-[10px] font-black text-slate-400 mt-1 uppercase truncate opacity-70">Prov: {m.referencia_proveedor}</p>
+            )}
+          </div>
         </div>
       </td>
-      <td className="px-3 py-2"><span className="text-xs text-muted-foreground">{UNIDADES.find(u => u.value === m.unidad)?.label ?? m.unidad}</span></td>
-      <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs font-mono text-foreground">{saldo?.saldo_total ?? 0}</span></td>
-      <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs text-foreground font-medium">{formatCop(saldo?.costo_promedio ?? m.costo_unit)}/{UNIDAD_LABEL[m.unidad]}</span></td>
-      <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs font-mono text-foreground font-semibold">{formatCop(saldo?.valor_total ?? 0)}</span></td>
-      <td className="px-3 py-2 text-center">
+      <td className="px-6 py-5">
+        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+          {UNIDADES.find(u => u.value === m.unidad)?.label ?? m.unidad}
+        </span>
+      </td>
+      <td className="px-6 py-5 text-right whitespace-nowrap">
+        <div className="flex flex-col">
+          <span className="text-sm font-black text-slate-900 tabular-nums">{saldo?.saldo_total ?? 0}</span>
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">disponible</span>
+        </div>
+      </td>
+      <td className="px-6 py-5 text-right whitespace-nowrap">
+        <div className="flex flex-col">
+          <span className="text-xs font-black text-slate-900 tabular-nums">
+            {formatCurrency(saldo?.valor_total ?? 0)}
+          </span>
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">
+            CU: {formatCurrency(saldo?.costo_promedio ?? m.costo_unit)}/{UNIDAD_LABEL[m.unidad]}
+          </span>
+        </div>
+      </td>
+      <td className="px-6 py-5 text-center">
         <button
           onClick={onToggleActivo}
-          className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-lg transition-colors ${
-            m.activo ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-          }`}
+          className={cn('text-[9px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-xl border transition-all',
+            m.activo ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
+          )}
         >
           {m.activo ? 'Activo' : 'Inactivo'}
         </button>
       </td>
-      <td className="px-3 py-2 text-right">
+      <td className="px-6 py-5 text-right">
         <button
           onClick={onEdit}
-          className="w-6 h-6 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+          className="w-8 h-8 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-slate-400 hover:text-slate-900 hover:border-slate-200 hover:shadow-md transition-all opacity-0 group-hover/row:opacity-100"
         >
-          <Edit2 className="w-3 h-3" />
+          <Edit2 className="w-4 h-4" />
         </button>
       </td>
     </tr>

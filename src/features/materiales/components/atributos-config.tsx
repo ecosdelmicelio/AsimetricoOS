@@ -169,18 +169,27 @@ export function AtributosConfigMP({ atributos }: Props) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Formulario para agregar */}
-      <div className="rounded-2xl bg-neu-base shadow-neu p-6 space-y-4">
-        <h3 className="text-body-sm font-semibold text-foreground">Agregar nuevo atributo</h3>
-        <form onSubmit={handleAgregarAtributo} className="space-y-4">
-          <div className="grid grid-cols-4 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground font-medium">Tipo</label>
+    <div className="space-y-8 text-slate-900">
+      {/* Formulario para agregar Premium */}
+      <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm p-8 space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center">
+            <Plus className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest leading-none">Matriz de Insumos</h3>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mt-1">Configuración de Atributos de Materia Prima</p>
+          </div>
+        </div>
+
+        <form onSubmit={handleAgregarAtributo} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Clasificación</label>
               <select
                 value={selectedTipo}
                 onChange={e => setSelectedTipo(e.target.value as TipoAtributoMP)}
-                className="w-full px-3 py-2.5 rounded-xl bg-neu text-body-sm text-foreground outline-none border border-neu-stroke"
+                className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-100 text-xs font-black uppercase tracking-tight text-slate-900 outline-none focus:ring-2 focus:ring-slate-900/5 transition-all appearance-none"
               >
                 {TIPOS_ATRIBUTO_MP.map(tipo => (
                   <option key={tipo} value={tipo}>
@@ -189,176 +198,190 @@ export function AtributosConfigMP({ atributos }: Props) {
                 ))}
               </select>
             </div>
-            <div className="col-span-2 space-y-1">
-              <label className="text-xs text-muted-foreground font-medium">Valor</label>
+            <div className="md:col-span-2 space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Valor Nominal</label>
               <input
                 type="text"
                 value={nuevoValor}
                 onChange={e => handleValorChange(e.target.value)}
-                placeholder="Ej: Algodón, Rojo, Estampado..."
-                className="w-full px-3 py-2.5 rounded-xl bg-neu text-body-sm text-foreground outline-none border border-neu-stroke placeholder:text-muted-foreground"
+                placeholder="EJ: ALGODÓN, ROJO, ESTAMPADO..."
+                className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-900 outline-none focus:ring-2 focus:ring-slate-900/5 transition-all placeholder:text-slate-300"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground font-medium">Abr.</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Código MP</label>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={nuevoAbreviacion}
                   onChange={e => setNuevoAbreviacion(e.target.value.toUpperCase())}
                   maxLength={LONGITUD_ABREVIACION_MP[selectedTipo]}
-                  placeholder="Auto"
-                  className="flex-1 px-3 py-2.5 rounded-xl bg-neu text-body-sm text-foreground outline-none border border-neu-stroke placeholder:text-muted-foreground"
+                  placeholder="AUTO"
+                  className="flex-1 px-4 py-3 rounded-2xl bg-slate-50 border border-slate-100 text-xs font-mono font-black text-slate-900 outline-none focus:ring-2 focus:ring-slate-900/5 transition-all placeholder:text-slate-300"
                 />
                 <button
                   type="button"
                   onClick={() => handleValidarAbreviacion(selectedTipo, nuevoAbreviacion)}
                   disabled={pending || !nuevoAbreviacion}
-                  className="self-end p-2.5 rounded-xl bg-neu text-foreground hover:bg-neu-hover transition-colors disabled:opacity-50"
-                  title="Validar abreviación"
+                  className="p-3 rounded-2xl bg-white border border-slate-100 text-slate-400 hover:text-slate-900 transition-all disabled:opacity-50"
                 >
-                  {validationStatus[`new-${selectedTipo}`] === 'valid' && <Check className="w-4 h-4 text-green-600" />}
+                  {validationStatus[`new-${selectedTipo}`] === 'valid' && <Check className="w-4 h-4 text-emerald-600" />}
                   {validationStatus[`new-${selectedTipo}`] === 'invalid' && <AlertCircle className="w-4 h-4 text-red-600" />}
                   {validationStatus[`new-${selectedTipo}`] === 'pending' && <Loader2 className="w-4 h-4 animate-spin" />}
                   {!validationStatus[`new-${selectedTipo}`] && <Edit2 className="w-4 h-4" />}
                 </button>
               </div>
-              {validationErrors[`new-${selectedTipo}`] && (
-                <p className="text-xs text-red-600">{validationErrors[`new-${selectedTipo}`]}</p>
-              )}
             </div>
           </div>
-          <button
-            type="submit"
-            disabled={pending}
-            className="px-4 py-2.5 rounded-xl bg-primary-600 text-white font-semibold text-body-sm hover:bg-primary-700 transition-all disabled:opacity-50 flex items-center gap-2"
-          >
-            {pending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            <Plus className="w-4 h-4" />
-            Agregar
-          </button>
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex-1">
+              {validationErrors[`new-${selectedTipo}`] && (
+                <p className="text-[10px] font-black text-red-600 uppercase tracking-widest flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {validationErrors[`new-${selectedTipo}`]}
+                </p>
+              )}
+            </div>
+            <button
+              type="submit"
+              disabled={pending}
+              className="flex items-center gap-3 px-10 py-4 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50"
+            >
+              {pending && <Loader2 className="w-4 h-4 animate-spin" />}
+              Registrar Atributo MP
+            </button>
+          </div>
         </form>
 
-        {error && <div className="text-red-600 text-body-sm">{error}</div>}
-        {successMsg && <div className="text-green-600 text-body-sm">{successMsg}</div>}
+        {error && <div className="text-red-600 text-[10px] font-black uppercase tracking-widest text-center mt-2">{error}</div>}
+        {successMsg && <div className="text-emerald-600 text-[10px] font-black uppercase tracking-widest text-center mt-2">{successMsg}</div>}
       </div>
 
-      {/* Lista por tipo */}
-      <div className="space-y-4">
+      {/* Grid de Atributos Premium */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         {TIPOS_ATRIBUTO_MP.map(tipo => (
-          <div key={tipo} className="rounded-2xl bg-neu-base shadow-neu p-6">
-            <h3 className="text-body-sm font-semibold text-foreground mb-4">
-              {LABELS_ATRIBUTO_MP[tipo]}
-            </h3>
+          <div key={tipo} className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden group/card transition-all hover:border-slate-200">
+            <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
+              <h3 className="text-xs font-black text-slate-900 uppercase tracking-[.25em]">
+                {LABELS_ATRIBUTO_MP[tipo]}
+              </h3>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 py-1 bg-white border border-slate-100 rounded-full">
+                {atributosPorTipo[tipo].length} ITEM{atributosPorTipo[tipo].length !== 1 ? 'S' : ''}
+              </span>
+            </div>
 
-            {atributosPorTipo[tipo].length === 0 ? (
-              <p className="text-muted-foreground text-body-sm">Sin atributos agregados</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-body-sm">
-                  <thead>
-                    <tr className="border-b border-neu-stroke">
-                      <th className="text-left py-2 px-3 font-semibold text-foreground">Valor</th>
-                      <th className="text-left py-2 px-3 font-semibold text-foreground w-24">Abr.</th>
-                      <th className="text-center py-2 px-3 font-semibold text-foreground w-20">Estado</th>
-                      <th className="text-right py-2 px-3 font-semibold text-foreground w-24"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {atributosPorTipo[tipo].map(attr => (
-                      <tr key={attr.id} className="border-b border-neu-stroke hover:bg-neu-hover transition-colors">
-                        <td className="py-2.5 px-3 text-foreground">{attr.valor}</td>
-                        <td className="py-2.5 px-3">
-                          {editingId === attr.id ? (
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                value={editingAbreviacion}
-                                onChange={e => setEditingAbreviacion(e.target.value.toUpperCase())}
-                                maxLength={LONGITUD_ABREVIACION_MP[tipo]}
-                                className="flex-1 px-2 py-1 rounded bg-white border border-neu-stroke text-body-sm"
-                                autoFocus
-                              />
-                              <button
-                                onClick={() => handleGuardarAbreviacion(attr.id, tipo)}
-                                disabled={pending}
-                                className="px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 transition-colors disabled:opacity-50"
-                              >
-                                <Check className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => setEditingId(null)}
-                                className="px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <span className="text-foreground font-mono">
-                                {attr.abreviacion || <span className="text-muted-foreground text-xs">—</span>}
-                              </span>
-                              {attr.abreviacion && (
-                                <button
-                                  onClick={() => handleEditarAbreviacion(attr.id, attr.abreviacion || '')}
-                                  disabled={pending}
-                                  className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                                >
-                                  <Edit2 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                        <td className="py-2.5 px-3 text-center">
-                          {editingId !== attr.id && (
-                            <div className="flex items-center justify-center gap-1">
-                              {(usos[attr.id] ?? 0) > 0 && (
-                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                                  {usos[attr.id]} uso{usos[attr.id] !== 1 ? 's' : ''}
-                                </span>
-                              )}
-                              <button
-                                onClick={() => handleToggleActivo(attr.id)}
-                                disabled={pending}
-                                className={`text-xs font-semibold px-2 py-1 rounded transition-colors disabled:opacity-50 ${
-                                  attr.activo
-                                    ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                                }`}
-                              >
-                                {attr.activo ? 'Activo' : 'Inactivo'}
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                        <td className="py-2.5 px-3 text-right flex justify-end gap-1">
-                          {editingId !== attr.id && (
-                            <>
-                              {(usos[attr.id] ?? 0) === 0 && (
-                                <button
-                                  onClick={() => handleEliminar(attr.id)}
-                                  disabled={pending}
-                                  className="text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
-                                  title="Eliminar"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              )}
-                              {(usos[attr.id] ?? 0) > 0 && (
-                                <div className="text-muted-foreground" title="No se puede eliminar: en uso">
-                                  <Lock className="w-4 h-4" />
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </td>
+            <div className="p-4">
+              {atributosPorTipo[tipo].length === 0 ? (
+                <div className="p-8 text-center">
+                  <p className="text-[10px] font-black text-slate-300 uppercase tracking-[.2em]">Sin Definiciones</p>
+                </div>
+              ) : (
+                <div className="overflow-hidden rounded-2xl border border-slate-50">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-slate-50/50">
+                        <th className="text-left py-3 px-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Descriptor</th>
+                        <th className="text-left py-3 px-4 text-[9px] font-black text-slate-400 uppercase tracking-widest w-24">Abr.</th>
+                        <th className="text-center py-3 px-4 text-[9px] font-black text-slate-400 uppercase tracking-widest w-28">Status</th>
+                        <th className="text-right py-3 px-4 w-16"></th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {atributosPorTipo[tipo].map(attr => (
+                        <tr key={attr.id} className="group/row hover:bg-slate-50/50 transition-all">
+                          <td className="py-3 px-4">
+                            <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{attr.valor}</span>
+                          </td>
+                          <td className="py-3 px-4">
+                            {editingId === attr.id ? (
+                              <div className="flex gap-1">
+                                <input
+                                  type="text"
+                                  value={editingAbreviacion}
+                                  onChange={e => setEditingAbreviacion(e.target.value.toUpperCase())}
+                                  maxLength={LONGITUD_ABREVIACION_MP[tipo]}
+                                  className="w-16 px-2 py-1 rounded-lg bg-white border border-slate-200 text-[10px] font-mono font-black"
+                                  autoFocus
+                                />
+                                <button
+                                  onClick={() => handleGuardarAbreviacion(attr.id, tipo)}
+                                  disabled={pending}
+                                  className="p-1 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                                >
+                                  <Check className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => setEditingId(null)}
+                                  className="p-1 rounded-lg bg-slate-50 text-slate-400 hover:bg-slate-100"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 group-hover/row:translate-x-1 transition-transform">
+                                <span className={cn("text-[10px] font-mono font-black px-2 py-1 rounded bg-slate-100", 
+                                  attr.abreviacion ? "text-slate-900" : "text-slate-300"
+                                )}>
+                                  {attr.abreviacion || "???"}
+                                </span>
+                                {attr.abreviacion && (
+                                  <button
+                                    onClick={() => handleEditarAbreviacion(attr.id, attr.abreviacion || '')}
+                                    disabled={pending}
+                                    className="text-slate-300 hover:text-slate-900 opacity-0 group-hover/row:opacity-100 transition-all"
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {editingId !== attr.id && (
+                              <div className="flex flex-col items-center gap-1.5">
+                                <button
+                                  onClick={() => handleToggleActivo(attr.id)}
+                                  disabled={pending}
+                                  className={cn('text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border transition-all',
+                                    attr.activo ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-100 text-slate-400 border-slate-200'
+                                  )}
+                                >
+                                  {attr.activo ? 'Activo' : 'Inactivo'}
+                                </button>
+                                {(usos[attr.id] ?? 0) > 0 && (
+                                  <span className="text-[8px] font-black text-indigo-400 uppercase tracking-tighter">
+                                    {usos[attr.id]} Insumos
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            {editingId !== attr.id && (
+                              <div className="flex justify-end">
+                                {(usos[attr.id] ?? 0) === 0 ? (
+                                  <button
+                                    onClick={() => handleEliminar(attr.id)}
+                                    disabled={pending}
+                                    className="p-2 rounded-xl bg-white border border-slate-100 text-slate-200 hover:text-red-600 hover:border-red-100 hover:shadow-sm transition-all opacity-0 group-hover/row:opacity-100"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                ) : (
+                                  <div className="p-2 text-slate-300 cursor-not-allowed">
+                                    <Lock className="w-3.5 h-3.5" />
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>

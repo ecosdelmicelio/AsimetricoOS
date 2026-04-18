@@ -309,6 +309,17 @@ test('should calculate total with tax', () => {
 - **Fix**: Siempre incluir `talla` en la composición de la key si los datos están desagregados por talla, o agrupar los datos por la dimensión de visualización antes del `.map()`.
 - **Aplicar en**: Tablas y matrices de inventario de productos terminados.
 
+### [2026-04-18]: Premium Dashboard Design System
+- **Error**: Paneles operativos (Terceros, Kardex, WMS) usando estilos Neumórficos o genéricos inconsistentes con los dashboards gerenciales.
+- **Fix**: Estandarizar bajo el sistema "Premium Dashboard".
+- **Tokens de Diseño**:
+  - **Contenedores**: `bg-white rounded-[40px] border border-slate-100 shadow-sm`
+  - **Grid**: `gap-6` o `gap-8` para espaciado aireado.
+  - **Tipografía**: `font-black` para títulos y KPIs (mayúsculas tracking-tighter).
+  - **Interactividad**: Hover con `hover:shadow-xl hover:border-slate-300 transition-all`.
+  - **Cards**: Mostrar TODA la info compactando números si es necesario.
+- **Aplicar en**: Todos los paneles operativos del sistema.
+
 ---
 
 *Este archivo es el cerebro de la fábrica. Cada error documentado la hace más fuerte.*

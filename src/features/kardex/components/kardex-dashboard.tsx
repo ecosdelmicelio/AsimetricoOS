@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Box } from 'lucide-react'
 import { SaldosPTMatriz } from './saldos-pt-matriz'
 import { SaldosMPTabla } from './saldos-mp-tabla'
 import { SaldosPorBin } from './saldos-por-bin'
@@ -44,57 +45,52 @@ export function KardexDashboard({
   ]
 
   return (
-    <div className="space-y-6">
-      {/* Sección Saldos */}
-      <div>
-        <h2 className="text-body-md font-semibold text-foreground mb-4">Saldos Actuales</h2>
-        <div className="flex gap-2 border-b border-black/10 mb-4 overflow-x-auto">
-          {tabs
-            .filter(t => t.section === 'saldos')
-            .map(t => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`px-4 py-3 text-body-sm font-semibold transition-colors border-b-2 whitespace-nowrap ${
-                  tab === t.id
-                    ? 'text-primary-700 border-primary-700'
-                    : 'text-muted-foreground border-transparent hover:text-foreground'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+    <div className="space-y-12 animate-in fade-in duration-700">
+      {/* SECCIÓN: NAVEGACIÓN Y FILTROS */}
+      <div className="bg-white/50 p-2 rounded-[32px] border border-slate-100 shadow-sm flex flex-wrap gap-4 items-center justify-between">
+        <div className="flex gap-1 flex-wrap p-1 bg-slate-100/50 rounded-[24px]">
+          {tabs.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`px-6 py-2.5 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all ${
+                tab === t.id
+                  ? 'bg-slate-900 text-white shadow-lg'
+                  : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
-
-        <div className="mt-4">
-          {tab === 'saldos-pt' && <SaldosPTMatriz saldos={saldosPT} />}
-          {tab === 'saldos-mp' && <SaldosMPTabla saldos={saldosMP} />}
-          {tab === 'saldos-bin' && <SaldosPorBin saldos={saldosBin} bodegas={bodegas} />}
+        
+        <div className="px-6 py-2 border-l border-slate-200">
+           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+             Vista: <span className="text-slate-900">{tabs.find(t => t.id === tab)?.label}</span>
+           </p>
         </div>
       </div>
 
-      {/* Sección Historial */}
-      <div>
-        <h2 className="text-body-md font-semibold text-foreground mb-4">Historial (Últimos 30 días)</h2>
-        <div className="flex gap-2 border-b border-black/10 mb-4 overflow-x-auto">
-          {tabs
-            .filter(t => t.section === 'historial')
-            .map(t => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`px-4 py-3 text-body-sm font-semibold transition-colors border-b-2 whitespace-nowrap ${
-                  tab === t.id
-                    ? 'text-primary-700 border-primary-700'
-                    : 'text-muted-foreground border-transparent hover:text-foreground'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+      {/* SECCIÓN DINÁMICA: VISTA DE DATOS */}
+      <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden p-8 min-h-[500px]">
+        <div className="flex items-center gap-3 mb-8">
+           <div className="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center">
+              <Box className="w-5 h-5 text-white" />
+           </div>
+           <div>
+              <h2 className="font-black text-slate-800 text-sm uppercase tracking-widest leading-none">
+                 {tab.includes('saldos') ? 'Consolidado de Existencias' : 'Bitácora de Trazabilidad'}
+              </h2>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1.5">
+                 {tab.includes('mp') ? 'Materia Prima e Insumos' : 'Producto Terminado y Muestras'}
+              </p>
+           </div>
         </div>
 
-        <div className="mt-4">
+        <div className="mt-4 transition-all duration-500">
+          {tab === 'saldos-pt' && <SaldosPTMatriz saldos={saldosPT} />}
+          {tab === 'saldos-mp' && <SaldosMPTabla saldos={saldosMP} />}
+          {tab === 'saldos-bin' && <SaldosPorBin saldos={saldosBin} bodegas={bodegas} />}
           {tab === 'historial-pt' && (
             <HistorialPTFiltrable
               historial={historialPT}

@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect, useCallback, useRef, startTransition } from 'react'
 import { flushSync } from 'react-dom'
 import { Plus, Edit2, Loader2, Package, Wrench, Trash2 } from 'lucide-react'
+import { cn, formatCurrency } from '@/shared/lib/utils'
 import { createProducto, updateProducto, toggleProductoActivo, deleteProducto } from '@/features/productos/services/producto-actions'
 import { getAtributosPT, getAtributosProducto } from '@/features/productos/services/atributo-actions'
 import { getBOMProducto } from '@/features/productos/services/bom-actions'
@@ -46,38 +47,47 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header acciones */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => {
-            const ciclo: ('en_desarrollo' | 'activo' | 'inactivo')[] = ['en_desarrollo', 'activo', 'inactivo']
-            const siguiente = ciclo[(ciclo.indexOf(filtroEstado) + 1) % ciclo.length]
-            setFiltroEstado(siguiente)
-          }}
-          className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-        >
-          <div
-            className={`relative w-16 h-5 rounded-full transition-colors overflow-hidden ${
-              filtroEstado === 'en_desarrollo' ? 'bg-blue-500' : filtroEstado === 'activo' ? 'bg-green-500' : 'bg-gray-400'
-            }`}
-          >
-            <span className={`absolute left-0 top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-              filtroEstado === 'en_desarrollo' ? 'translate-x-0.5' : filtroEstado === 'activo' ? 'translate-x-5' : 'translate-x-10'
-            }`} />
+    <div className="space-y-6">
+      {/* Header acciones Premium */}
+      <div className="flex items-center justify-between bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const ciclo: ('en_desarrollo' | 'activo' | 'inactivo')[] = ['en_desarrollo', 'activo', 'inactivo']
+                const siguiente = ciclo[(ciclo.indexOf(filtroEstado) + 1) % ciclo.length]
+                setFiltroEstado(siguiente)
+              }}
+              className="group relative flex items-center justify-center"
+            >
+              <div
+                className={`w-14 h-6 rounded-full transition-all duration-300 border border-slate-200 ${
+                  filtroEstado === 'en_desarrollo' ? 'bg-blue-500 border-blue-600' : filtroEstado === 'activo' ? 'bg-emerald-500 border-emerald-600' : 'bg-slate-400 border-slate-500'
+                }`}
+              >
+                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${
+                  filtroEstado === 'en_desarrollo' ? 'translate-x-1' : filtroEstado === 'activo' ? 'translate-x-5' : 'translate-x-9'
+                }`} />
+              </div>
+            </button>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Vista de Catálogo</span>
+              <span className={cn("text-xs font-black uppercase tracking-tight mt-1", 
+                filtroEstado === 'en_desarrollo' ? 'text-blue-600' : filtroEstado === 'activo' ? 'text-emerald-600' : 'text-slate-500'
+              )}>
+                {filtroEstado === 'en_desarrollo' ? 'En Auditoría / I+D' : filtroEstado === 'activo' ? 'Referencias Activas' : 'Histórico Inactivo'}
+              </span>
+            </div>
           </div>
-          <span className="text-body-sm text-muted-foreground">
-            {filtroEstado === 'en_desarrollo' ? 'En desarrollo' : filtroEstado === 'activo' ? 'Activos' : 'Inactivos'}
-          </span>
-        </button>
+        </div>
 
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg"
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-100 border border-slate-800"
           >
-            <Plus className="w-3.5 h-3.5" />
-            Nuevo producto
+            <Plus className="w-4 h-4" />
+            Empadronar Producto
           </button>
         )}
       </div>
@@ -93,37 +103,44 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
         />
       )}
 
-      {/* Lista vacía */}
+      {/* Lista vacía Premium */}
       {visibles.length === 0 && !showForm && (
-        <div className="rounded-2xl bg-neu-base shadow-neu p-12 flex flex-col items-center text-center">
-          <div className="w-14 h-14 rounded-2xl bg-neu-base shadow-neu-inset flex items-center justify-center mb-3">
-            <Package className="w-7 h-7 text-muted-foreground" />
+        <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm p-24 flex flex-col items-center text-center max-w-2xl mx-auto mt-12 group">
+          <div className="w-24 h-24 rounded-[32px] bg-slate-50 flex items-center justify-center mb-8 border border-slate-100 shadow-inner group-hover:scale-110 transition-transform duration-500">
+            <Package className="w-10 h-10 text-slate-300" />
           </div>
-          <p className="font-medium text-foreground">Sin productos</p>
-          <p className="text-body-sm text-muted-foreground mt-1">Crea tu primer producto para empezar</p>
+          <p className="text-slate-900 font-black text-2xl tracking-tighter uppercase">Sin Registros en Catálogo</p>
+          <p className="text-slate-400 text-sm mt-3 max-w-sm font-medium leading-relaxed">
+            No hay productos que coincidan con el filtro seleccionado. Comienza empadronando una referencia fabricada o comercializada.
+          </p>
+          <button
+            onClick={() => setShowForm(true)}
+            className="mt-10 flex items-center gap-3 px-8 py-4 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
+          >
+            <Plus className="w-5 h-5" />
+            Crear Nueva Referencia
+          </button>
         </div>
       )}
 
-      {/* Tabla */}
+      {/* Tabla Premium */}
       {visibles.length > 0 && (
-        <div className="rounded-2xl bg-neu-base shadow-neu overflow-x-auto w-full">
+        <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden group">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="border-b border-black/5 bg-neu-base">
-                <th className="hidden lg:table-cell text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 w-20">Creación</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 whitespace-nowrap">Código</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 min-w-[150px]">Descripción</th>
-                <th className="hidden xl:table-cell text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 w-20">Marca</th>
-                <th className="hidden lg:table-cell text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 w-24 whitespace-nowrap">Ref Cliente</th>
-                <th className="hidden sm:table-cell text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2 w-24 whitespace-nowrap">Distribución</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 w-16">Stock</th>
-                <th className="hidden sm:table-cell text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 w-28 whitespace-nowrap">Costo Unit.</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2 w-28 whitespace-nowrap">Valor Total</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-center px-3 py-2 w-20">Estado</th>
-                <th className="px-3 py-2 w-10" />
+              <tr className="border-b border-slate-50 bg-slate-50/20">
+                <th className="hidden lg:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-24">Registro</th>
+                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5">Identificación (SKU)</th>
+                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 min-w-[250px]">Descripción Producto</th>
+                <th className="hidden xl:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-32">Marca</th>
+                <th className="hidden sm:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-28">Distrib.</th>
+                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-right px-6 py-5 w-24">Saldos</th>
+                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-right px-6 py-5 w-40">Valoración Inventario</th>
+                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center px-6 py-5 w-28">Estatus</th>
+                <th className="px-6 py-5 w-16" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-black/5">
+            <tbody className="divide-y divide-slate-50">
               {visibles.map(p => {
                 const saldo = saldoMap.get(p.id)
                 return editingId === p.id
@@ -170,74 +187,98 @@ function ProductRow({
   saldo?: SaldoTotalPT; 
   marcas: MarcaConTercero[] 
 }) {
-  const brandName = marcas.find(m => m.id === p.marca_id)?.nombre || '—'
+  const brandName = marcas.find(m => m.id === p.marca_id)?.nombre || 'Interno'
 
   return (
-    <tr className={p.estado === 'inactivo' ? 'opacity-50' : ''}>
-      <td className="hidden lg:table-cell px-3 py-2"><span className="text-xs text-muted-foreground">{p.created_at ? new Date(p.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</span></td>
-      <td className="px-3 py-2 whitespace-nowrap"><span className="font-mono text-xs font-semibold text-primary-700">{p.referencia}</span></td>
-      <td className="px-3 py-2 min-w-[150px]">
-        <div className="flex items-center gap-2">
-          {p.tipo_producto === 'fabricado' ? (
-            <Wrench className="w-3 h-3 text-primary-500 shrink-0" />
-          ) : (
-            <Package className="w-3 h-3 text-amber-500 shrink-0" />
-          )}
-          <p className="text-xs font-medium text-foreground truncate max-w-[150px] sm:max-w-[250px]">{p.nombre}</p>
-        </div>
-      </td>
-      <td className="hidden xl:table-cell px-3 py-2"><span className="text-xs text-muted-foreground truncate">{brandName}</span></td>
-      <td className="hidden lg:table-cell px-3 py-2 whitespace-nowrap"><span className="text-xs text-muted-foreground truncate">{p.referencia_cliente || '—'}</span></td>
-      <td className="hidden sm:table-cell px-3 py-2 whitespace-nowrap">
-        <span className="text-xs font-semibold px-2 py-1 rounded-lg" style={{
-          backgroundColor: p.tipo_distribucion === 'MTO' ? '#fef3c7' : '#dbeafe',
-          color: p.tipo_distribucion === 'MTO' ? '#92400e' : '#1e40af'
-        }}>
-          {p.tipo_distribucion === 'MTO' ? 'MTO' : 'MTS'}
+    <tr className={cn('group/row transition-all hover:bg-slate-50/50', p.estado === 'inactivo' ? 'opacity-40 grayscale-[0.5]' : '')}>
+      <td className="hidden lg:table-cell px-6 py-5">
+        <span className="text-[10px] font-black text-slate-400 tabular-nums">
+          {p.created_at ? new Date(p.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—'}
         </span>
       </td>
-      <td className="px-3 py-2 text-right whitespace-nowrap"><span className="text-xs font-mono text-foreground">{saldo?.saldo_total ?? 0}</span></td>
-      <td className="hidden sm:table-cell px-3 py-2 text-right whitespace-nowrap">
-        {(saldo?.saldo_total ?? 0) > 0 && (saldo?.costo_promedio ?? 0) > 0
-          ? <span className="text-xs font-mono text-muted-foreground">$ {saldo!.costo_promedio!.toLocaleString('es-CO', { maximumFractionDigits: 2 })}</span>
-          : <span className="text-xs text-muted-foreground/40">—</span>
-        }
+      <td className="px-6 py-5">
+        <div className="flex flex-col">
+          <span className="text-[11px] font-black text-slate-900 tracking-wider font-mono bg-slate-100 px-2 py-0.5 rounded-lg w-fit">
+            {p.referencia}
+          </span>
+          {p.referencia_cliente && (
+            <span className="text-[9px] font-black text-slate-400 mt-1 uppercase truncate max-w-[120px]">
+              Ref Cli: {p.referencia_cliente}
+            </span>
+          )}
+        </div>
       </td>
-      <td className="px-3 py-2 text-right whitespace-nowrap">
-        {(saldo?.saldo_total ?? 0) > 0 && (saldo?.valor_total ?? 0) > 0
-          ? <span className="text-xs font-mono text-foreground font-semibold">$ {saldo!.valor_total!.toLocaleString('es-CO', { maximumFractionDigits: 0 })}</span>
-          : <span className="text-xs text-muted-foreground/40">—</span>
-        }
+      <td className="px-6 py-5">
+        <div className="flex items-start gap-4">
+          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border", 
+            p.tipo_producto === 'fabricado' ? "bg-blue-50 border-blue-100 text-blue-600" : "bg-amber-50 border-amber-100 text-amber-600"
+          )}>
+            {p.tipo_producto === 'fabricado' ? <Wrench className="w-5 h-5" /> : <Package className="w-5 h-5" />}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-black text-slate-900 truncate tracking-tight">{p.nombre}</p>
+            {p.nombre_comercial && (
+              <p className="text-[10px] font-black text-primary-600/70 border border-primary-100 bg-primary-50 px-1.5 py-0.5 rounded w-fit mt-1 uppercase tracking-widest">{p.nombre_comercial}</p>
+            )}
+          </div>
+        </div>
+      </td>
+      <td className="hidden xl:table-cell px-6 py-5">
+        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest truncate">{brandName}</span>
+      </td>
+      <td className="hidden sm:table-cell px-6 py-5">
+        <div className={cn('px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest w-fit', 
+          p.tipo_distribucion === 'MTO' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
+        )}>
+          {p.tipo_distribucion}
+        </div>
+      </td>
+      <td className="px-6 py-5 text-right">
+        <div className="flex flex-col">
+          <span className="text-sm font-black text-slate-900 tabular-nums">{saldo?.saldo_total ?? 0}</span>
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">unidades</span>
+        </div>
+      </td>
+      <td className="px-6 py-5 text-right whitespace-nowrap">
+        <div className="flex flex-col">
+          <span className="text-xs font-black text-slate-900 tabular-nums">
+            {formatCurrency(saldo?.valor_total ?? 0)}
+          </span>
+          {saldo?.costo_promedio && saldo.saldo_total > 0 && (
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">
+              CP: {formatCurrency(saldo.costo_promedio)}
+            </span>
+          )}
+        </div>
       </td>
 
-      <td className="px-3 py-2 text-center">
+      <td className="px-6 py-5 text-center">
         <button
-          onClick={p.estado !== 'en_desarrollo' ? onToggleActivo : undefined}
-          disabled={p.estado === 'en_desarrollo'}
-          className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-lg transition-colors ${
-            p.estado === 'activo' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
-            p.estado === 'inactivo' ? 'bg-gray-100 text-gray-500 hover:bg-gray-200' :
-            'bg-blue-100 text-blue-700 cursor-default'
-          }`}
+          onClick={p.status !== 'en_desarrollo' ? onToggleActivo : undefined}
+          disabled={p.status === 'en_desarrollo'}
+          className={cn('text-[9px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-xl border transition-all',
+            p.estado === 'activo' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100' :
+            p.estado === 'inactivo' ? 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200' :
+            'bg-blue-50 text-blue-600 border-blue-100 cursor-default'
+          )}
         >
-          {p.estado === 'activo' ? 'Activo' : p.estado === 'inactivo' ? 'Inactivo' : 'En desarrollo'}
+          {p.estado}
         </button>
       </td>
-      <td className="px-3 py-2 text-right">
-        <div className="flex justify-end gap-1 opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity">
+      <td className="px-6 py-5 text-right">
+        <div className="flex justify-end gap-2 opacity-0 group-hover/row:opacity-100 transition-all duration-300">
           <button
             onClick={onEdit}
-            className="w-6 h-6 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            className="w-8 h-8 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-slate-400 hover:text-slate-900 hover:border-slate-200 hover:shadow-md transition-all"
           >
-            <Edit2 className="w-3 h-3" />
+            <Edit2 className="w-4 h-4" />
           </button>
-          {p.estado === 'en_desarrollo' && (
+          {(p as any).estado === 'en_desarrollo' && (
             <button
               onClick={onDelete}
-              className="w-6 h-6 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-red-500 transition-colors ml-1"
-              title="Eliminar producto"
+              className="w-8 h-8 rounded-xl bg-white border border-rose-100 shadow-sm flex items-center justify-center text-rose-400 hover:text-rose-600 hover:border-rose-200 hover:shadow-md transition-all"
             >
-              <Trash2 className="w-3 h-3" />
+              <Trash2 className="w-4 h-4" />
             </button>
           )}
         </div>

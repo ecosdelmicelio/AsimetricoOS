@@ -1,3 +1,5 @@
+import { Box } from 'lucide-react'
+import { PageHeader } from '@/shared/components/page-header'
 import { KardexDashboard } from '@/features/kardex/components/kardex-dashboard'
 import {
   getSaldosKardexMP,
@@ -35,13 +37,12 @@ export default async function KardexPage() {
   ])
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-display-xs font-heading font-bold text-foreground">Kardex</h1>
-        <p className="text-muted-foreground text-body-sm mt-1">
-          Dashboard de inventario con saldos y movimientos
-        </p>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        title="Torre de Control de Inventarios"
+        subtitle="Monitoreo en tiempo real de saldos y trazabilidad de movimientos"
+        icon={Box}
+      />
 
       <KardexDashboard
         saldosMP={saldosMP}

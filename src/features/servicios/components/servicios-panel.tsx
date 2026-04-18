@@ -1,7 +1,4 @@
-'use client'
-
-import { useState, useTransition, useMemo, useRef } from 'react'
-import { Plus, Trash2, Edit2, Loader2, Wrench } from 'lucide-react'
+import { cn, formatCurrency } from '@/shared/lib/utils'
 import {
   createServicioOperativo,
   updateServicioOperativo,
@@ -150,26 +147,41 @@ export function ServiciosPanel({ servicios, tipos, subtipos, detalles, ejecutore
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header acciones */}
-      <div className="flex items-center justify-between">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <div
+    <div className="space-y-6 text-slate-900">
+      {/* Header acciones Premium */}
+      <div className="flex items-center justify-between bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+        <label className="flex items-center gap-3 cursor-pointer group">
+          <button
             onClick={() => setShowInactivos(v => !v)}
-            className={`relative w-9 h-5 rounded-full transition-colors ${showInactivos ? 'bg-primary-500' : 'bg-neu-base shadow-neu-inset'}`}
+            className="group relative flex items-center justify-center shrink-0"
           >
-            <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${showInactivos ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            <div
+              className={cn("w-12 h-6 rounded-full transition-all duration-300 border", 
+                showInactivos ? 'bg-slate-900 border-slate-900' : 'bg-slate-100 border-slate-200 shadow-inner'
+              )}
+            >
+              <div className={cn("absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300", 
+                showInactivos ? 'translate-x-7' : 'translate-x-1'
+              )} />
+            </div>
+          </button>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Catálogo Operativo</span>
+            <span className={cn("text-xs font-black uppercase tracking-tight mt-1", 
+              showInactivos ? 'text-slate-900' : 'text-emerald-600'
+            )}>
+              {showInactivos ? 'Historial de Servicios' : 'Portafolio de Servicios Activos'}
+            </span>
           </div>
-          <span className="text-body-sm text-muted-foreground">Ver inactivos</span>
         </label>
 
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg"
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-100"
           >
-            <Plus className="w-3.5 h-3.5" />
-            Nuevo servicio
+            <Plus className="w-4 h-4" />
+            Crear Orden de Servicio
           </button>
         )}
       </div>
@@ -211,32 +223,41 @@ export function ServiciosPanel({ servicios, tipos, subtipos, detalles, ejecutore
         />
       )}
 
-      {/* Lista vacía */}
+      {/* Lista vacía Premium */}
       {visibles.length === 0 && !showForm && (
-        <div className="rounded-2xl bg-neu-base shadow-neu p-12 flex flex-col items-center text-center">
-          <div className="w-14 h-14 rounded-2xl bg-neu-base shadow-neu-inset flex items-center justify-center mb-3">
-            <Wrench className="w-7 h-7 text-muted-foreground" />
+        <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm p-24 flex flex-col items-center text-center max-w-2xl mx-auto mt-12 group">
+          <div className="w-24 h-24 rounded-[32px] bg-slate-50 flex items-center justify-center mb-8 border border-slate-100 shadow-inner group-hover:scale-110 transition-transform duration-500">
+            <Wrench className="w-10 h-10 text-slate-300" />
           </div>
-          <p className="font-medium text-foreground">Sin servicios</p>
-          <p className="text-body-sm text-muted-foreground mt-1">Agrega procesos operativos y servicios</p>
+          <p className="text-slate-900 font-black text-2xl tracking-tighter uppercase">Sin Servicios Definidos</p>
+          <p className="text-slate-400 text-sm mt-3 max-w-sm font-medium leading-relaxed">
+            No se han encontrado procesos u operaciones en esta categoría. Define nuevos servicios para habilitar el costeo y la subcontratación.
+          </p>
+          <button
+            onClick={() => setShowForm(true)}
+            className="mt-10 flex items-center gap-3 px-8 py-4 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
+          >
+            <Plus className="w-5 h-5" />
+            Empezar Portafolio
+          </button>
         </div>
       )}
 
-      {/* Tabla de Servicios */}
+      {/* Tabla de Servicios Premium */}
       {visibles.length > 0 && (
-        <div className="rounded-2xl bg-neu-base shadow-neu overflow-x-auto w-full pb-1">
+        <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden group">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="border-b border-black/5 bg-neu-base">
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Código</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Nombre del Servicio</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-left px-3 py-2">Ejecutor</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-right px-3 py-2">Tarifa / u</th>
-                <th className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide text-center px-3 py-2">Estado</th>
-                <th className="px-3 py-2 w-10" />
+              <tr className="border-b border-slate-50 bg-slate-50/20">
+                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-40">Servicio Ident.</th>
+                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 min-w-[250px]">Nombre & Descripción Operativa</th>
+                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-48">Ejecutor Asignado</th>
+                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-right px-6 py-5 w-40">Tarifa Unitaria</th>
+                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center px-6 py-5 w-24">Estado</th>
+                <th className="px-6 py-5 w-16" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-black/5">
+            <tbody className="divide-y divide-slate-50">
               {visibles.map(srv => (
                 editingId === srv.id ? (
                   <tr key={srv.id}>
@@ -268,47 +289,52 @@ export function ServiciosPanel({ servicios, tipos, subtipos, detalles, ejecutore
                     </td>
                   </tr>
                 ) : (
-                  <tr key={srv.id} className={`${!srv.activo ? 'opacity-50' : ''}`}>
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      <span className="font-mono text-xs font-semibold text-primary-700">
+                  <tr key={srv.id} className={cn('group/row transition-all hover:bg-slate-50/50', !srv.activo ? 'opacity-40 grayscale-[0.5]' : '')}>
+                    <td className="px-6 py-5 whitespace-nowrap">
+                      <span className="text-[11px] font-black text-slate-900 tracking-wider font-mono bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200/50">
                         {srv.codigo}
                       </span>
                     </td>
-                    <td className="px-3 py-2 min-w-[200px]">
+                    <td className="px-6 py-5">
                       <div className="flex flex-col">
-                        <span className="text-xs font-medium text-foreground">{srv.nombre}</span>
-                        {srv.descripcion && <span className="text-[10px] text-muted-foreground truncate max-w-[300px] mt-0.5">{srv.descripcion}</span>}
+                        <span className="text-[13px] font-black text-slate-900 tracking-tight uppercase">{srv.nombre}</span>
+                        {srv.descripcion && (
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mt-1 opacity-70 truncate max-w-[300px]">
+                            {srv.descripcion}
+                          </span>
+                        )}
                       </div>
                     </td>
-                    <td className="px-3 py-2">
-                      <span className="text-xs text-muted-foreground uppercase">
-                        {getEjecutorNombre(srv.ejecutor_id)}
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-2">
+                        <div className={cn("w-2 h-2 rounded-full", srv.ejecutor_id ? "bg-indigo-400" : "bg-emerald-400")} />
+                        <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest truncate">
+                          {getEjecutorNombre(srv.ejecutor_id)}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5 text-right whitespace-nowrap">
+                      <span className="text-sm font-black text-slate-900 tabular-nums">
+                        {formatCurrency(srv.tarifa_unitaria)}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-right">
-                      <span className="font-mono text-xs text-foreground">
-                        $ {srv.tarifa_unitaria.toLocaleString('es-CO')}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-center">
+                    <td className="px-6 py-5 text-center">
                       <button
                         onClick={() => handleToggleActivo(srv.id)}
                         disabled={pending}
-                        className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-lg transition-colors ${
-                          srv.activo 
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                        }`}
+                        className={cn('text-[9px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-xl border transition-all',
+                          srv.activo ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
+                        )}
                       >
                         {srv.activo ? 'Activo' : 'Inactivo'}
                       </button>
                     </td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="px-6 py-5 text-right">
                       <button
                         onClick={() => setEditingId(srv.id)}
-                        className="w-6 h-6 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors ml-auto"
+                        className="w-8 h-8 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-slate-400 hover:text-slate-900 hover:border-slate-200 hover:shadow-md transition-all opacity-0 group-hover/row:opacity-100 ml-auto"
                       >
-                        <Edit2 className="w-3.5 h-3.5" />
+                        <Edit2 className="w-4 h-4" />
                       </button>
                     </td>
                   </tr>

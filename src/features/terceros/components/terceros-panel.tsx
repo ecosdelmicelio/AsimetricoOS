@@ -47,22 +47,23 @@ export function TercerosPanel({ terceros, marcas, direcciones, contactos, bodega
 
   return (
     <div className="space-y-4">
-      {/* Filtro por tipo */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex gap-1 flex-wrap">
+    <div className="space-y-8 animate-in fade-in duration-700">
+      {/* Filtro por tipo - Premium Segmented Control */}
+      <div className="flex items-center justify-between flex-wrap gap-4 bg-white/50 p-2 rounded-[32px] border border-slate-100 shadow-sm">
+        <div className="flex gap-1 flex-wrap p-1 bg-slate-100/50 rounded-[24px]">
           {FILTER_TABS.map(tab => (
             <button
               key={tab.id}
               onClick={() => setFilter(tab.id)}
-              className={`px-3 py-1.5 rounded-lg text-body-sm font-medium transition-all ${
+              className={`px-6 py-2.5 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all ${
                 filter === tab.id
-                  ? 'bg-primary-600 text-white shadow-neu-inset'
-                  : 'bg-neu-base shadow-neu text-muted-foreground hover:text-foreground'
+                  ? 'bg-slate-900 text-white shadow-lg'
+                  : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'
               }`}
             >
               {tab.label}
               {tab.id !== 'todos' && (
-                <span className="ml-1.5 text-xs opacity-70">
+                <span className={`ml-2 px-1.5 py-0.5 rounded-md text-[8px] ${filter === tab.id ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-500'}`}>
                   {terceros.filter(t => t.tipos.includes(tab.id as TipoTercero)).length}
                 </span>
               )}
@@ -73,10 +74,10 @@ export function TercerosPanel({ terceros, marcas, direcciones, contactos, bodega
         {!showForm && (
           <button
             onClick={() => { setShowForm(true); setEditingId(null) }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg"
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-primary-700 transition-all shadow-lg shadow-primary-200"
           >
-            <Plus className="w-3.5 h-3.5" />
-            Nuevo tercero
+            <Plus className="w-4 h-4" />
+            Vincular Nuevo Tercero
           </button>
         )}
       </div>
@@ -86,33 +87,48 @@ export function TercerosPanel({ terceros, marcas, direcciones, contactos, bodega
         <TerceroForm onDone={() => setShowForm(false)} marcas={[]} dirs={[]} contactos={[]} bodegas={bodegas} />
       )}
 
-      {/* Lista vacía */}
+      {/* Lista vacía - Premium View */}
       {visibles.length === 0 && !showForm && (
-        <div className="rounded-2xl bg-neu-base shadow-neu p-12 flex flex-col items-center text-center">
-          <div className="w-14 h-14 rounded-2xl bg-neu-base shadow-neu-inset flex items-center justify-center mb-3">
-            <Users className="w-7 h-7 text-muted-foreground" />
+        <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm p-24 flex flex-col items-center text-center max-w-2xl mx-auto mt-12 group">
+          <div className="w-24 h-24 rounded-[32px] bg-slate-50 flex items-center justify-center mb-8 border border-slate-100 shadow-inner group-hover:scale-110 transition-transform duration-500">
+            <Users className="w-10 h-10 text-slate-300" />
           </div>
-          <p className="font-medium text-foreground">Sin terceros</p>
-          <p className="text-body-sm text-muted-foreground mt-1">
-            {filter === 'todos' ? 'Agrega clientes, satélites o proveedores' : `No hay ${FILTER_TABS.find(t => t.id === filter)?.label.toLowerCase()} registrados`}
+          <p className="text-slate-900 font-black text-2xl tracking-tighter uppercase">Sin Conexiones Activas</p>
+          <p className="text-slate-400 text-sm mt-3 max-w-sm font-medium leading-relaxed">
+            {filter === 'todos' 
+              ? 'Tu ecosistema de proveedores, clientes y talleres está esperando. Comienza a vincular los pilares de tu cadena de suministro.' 
+              : `Aún no has registrado ningún ${FILTER_TABS.find(t => t.id === filter)?.label.toLowerCase()} en la plataforma.`}
           </p>
+          <button
+            onClick={() => { setShowForm(true); setEditingId(null) }}
+            className="mt-10 flex items-center gap-3 px-8 py-4 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
+          >
+            <Plus className="w-5 h-5" />
+            Crear Primer Tercero
+          </button>
         </div>
       )}
 
-      {/* Lista */}
+      {/* Lista Grid */}
       {visibles.length > 0 && (
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {visibles.map(t => {
             const terceroMarcas    = marcas.filter(m => m.tercero_id === t.id)
             const terceroDirs      = direcciones.filter(d => d.tercero_id === t.id)
             const terceroContactos = contactos.filter(c => c.tercero_id === t.id)
-            return editingId === t.id
-              ? <TerceroForm key={t.id} tercero={t} marcas={terceroMarcas} dirs={terceroDirs} contactos={terceroContactos} bodegas={bodegas} onDone={() => setEditingId(null)} />
-              : <TerceroRow key={t.id} tercero={t} marcas={terceroMarcas} dirs={terceroDirs} contactos={terceroContactos} onEdit={() => { setEditingId(t.id); setShowForm(false) }} />
+            return (
+              <div key={t.id} className="min-w-0">
+                {editingId === t.id
+                  ? <TerceroForm tercero={t} marcas={terceroMarcas} dirs={terceroDirs} contactos={terceroContactos} bodegas={bodegas} onDone={() => setEditingId(null)} />
+                  : <TerceroRow tercero={t} marcas={terceroMarcas} dirs={terceroDirs} contactos={terceroContactos} onEdit={() => { setEditingId(t.id); setShowForm(false) }} />
+                }
+              </div>
+            )
           })}
         </div>
       )}
     </div>
+  </div>
   )
 }
 
@@ -122,84 +138,127 @@ function TerceroRow({ tercero: t, marcas, dirs, contactos, onEdit }: { tercero: 
   const activeMarcas    = marcas.filter(m => m.activo)
   const activeDirs      = dirs.filter(d => d.activa)
   const activeContactos = contactos.filter(c => c.activo)
+  
   return (
-    <div className="rounded-xl bg-neu-base shadow-neu px-4 py-3 flex items-start justify-between gap-3">
-      <div className="min-w-0 space-y-1">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-semibold text-foreground text-body-sm">{t.nombre}</span>
-          {t.nit && (
-            <span className="text-xs text-muted-foreground font-mono">NIT {t.nit}</span>
-          )}
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${cfg.className}`}>
+    <div className="group h-full bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm hover:shadow-xl hover:border-slate-300 hover:-translate-y-1 transition-all duration-500 flex flex-col relative overflow-hidden">
+      {/* Background Accent Deco */}
+      <div className="absolute -right-8 -top-8 w-40 h-40 bg-slate-50 rounded-full group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
+      
+      {/* Header Info */}
+      <div className="relative mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex gap-1.5 flex-wrap">
+            {t.tipos.map(tipo => (
+              <span key={tipo} className={`px-2.5 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border ${TIPO_COLOR[tipo]}`}>
+                {TIPO_LABEL[tipo]}
+              </span>
+            ))}
+          </div>
+          <span className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border ${cfg.className}`}>
             {cfg.label}
           </span>
         </div>
 
-        {/* Badges de tipo */}
-        <div className="flex gap-1 flex-wrap">
-          {t.tipos.map(tipo => (
-            <span key={tipo} className={`text-xs font-medium px-2 py-0.5 rounded-full ${TIPO_COLOR[tipo]}`}>
-              {TIPO_LABEL[tipo]}
-            </span>
-          ))}
-        </div>
-
-        {/* Marcas y direcciones */}
-        {(activeMarcas.length > 0 || activeDirs.length > 0) && (
-          <div className="flex gap-1 flex-wrap">
-            {activeMarcas.map(m => (
-              <span key={m.id} className="inline-flex items-center gap-0.5 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
-                <Tag className="w-2.5 h-2.5" />
-                {m.nombre}
-              </span>
-            ))}
-            {activeDirs.length > 0 && (
-              <span className="inline-flex items-center gap-0.5 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
-                <MapPin className="w-2.5 h-2.5" />
-                {activeDirs.length === 1 ? activeDirs[0].nombre : `${activeDirs.length} dir. entrega`}
-              </span>
-            )}
-            {activeContactos.length > 0 && (
-              <span className="inline-flex items-center gap-0.5 text-xs bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full">
-                <UserCircle2 className="w-2.5 h-2.5" />
-                {activeContactos.length === 1 ? activeContactos[0].nombre : `${activeContactos.length} contactos`}
-              </span>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h3 className="font-black text-slate-900 text-xl tracking-tighter uppercase leading-none truncate group-hover:text-primary-600 transition-colors">
+              {t.nombre}
+            </h3>
+            {t.nit && (
+              <p className="text-[10px] font-mono font-black text-slate-400 mt-2 uppercase tracking-widest">
+                Tax ID: {t.nit}
+              </p>
             )}
           </div>
-        )}
-
-        {/* Info secundaria */}
-        <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground">
-          {t.email && <span>{t.email}</span>}
-          {t.telefono && <span>{t.telefono}</span>}
-          {t.tipos.includes('satelite') && t.capacidad_diaria != null && (
-            <span>{t.capacidad_diaria} uds/día</span>
-          )}
-          {t.tipos.includes('proveedor_mp') && t.calificacion != null && (
-            <span className="flex items-center gap-0.5">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star
-                  key={i}
-                  className={`w-3 h-3 ${i < t.calificacion! ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`}
-                />
-              ))}
-            </span>
-          )}
-          {t.tipos.includes('proveedor_mp') && t.porcentaje_anticipo != null && t.porcentaje_anticipo > 0 && (
-            <span>Anticipo: {t.porcentaje_anticipo}%</span>
-          )}
-          {t.tipos.includes('proveedor_mp') && t.descuento_pago_anticipado != null && t.descuento_pago_anticipado > 0 && (
-            <span className="text-green-600">Dto. anticipo: {t.descuento_pago_anticipado}%</span>
-          )}
+          <button
+            onClick={onEdit}
+            className="w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-300 hover:text-slate-900 hover:border-slate-200 hover:shadow-sm transition-all shrink-0"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      <button
-        onClick={onEdit}
-        className="w-8 h-8 rounded-xl bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0"
-      >
-        <Edit2 className="w-3.5 h-3.5" />
-      </button>
+      {/* Main Stats / Contacts - DISPLAY ALL INFO COMPACTED */}
+      <div className="grid grid-cols-2 gap-4 mb-6 relative z-10">
+        <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100/50">
+          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+            <Phone className="w-3 h-3" /> Comunicación
+          </p>
+          <p className="text-[11px] font-black text-slate-700 truncate">{t.telefono || 'Sin Teléfono'}</p>
+          <p className="text-[9px] font-black text-slate-400 truncate mt-1">{t.email || 'Sin Email'}</p>
+        </div>
+        <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100/50">
+          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+            <TrendingUp className="w-3 h-3" /> Perfil Comercial
+          </p>
+          <p className="text-[11px] font-black text-slate-700">
+            {t.tipos.includes('cliente') ? `Nivel ${t.nivel_cliente || 'N1'}` : 'Vínculo Op'}
+          </p>
+          <p className="text-[9px] font-black text-slate-400 mt-1">
+            {t.tipos.includes('cliente') ? `${t.plazo_pago_dias || 30}d Plazo` : 'Términos Std'}
+          </p>
+        </div>
+      </div>
+
+      {/* Specific Infos (Satelite/Proveedor) */}
+      {(t.tipos.includes('satelite') || t.tipos.includes('proveedor_mp')) && (
+        <div className="mb-6 flex flex-wrap gap-2">
+          {t.tipos.includes('satelite') && t.capacidad_diaria != null && (
+             <div className="bg-violet-50 border border-violet-100 rounded-xl px-3 py-1.5 flex items-center gap-2">
+                <ShieldCheck className="w-3.5 h-3.5 text-violet-500" />
+                <span className="text-[9px] font-black text-violet-700 uppercase tracking-widest">Cap: {t.capacidad_diaria} u/d</span>
+             </div>
+          )}
+          {t.tipos.includes('proveedor_mp') && t.calificacion != null && (
+            <div className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-1.5 flex items-center gap-2">
+               <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+               <span className="text-[9px] font-black text-amber-700 uppercase tracking-widest">Rate {t.calificacion}/5</span>
+            </div>
+          )}
+          {t.tipos.includes('proveedor_mp') && t.porcentaje_anticipo != null && (
+            <div className={`bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-1.5 flex items-center gap-2 ${t.porcentaje_anticipo === 0 ? 'opacity-50' : ''}`}>
+               <Info className="w-3.5 h-3.5 text-emerald-500" />
+               <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest">Ant: {t.porcentaje_anticipo}%</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Relationships Footer */}
+      <div className="mt-auto pt-6 border-t border-slate-50 flex flex-col gap-3">
+        {/* Marcas */}
+        {activeMarcas.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {activeMarcas.map(m => (
+              <span key={m.id} className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 px-3 py-1 rounded-full border border-blue-100">
+                <Tag className="w-3 h-3" />
+                {m.nombre}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Direcciones / Contactos Counters */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center">
+              <MapPin className="w-3.5 h-3.5 text-amber-600" />
+            </div>
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">
+              {activeDirs.length === 0 ? 'Sin Direcciones' : activeDirs.length === 1 ? '1 Punto Entrega' : `${activeDirs.length} Puntos Entrega`}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center">
+              <UserCircle2 className="w-3.5 h-3.5 text-indigo-600" />
+            </div>
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">
+              {activeContactos.length === 0 ? 'Sin Contactos' : activeContactos.length === 1 ? '1 Línea Directa' : `${activeContactos.length} Líneas Directas`}
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -293,359 +352,378 @@ function TerceroForm({ tercero, marcas = [], dirs = [], contactos = [], bodegas 
   }
 
   return (
-    <div className="rounded-2xl bg-neu-base shadow-neu p-5 space-y-4">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-        {isEdit ? `Editando — ${tercero.nombre}` : 'Nuevo tercero'}
-      </p>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-
-        {/* ── Tipos (multi-check) ── */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Tipo de tercero *
-          </label>
-          <div className="flex gap-2 flex-wrap">
-            {TIPOS.map(t => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => toggleTipo(t)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 text-body-sm font-medium transition-all ${
-                  tipos.includes(t)
-                    ? `border-current ${TIPO_COLOR[t]}`
-                    : 'border-transparent bg-neu-base shadow-neu text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {TIPO_LABEL[t]}
-              </button>
-            ))}
-          </div>
+    <div className="md:col-span-2 xl:col-span-3 bg-white rounded-[40px] border border-slate-100 shadow-xl overflow-hidden animate-in zoom-in-95 duration-500">
+      <div className="bg-slate-900 px-8 py-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+           <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center">
+              <UserCircle2 className="w-6 h-6 text-white" />
+           </div>
+           <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Módulo de Vinculación</p>
+              <h2 className="text-white font-black text-lg tracking-tight uppercase">{isEdit ? `Editando: ${tercero.nombre}` : 'Registro de Nuevo Tercero'}</h2>
+           </div>
         </div>
+        <button onClick={onDone} className="p-2 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-all">
+           <X className="w-5 h-5" />
+        </button>
+      </div>
 
-        {/* ── Datos básicos ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Nombre */}
-          <div className="space-y-1 sm:col-span-2">
-            <div className="flex items-center gap-1.5">
-              <label className="text-xs font-medium text-foreground">Nombre / Razón social *</label>
-              {checkingNombre && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
-            </div>
-            <div className={`rounded-xl bg-neu-base shadow-neu px-3 py-2 ${nombreDuplicado ? 'ring-1 ring-amber-400' : ''}`}>
-              <input
-                value={nombre}
-                onChange={e => setNombre(e.target.value)}
-                required
-                placeholder="Empresa S.A.S."
-                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-              />
-            </div>
-            {nombreDuplicado && (
-              <div className="flex items-center gap-1 text-amber-600">
-                <AlertTriangle className="w-3 h-3 shrink-0" />
-                <span className="text-[10px]">Ya existe un tercero con este nombre</span>
-              </div>
-            )}
+      <form onSubmit={handleSubmit} className="p-8 space-y-10">
+        {/* SECCIÓN 1: IDENTIDAD Y TIPO */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+             <div className="w-1 h-4 bg-primary-500 rounded-full" />
+             <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">1. Identidad Estratégica</h3>
           </div>
-
-          {/* NIT */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-foreground">NIT / Cédula</label>
-            <div className="rounded-xl bg-neu-base shadow-neu px-3 py-2">
-              <input
-                value={nit}
-                onChange={e => setNit(e.target.value)}
-                placeholder="900.123.456-7"
-                className="w-full bg-transparent text-body-sm font-mono text-foreground outline-none placeholder:text-muted-foreground"
-              />
-            </div>
-          </div>
-
-          {/* Teléfono */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-foreground">Teléfono</label>
-            <div className="rounded-xl bg-neu-base shadow-neu px-3 py-2">
-              <input
-                value={telefono}
-                onChange={e => setTelefono(e.target.value)}
-                placeholder="+57 300 000 0000"
-                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-              />
-            </div>
-          </div>
-
-          {/* Email */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-foreground">Email de contacto</label>
-            <div className="rounded-xl bg-neu-base shadow-neu px-3 py-2">
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="contacto@empresa.com"
-                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-              />
-            </div>
-          </div>
-
-          {/* Email facturación */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-foreground">Email facturación electrónica</label>
-            <div className="rounded-xl bg-neu-base shadow-neu px-3 py-2">
-              <input
-                type="email"
-                value={emailFact}
-                onChange={e => setEmailFact(e.target.value)}
-                placeholder="facturacion@empresa.com"
-                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-              />
-            </div>
-          </div>
-
-          {/* Dirección */}
-          <div className="space-y-1 sm:col-span-2">
-            <label className="text-xs font-medium text-foreground">Dirección</label>
-            <div className="rounded-xl bg-neu-base shadow-neu px-3 py-2">
-              <input
-                value={direccion}
-                onChange={e => setDireccion(e.target.value)}
-                placeholder="Calle 00 # 00-00, Medellín"
-                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* ── Estado ── */}
-        {isEdit && (
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Estado</label>
-            <div className="flex gap-2">
-              {(Object.entries(ESTADO_CONFIG) as [EstadoTercero, typeof ESTADO_CONFIG[EstadoTercero]][]).map(([val, cfg]) => (
+          
+          <div className="space-y-4">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Roles en la Cadena de Suministro *</label>
+            <div className="flex gap-2 flex-wrap">
+              {TIPOS.map(t => (
                 <button
-                  key={val}
+                  key={t}
                   type="button"
-                  onClick={() => setEstado(val)}
-                  className={`flex-1 py-1.5 rounded-xl text-xs font-semibold border-2 transition-all ${
-                    estado === val ? `border-current ${cfg.className}` : 'border-transparent bg-neu-base shadow-neu text-muted-foreground'
+                  onClick={() => toggleTipo(t)}
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${
+                    tipos.includes(t)
+                      ? `bg-slate-900 text-white border-slate-900 shadow-lg`
+                      : 'bg-white border-slate-100 text-slate-400 hover:border-slate-300'
                   }`}
                 >
-                  {cfg.label}
+                  {TIPO_LABEL[t]}
                 </button>
               ))}
             </div>
           </div>
-        )}
 
-        {/* ── Bodega Taller ── */}
-        {isEdit && (
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Bodega Taller (donde se procesa material)</label>
-            <div className="rounded-xl bg-neu-base shadow-neu px-3 py-2">
-              <select
-                value={bodegaTallerId}
-                onChange={e => setBodegaTallerId(e.target.value)}
-                className="w-full bg-transparent text-body-sm text-foreground outline-none"
-              >
-                <option value="">Sin bodega asignada</option>
-                {bodegas.map(b => (
-                  <option key={b.id} value={b.id}>{b.nombre}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        )}
-
-        {/* ── Cliente (Finanzas) ── */}
-        {esCliente && (
-          <div className="space-y-3 rounded-xl bg-blue-50 border border-blue-100 px-4 py-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Clasificación Financiera</p>
-              {sugerencia && sugerencia.sugerencia !== nivelCliente && (
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold animate-pulse">
-                  <TrendingUp className="w-3 h-3" />
-                  SUGERENCIA: {sugerencia.sugerencia} ({sugerencia.unidades_anuales} uds/año)
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-2 mb-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Razón Social / Nombre Comercial *</label>
+                {checkingNombre && <Loader2 className="w-3.5 h-3.5 animate-spin text-primary-500" />}
+              </div>
+              <input
+                value={nombre}
+                onChange={e => setNombre(e.target.value)}
+                required
+                placeholder="Ej: Textiles del Futuro S.A.S."
+                className={`w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-black text-slate-900 uppercase tracking-tight focus:outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-400 transition-all ${nombreDuplicado ? 'border-amber-400 bg-amber-50' : ''}`}
+              />
+              {nombreDuplicado && (
+                <div className="flex items-center gap-2 mt-2 text-amber-600 bg-amber-50 px-4 py-2 rounded-xl border border-amber-100">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Advertencia: Este nombre ya está en uso</span>
                 </div>
               )}
             </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-foreground">Nivel de Cliente</label>
-                <div className="flex gap-2">
-                  {(['N1', 'N2', 'N3'] as NivelCliente[]).map(n => (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={() => setNivelCliente(n)}
-                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold border-2 transition-all ${
-                        nivelCliente === n 
-                          ? 'border-blue-600 bg-blue-600 text-white shadow-lg shadow-blue-200' 
-                          : 'border-transparent bg-white shadow-neu text-slate-400'
-                      }`}
-                    >
-                      {n}
-                    </button>
-                  ))}
+
+            <div>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">NIT / Documento</label>
+              <input
+                value={nit}
+                onChange={e => setNit(e.target.value)}
+                placeholder="900.000.000-0"
+                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3 text-sm font-mono font-black text-slate-900 focus:outline-none focus:border-slate-300"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Estado Activo</label>
+              <div className="flex gap-2">
+                {(Object.entries(ESTADO_CONFIG) as [EstadoTercero, typeof ESTADO_CONFIG[EstadoTercero]][]).map(([val, cfg]) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setEstado(val)}
+                    className={`flex-1 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest border transition-all ${
+                      estado === val ? `bg-slate-900 text-white border-slate-900 shadow-md` : 'bg-slate-50 border-slate-100 text-slate-400'
+                    }`}
+                  >
+                    {cfg.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* SECCIÓN 2: CONTACTO Y UBICACIÓN */}
+        <div className="space-y-6 pt-8 border-t border-slate-100">
+          <div className="flex items-center gap-3">
+             <div className="w-1 h-4 bg-indigo-500 rounded-full" />
+             <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">2. Canal de Comunicación</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Teléfono Principal</label>
+                <div className="relative">
+                  <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    value={telefono}
+                    onChange={e => setTelefono(e.target.value)}
+                    placeholder="+57 300 000 0000"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-12 pr-5 py-3 text-sm font-black text-slate-900 focus:outline-none focus:border-slate-300"
+                  />
                 </div>
               </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Dirección Principal</label>
+                <div className="relative">
+                  <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    value={direccion}
+                    onChange={e => setDireccion(e.target.value)}
+                    placeholder="Calle 00 # 00-00, Oficina 000"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-12 pr-5 py-3 text-sm font-black text-slate-900 focus:outline-none focus:border-slate-300"
+                  />
+                </div>
+              </div>
+            </div>
 
-              <div className="space-y-1">
-                <div className="flex items-center gap-1.5">
-                  <label className="text-xs font-medium text-foreground">Plazo de Pago (Días)</label>
-                  <div className="group relative">
-                    <Info className="w-3 h-3 text-slate-400 cursor-help" />
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-[9px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-xl">
-                      Plazo por defecto que se cargará en cada nueva orden de venta para este cliente.
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Email Comercial</label>
+                <div className="relative">
+                  <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="contacto@empresa.com"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-12 pr-5 py-3 text-sm font-black text-slate-900 focus:outline-none focus:border-slate-300"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Email Facturación</label>
+                <div className="relative">
+                  <ShieldCheck className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="email"
+                    value={emailFact}
+                    onChange={e => setEmailFact(e.target.value)}
+                    placeholder="facturacion@empresa.com"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-12 pr-5 py-3 text-sm font-black text-slate-900 focus:outline-none focus:border-slate-300"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* SECCIÓN 3: PERFILES ESPECIALIZADOS */}
+        {(esCliente || esSatelite || esProveedor) && (
+          <div className="space-y-8 pt-8 border-t border-slate-100">
+             <div className="flex items-center gap-3">
+                <div className="w-1 h-4 bg-emerald-500 rounded-full" />
+                <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">3. Configuración por Rol</h3>
+             </div>
+
+             <div className="grid grid-cols-1 gap-6">
+                {/* Panel CLIENTE */}
+                {esCliente && (
+                  <div className="bg-blue-50/50 border border-blue-100 rounded-[32px] p-6 space-y-6">
+                    <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest flex items-center gap-2">
+                       <TrendingUp className="w-4 h-4" /> Clasificación Financiera de Cliente
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Nivel / Tier</label>
+                          {sugerencia && (
+                            <span className="text-[8px] font-black bg-amber-100 text-amber-700 px-2 py-0.5 rounded-lg uppercase">
+                              Sugerido: {sugerencia.sugerencia}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          {(['N1', 'N2', 'N3'] as NivelCliente[]).map(n => (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() => setNivelCliente(n)}
+                              className={`flex-1 py-2.5 rounded-xl text-[10px] font-black border transition-all ${
+                                nivelCliente === n ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white border-blue-200 text-blue-400 hover:border-blue-400'
+                              }`}
+                            >
+                              Nivel {n}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Días de Plazo de Pago</label>
+                        <div className="bg-white border border-blue-200 rounded-xl px-4 py-2.5 flex items-center gap-2">
+                           <input
+                             type="number"
+                             value={plazoPago}
+                             onChange={e => setPlazoPago(e.target.value)}
+                             className="w-full bg-transparent text-sm font-black text-slate-900 outline-none"
+                             placeholder="30"
+                           />
+                           <span className="text-[10px] font-black text-blue-300 uppercase">Días</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="rounded-lg bg-white shadow-neu px-3 py-2">
-                  <input
-                    type="number"
-                    value={plazoPago}
-                    onChange={e => setPlazoPago(e.target.value)}
-                    className="w-full bg-transparent text-body-sm font-bold text-foreground outline-none"
-                    placeholder="30"
-                  />
-                </div>
-              </div>
+                )}
+
+                {/* Panel SATÉLITE */}
+                {esSatelite && (
+                  <div className="bg-violet-50/50 border border-violet-100 rounded-[32px] p-6 space-y-6">
+                    <p className="text-[10px] font-black text-violet-700 uppercase tracking-widest flex items-center gap-2">
+                       <ShieldCheck className="w-4 h-4" /> Especificaciones de Producción Satélite
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Capacidad Diaria (uds)</label>
+                        <input
+                          type="number" min={0}
+                          value={capDiaria}
+                          onChange={e => setCapDiaria(e.target.value)}
+                          placeholder="120"
+                          className="w-full bg-white border border-violet-200 rounded-xl px-4 py-2.5 text-sm font-black text-slate-900 focus:outline-none"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Lead Time (días)</label>
+                        <input
+                          type="number" min={0}
+                          value={leadTime}
+                          onChange={e => setLeadTime(e.target.value)}
+                          placeholder="3"
+                          className="w-full bg-white border border-violet-200 rounded-xl px-4 py-2.5 text-sm font-black text-slate-900 focus:outline-none"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Valor Ref. Confección</label>
+                        <div className="bg-white border border-violet-200 rounded-xl px-4 py-2.5 flex items-center gap-2">
+                           <span className="text-slate-400 text-xs">$</span>
+                           <input
+                             type="number" min={0}
+                             value={valorRef}
+                             onChange={e => setValorRef(e.target.value)}
+                             placeholder="15000"
+                             className="w-full bg-transparent text-sm font-black text-slate-900 outline-none"
+                           />
+                        </div>
+                      </div>
+                      <div className="md:col-span-3 space-y-2">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Bodega de Taller Asignada</label>
+                        <select
+                          value={bodegaTallerId}
+                          onChange={e => setBodegaTallerId(e.target.value)}
+                          className="w-full bg-white border border-violet-200 rounded-xl px-4 py-3 text-sm font-black text-slate-900 focus:outline-none"
+                        >
+                          <option value="">— Ninguna (Materiales no se trackean en este taller) —</option>
+                          {bodegas.map(b => (
+                            <option key={b.id} value={b.id}>{b.nombre}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Panel PROVEEDOR MP */}
+                {esProveedor && (
+                  <div className="bg-emerald-50/50 border border-emerald-100 rounded-[32px] p-6 space-y-6">
+                    <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest flex items-center gap-2">
+                       <Tag className="w-4 h-4" /> Condiciones de Proveedor de Materiales
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Calificación Interna</label>
+                        <div className="flex gap-2 items-center bg-white border border-emerald-100 h-11 px-4 rounded-xl">
+                          {[1, 2, 3, 4, 5].map(n => (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() => setCalificacion(calificacion === n ? 0 : n)}
+                              className="transition-transform hover:scale-125"
+                            >
+                              <Star className={`w-4 h-4 ${n <= calificacion ? 'text-amber-400 fill-amber-400' : 'text-slate-200'}`} />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">% Anticipo Mandatorio</label>
+                        <div className="bg-white border border-emerald-100 rounded-xl px-4 py-2.5 flex items-center gap-2">
+                           <input
+                             type="number" min={0} max={100}
+                             value={anticipo}
+                             onChange={e => setAnticipo(e.target.value)}
+                             className="w-full bg-transparent text-sm font-black text-slate-900 outline-none"
+                             placeholder="50"
+                           />
+                           <span className="text-[10px] font-black text-emerald-300">%</span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">% Dto. Pago Anticipado</label>
+                        <div className="bg-white border border-emerald-100 rounded-xl px-4 py-2.5 flex items-center gap-2">
+                           <input
+                             type="number" min={0}
+                             value={descuento}
+                             onChange={e => setDescuento(e.target.value)}
+                             className="w-full bg-transparent text-sm font-black text-slate-900 outline-none"
+                             placeholder="5"
+                           />
+                           <span className="text-[10px] font-black text-emerald-300">%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+             </div>
+          </div>
+        )}
+
+        {/* SECCIÓN 4: RELACIONES DINÁMICAS (Solo en Edición) */}
+        {isEdit && (
+          <div className="space-y-8 pt-8 border-t border-slate-100 overflow-visible">
+            <div className="flex items-center gap-3">
+               <div className="w-1 h-4 bg-slate-900 rounded-full" />
+               <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">4. Ecosistema de Datos</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+               <MarcasInlineSection terceroId={tercero.id} initialMarcas={marcas} />
+               <ContactosInlineSection terceroId={tercero.id} initialContactos={contactos} />
+               <div className="xl:col-span-2">
+                 <DireccionesInlineSection terceroId={tercero.id} initialDirs={dirs} />
+               </div>
             </div>
           </div>
         )}
-        {esSatelite && (
-          <div className="space-y-2 rounded-xl bg-violet-50 border border-violet-100 px-4 py-3">
-            <p className="text-xs font-semibold text-violet-700 uppercase tracking-wide">Datos de Satélite</p>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-foreground">Capacidad uds/día</label>
-                <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
-                  <input
-                    type="number" min={0}
-                    value={capDiaria}
-                    onChange={e => setCapDiaria(e.target.value)}
-                    placeholder="120"
-                    className="w-full bg-transparent text-body-sm text-foreground outline-none"
-                  />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-foreground">Lead time (días)</label>
-                <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
-                  <input
-                    type="number" min={0}
-                    value={leadTime}
-                    onChange={e => setLeadTime(e.target.value)}
-                    placeholder="3"
-                    className="w-full bg-transparent text-body-sm text-foreground outline-none"
-                  />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-foreground">Valor servicio ref. (COP)</label>
-                <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
-                  <input
-                    type="number" min={0}
-                    value={valorRef}
-                    onChange={e => setValorRef(e.target.value)}
-                    placeholder="15000"
-                    className="w-full bg-transparent text-body-sm text-foreground outline-none"
-                  />
-                </div>
-              </div>
-            </div>
+
+        {/* ERROR FEEDBACK */}
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-100 rounded-[20px] flex items-center gap-3 text-red-600">
+             <AlertTriangle className="w-5 h-5 shrink-0" />
+             <p className="text-[11px] font-black uppercase tracking-widest leading-relaxed">{error}</p>
           </div>
         )}
 
-        {/* ── Proveedor MP ── */}
-        {esProveedor && (
-          <div className="space-y-2 rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-3">
-            <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Datos de Proveedor</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Calificación */}
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-foreground">Calificación</label>
-                <div className="flex gap-1 items-center h-9">
-                  {[1, 2, 3, 4, 5].map(n => (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={() => setCalificacion(calificacion === n ? 0 : n)}
-                      className="transition-transform hover:scale-110"
-                    >
-                      <Star
-                        className={`w-5 h-5 ${n <= calificacion ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Anticipo */}
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-foreground">% Anticipo requerido</label>
-                <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2 flex items-center gap-1">
-                  <input
-                    type="number" min={0} max={100} step={5}
-                    value={anticipo}
-                    onChange={e => setAnticipo(e.target.value)}
-                    placeholder="0"
-                    className="w-full bg-transparent text-body-sm text-foreground outline-none"
-                  />
-                  <span className="text-muted-foreground text-body-sm shrink-0">%</span>
-                </div>
-              </div>
-
-              {/* Descuento pago anticipado */}
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-foreground">% Dto. pago anticipado</label>
-                <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2 flex items-center gap-1">
-                  <input
-                    type="number" min={0} max={100} step={0.5}
-                    value={descuento}
-                    onChange={e => setDescuento(e.target.value)}
-                    placeholder="0"
-                    className="w-full bg-transparent text-body-sm text-foreground outline-none"
-                  />
-                  <span className="text-muted-foreground text-body-sm shrink-0">%</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Marcas (solo en edición) ── */}
-        {isEdit && (
-          <MarcasInlineSection terceroId={tercero.id} initialMarcas={marcas} />
-        )}
-
-        {/* ── Direcciones de entrega (solo en edición) ── */}
-        {isEdit && (
-          <DireccionesInlineSection terceroId={tercero.id} initialDirs={dirs} />
-        )}
-
-        {/* ── Directorio de contactos (solo en edición) ── */}
-        {isEdit && (
-          <ContactosInlineSection terceroId={tercero.id} initialContactos={contactos} />
-        )}
-
-        {error && <p className="text-red-600 text-body-sm">{error}</p>}
-
-        <div className="flex gap-2 justify-end pt-1">
+        {/* FOOTER ACCIONES */}
+        <div className="pt-8 border-t border-slate-100 flex justify-end gap-3 sticky bottom-4">
           <button
             type="button"
             onClick={onDone}
-            className="px-4 py-2 rounded-xl bg-neu-base shadow-neu text-body-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="px-8 py-3 rounded-2xl bg-slate-100 text-slate-500 font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all"
           >
-            Cancelar
+            Descartar Cambios
           </button>
           <button
             type="submit"
             disabled={pending || tipos.length === 0}
-            className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-primary-600 text-white font-semibold text-body-sm hover:bg-primary-700 transition-all disabled:opacity-50"
+            className="flex items-center gap-2 px-10 py-3 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50"
           >
-            {pending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            {isEdit ? 'Guardar cambios' : 'Crear tercero'}
+            {pending && <Loader2 className="w-4 h-4 animate-spin" />}
+            {isEdit ? 'Sincronizar Maestro' : 'Crear Registro Maestro'}
           </button>
         </div>
       </form>
@@ -695,73 +773,72 @@ function MarcasInlineSection({
   const inactivas = marcas.filter(m => !m.activo)
 
   return (
-    <div className="space-y-2.5 rounded-xl bg-blue-50 border border-blue-100 px-4 py-3">
-      <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Marcas</p>
+    <div className="space-y-6 rounded-[32px] bg-blue-50/50 border border-blue-100 p-6">
+      <div className="flex items-center justify-between">
+         <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest flex items-center gap-2">
+            <Tag className="w-4 h-4" /> Portafolio de Marcas
+         </p>
+         <div className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest">
+            {activas.length} Activas
+         </div>
+      </div>
 
-      {/* Chips activas */}
-      <div className="flex flex-wrap gap-1.5 min-h-[1.5rem]">
+      {/* Chips Area */}
+      <div className="flex flex-wrap gap-2 min-h-[40px]">
         {activas.map(m => (
-          <span key={m.id} className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
-            <Tag className="w-2.5 h-2.5 shrink-0" />
+          <span key={m.id} className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-blue-600 text-white px-4 py-1.5 rounded-full shadow-sm group/badge">
             {m.nombre}
             <button
               type="button"
               onClick={() => handleToggle(m)}
               disabled={togglingId === m.id}
-              className="ml-0.5 text-blue-400 hover:text-blue-700 transition-colors disabled:opacity-40"
-              title="Desactivar"
+              className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-all disabled:opacity-40"
             >
               <X className="w-2.5 h-2.5" />
             </button>
           </span>
         ))}
         {activas.length === 0 && (
-          <span className="text-xs text-muted-foreground italic">Sin marcas activas</span>
+          <p className="text-xs font-black text-blue-400/50 uppercase italic tracking-widest">Sin marcas registradas</p>
         )}
       </div>
 
-      {/* Chips inactivas (reactivar con clic) */}
+      {/* Inactivas Area */}
       {inactivas.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="pt-4 border-t border-blue-100 flex flex-wrap gap-2">
           {inactivas.map(m => (
             <button
               key={m.id}
               type="button"
               onClick={() => handleToggle(m)}
               disabled={togglingId === m.id}
-              title="Reactivar"
-              className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-400 line-through px-2 py-0.5 rounded-full hover:bg-blue-50 hover:text-blue-600 hover:no-underline transition-colors disabled:opacity-40"
+              className="inline-flex items-center gap-2 text-[9px] font-black uppercase tracking-widest bg-slate-200 text-slate-500 px-3 py-1 rounded-full hover:bg-blue-600 hover:text-white transition-all disabled:opacity-40"
             >
-              <Tag className="w-2.5 h-2.5 shrink-0" />
               {m.nombre}
             </button>
           ))}
         </div>
       )}
 
-      {/* Input nueva marca */}
-      <div className="flex gap-2 items-center">
-        <div className="flex-1 rounded-lg bg-neu-base shadow-neu px-3 py-1.5">
-          <input
-            value={newNombre}
-            onChange={e => setNewNombre(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAdd() } }}
-            placeholder="Nueva marca…"
-            className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-          />
-        </div>
+      {/* Input de rápida adición */}
+      <div className="bg-white border border-blue-100 rounded-2xl p-1.5 flex gap-2">
+        <input
+          value={newNombre}
+          onChange={e => setNewNombre(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAdd() } }}
+          placeholder="Nombre de nueva marca…"
+          className="flex-1 bg-transparent px-4 py-2 text-sm font-black text-slate-800 placeholder:text-slate-300 outline-none uppercase"
+        />
         <button
           type="button"
           onClick={handleAdd}
           disabled={adding || !newNombre.trim()}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-neu-base shadow-neu text-blue-700 font-semibold text-body-sm transition-all active:shadow-neu-inset disabled:opacity-50"
+          className="px-6 py-2 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all disabled:opacity-50 shadow-md"
         >
-          {adding ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-          Agregar
+          {adding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Añadir'}
         </button>
       </div>
-
-      {addError && <p className="text-xs text-red-600">{addError}</p>}
+      {addError && <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mt-2">{addError}</p>}
     </div>
   )
 }
@@ -820,99 +897,84 @@ function ContactosInlineSection({
   const inactivos = contactos.filter(c => !c.activo)
 
   return (
-    <div className="space-y-2.5 rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-3">
+    <div className="space-y-6 rounded-[32px] bg-indigo-50/50 border border-indigo-100 p-6">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">Directorio de contactos</p>
-        {!showForm && (
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 transition-colors"
-          >
-            <Plus className="w-3 h-3" />
-            Agregar
-          </button>
-        )}
+         <p className="text-[10px] font-black text-indigo-700 uppercase tracking-widest flex items-center gap-2">
+            <UserCircle2 className="w-4 h-4" /> Líneas Directas de Contacto
+         </p>
+         {!showForm && (
+           <button
+             type="button"
+             onClick={() => setShowForm(true)}
+             className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-indigo-600 text-white text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md"
+           >
+             <Plus className="w-3.5 h-3.5" /> Nuevo Contacto
+           </button>
+         )}
       </div>
 
-      {/* Contactos activos */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         {activos.map(c => (
-          <div key={c.id} className="flex items-start justify-between gap-2 rounded-lg bg-white/70 px-3 py-2">
-            <div className="min-w-0 space-y-0.5">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-body-sm font-semibold text-foreground">{c.nombre}</span>
-                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${CATEGORIA_COLOR[c.categoria]}`}>
-                  {CATEGORIA_LABEL[c.categoria]}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground">
-                {c.celular && (
-                  <span className="flex items-center gap-1">
-                    <Phone className="w-2.5 h-2.5 shrink-0" />
-                    {c.celular}
-                  </span>
-                )}
-                {c.email && (
-                  <span className="flex items-center gap-1">
-                    <Mail className="w-2.5 h-2.5 shrink-0" />
-                    {c.email}
-                  </span>
-                )}
-              </div>
+          <div key={c.id} className="flex items-center justify-between gap-4 rounded-2xl bg-white border border-indigo-50 p-4 group/row hover:border-indigo-200 hover:shadow-md transition-all">
+            <div className="flex items-center gap-4 min-w-0">
+               <div className={`w-8 h-8 rounded-lg ${CATEGORIA_COLOR[c.categoria]} flex items-center justify-center shrink-0`}>
+                  <UserCircle2 className="w-4 h-4 text-white opacity-80" />
+               </div>
+               <div className="min-w-0">
+                 <div className="flex items-center gap-2">
+                    <p className="text-[11px] font-black text-slate-800 uppercase tracking-tight truncate">{c.nombre}</p>
+                    <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">{CATEGORIA_LABEL[c.categoria]}</span>
+                 </div>
+                 <div className="flex items-center gap-3 mt-1">
+                    {c.celular && (
+                      <span className="text-[9px] font-black text-slate-400 flex items-center gap-1">
+                        <Phone className="w-2.5 h-2.5" /> {c.celular}
+                      </span>
+                    )}
+                    {c.email && (
+                      <span className="text-[9px] font-black text-slate-400 flex items-center gap-1">
+                        <Mail className="w-2.5 h-2.5" /> {c.email}
+                      </span>
+                    )}
+                 </div>
+               </div>
             </div>
             <button
-              type="button"
-              onClick={() => handleToggle(c)}
-              disabled={togglingId === c.id}
-              title="Desactivar contacto"
-              className="mt-0.5 text-indigo-300 hover:text-indigo-600 transition-colors disabled:opacity-40 shrink-0"
+               type="button"
+               onClick={() => handleToggle(c)}
+               className="p-2 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover/row:opacity-100"
             >
-              <X className="w-3.5 h-3.5" />
+               <X className="w-4 h-4" />
             </button>
           </div>
         ))}
-        {activos.length === 0 && !showForm && (
-          <p className="text-xs text-muted-foreground italic">Sin contactos registrados</p>
+        
+        {inactivos.length > 0 && (
+          <div className="pt-2 flex flex-wrap gap-2">
+            {inactivos.map(c => (
+              <button key={c.id} onClick={() => handleToggle(c)} className="text-[9px] font-black uppercase text-slate-400 hover:text-indigo-600 line-through">
+                {c.nombre}
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
-      {/* Inactivos */}
-      {inactivos.length > 0 && (
-        <div className="space-y-1">
-          {inactivos.map(c => (
-            <div key={c.id} className="flex items-center justify-between gap-2 rounded-lg bg-gray-100 px-3 py-1.5 opacity-60">
-              <p className="text-xs text-gray-500 line-through truncate">{c.nombre} · {CATEGORIA_LABEL[c.categoria]}</p>
-              <button
-                type="button"
-                onClick={() => handleToggle(c)}
-                disabled={togglingId === c.id}
-                title="Reactivar"
-                className="text-xs text-gray-500 hover:text-indigo-700 underline shrink-0 disabled:opacity-40"
-              >
-                Reactivar
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Formulario nuevo contacto */}
       {showForm && (
-        <div className="space-y-2 pt-2 border-t border-indigo-200">
-          <p className="text-xs font-medium text-indigo-700">Nuevo contacto</p>
+        <div className="bg-white border border-indigo-200 rounded-[28px] p-6 space-y-6 animate-in slide-in-from-top-4 duration-300">
+          <div className="flex justify-between items-center">
+             <p className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">Configurar Nueva Línea</p>
+             <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-900"><X className="w-4 h-4" /></button>
+          </div>
 
-          {/* Categoría */}
           <div className="flex flex-wrap gap-1.5">
             {CATEGORIAS.map(cat => (
               <button
                 key={cat}
                 type="button"
                 onClick={() => setNewCat(cat)}
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all ${
-                  newCat === cat
-                    ? `${CATEGORIA_COLOR[cat]} border-current`
-                    : 'border-transparent bg-white/60 text-muted-foreground hover:text-foreground'
+                className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${
+                  newCat === cat ? `${CATEGORIA_COLOR[cat]} border-current shadow-sm` : 'bg-slate-50 border-slate-100 text-slate-400'
                 }`}
               >
                 {CATEGORIA_LABEL[cat]}
@@ -920,57 +982,38 @@ function ContactosInlineSection({
             ))}
           </div>
 
-          {/* Campos */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <div className="rounded-lg bg-neu-base shadow-neu px-3 py-1.5">
-              <input
-                value={newNombre}
-                onChange={e => setNewNombre(e.target.value)}
-                placeholder="Nombre completo *"
-                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-              />
-            </div>
-            <div className="rounded-lg bg-neu-base shadow-neu px-3 py-1.5 flex items-center gap-1.5">
-              <Phone className="w-3 h-3 text-muted-foreground shrink-0" />
-              <input
-                value={newCelular}
-                onChange={e => setNewCelular(e.target.value)}
-                placeholder="Celular / WhatsApp"
-                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-              />
-            </div>
-            <div className="rounded-lg bg-neu-base shadow-neu px-3 py-1.5 flex items-center gap-1.5">
-              <Mail className="w-3 h-3 text-muted-foreground shrink-0" />
-              <input
-                type="email"
-                value={newEmail}
-                onChange={e => setNewEmail(e.target.value)}
-                placeholder="Email corporativo"
-                className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-              />
-            </div>
+          <div className="space-y-4">
+             <input
+               value={newNombre}
+               onChange={e => setNewNombre(e.target.value)}
+               placeholder="Nombre de la Persona *"
+               className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-xs font-black text-slate-900 uppercase focus:outline-none"
+             />
+             <div className="grid grid-cols-2 gap-4">
+                <input
+                  value={newCelular}
+                  onChange={e => setNewCelular(e.target.value)}
+                  placeholder="WhatsApp / Celular"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-xs font-black text-slate-900 focus:outline-none"
+                />
+                <input
+                  type="email"
+                  value={newEmail}
+                  onChange={e => setNewEmail(e.target.value)}
+                  placeholder="Email Corporativo"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-xs font-black text-slate-900 focus:outline-none"
+                />
+             </div>
           </div>
 
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleAdd}
-              disabled={adding || !newNombre.trim()}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-neu-base shadow-neu text-indigo-700 font-semibold text-body-sm transition-all active:shadow-neu-inset disabled:opacity-50"
-            >
-              {adding ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-              Agregar contacto
-            </button>
-            <button
-              type="button"
-              onClick={() => { setShowForm(false); setAddError(null) }}
-              className="text-xs text-muted-foreground hover:text-foreground px-2"
-            >
-              Cancelar
-            </button>
-          </div>
-
-          {addError && <p className="text-xs text-red-600">{addError}</p>}
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={adding || !newNombre.trim()}
+            className="w-full py-3 rounded-2xl bg-indigo-600 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-indigo-100"
+          >
+            {adding ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Confirmar Registro'}
+          </button>
         </div>
       )}
     </div>
@@ -1025,92 +1068,72 @@ function DireccionesInlineSection({
   const inactivas = dirs.filter(d => !d.activa)
 
   return (
-    <div className="space-y-2.5 rounded-xl bg-amber-50 border border-amber-100 px-4 py-3">
-      <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Direcciones de entrega</p>
+    <div className="space-y-6 rounded-[32px] bg-amber-50/50 border border-amber-100 p-8">
+      <div className="flex items-center justify-between">
+         <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest flex items-center gap-2">
+            <MapPin className="w-4 h-4" /> Puntos Logísticos / Entrega
+         </p>
+         <span className="text-[10px] font-black text-amber-600 bg-amber-100 px-3 py-1 rounded-xl">
+            {activas.length} Locaciones Detectadas
+         </span>
+      </div>
 
-      {/* Activas */}
-      <div className="space-y-1.5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {activas.map(d => (
-          <div key={d.id} className="flex items-start justify-between gap-2 rounded-lg bg-white/70 px-3 py-2">
+          <div key={d.id} className="bg-white border border-amber-50 rounded-2xl p-5 flex items-start justify-between group/row hover:border-amber-200 hover:shadow-md transition-all">
             <div className="min-w-0">
-              <p className="text-body-sm font-semibold text-foreground truncate">{d.nombre}</p>
-              <p className="text-xs text-muted-foreground truncate">{d.direccion}{d.ciudad ? ` — ${d.ciudad}` : ''}</p>
+               <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-400" /> {d.nombre}
+               </h4>
+               <p className="text-[10px] font-black text-slate-400 uppercase mt-2 leading-relaxed">
+                  {d.direccion} {d.ciudad ? ` · ${d.ciudad}` : ''}
+               </p>
             </div>
             <button
-              type="button"
-              onClick={() => handleToggle(d)}
-              disabled={togglingId === d.id}
-              title="Desactivar"
-              className="mt-0.5 text-amber-400 hover:text-amber-700 transition-colors disabled:opacity-40 shrink-0"
+               onClick={() => handleToggle(d)}
+               className="p-2 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover/row:opacity-100"
             >
-              <X className="w-3.5 h-3.5" />
+               <X className="w-4 h-4" />
             </button>
           </div>
         ))}
+        
         {activas.length === 0 && (
-          <p className="text-xs text-muted-foreground italic">Sin direcciones de entrega</p>
+           <div className="md:col-span-2 py-10 border-2 border-dashed border-amber-200 rounded-[28px] flex items-center justify-center">
+              <p className="text-[10px] font-black text-amber-300 uppercase tracking-widest italic">No hay puntos de entrega configurados para este tercero</p>
+           </div>
         )}
       </div>
 
-      {/* Inactivas */}
-      {inactivas.length > 0 && (
-        <div className="space-y-1">
-          {inactivas.map(d => (
-            <div key={d.id} className="flex items-center justify-between gap-2 rounded-lg bg-gray-100 px-3 py-1.5 opacity-60">
-              <p className="text-xs text-gray-500 line-through truncate">{d.nombre} — {d.direccion}</p>
-              <button
-                type="button"
-                onClick={() => handleToggle(d)}
-                disabled={togglingId === d.id}
-                title="Reactivar"
-                className="text-xs text-gray-500 hover:text-amber-700 underline shrink-0 disabled:opacity-40"
-              >
-                Reactivar
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Form nueva dirección */}
-      <div className="space-y-2 pt-1 border-t border-amber-200">
-        <p className="text-xs font-medium text-amber-700">Nueva dirección</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-1.5">
-            <input
-              value={newNombre}
-              onChange={e => setNewNombre(e.target.value)}
-              placeholder="Nombre (ej: Almacén Centro)"
-              className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-            />
-          </div>
-          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-1.5">
-            <input
-              value={newDireccion}
-              onChange={e => setNewDir(e.target.value)}
-              placeholder="Dirección completa"
-              className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-            />
-          </div>
-          <div className="rounded-lg bg-neu-base shadow-neu px-3 py-1.5">
-            <input
-              value={newCiudad}
-              onChange={e => setNewCiudad(e.target.value)}
-              placeholder="Ciudad (opcional)"
-              className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
-            />
-          </div>
+      {/* Rápida vinculación de dirección */}
+      <div className="bg-white border border-amber-100 rounded-[28px] p-6 space-y-6">
+        <p className="text-[11px] font-black text-amber-800 uppercase tracking-widest">Añadir Nueva Locación Logística</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <input
+            value={newNombre} onChange={e => setNewNombre(e.target.value)}
+            placeholder="Identificador (Punto Sur, Bodega 4...)"
+            className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-black text-slate-900 uppercase focus:outline-none"
+          />
+          <input
+            value={newDireccion} onChange={e => setNewDir(e.target.value)}
+            placeholder="Dirección Física Exacta"
+            className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-black text-slate-900 uppercase focus:outline-none"
+          />
+          <input
+            value={newCiudad} onChange={e => setNewCiudad(e.target.value)}
+            placeholder="Ciudad / Municipio"
+            className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-black text-slate-900 uppercase focus:outline-none"
+          />
         </div>
         <button
-          type="button"
           onClick={handleAdd}
           disabled={adding || !newNombre.trim() || !newDireccion.trim()}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-neu-base shadow-neu text-amber-700 font-semibold text-body-sm transition-all active:shadow-neu-inset disabled:opacity-50"
+          className="w-full py-4 rounded-2xl bg-amber-600 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-amber-100 flex items-center justify-center gap-3 transition-all hover:bg-amber-700"
         >
-          {adding ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-          Agregar dirección
+          {adding ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+          Registrar Punto de Entrega
         </button>
-        {addError && <p className="text-xs text-red-600">{addError}</p>}
+        {addError && <p className="text-[10px] font-black text-red-500 uppercase">{addError}</p>}
       </div>
     </div>
   )
