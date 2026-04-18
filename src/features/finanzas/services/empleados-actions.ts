@@ -16,6 +16,7 @@ export interface Empleado {
   nivel_riesgo_arl: 1 | 2 | 3 | 4 | 5
   fecha_ingreso: string
   estado: 'activo' | 'inactivo'
+  tipo_contrato: 'nomina' | 'prestacion_servicios'
   created_at: string
 }
 
@@ -68,8 +69,21 @@ export async function updateParafiscal(id: string, valor: number) {
 
 export async function calcularCostoEmpleado(
   salario_base: number,
-  nivel_riesgo_arl: 1 | 2 | 3 | 4 | 5
+  nivel_riesgo_arl: 1 | 2 | 3 | 4 | 5,
+  tipo_contrato: 'nomina' | 'prestacion_servicios' = 'nomina'
 ): Promise<CostoEmpleado> {
+  // Si es prestación de servicios, no hay carga prestacional adicional en el cálculo (costo = honorarios)
+  if (tipo_contrato === 'prestacion_servicios') {
+    return {
+      salario_base,
+      pension: 0, salud: 0, arl: 0, sena: 0, icbf: 0, caja_compensacion: 0,
+      prima: 0, cesantias: 0, intereses_cesantias: 0, vacaciones: 0,
+      total_carga: 0,
+      costo_total_mes: salario_base,
+      porcentaje_total: 0
+    }
+  }
+
   const c = await getParafiscalesConfig()
 
   const arlKey = `para_arl_nivel${nivel_riesgo_arl}` as keyof typeof c
@@ -159,6 +173,13 @@ export async function getNominaPorArea(): Promise<Record<string, number>> {
   const result: Record<string, number> = {}
   for (const emp of empleados) {
     if (emp.estado !== 'activo') continue
+    
+    // Si es prestación de servicios, el costo es solo el salario base (honorarios)
+    if (emp.tipo_contrato === 'prestacion_servicios') {
+      result[emp.area] = (result[emp.area] ?? 0) + Number(emp.salario_base)
+      continue
+    }
+
     const arlKey = `para_arl_nivel${emp.nivel_riesgo_arl}`
     const arl = (c[arlKey] ?? 0.522) / 100
     const costo = emp.salario_base * (1 + porcentaje_base + arl)

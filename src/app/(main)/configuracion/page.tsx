@@ -9,6 +9,12 @@ import { ConfiguracionTabs } from '@/features/configuracion/components/configura
 import { PageHeader } from '@/shared/components/page-header'
 import { Settings2 } from 'lucide-react'
 import { createClient } from '@/shared/lib/supabase/server'
+import { getBalanceConfig, getActivosFijos } from '@/features/finanzas/services/activos-actions'
+import { getEmpleados, getParafiscalesConfig } from '@/features/finanzas/services/empleados-actions'
+import { getSocios } from '@/features/finanzas/services/socios-actions'
+
+export const dynamic = 'force-dynamic' // Forzar carga fresca en cada visita
+export const revalidate = 0
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function db(supabase: unknown): any { return supabase }
@@ -23,7 +29,22 @@ async function getTiposDefecto() {
 }
 
 export default async function ConfiguracionPage() {
-  const [tiposDefecto, tiposMovimiento, calidadConfig, atributosPT, atributosMP, atributosServicios, bodegas, bodegaDefaultId, ajustes] = await Promise.all([
+  const [
+    tiposDefecto, 
+    tiposMovimiento, 
+    calidadConfig, 
+    atributosPT, 
+    atributosMP, 
+    atributosServicios, 
+    bodegas, 
+    bodegaDefaultId, 
+    ajustes,
+    balanceConfig,
+    activos,
+    empleados,
+    parafiscales,
+    socios
+  ] = await Promise.all([
     getTiposDefecto(),
     getTiposMovimiento(),
     getCalidadConfig(),
@@ -32,7 +53,12 @@ export default async function ConfiguracionPage() {
     getTipoServicioAtributos(),
     getBodegas(),
     getBodegaDefaultId(),
-    getAjustes()
+    getAjustes(),
+    getBalanceConfig(),
+    getActivosFijos(),
+    getEmpleados(),
+    getParafiscalesConfig(),
+    getSocios()
   ])
 
   return (
@@ -53,6 +79,12 @@ export default async function ConfiguracionPage() {
         bodegas={bodegas}
         bodegaDefaultId={bodegaDefaultId}
         ajustes={ajustes.data || []}
+        // Finanzas & HR
+        balanceConfig={balanceConfig}
+        activos={activos}
+        empleados={empleados}
+        parafiscales={parafiscales}
+        socios={socios}
       />
     </div>
   )
