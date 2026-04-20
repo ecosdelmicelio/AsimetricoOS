@@ -25,10 +25,10 @@ interface MatrizProductosProps {
 }
 
 const INPUT_TALLA_CLASS =
-  'w-12 text-center bg-neu-base rounded-lg shadow-neu-inset-sm px-2 py-1 outline-none text-foreground placeholder:text-muted-foreground/50 text-body-sm'
+  'w-10 text-center bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1 outline-none text-slate-900 focus:border-slate-400 focus:bg-white transition-all text-[10px] font-black tabular-nums'
 
 const INPUT_PRECIO_CLASS =
-  'w-20 text-center bg-neu-base rounded-lg shadow-neu-inset-sm px-2 py-1 outline-none text-foreground placeholder:text-muted-foreground/50 text-body-sm'
+  'w-20 text-center bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 outline-none text-slate-900 focus:border-slate-400 focus:bg-white transition-all text-[10px] font-black tabular-nums'
 
 function calcularUnidades(cantidades: Record<string, number>): number {
   return Object.values(cantidades).reduce((sum, v) => sum + (v || 0), 0)
@@ -66,7 +66,6 @@ export function MatrizProductos({
     }
 
     return [...map.entries()].map(([ref, prods]) => {
-      // Ordenar productos por color alfabéticamente (nulls al final)
       const sorted = prods.sort((a, b) => {
         const colorA = a.color ?? ''
         const colorB = b.color ?? ''
@@ -83,12 +82,22 @@ export function MatrizProductos({
     }).sort((a, b) => a.referencia.localeCompare(b.referencia))
   }, [productos])
 
-  // Estado para referencias expandidas
+  // Cálculo de totales verticales por talla para un grupo
+  const calcularTotalesPorTalla = (productosGrupo: ProductoEnMatriz[]) => {
+    const totales: Record<string, number> = {}
+    for (const t of tallas) {
+      totales[t] = productosGrupo.reduce((sum, p) => sum + (p.cantidades[t] || 0), 0)
+    }
+    if (sinTallas) {
+      totales['total'] = productosGrupo.reduce((sum, p) => sum + (p.cantidades['total'] || 0), 0)
+    }
+    return totales
+  }
+
   const [expandedRefs, setExpandedRefs] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(grupos.map(g => [g.referencia, true]))
   )
 
-  // Auto-expande nuevas referencias cuando el array cambia
   useEffect(() => {
     setExpandedRefs(prev => {
       const next = { ...prev }
@@ -103,244 +112,233 @@ export function MatrizProductos({
 
   if (productos.length === 0) {
     return (
-      <p className="text-muted-foreground text-body-sm text-center py-6">
-        Agrega productos para configurar cantidades por talla
-      </p>
+      <div className="bg-slate-50/50 rounded-[40px] border-2 border-dashed border-slate-100 p-12 text-center animate-in fade-in duration-500">
+        <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2">Matrix Ready</p>
+        <p className="text-xs font-bold text-slate-300 uppercase tracking-widest">
+          Seleccione un producto del catálogo para configurar tallaje
+        </p>
+      </div>
     )
   }
 
   const mostrarControlesExpand = grupos.length > 1
 
   return (
-    <div className="space-y-4">
-      {/* Controles de expandir/contraer todas las referencias */}
+    <div className="space-y-6">
+      {/* Controles de expandir/contraer */}
       {mostrarControlesExpand && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 justify-end px-4">
           <button
             type="button"
-            onClick={() => {
-              const newState: Record<string, boolean> = {}
-              for (const g of grupos) {
-                newState[g.referencia] = true
-              }
-              setExpandedRefs(newState)
-            }}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium text-primary-700 bg-neu-base shadow-neu hover:shadow-neu-lg transition-all"
+            onClick={() => setExpandedRefs(Object.fromEntries(grupos.map(g => [g.referencia, true])))}
+            className="px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100"
           >
-            Expandir todo
+            Expandir Todo
           </button>
           <button
             type="button"
-            onClick={() => {
-              const newState: Record<string, boolean> = {}
-              for (const g of grupos) {
-                newState[g.referencia] = false
-              }
-              setExpandedRefs(newState)
-            }}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium text-primary-700 bg-neu-base shadow-neu hover:shadow-neu-lg transition-all"
+            onClick={() => setExpandedRefs(Object.fromEntries(grupos.map(g => [g.referencia, false])))}
+            className="px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100"
           >
-            Contraer todo
+            Contraer Todo
           </button>
         </div>
       )}
 
-      {/* Grupos por referencia */}
       {grupos.map(grupo => {
         const isExpanded = expandedRefs[grupo.referencia] ?? true
+        const totalesVerticales = calcularTotalesPorTalla(grupo.productos)
 
         return (
-          <div
-            key={grupo.referencia}
-            className="rounded-2xl bg-neu-base shadow-neu overflow-hidden"
-          >
-            {/* Header de referencia (collapsible) */}
+          <div key={grupo.referencia} className="group/ref rounded-[40px] bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all overflow-hidden">
+            {/* Header de Referencia */}
             <button
               type="button"
-              onClick={() =>
-                setExpandedRefs(prev => ({
-                  ...prev,
-                  [grupo.referencia]: !prev[grupo.referencia],
-                }))
-              }
-              className="w-full px-4 py-3 flex items-center justify-between gap-2 hover:bg-black/2 transition-colors"
+              onClick={() => setExpandedRefs(prev => ({ ...prev, [grupo.referencia]: !isExpanded }))}
+              className="w-full px-8 py-5 flex items-center justify-between gap-4 bg-white hover:bg-slate-50 transition-colors"
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <ChevronDown
-                  className={`w-4 h-4 text-muted-foreground transition-transform shrink-0 ${
-                    isExpanded ? '' : '-rotate-90'
-                  }`}
-                />
-                <span className="font-semibold text-foreground text-body-md">
-                  {grupo.referencia}
-                </span>
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-2xl bg-slate-50 text-slate-400 transition-transform duration-300 ${isExpanded ? '' : '-rotate-90'}`}>
+                  <ChevronDown className="w-4 h-4" />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-black text-slate-900 text-base tracking-tighter uppercase leading-none">
+                    {grupo.referencia}
+                  </h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Línea de Producción</p>
+                </div>
               </div>
-              <div className="flex items-center gap-4 text-body-sm shrink-0">
-                <span className="text-muted-foreground">
-                  <span className="font-semibold text-foreground">{grupo.subtotalUds}</span> uds
-                </span>
+              
+              <div className="flex items-center gap-8">
+                <div className="text-right">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Volumen Total</p>
+                  <p className="font-black text-slate-900 tabular-nums leading-none">
+                    {grupo.subtotalUds} <span className="text-[10px] text-slate-400 ml-0.5">UDS</span>
+                  </p>
+                </div>
                 {mostrarPrecio && (
-                  <span className="text-muted-foreground">
-                    <span className="font-semibold text-foreground">
+                  <div className="text-right border-l border-slate-100 pl-8">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Valuación REF</p>
+                    <p className="font-black text-emerald-600 tabular-nums leading-none">
                       ${grupo.subtotalPrecio.toLocaleString('es-CO')}
-                    </span>
-                  </span>
+                    </p>
+                  </div>
                 )}
               </div>
             </button>
 
-            {/* Contenido (colores) */}
+            {/* Matrix Table */}
             {isExpanded && (
-              <div className="border-t border-black/5 p-4 space-y-3">
-                {grupo.productos.map(producto => {
-                  const totalUds = calcularUnidades(producto.cantidades)
-                  const subtotal = totalUds * producto.precio_unitario
-                  const colorLabel = producto.color ?? producto.nombre
-
-                  return (
-                    <div key={producto.producto_id} className="space-y-3">
-                      {/* Sub-header de color */}
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium text-foreground text-body-sm">
-                          {colorLabel}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => onRemover(producto.producto_id)}
-                          className="p-1 rounded-lg text-red-400 hover:text-red-600 transition-colors shrink-0"
-                          aria-label={`Eliminar ${colorLabel}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      {/* Grid de tallas */}
-                      {sinTallas ? (
-                        <div className="flex items-center gap-2 ml-4">
-                          <span className="text-muted-foreground text-body-sm">
-                            Cantidad total
-                          </span>
-                          <input
-                            type="number"
-                            min="0"
-                            value={producto.cantidades['total'] || ''}
-                            onChange={e => {
-                              const val = parseInt(e.target.value) || 0
-                              onActualizarCantidad(
-                                producto.producto_id,
-                                'total',
-                                Math.max(0, val)
-                              )
-                            }}
-                            placeholder="0"
-                            className={INPUT_TALLA_CLASS}
-                            aria-label={`Cantidad de ${colorLabel}`}
-                          />
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 ml-4">
-                          {tallas.map(talla => {
-                            const maxKey = `${producto.producto_id}:${talla}`
-                            const maxValue = maxCantidades?.[maxKey]
-                            return (
-                              <div key={talla} className="flex flex-col items-center gap-1">
-                                <span className="text-muted-foreground text-xs font-medium">
-                                  {talla}
-                                </span>
+              <div className="border-t border-slate-50 p-2 animate-in slide-in-from-top-4 duration-500">
+                <div className="overflow-x-auto rounded-[28px] border border-slate-100 bg-slate-50/30">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-100/50">
+                        <th className="px-6 py-4 text-left text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] sticky left-0 bg-slate-100/50 backdrop-blur-sm z-10">
+                          Color / Variante
+                        </th>
+                        {sinTallas ? (
+                          <th className="px-4 py-4 text-center text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">CANT</th>
+                        ) : (
+                          tallas.map(t => (
+                            <th key={t} className="px-2 py-4 text-center text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] min-w-[50px]">
+                              {t}
+                            </th>
+                          ))
+                        )}
+                        <th className="px-4 py-4 text-center text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] border-l border-slate-200/50">Total</th>
+                        {mostrarPrecio && (
+                          <>
+                            <th className="px-4 py-4 text-center text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">P. Unit</th>
+                            <th className="px-4 py-4 text-right text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Subtotal</th>
+                          </>
+                        )}
+                        <th className="px-6 py-4 text-right text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {grupo.productos.map(p => {
+                        const totalRow = calcularUnidades(p.cantidades)
+                        const subtotalRow = totalRow * p.precio_unitario
+                        return (
+                          <tr key={p.producto_id} className="hover:bg-white transition-colors group/row">
+                            <td className="px-6 py-3 sticky left-0 bg-white/80 group-hover/row:bg-white backdrop-blur-sm z-10">
+                              <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">
+                                {p.color ?? 'Sin Color'}
+                              </span>
+                            </td>
+                            {sinTallas ? (
+                              <td className="px-2 py-3 text-center">
                                 <input
                                   type="number"
                                   min="0"
-                                  value={producto.cantidades[talla] || ''}
-                                  onChange={e => {
-                                    const val = parseInt(e.target.value) || 0
-                                    onActualizarCantidad(
-                                      producto.producto_id,
-                                      talla,
-                                      Math.max(0, val)
-                                    )
-                                  }}
-                                  placeholder="0"
+                                  value={p.cantidades['total'] || ''}
+                                  onChange={e => onActualizarCantidad(p.producto_id, 'total', Math.max(0, parseInt(e.target.value) || 0))}
                                   className={INPUT_TALLA_CLASS}
-                                  aria-label={`Cantidad talla ${talla} de ${colorLabel}`}
                                 />
-                                {maxValue !== undefined && (
-                                  <span className="text-muted-foreground/60 text-xs">
-                                    / {maxValue}
+                              </td>
+                            ) : (
+                              tallas.map(t => (
+                                <td key={t} className="px-1 py-3 text-center">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={p.cantidades[t] || ''}
+                                    onChange={e => onActualizarCantidad(p.producto_id, t, Math.max(0, parseInt(e.target.value) || 0))}
+                                    className={INPUT_TALLA_CLASS}
+                                  />
+                                </td>
+                              ))
+                            )}
+                            <td className="px-4 py-3 text-center border-l border-slate-200/30">
+                              <span className="text-[10px] font-black text-slate-900 tabular-nums">{totalRow}</span>
+                            </td>
+                            {mostrarPrecio && (
+                              <>
+                                <td className="px-4 py-3 text-center">
+                                  <div className="relative">
+                                    <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[8px] text-slate-400">$</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="100"
+                                      value={p.precio_unitario || ''}
+                                      onChange={e => onActualizarPrecio?.(p.producto_id, Math.max(0, parseFloat(e.target.value) || 0))}
+                                      className={INPUT_PRECIO_CLASS}
+                                    />
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  <span className="text-[10px] font-black text-slate-900 tabular-nums">
+                                    ${subtotalRow > 0 ? subtotalRow.toLocaleString('es-CO') : '—'}
                                   </span>
-                                )}
-                              </div>
-                            )
-                          })}
-                        </div>
-                      )}
-
-                      {/* Footer de color */}
-                      <div className="flex items-center gap-4 flex-wrap pt-1 border-t border-black/5 ml-4">
-                        <span className="text-muted-foreground text-body-sm">
-                          <span className="font-semibold text-foreground">{totalUds}</span> uds
-                        </span>
-
-                        {mostrarPrecio && (
-                          <>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-muted-foreground text-body-sm">Precio: $</span>
-                              <input
-                                type="number"
-                                min="0"
-                                step="100"
-                                value={producto.precio_unitario || ''}
-                                onChange={e => {
-                                  const val = parseFloat(e.target.value) || 0
-                                  onActualizarPrecio?.(
-                                    producto.producto_id,
-                                    Math.max(0, val)
-                                  )
-                                }}
-                                placeholder="0"
-                                className={INPUT_PRECIO_CLASS}
-                                aria-label={`Precio unitario de ${colorLabel}`}
-                              />
-                            </div>
-
-                            <span className="text-muted-foreground text-body-sm ml-auto">
-                              Subtotal:{' '}
-                              <span className="font-semibold text-foreground">
-                                {subtotal > 0
-                                  ? `$${subtotal.toLocaleString('es-CO')}`
-                                  : '—'}
-                              </span>
-                            </span>
-                          </>
+                                </td>
+                              </>
+                            )}
+                            <td className="px-6 py-3 text-right">
+                              <button
+                                type="button"
+                                onClick={() => onRemover(p.producto_id)}
+                                className="p-2 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover/row:opacity-100"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-slate-100/80 border-t border-slate-200">
+                        <td className="px-6 py-3 text-[9px] font-black text-slate-900 uppercase tracking-widest sticky left-0 bg-slate-100 backdrop-blur-sm z-10">
+                          Total Talla
+                        </td>
+                        {sinTallas ? (
+                          <td className="px-2 py-3 text-center text-[10px] font-black text-slate-900">
+                            {totalesVerticales['total']}
+                          </td>
+                        ) : (
+                          tallas.map(t => (
+                            <td key={t} className="px-2 py-3 text-center text-[10px] font-black text-slate-900 tabular-nums">
+                              {totalesVerticales[t] || '—'}
+                            </td>
+                          ))
                         )}
-                      </div>
-                    </div>
-                  )
-                })}
+                        <td className="px-4 py-3 text-center text-[10px] font-black text-slate-900 tabular-nums border-l border-slate-200">
+                          {grupo.subtotalUds}
+                        </td>
+                        {mostrarPrecio && <td colSpan={3} className="px-6 py-3 text-right text-[10px] font-black text-emerald-600 tabular-nums truncate">
+                          ${grupo.subtotalPrecio.toLocaleString('es-CO')}
+                        </td>}
+                        {!mostrarPrecio && <td className="px-6 py-3" />}
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
 
-                {/* Opción de agregar color inline */}
+                {/* Inline Add Color */}
                 {onAgregarColor && opcionesAgregarColor?.[grupo.referencia] && (
                   opcionesAgregarColor[grupo.referencia].length > 0
                 ) && (
-                  <div className="pt-2 border-t border-black/5 flex gap-2 items-center flex-wrap">
-                    <span className="text-muted-foreground text-body-sm">+ Color:</span>
-                    <div className="rounded-lg bg-neu-base shadow-neu-inset px-2 py-1.5 flex-1 min-w-[150px]">
+                  <div className="mt-4 p-4 flex items-center justify-between gap-4">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Añadir Variante de Color:</p>
+                    <div className="flex-1 max-w-xs relative bg-white border border-slate-100 rounded-2xl px-4 py-2 flex items-center gap-2 group/select hover:border-slate-300 transition-all">
                       <select
                         onChange={e => {
-                          const productoId = e.target.value
-                          if (productoId) {
-                            onAgregarColor(productoId)
+                          const val = e.target.value
+                          if (val) {
+                            onAgregarColor(val)
                             e.target.value = ''
                           }
                         }}
-                        className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none"
+                        className="w-full bg-transparent text-[11px] font-black text-slate-900 uppercase tracking-tight outline-none appearance-none cursor-pointer"
                       >
-                        <option value="">Seleccionar color...</option>
+                        <option value="">Seleccionar Color...</option>
                         {opcionesAgregarColor[grupo.referencia].map(opt => (
-                          <option key={opt.productoId} value={opt.productoId}>
-                            {opt.color ?? 'Sin color'}
-                          </option>
+                          <option key={opt.productoId} value={opt.productoId}>{opt.color ?? 'Genérico'}</option>
                         ))}
                       </select>
+                      <Plus className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     </div>
                   </div>
                 )}

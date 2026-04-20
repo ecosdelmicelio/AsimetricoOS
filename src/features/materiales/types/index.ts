@@ -20,8 +20,10 @@ export interface Material {
   stock_seguridad: number | null
   tolerancia_recepcion_pct: number | null
   unidad_empaque: string | null
+  proveedor_id: string | null
   created_at: string
   updated_at: string
+  terceros?: { nombre: string } | null
 }
 
 export interface CreateMaterialInput {
@@ -40,6 +42,7 @@ export interface CreateMaterialInput {
   stock_seguridad?: number
   tolerancia_recepcion_pct?: number
   unidad_empaque?: string
+  proveedor_id?: string
   schema_id?: string
   autoRefs?: Array<{ segmento_id: string; longitud: number }>
 }
@@ -58,5 +61,6 @@ export interface UpdateMaterialInput {
   stock_seguridad?: number
   tolerancia_recepcion_pct?: number
   unidad_empaque?: string
+  proveedor_id?: string
   activo?: boolean
 }

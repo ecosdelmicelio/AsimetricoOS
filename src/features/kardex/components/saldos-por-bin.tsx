@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Download } from 'lucide-react'
+import { Download, ChevronDown, Package } from 'lucide-react'
 import type { SaldoBin } from '../services/kardex-actions'
 
 interface Props {
@@ -80,106 +80,120 @@ export function SaldosPorBin({ saldos, bodegas }: Props) {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Filtro por bodega */}
-      <div className="flex items-center gap-3">
-        <label className="text-body-sm font-medium text-muted-foreground">Bodega:</label>
-        <select
-          value={bodegaSeleccionada || ''}
-          onChange={e => setBodegaSeleccionada(e.target.value || null)}
-          className="px-3 py-2 rounded-lg border border-black/10 bg-white text-body-sm"
-        >
-          <option value="">Todas las bodegas</option>
-          {bodegas.map(bodega => (
-            <option key={bodega.id} value={bodega.id}>
-              {bodega.nombre}
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={downloadCSV}
-          className="ml-auto flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-600 text-white text-body-sm font-semibold hover:bg-primary-700 transition-colors"
-        >
-          <Download className="w-4 h-4" />
-          Descargar CSV
-        </button>
+    <div className="space-y-6">
+      {/* Controles de Filtrado */}
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+        <div className="flex flex-wrap items-center justify-between gap-6">
+          <div className="flex items-center gap-4 group">
+            <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100 group-hover:bg-primary-50 transition-colors">
+               <Package className="w-4 h-4 text-slate-400 group-hover:text-primary-500" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Filtrar Existencias</p>
+              <div className="relative">
+                <select
+                  value={bodegaSeleccionada || ''}
+                  onChange={e => setBodegaSeleccionada(e.target.value || null)}
+                  className="appearance-none bg-transparent font-black text-sm text-slate-900 pr-8 outline-none cursor-pointer"
+                >
+                  <option value="">Todas las bodegas</option>
+                  {bodegas.map(bodega => (
+                    <option key={bodega.id} value={bodega.id}>{bodega.nombre}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={downloadCSV}
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest transition-all hover:bg-slate-800 shadow-lg shadow-slate-200"
+          >
+            <Download className="w-4 h-4" />
+            Reporte por Ubicación (CSV)
+          </button>
+        </div>
       </div>
 
       {binsList.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          No hay saldos en inventario para mostrar
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-12 text-center">
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No hay existencias configuradas en ubicaciones</p>
         </div>
       ) : (
-        <div className="rounded-xl border border-black/10 overflow-hidden">
+        <div className="space-y-4">
           {binsList.map(bin => {
             const isExpanded = expandedBins.has(bin.bin_id)
             const binTotalSaldo = bin.items.reduce((sum: number, item: SaldoBin) => sum + item.saldo, 0)
             const binTotalValor = bin.items.reduce((sum: number, item: SaldoBin) => sum + (item.valor_total || 0), 0)
 
             return (
-              <div key={bin.bin_id} className="border-b border-black/10 last:border-b-0">
-                {/* Encabezado bin */}
+              <div key={bin.bin_id} className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden transition-all hover:border-slate-300">
+                {/* Header Bin */}
                 <button
                   onClick={() => toggleBin(bin.bin_id)}
-                  className="w-full px-4 py-3 bg-neu-50 hover:bg-neu-100 transition-colors flex items-center justify-between text-left"
+                  className="w-full px-6 py-5 flex items-center justify-between group transition-colors hover:bg-slate-50/50"
                 >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <span className={`text-base ${isExpanded ? 'rotate-90' : ''} transition-transform duration-200`}>
-                      ▶
-                    </span>
-                    <div className="min-w-0">
-                      <p className="font-mono font-bold text-foreground">{bin.bin_codigo}</p>
-                      <p className="text-xs text-muted-foreground">{bin.bodega_nombre}</p>
+                  <div className="flex items-center gap-4">
+                    <div className={`p-1.5 rounded-lg bg-slate-50 border border-slate-100 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+                      <ChevronDown className="w-4 h-4 text-slate-400" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-black text-slate-900 text-sm tracking-tight">{bin.bin_codigo}</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{bin.bodega_nombre}</p>
                     </div>
                   </div>
-                  <div className="text-right ml-4">
-                    <p className="text-body-sm font-semibold text-foreground">{binTotalSaldo} unidades</p>
-                    <p className="text-xs text-muted-foreground">
-                      ${(binTotalValor || 0).toLocaleString('es-CO', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </p>
+                  
+                  <div className="flex items-center gap-8 text-right">
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Items</p>
+                      <p className="text-sm font-black text-slate-900">{binTotalSaldo.toLocaleString()} <span className="text-[10px] text-slate-300">uts</span></p>
+                    </div>
+                    <div className="border-l border-slate-100 pl-8">
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Valorización</p>
+                       <p className="text-sm font-black text-slate-900">${(binTotalValor || 0).toLocaleString('es-CO', { maximumFractionDigits: 0 })}</p>
+                    </div>
                   </div>
                 </button>
 
-                {/* Contenido expandido */}
+                {/* Contenido Detallado */}
                 {isExpanded && (
-                  <div className="px-4 py-3 bg-white">
-                    <table className="w-full text-body-xs">
-                      <thead>
-                        <tr className="border-b border-black/10">
-                          <th className="text-left py-2 font-semibold text-muted-foreground">Producto</th>
-                          <th className="text-left py-2 font-semibold text-muted-foreground">Ref</th>
-                          <th className="text-left py-2 font-semibold text-muted-foreground">Talla</th>
-                          <th className="text-right py-2 font-semibold text-muted-foreground">Cantidad</th>
-                          <th className="text-right py-2 font-semibold text-muted-foreground">Costo Prom</th>
-                          <th className="text-right py-2 font-semibold text-muted-foreground">Valor</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {bin.items.map((item: SaldoBin, idx: number) => (
-                          <tr key={idx} className="border-b border-black/5">
-                            <td className="py-2">{item.nombre}</td>
-                            <td className="py-2 font-mono text-muted-foreground">{item.referencia}</td>
-                            <td className="py-2">{item.talla || '—'}</td>
-                            <td className="text-right py-2">{item.saldo}</td>
-                            <td className="text-right py-2">
-                              ${(item.costo_promedio || 0).toLocaleString('es-CO', {
-                                minimumFractionDigits: 0,
-                                maximumFractionDigits: 2,
-                              })}
-                            </td>
-                            <td className="text-right py-2 font-semibold">
-                              ${(item.valor_total || 0).toLocaleString('es-CO', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
-                            </td>
+                  <div className="px-6 pb-6 bg-slate-50/20 border-t border-slate-50 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="overflow-x-auto mt-6">
+                      <table className="w-full">
+                        <thead>
+                          <tr>
+                            <th className="text-left pb-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Referencia / Producto</th>
+                            <th className="text-left pb-3 text-[10px] font-black text-slate-400 uppercase tracking-widest px-4">Talla</th>
+                            <th className="text-right pb-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Saldo</th>
+                            <th className="text-right pb-3 text-[10px] font-black text-slate-400 uppercase tracking-widest px-4">Costo CPP</th>
+                            <th className="text-right pb-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {bin.items.map((item: SaldoBin, idx: number) => (
+                            <tr key={idx} className="group/row">
+                              <td className="py-3">
+                                <p className="text-[11px] font-black text-slate-900 uppercase tracking-tighter group-hover/row:text-primary-600 transition-colors">{item.referencia}</p>
+                                <p className="text-[10px] font-bold text-slate-500 leading-tight">{item.nombre}</p>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="text-[10px] font-black text-slate-400 uppercase bg-white border border-slate-100 px-2 py-0.5 rounded-md">{item.talla || 'N/A'}</span>
+                              </td>
+                              <td className="py-3 text-right">
+                                <p className="text-[11px] font-black text-slate-900">{item.saldo} <span className="text-[9px] text-slate-300 font-bold uppercase">uts</span></p>
+                              </td>
+                              <td className="py-3 text-right px-4">
+                                <p className="text-[11px] font-bold text-slate-400">${(item.costo_promedio || 0).toLocaleString('es-CO', { maximumFractionDigits: 0 })}</p>
+                              </td>
+                              <td className="py-3 text-right">
+                                <p className="text-[11px] font-black text-slate-900">${(item.valor_total || 0).toLocaleString('es-CO', { maximumFractionDigits: 0 })}</p>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </div>

@@ -1,4 +1,9 @@
+'use client'
+
+import { useState, useEffect, useTransition, useCallback, useRef } from 'react'
+import { Plus, Package, MapPin, Globe, Edit2, Loader2, AlertTriangle, Building2 } from 'lucide-react'
 import { cn, formatCurrency } from '@/shared/lib/utils'
+import { getProveedores } from '@/features/compras/services/compras-actions'
 import { createMaterial, updateMaterial, toggleMaterialActivo } from '@/features/materiales/services/materiales-actions'
 import { useDuplicateCheck } from '@/shared/hooks/use-duplicate-check'
 import { CodigoPreviewMP } from '@/features/materiales/components/codigo-preview-mp'
@@ -156,8 +161,14 @@ function MaterialRow({ material: m, onEdit, onToggleActivo, saldo }: { material:
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[13px] font-black text-slate-900 truncate tracking-tight uppercase">{m.nombre}</p>
+            {m.terceros?.nombre && (
+              <p className="text-[10px] font-black text-slate-400 mt-1 uppercase truncate opacity-70">
+                <Building2 className="w-3 h-3 inline mr-1 mb-0.5" />
+                {m.terceros.nombre}
+              </p>
+            )}
             {m.referencia_proveedor && (
-              <p className="text-[10px] font-black text-slate-400 mt-1 uppercase truncate opacity-70">Prov: {m.referencia_proveedor}</p>
+              <p className="text-[9px] font-medium text-slate-300 mt-0.5 uppercase truncate italic">Ref: {m.referencia_proveedor}</p>
             )}
           </div>
         </div>
@@ -231,6 +242,8 @@ function MaterialForm({
   const [stockSeguridad, setStockSeguridad] = useState(material?.stock_seguridad?.toString() ?? '')
   const [toleranciaRecepcionPct, setToleranciaRecepcionPct] = useState(material?.tolerancia_recepcion_pct?.toString() ?? '')
   const [unidadEmpaque, setUnidadEmpaque] = useState(material?.unidad_empaque ?? '')
+  const [proveedorId, setProveedorId] = useState(material?.proveedor_id ?? '')
+  const [proveedores, setProveedores] = useState<{ id: string; nombre: string }[]>([])
 
   // Atributos
   const [atributosPorTipo, setAtributosPorTipo] = useState<Record<TipoAtributoMP, AtributoMP[]>>({
@@ -265,6 +278,12 @@ function MaterialForm({
       setAtributosPorTipo(mapa)
     }
     cargarAtributos()
+
+    const cargarProveedores = async () => {
+      const resp = await getProveedores()
+      setProveedores(resp)
+    }
+    cargarProveedores()
   }, [])
 
   const handleCodigoChange = useCallback((nuevoCodigo: string, completo: boolean) => {
@@ -318,6 +337,7 @@ function MaterialForm({
         stock_seguridad: stockSeguridad ? parseFloat(stockSeguridad) : undefined,
         tolerancia_recepcion_pct: toleranciaRecepcionPct ? parseFloat(toleranciaRecepcionPct) : undefined,
         unidad_empaque: unidadEmpaque.trim() || undefined,
+        proveedor_id: proveedorId || undefined,
       }
 
       const res = isEdit
@@ -568,6 +588,23 @@ function MaterialForm({
           </div>
         </div>
         
+        <div className="space-y-1">
+          <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Proveedor Predeterminado (MRP)</label>
+          <div className="rounded-lg bg-neu-base shadow-neu px-2.5 py-1.5 flex items-center gap-2">
+            <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
+            <select
+              value={proveedorId}
+              onChange={e => setProveedorId(e.target.value)}
+              className="w-full bg-transparent text-xs text-foreground outline-none appearance-none"
+            >
+              <option value="">— Seleccionar Proveedor —</option>
+              {proveedores.map(p => (
+                <option key={p.id} value={p.id}>{p.nombre}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <div className="space-y-1">
           <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Mínimo (MOQ)</label>
           <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">

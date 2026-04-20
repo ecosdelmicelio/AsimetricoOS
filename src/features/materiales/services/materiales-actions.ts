@@ -19,7 +19,7 @@ export async function getMateriales(soloActivos = false): Promise<Material[]> {
   const supabase = db(await createClient())
   let query = supabase
     .from('materiales')
-    .select('*')
+    .select('*, terceros!proveedor_id(nombre)')
     .order('codigo')
   if (soloActivos) query = query.eq('activo', true)
   const { data } = await query as { data: Material[] | null }
@@ -58,6 +58,7 @@ export async function createMaterial(input: CreateMaterialInput & {
       stock_seguridad: input.stock_seguridad ?? null,
       tolerancia_recepcion_pct: input.tolerancia_recepcion_pct ?? null,
       unidad_empaque: input.unidad_empaque?.trim() || null,
+      proveedor_id: input.proveedor_id ?? null,
     })
     .select('id')
     .single() as { data: { id: string } | null; error: { message: string } | null }
@@ -101,6 +102,7 @@ export async function updateMaterial(
       ...(input.stock_seguridad !== undefined && { stock_seguridad: input.stock_seguridad }),
       ...(input.tolerancia_recepcion_pct !== undefined && { tolerancia_recepcion_pct: input.tolerancia_recepcion_pct }),
       ...(input.unidad_empaque !== undefined && { unidad_empaque: input.unidad_empaque?.trim() || null }),
+      ...(input.proveedor_id !== undefined && { proveedor_id: input.proveedor_id }),
     })
     .eq('id', id) as { error: { message: string } | null }
   if (error) return { error: error.message }

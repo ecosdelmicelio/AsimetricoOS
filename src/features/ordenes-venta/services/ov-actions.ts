@@ -117,6 +117,8 @@ export async function updateOrdenVenta(id: string, input: CreateOVInput) {
   return { data: true }
 }
 
+import { ejecutarMRPLite } from '@/features/compras/services/mrp-actions'
+
 export async function updateEstadoOV(id: string, estado: string) {
   const supabase = db(await createClient())
   const { error } = await supabase
@@ -125,6 +127,17 @@ export async function updateEstadoOV(id: string, estado: string) {
     .eq('id', id) as { error: { message: string } | null }
 
   if (error) return { error: error.message }
+
+  // 🚀 Trigger MRP Lite if confirmed
+  if (estado === 'confirmada') {
+    try {
+      await ejecutarMRPLite(id)
+    } catch (e) {
+      console.error('MRP Trigger Error:', e)
+      // We don't block the OV status update if MRP fails, but we log it
+    }
+  }
+
   revalidatePath('/ordenes-venta')
   revalidatePath(`/ordenes-venta/${id}`)
   return { data: true }

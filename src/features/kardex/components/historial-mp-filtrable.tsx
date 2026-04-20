@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, Calendar } from 'lucide-react'
+import { Download, Calendar, BarChart3, ChevronDown } from 'lucide-react'
 import { formatDate } from '@/shared/lib/utils'
 import type { HistorialMP } from '../services/kardex-actions'
 

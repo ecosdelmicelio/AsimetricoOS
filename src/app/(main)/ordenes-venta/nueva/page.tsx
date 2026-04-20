@@ -88,18 +88,20 @@ export default function NuevaOVPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Link
-          href="/ordenes-venta"
-          className="w-9 h-9 rounded-xl bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors active:shadow-neu-inset"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
-        <div>
-          <h1 className="text-display-xs font-heading font-bold text-foreground">Nueva Orden de Venta</h1>
-          <p className="text-muted-foreground text-body-sm mt-0.5">Configura el pedido y las cantidades por talla</p>
+    <div className="space-y-8 max-w-4xl mx-auto pb-12">
+      {/* Header Premium */}
+      <div className="flex items-center justify-between bg-white rounded-[32px] p-6 border border-slate-100 shadow-sm mt-4">
+        <div className="flex items-center gap-5">
+          <Link
+            href="/ordenes-venta"
+            className="w-11 h-11 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-slate-400 hover:text-slate-900 hover:border-slate-300 hover:shadow-md transition-all active:scale-95"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Nueva Orden de Venta</h1>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Configuración técnica de pedido y tallaje</p>
+          </div>
         </div>
       </div>
 
