@@ -128,19 +128,20 @@ export async function updateEstadoOV(id: string, estado: string) {
 
   if (error) return { error: error.message }
 
+  let mrpResult = null
   // 🚀 Trigger MRP Lite if confirmed
   if (estado === 'confirmada') {
     try {
-      await ejecutarMRPLite(id)
+      mrpResult = await ejecutarMRPLite(id)
     } catch (e) {
       console.error('MRP Trigger Error:', e)
-      // We don't block the OV status update if MRP fails, but we log it
+      mrpResult = { success: false, type: 'error', message: 'Error interno en el motor MRP' }
     }
   }
 
   revalidatePath('/ordenes-venta')
   revalidatePath(`/ordenes-venta/${id}`)
-  return { data: true }
+  return { data: true, mrp: mrpResult }
 }
 
 export async function cancelOrdenVenta(id: string) {

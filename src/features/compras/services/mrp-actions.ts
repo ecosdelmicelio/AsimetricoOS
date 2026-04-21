@@ -120,9 +120,10 @@ export async function ejecutarMRPLite(ovId: string) {
         .from('ordenes_compra')
         .insert({
           proveedor_id: provId,
+          orden_venta_id: ovId, // 🔗 Vinculación formal
           tipo: 'materia_prima',
           estado_greige: 'otros',
-          estado_documental: 'en_proceso',
+          estado_documental: 'na', // 📝 Creada en Borrador para decisión del comprador
           fecha_oc: new Date().toISOString().split('T')[0],
           fecha_entrega_est: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // +7 días default
           notas: `Generada automáticamente por MRP - OV ${ovId}`,
@@ -156,15 +157,24 @@ export async function ejecutarMRPLite(ovId: string) {
     }
 
     revalidatePath('/compras')
+    
+    if (ocCreadas.length > 0) {
+      return {
+        success: true,
+        type: 'success',
+        message: `Se generaron ${ocCreadas.length} sugerencias de compra (en borrador) vinculadas a esta OV.`,
+        createdOcs: ocCreadas
+      }
+    }
+
     return {
       success: true,
-      message: ocCreadas.length > 0 
-        ? `Se generaron ${ocCreadas.length} órdenes de compra: ${ocCreadas.join(', ')}`
-        : 'Inventario suficiente, no se requieren compras adicionales.'
+      type: 'info',
+      message: 'Inventario suficiente. No se requieren compras adicionales para esta orden.'
     }
 
   } catch (err) {
     console.error('MRP Critical Error:', err)
-    return { success: false, message: (err as Error).message }
+    return { success: false, type: 'error', message: (err as Error).message }
   }
 }

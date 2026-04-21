@@ -155,17 +155,29 @@ export async function ComprasList() {
                     <Link
                       key={oc.id}
                       href={`/compras/${oc.id}`}
-                      className="block group rounded-3xl bg-white border border-slate-100 p-5 shadow-sm hover:shadow-xl hover:border-slate-300 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden"
+                      className={`block group rounded-3xl bg-white border border-slate-100 p-5 shadow-sm hover:shadow-xl hover:border-slate-300 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden ${oc.orden_venta_id ? 'ring-1 ring-primary-100' : ''}`}
                     >
+                      {/* Glow/Priority Indicator for OV */}
+                      {oc.orden_venta_id && (
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary-500 shadow-[2px_0_10px_rgba(59,130,246,0.3)]" />
+                      )}
+
                       {/* Glow de muestra si aplica */}
-                      {(oc as unknown as { es_muestra?: boolean }).es_muestra && (
+                      {(oc as any).es_muestra && (
                         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-violet-500 to-fuchsia-500" />
                       )}
 
                       <div className="flex flex-col gap-3">
                         <div className="flex justify-between items-start">
                           <div className="min-w-0">
-                            <span className="font-black text-slate-800 text-lg tracking-tighter group-hover:text-primary-600 transition-colors truncate block">{oc.codigo}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-black text-slate-800 text-lg tracking-tighter group-hover:text-primary-600 transition-colors truncate block">{oc.codigo}</span>
+                              {oc.ordenes_venta?.codigo && (
+                                <span className="px-2 py-0.5 rounded-full bg-primary-50 text-primary-600 text-[8px] font-black uppercase tracking-tighter border border-primary-100 animate-pulse">
+                                  Prioridad: {oc.ordenes_venta.codigo}
+                                </span>
+                              )}
+                            </div>
                             <p className="text-[9px] font-bold text-slate-500 mt-0.5 uppercase tracking-wider truncate">
                               {oc.terceros?.nombre ?? 'Sin proveedor'}
                             </p>

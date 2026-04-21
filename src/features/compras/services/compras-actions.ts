@@ -29,6 +29,7 @@ export async function getOrdenesCompra(): Promise<OCListItem[]> {
       *, 
       terceros!proveedor_id(nombre), 
       rollos(id),
+      ordenes_venta(codigo),
       oc_detalle(cantidad, precio_pactado, productos(referencia, nombre)),
       oc_detalle_mp(cantidad, precio_unitario, materiales(codigo, nombre))
     `)

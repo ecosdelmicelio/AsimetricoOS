@@ -13,6 +13,7 @@ export interface OrdenCompra {
   fecha_entrega_est: string
   notas: string | null
   creado_por: string | null
+  orden_venta_id: string | null
   created_at: string
   updated_at: string
 }
@@ -60,6 +61,7 @@ export interface OCListItem extends OrdenCompra {
   rollos: { id: string }[]
   oc_detalle?: { cantidad: number; precio_pactado: number; productos: { nombre: string; referencia: string } | null }[]
   oc_detalle_mp?: { cantidad: number; precio_unitario: number; materiales: { codigo: string; nombre: string } | null }[]
+  ordenes_venta?: { codigo: string } | null
 }
 
 export interface OCDetalle {

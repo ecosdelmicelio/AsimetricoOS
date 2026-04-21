@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { updateEstadoOV, cancelOrdenVenta } from '@/features/ordenes-venta/services/ov-actions'
 import type { EstadoOV } from '@/features/ordenes-venta/types'
 import { XCircle, Pencil } from 'lucide-react'
+import { toast } from 'sonner'
 
 const TRANSICIONES: Record<EstadoOV, { label: string; siguiente: EstadoOV } | null> = {
   borrador:      { label: 'Confirmar Orden', siguiente: 'confirmada' },
@@ -55,7 +56,17 @@ export function OVActions({ ovId, estadoActual, unidadesProducidas, totalUnidade
     }
 
     startTransition(async () => {
-      await updateEstadoOV(ovId, transicion.siguiente)
+      const result = await updateEstadoOV(ovId, transicion.siguiente)
+      
+      if (result.mrp) {
+        const { type, message } = result.mrp
+        if (type === 'success') toast.success(message)
+        else if (type === 'info') toast.info(message)
+        else if (type === 'error') toast.error(message)
+      } else if (result.error) {
+        toast.error(`Error: ${result.error}`)
+      }
+
       router.refresh()
     })
   }
