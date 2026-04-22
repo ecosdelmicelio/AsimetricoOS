@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
-import { Trash2, ChevronDown } from 'lucide-react'
+import { Trash2, ChevronDown, Plus } from 'lucide-react'
+import { cn } from '@/shared/lib/utils'
 
 export interface ProductoEnMatriz {
   producto_id: string

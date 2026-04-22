@@ -76,7 +76,7 @@ export function MaterialesPanel({ materiales, saldosPorMaterial = [] }: Props) {
             className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-100"
           >
             <Plus className="w-4 h-4" />
-            Empadronar Insumo
+            Crear Materia Prima
           </button>
         )}
       </div>
@@ -92,9 +92,9 @@ export function MaterialesPanel({ materiales, saldosPorMaterial = [] }: Props) {
           <div className="w-24 h-24 rounded-[32px] bg-slate-50 flex items-center justify-center mb-8 border border-slate-100 shadow-inner group-hover:scale-110 transition-transform duration-500">
             <Package className="w-10 h-10 text-slate-300" />
           </div>
-          <p className="text-slate-900 font-black text-2xl tracking-tighter uppercase">Sin Insumos Registrados</p>
+          <p className="text-slate-900 font-black text-2xl tracking-tighter uppercase">Sin Materias Primas Registradas</p>
           <p className="text-slate-400 text-sm mt-3 max-w-sm font-medium leading-relaxed">
-            No hay materiales que coincidan con el filtro seleccionado. Comienza empadronando telas, hilos o accesorios.
+            No hay materiales que coincidan con el filtro seleccionado. Comienza creando telas, hilos o accesorios.
           </p>
           <button
             onClick={() => setShowForm(true)}
@@ -114,7 +114,7 @@ export function MaterialesPanel({ materiales, saldosPorMaterial = [] }: Props) {
               <tr className="border-b border-slate-50 bg-slate-50/20">
                 <th className="hidden lg:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-24">Registro</th>
                 <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-40">Identificación</th>
-                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 min-w-[200px]">Descripción del Insumo / Material</th>
+                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 min-w-[200px]">Descripción de la Materia Prima</th>
                 <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-24">U.M.</th>
                 <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-right px-6 py-5 w-24">Saldos</th>
                 <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-right px-6 py-5 w-40">Costo & Valorización</th>

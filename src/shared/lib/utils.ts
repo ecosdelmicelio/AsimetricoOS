@@ -37,5 +37,5 @@ export function formatCurrency(value: number): string {
     maximumFractionDigits: 1,
     notation: 'compact',
     compactDisplay: 'short'
-  }).format(value)
+  }).format(value).toUpperCase()
 }

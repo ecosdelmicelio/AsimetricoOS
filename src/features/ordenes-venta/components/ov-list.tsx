@@ -140,10 +140,18 @@ export async function OVList({ filters }: Props) {
                 0
               ) || 0
 
+              const valorDespachado = ov.despachos?.reduce((sum, desp) => {
+                if (desp.estado === 'cancelado') return sum
+                return sum + (desp.despacho_detalle?.reduce((s, dd) => {
+                  const detail = ov.ov_detalle.find(od => od.producto_id === dd.producto_id && od.talla === dd.talla)
+                  return s + (dd.cantidad * (detail?.precio_pactado || 0))
+                }, 0) || 0)
+              }, 0) || 0
+
               const displayStatus = deriveStatus(ov, unidadesDespachadas, unidadesProducidas, totalUnidades)
 
               return {
-                ov, displayStatus, totalUnidades, totalValor, 
+                ov, displayStatus, totalUnidades, totalValor, valorDespachado,
                 unidadesProducidas, unidadesDespachadas, daysSinceConfirm, 
                 fechaConfirmacion
               }
@@ -164,7 +172,7 @@ export async function OVList({ filters }: Props) {
 
                 {/* Cards Container */}
                 <div className="flex-1 p-4 space-y-4 overflow-y-auto custom-scrollbar h-[60vh]">
-                  {items.map(({ ov, displayStatus, totalUnidades, totalValor, unidadesProducidas, unidadesDespachadas, daysSinceConfirm, fechaConfirmacion }) => {
+                  {items.map(({ ov, displayStatus, totalUnidades, totalValor, valorDespachado, unidadesProducidas, unidadesDespachadas, daysSinceConfirm, fechaConfirmacion }) => {
                     const ops = ov.ordenes_produccion.map(op => ({
                       id: op.id,
                       codigo: op.codigo,
@@ -182,6 +190,7 @@ export async function OVList({ filters }: Props) {
                         displayStatus={displayStatus}
                         totalUnidades={totalUnidades}
                         totalValor={totalValor}
+                        valorDespachado={valorDespachado}
                         unidadesProducidas={unidadesProducidas}
                         unidadesDespachadas={unidadesDespachadas}
                         daysSinceConfirm={daysSinceConfirm}

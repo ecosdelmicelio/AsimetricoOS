@@ -37,6 +37,10 @@
   * {
     @apply border-border;
   }
+  html, body {
+    @apply overflow-x-hidden;
+    max-width: 100vw;
+  }
   body {
     @apply bg-neu-base text-foreground font-sans;
     background-color: #E8EDF2;

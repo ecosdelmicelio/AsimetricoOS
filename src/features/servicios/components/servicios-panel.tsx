@@ -1,4 +1,6 @@
+import { useState, useTransition, useMemo, useRef } from 'react'
 import { cn, formatCurrency } from '@/shared/lib/utils'
+import { Edit2, Wrench, Plus, Trash2, Loader2, Package } from 'lucide-react'
 import {
   createServicioOperativo,
   updateServicioOperativo,
@@ -181,7 +183,7 @@ export function ServiciosPanel({ servicios, tipos, subtipos, detalles, ejecutore
             className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-100"
           >
             <Plus className="w-4 h-4" />
-            Crear Orden de Servicio
+            Crear Servicio
           </button>
         )}
       </div>

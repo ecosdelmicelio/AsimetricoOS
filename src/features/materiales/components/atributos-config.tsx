@@ -177,7 +177,7 @@ export function AtributosConfigMP({ atributos }: Props) {
             <Plus className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest leading-none">Matriz de Insumos</h3>
+            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest leading-none">Matriz de Materia Prima</h3>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mt-1">Configuración de Atributos de Materia Prima</p>
           </div>
         </div>
@@ -350,7 +350,7 @@ export function AtributosConfigMP({ atributos }: Props) {
                                 </button>
                                 {(usos[attr.id] ?? 0) > 0 && (
                                   <span className="text-[8px] font-black text-indigo-400 uppercase tracking-tighter">
-                                    {usos[attr.id]} Insumos
+                                    {usos[attr.id]} Materias Primas
                                   </span>
                                 )}
                               </div>

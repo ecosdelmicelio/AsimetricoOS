@@ -253,7 +253,7 @@ export function AtributosConfig({ atributos }: Props) {
               className="flex items-center gap-3 px-10 py-4 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50"
             >
               {pending && <Loader2 className="w-4 h-4 animate-spin" />}
-              Empadronar Atributo
+              Crear Atributo
             </button>
           </div>
         </form>

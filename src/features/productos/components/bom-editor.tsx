@@ -5,7 +5,7 @@ import { Trash2, Plus, Loader2, Package, Wrench, Check } from 'lucide-react'
 import {
   addBOMMaterial, addBOMServicio, deleteBOMLinea, updateBOMLinea, toggleBOMCompleted,
 } from '@/features/productos/services/bom-actions'
-import { formatCurrency } from '@/shared/lib/utils'
+import { cn, formatCurrency } from '@/shared/lib/utils'
 import type {
   BOMLineaMaterial, BOMLineaServicio, Material, ServicioOperativo,
 } from '@/features/productos/services/bom-actions'
@@ -53,7 +53,6 @@ export function BOMEditor({
 
   return (
     <div className="space-y-4">
-      {/* Velocímetro financiero */}
       {costoTotal > 0 && (
         <CostoVelocimetro
           costoTotal={costoTotal}
@@ -63,34 +62,38 @@ export function BOMEditor({
         />
       )}
 
-      {/* Checkbox: Marcar como completado */}
       {tieneLineas && (
-        <div className="rounded-xl bg-neu-base shadow-neu px-4 py-3 flex items-center gap-3">
-          <label className="flex items-center gap-2 flex-1 cursor-pointer">
-            <div className="relative w-5 h-5">
+        <div className="rounded-2xl bg-white border border-slate-100 shadow-sm px-5 py-4 flex items-center gap-3">
+          <label className="flex items-center gap-3 flex-1 cursor-pointer group">
+            <div className="relative w-6 h-6">
               <input
                 type="checkbox"
                 checked={bomCompleto}
                 onChange={handleMarkCompleted}
                 disabled={pending}
-                className="w-5 h-5 rounded border-2 border-primary-600 accent-primary-600 cursor-pointer disabled:opacity-50"
+                className="w-6 h-6 rounded-lg border-2 border-slate-200 checked:bg-emerald-500 checked:border-emerald-600 transition-all cursor-pointer disabled:opacity-50"
               />
             </div>
-            <span className="text-body-sm font-medium text-foreground">
-              {bomCompleto ? '✓ BOM completado' : 'Marcar BOM como completado'}
-            </span>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Certificación de Ficha</span>
+              <span className={cn("text-xs font-black uppercase tracking-tight mt-1", 
+                bomCompleto ? 'text-emerald-600' : 'text-slate-500'
+              )}>
+                {bomCompleto ? '✓ Fórmula Validada y Completa' : 'Pendiente por completar'}
+              </span>
+            </div>
           </label>
-          {pending && <Loader2 className="w-4 h-4 animate-spin text-primary-600" />}
+          {pending && <Loader2 className="w-5 h-5 animate-spin text-primary-600" />}
         </div>
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-xl bg-neu-base shadow-neu-inset p-1">
-        <TabButton active={tab === 'materiales'} onClick={() => setTab('materiales')} icon={<Package className="w-3.5 h-3.5" />}>
-          Materiales ({materiales.length})
+      <div className="flex gap-2 rounded-2xl bg-slate-50 p-1.5 border border-slate-100">
+        <TabButton active={tab === 'materiales'} onClick={() => setTab('materiales')} icon={<Package className="w-4 h-4" />}>
+          Materia Prima ({materiales.length})
         </TabButton>
-        <TabButton active={tab === 'servicios'} onClick={() => setTab('servicios')} icon={<Wrench className="w-3.5 h-3.5" />}>
-          Servicios ({servicios.length})
+        <TabButton active={tab === 'servicios'} onClick={() => setTab('servicios')} icon={<Wrench className="w-4 h-4" />}>
+          Servicios y MO ({servicios.length})
         </TabButton>
       </div>
 
@@ -126,37 +129,43 @@ function CostoVelocimetro({
   const margenColor = margen === null ? '' : margen >= 25 ? 'text-green-600' : margen >= 10 ? 'text-yellow-600' : 'text-red-600'
 
   return (
-    <div className="rounded-xl bg-neu-base shadow-neu-inset px-4 py-3 space-y-2">
-      <div className="flex items-center justify-between text-body-sm">
-        <span className="text-muted-foreground">Costo total estimado</span>
-        <span className="font-bold text-foreground">{formatCurrency(costoTotal)}</span>
+    <div className="rounded-3xl bg-white border border-slate-100 shadow-sm px-6 py-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Costo Industrial Estimado</span>
+          <span className="text-xl font-black text-slate-900 mt-1 tabular-nums">{formatCurrency(costoTotal)}</span>
+        </div>
+        {margen !== null && (
+          <div className="flex flex-col items-end">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Rentabilidad Bruta</span>
+            <span className={cn("text-lg font-black mt-1", margenColor)}>
+              {margen.toFixed(1)}%
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Barra: materiales vs servicios */}
-      <div className="h-2 rounded-full overflow-hidden bg-black/5 flex">
-        <div
-          className="h-full bg-blue-400 rounded-l-full transition-all"
-          style={{ width: `${pctMateriales}%` }}
-        />
-        <div
-          className="h-full bg-purple-400 rounded-r-full transition-all"
-          style={{ width: `${100 - pctMateriales}%` }}
-        />
-      </div>
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" />
-          Materiales {formatCurrency(costoMateriales)}
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-purple-400 inline-block" />
-          Servicios {formatCurrency(costoServicios)}
-        </span>
-        {margen !== null && (
-          <span className={`ml-auto font-semibold ${margenColor}`}>
-            Margen: {margen.toFixed(1)}%
+      <div className="space-y-2">
+        <div className="h-3 rounded-full overflow-hidden bg-slate-100 flex">
+          <div
+            className="h-full bg-blue-500 transition-all duration-700"
+            style={{ width: `${pctMateriales}%` }}
+          />
+          <div
+            className="h-full bg-purple-500 transition-all duration-700"
+            style={{ width: `${100 - pctMateriales}%` }}
+          />
+        </div>
+        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+          <span className="flex items-center gap-1.5 text-blue-600">
+            <span className="w-2 h-2 rounded-full bg-blue-500" />
+            MP: {formatCurrency(costoMateriales)} ({pctMateriales.toFixed(0)}%)
           </span>
-        )}
+          <span className="flex items-center gap-1.5 text-purple-600">
+            <span className="w-2 h-2 rounded-full bg-purple-500" />
+            Serv: {formatCurrency(costoServicios)} ({(100 - pctMateriales).toFixed(0)}%)
+          </span>
+        </div>
       </div>
     </div>
   )
@@ -213,9 +222,15 @@ function MaterialesTab({
   return (
     <div className="space-y-2">
       {lineas.length === 0 && !showForm && (
-        <p className="text-center text-muted-foreground text-body-sm py-4">
-          Sin materiales. Agrega telas, hilos, botones, etc.
-        </p>
+        <div className="py-12 flex flex-col items-center justify-center text-center space-y-4 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+          <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center shadow-sm border border-slate-100">
+            <Package className="w-8 h-8 text-slate-200" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs font-black text-slate-900 uppercase tracking-widest">Fórmula Vacía</p>
+            <p className="text-[11px] text-slate-400 font-medium max-w-[200px]">Define las materias primas necesarias para fabricar esta prenda.</p>
+          </div>
+        </div>
       )}
 
       {lineas.map(l => (
@@ -558,11 +573,12 @@ function TabButton({ active, onClick, icon, children }: {
     <button
       type="button"
       onClick={onClick}
-      className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-body-sm font-semibold transition-all ${
+      className={cn(
+        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
         active
-          ? 'bg-neu-base shadow-neu text-foreground'
-          : 'text-muted-foreground hover:text-foreground'
-      }`}
+          ? "bg-white text-slate-900 shadow-sm border border-slate-200"
+          : "text-slate-400 hover:text-slate-600 hover:bg-white/50"
+      )}
     >
       {icon}
       {children}

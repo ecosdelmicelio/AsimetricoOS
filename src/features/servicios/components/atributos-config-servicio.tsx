@@ -323,7 +323,7 @@ export function AtributosConfigServicio({ atributos }: Props) {
               >
                 {pending && <Loader2 className="w-4 h-4 animate-spin" />}
                 <Plus className="w-4 h-4" />
-                Empadronar Tipo
+                Crear Tipo
               </button>
               <button
                 type="button"

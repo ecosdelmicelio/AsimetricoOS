@@ -21,6 +21,7 @@ interface Props {
   displayStatus: string        // Smart-derived status
   totalUnidades: number
   totalValor: number
+  valorDespachado: number      // New
   unidadesProducidas: number
   unidadesDespachadas: number
   daysSinceConfirm?: number
@@ -60,80 +61,90 @@ function ProgressBar({ value, max, colorClass, label }: { value: number; max: nu
 
 export function OVCard({
   id, codigo, clienteNombre, displayStatus,
-  totalUnidades, totalValor, unidadesProducidas, unidadesDespachadas,
+  totalUnidades, totalValor, valorDespachado, unidadesProducidas, unidadesDespachadas,
   daysSinceConfirm, fechaConfirmacion, ops, estado,
 }: Props) {
+  const physicalPct = pct(unidadesDespachadas, totalUnidades)
+  const economicPct = pct(valorDespachado, totalValor)
   return (
-    <details className="group rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md transition-shadow outline-none overflow-hidden">
-      <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer list-none outline-none [&::-webkit-details-marker]:hidden">
-        {/* Status indicator dot */}
-        <div className={cn(
-          'w-2 h-2 rounded-full shrink-0',
-          displayStatus === 'despachada'    && 'bg-indigo-500',
-          displayStatus === 'completada'    && 'bg-emerald-500',
-          displayStatus === 'en_produccion' && 'bg-amber-400',
-          displayStatus === 'confirmada'    && 'bg-blue-400',
-          displayStatus === 'borrador'      && 'bg-slate-300',
-          displayStatus === 'cancelada'     && 'bg-red-400',
-        )} />
-
-        {/* Core info */}
-        <div className="flex-1 min-w-0 pr-1">
-          {/* Header Line: Code + aging */}
-          <div className="flex items-start justify-between gap-2 mb-1">
+    <details className="group rounded-[40px] bg-white border border-slate-100 shadow-sm hover:shadow-2xl hover:border-slate-300 hover:-translate-y-1 transition-all duration-500 outline-none overflow-hidden">
+      <summary className="flex flex-col px-5 py-4 cursor-pointer list-none outline-none [&::-webkit-details-marker]:hidden">
+        {/* Header Line: Code + Status + Aging */}
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2 min-w-0">
             <Link
               href={`/ordenes-venta/${id}`}
-              className="font-black text-sm text-slate-800 tracking-tighter hover:text-primary-600 transition-colors truncate"
+              className="font-black text-[13px] text-slate-900 tracking-tighter hover:text-blue-600 transition-colors truncate"
               onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               {codigo}
             </Link>
-            
-            {/* Operational Timing */}
-            {(fechaConfirmacion || daysSinceConfirm !== undefined) && (
-              <span className="text-[8px] font-black bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded border border-slate-100 uppercase tracking-tighter shrink-0">
-                {fechaConfirmacion && new Date(fechaConfirmacion).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
-                {daysSinceConfirm !== undefined && ` · ${daysSinceConfirm}d`}
+            <div className={cn(
+              'w-2 h-2 rounded-full shrink-0',
+              displayStatus === 'entregada'      && 'bg-indigo-500',
+              displayStatus === 'completada'     && 'bg-emerald-500',
+              displayStatus === 'despachada'     && 'bg-blue-500',
+              displayStatus === 'en_produccion'  && 'bg-amber-400',
+              displayStatus === 'confirmada'     && 'bg-slate-400',
+              displayStatus === 'borrador'       && 'bg-slate-300',
+              displayStatus === 'cancelada'      && 'bg-red-400',
+            )} />
+          </div>
+          
+          <div className="flex items-center gap-1.5 shrink-0">
+             {daysSinceConfirm !== undefined && (
+              <span className="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-lg border border-slate-200/50 uppercase tracking-tighter">
+                {daysSinceConfirm} DIAS
               </span>
             )}
-          </div>
-
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide truncate mb-2" title={clienteNombre}>
-            {clienteNombre}
-          </p>
-
-          <div className="mb-3">
-            <OVStatusBadge estado={displayStatus} />
-          </div>
-
-          {/* Metrics Block */}
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 flex flex-col justify-between">
-              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Unidades</span>
-              <span className="text-xs font-black text-slate-800 leading-none">
-                {unidadesDespachadas} / {totalUnidades}
-              </span>
+            <div className="w-5 h-5 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center transition-all group-open:bg-blue-50 group-open:border-blue-100">
+              <ChevronDown className="w-3 h-3 text-slate-400 transition-transform group-open:rotate-180 group-open:text-blue-500" />
             </div>
-            <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 flex flex-col justify-between">
-              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Valor Venta</span>
-              <span className="text-xs font-black text-slate-800 leading-none truncate">
-                {formatCurrency(totalValor)}
-              </span>
-            </div>
-          </div>
-
-          {/* Mini Stepper */}
-          <div className="mt-1">
-            <OVMiniStepper
-              currentStatus={displayStatus}
-              daysSinceConfirm={daysSinceConfirm}
-            />
           </div>
         </div>
 
-        {/* Expand chevron */}
-        <div className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 self-start transition-all group-open:bg-primary-50 group-open:border-primary-100">
-          <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform group-open:rotate-180 group-open:text-primary-500" />
+        {/* Client Info */}
+        <div className="mb-4">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate leading-tight" title={clienteNombre}>
+            {clienteNombre}
+          </p>
+        </div>
+
+        {/* Ultra-Compact Metrics Matrix */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between text-[8px] font-black text-slate-400 uppercase tracking-tighter">
+              <span>Cump. Físico</span>
+              <span>{physicalPct}%</span>
+            </div>
+            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-500 rounded-full" style={{ width: `${physicalPct}%` }} />
+            </div>
+            <div className="text-[9px] font-black text-slate-800 tracking-tighter">
+              {unidadesDespachadas} <span className="text-slate-300 font-bold">/</span> {totalUnidades} <span className="text-slate-400 text-[8px] uppercase">Und</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between text-[8px] font-black text-slate-400 uppercase tracking-tighter">
+              <span>Cump. Eco</span>
+              <span>{economicPct}%</span>
+            </div>
+            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${economicPct}%` }} />
+            </div>
+            <div className="text-[9px] font-black text-slate-800 tracking-tighter truncate">
+              {formatCurrency(valorDespachado)} <span className="text-slate-300 font-bold">/</span> {formatCurrency(totalValor)}
+            </div>
+          </div>
+        </div>
+
+        {/* Stepper Footer */}
+        <div className="pt-3 border-t border-slate-50 flex items-center justify-between">
+           <OVStatusBadge estado={displayStatus} />
+           <div className="scale-75 origin-right">
+              <OVMiniStepper currentStatus={displayStatus} daysSinceConfirm={daysSinceConfirm} />
+           </div>
         </div>
       </summary>
 

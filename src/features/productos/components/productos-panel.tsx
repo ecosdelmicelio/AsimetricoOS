@@ -14,6 +14,7 @@ import type { AtributoPT, TipoAtributo } from '@/features/productos/types/atribu
 import { TIPOS_ATRIBUTO, LABELS_ATRIBUTO } from '@/features/productos/types/atributos'
 import type { MarcaConTercero } from '@/features/configuracion/services/marcas-actions'
 import type { Material, ServicioOperativo } from '@/features/productos/services/bom-actions'
+import { Modal } from '@/shared/components/modal'
 import type { SaldoTotalPT } from '@/features/kardex/services/kardex-actions'
 
 interface Props {
@@ -87,13 +88,18 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
             className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-100 border border-slate-800"
           >
             <Plus className="w-4 h-4" />
-            Empadronar Producto
+            Crear Producto
           </button>
         )}
       </div>
 
-      {/* Form de creación */}
-      {showForm && (
+      {/* Modales Premium */}
+      <Modal 
+        isOpen={showForm} 
+        onClose={() => setShowForm(false)}
+        title="Crear Nueva Referencia"
+        size="xl"
+      >
         <ProductForm
           marcas={marcas}
           atributosPT={atributosPT}
@@ -101,7 +107,25 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
           catalogoServicios={catalogoServicios}
           onDone={() => setShowForm(false)}
         />
-      )}
+      </Modal>
+
+      <Modal
+        isOpen={!!editingId}
+        onClose={() => setEditingId(null)}
+        title={`Editando: ${productos.find(p => p.id === editingId)?.referencia}`}
+        size="xl"
+      >
+        {editingId && (
+          <ProductForm
+            product={productos.find(p => p.id === editingId)}
+            marcas={marcas}
+            atributosPT={atributosPT}
+            catalogoMateriales={catalogoMateriales}
+            catalogoServicios={catalogoServicios}
+            onDone={() => setEditingId(null)}
+          />
+        )}
+      </Modal>
 
       {/* Lista vacía Premium */}
       {visibles.length === 0 && !showForm && (
@@ -111,7 +135,7 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
           </div>
           <p className="text-slate-900 font-black text-2xl tracking-tighter uppercase">Sin Registros en Catálogo</p>
           <p className="text-slate-400 text-sm mt-3 max-w-sm font-medium leading-relaxed">
-            No hay productos que coincidan con el filtro seleccionado. Comienza empadronando una referencia fabricada o comercializada.
+            No hay productos que coincidan con el filtro seleccionado. Comienza creando una referencia fabricada o comercializada.
           </p>
           <button
             onClick={() => setShowForm(true)}
@@ -125,36 +149,27 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
 
       {/* Tabla Premium */}
       {visibles.length > 0 && (
-        <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden group">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-slate-50 bg-slate-50/20">
-                <th className="hidden lg:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-24">Registro</th>
-                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5">Identificación (SKU)</th>
-                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 min-w-[250px]">Descripción Producto</th>
-                <th className="hidden xl:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-32">Marca</th>
-                <th className="hidden sm:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-28">Distrib.</th>
-                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-right px-6 py-5 w-24">Saldos</th>
-                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-right px-6 py-5 w-40">Valoración Inventario</th>
-                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center px-6 py-5 w-28">Estatus</th>
-                <th className="px-6 py-5 w-16" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {visibles.map(p => {
-                const saldo = saldoMap.get(p.id)
-                return editingId === p.id
-                  ? <tr key={p.id}><td colSpan={12} className="px-0 py-0">
-                      <ProductForm
-                        product={p}
-                        marcas={marcas}
-                        atributosPT={atributosPT}
-                        catalogoMateriales={catalogoMateriales}
-                        catalogoServicios={catalogoServicios}
-                        onDone={() => setEditingId(null)}
-                      />
-                    </td></tr>
-                  : <ProductRow 
+        <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-x-hidden group">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b border-slate-50 bg-slate-50/20">
+                  <th className="hidden lg:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-24">Registro</th>
+                  <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5">Identificación (SKU)</th>
+                  <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 min-w-[200px]">Descripción Producto</th>
+                  <th className="hidden xl:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-32">Marca</th>
+                  <th className="hidden sm:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-28 text-center">Distrib.</th>
+                  <th className="hidden md:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-right px-6 py-5 w-24">Saldos</th>
+                  <th className="hidden lg:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-right px-6 py-5 w-36">Valoración</th>
+                  <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center px-6 py-5 w-28">Estatus</th>
+                  <th className="px-6 py-5 w-16 text-center" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {visibles.map(p => {
+                  const saldo = saldoMap.get(p.id)
+                  return (
+                    <ProductRow 
                       key={p.id} 
                       product={p} 
                       onEdit={() => setEditingId(p.id)} 
@@ -163,9 +178,11 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
                       saldo={saldo} 
                       marcas={marcas} 
                     />
-              })}
-            </tbody>
-          </table>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
@@ -210,36 +227,45 @@ function ProductRow({
       </td>
       <td className="px-6 py-5">
         <div className="flex items-start gap-4">
-          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border", 
-            p.tipo_producto === 'fabricado' ? "bg-blue-50 border-blue-100 text-blue-600" : "bg-amber-50 border-amber-100 text-amber-600"
-          )}>
+          <button 
+            onClick={onEdit}
+            title="Editar producto"
+            className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-all hover:shadow-md hover:scale-105 active:scale-95", 
+              p.tipo_producto === 'fabricado' ? "bg-blue-50 border-blue-100 text-blue-600" : "bg-amber-50 border-amber-100 text-amber-600"
+            )}
+          >
             {p.tipo_producto === 'fabricado' ? <Wrench className="w-5 h-5" /> : <Package className="w-5 h-5" />}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-black text-slate-900 truncate tracking-tight">{p.nombre}</p>
+          </button>
+          <button 
+            onClick={onEdit}
+            className="min-w-0 flex-1 text-left group/name hover:bg-slate-50 transition-all rounded-lg p-1 -m-1"
+          >
+            <p className="text-[13px] font-black text-slate-900 truncate tracking-tight group-hover/name:text-primary-600">{p.nombre}</p>
             {p.nombre_comercial && (
               <p className="text-[10px] font-black text-primary-600/70 border border-primary-100 bg-primary-50 px-1.5 py-0.5 rounded w-fit mt-1 uppercase tracking-widest">{p.nombre_comercial}</p>
             )}
-          </div>
+          </button>
         </div>
       </td>
       <td className="hidden xl:table-cell px-6 py-5">
         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest truncate">{brandName}</span>
       </td>
       <td className="hidden sm:table-cell px-6 py-5">
-        <div className={cn('px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest w-fit', 
-          p.tipo_distribucion === 'MTO' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
-        )}>
-          {p.tipo_distribucion}
+        <div className="flex justify-center">
+          <div className={cn('px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest w-fit', 
+            p.tipo_distribucion === 'MTO' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
+          )}>
+            {p.tipo_distribucion}
+          </div>
         </div>
       </td>
-      <td className="px-6 py-5 text-right">
+      <td className="hidden md:table-cell px-6 py-5 text-right">
         <div className="flex flex-col">
           <span className="text-sm font-black text-slate-900 tabular-nums">{saldo?.saldo_total ?? 0}</span>
           <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">unidades</span>
         </div>
       </td>
-      <td className="px-6 py-5 text-right whitespace-nowrap">
+      <td className="hidden lg:table-cell px-6 py-5 text-right whitespace-nowrap">
         <div className="flex flex-col">
           <span className="text-xs font-black text-slate-900 tabular-nums">
             {formatCurrency(saldo?.valor_total ?? 0)}
@@ -254,8 +280,8 @@ function ProductRow({
 
       <td className="px-6 py-5 text-center">
         <button
-          onClick={p.status !== 'en_desarrollo' ? onToggleActivo : undefined}
-          disabled={p.status === 'en_desarrollo'}
+          onClick={p.estado !== 'en_desarrollo' ? onToggleActivo : undefined}
+          disabled={p.estado === 'en_desarrollo'}
           className={cn('text-[9px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-xl border transition-all',
             p.estado === 'activo' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100' :
             p.estado === 'inactivo' ? 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200' :
@@ -266,17 +292,19 @@ function ProductRow({
         </button>
       </td>
       <td className="px-6 py-5 text-right">
-        <div className="flex justify-end gap-2 opacity-0 group-hover/row:opacity-100 transition-all duration-300">
+        <div className="flex justify-end gap-2 group-hover/row:translate-x-0 translate-x-1 opacity-40 group-hover/row:opacity-100 transition-all duration-300">
           <button
             onClick={onEdit}
-            className="w-8 h-8 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-slate-400 hover:text-slate-900 hover:border-slate-200 hover:shadow-md transition-all"
+            title="Editar producto"
+            className="w-9 h-9 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-slate-400 hover:text-slate-900 hover:border-slate-300 hover:shadow-lg transition-all"
           >
             <Edit2 className="w-4 h-4" />
           </button>
-          {(p as any).estado === 'en_desarrollo' && (
+          {p.estado === 'en_desarrollo' && (
             <button
               onClick={onDelete}
-              className="w-8 h-8 rounded-xl bg-white border border-rose-100 shadow-sm flex items-center justify-center text-rose-400 hover:text-rose-600 hover:border-rose-200 hover:shadow-md transition-all"
+              title="Eliminar borrador"
+              className="w-9 h-9 rounded-xl bg-white border border-rose-100 shadow-sm flex items-center justify-center text-rose-400 hover:text-rose-600 hover:border-rose-300 hover:shadow-lg transition-all"
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -443,36 +471,38 @@ function ProductForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="px-5 py-4 bg-neu-base shadow-neu-inset rounded-xl mx-3 my-2 space-y-3">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-        {isEdit ? `Editando ${product.referencia}` : 'Nuevo producto'}
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <p className="text-[10px] font-black text-primary-600 uppercase tracking-[0.2em] mb-2">
+        {isEdit ? `Modificando Registro: ${product.referencia}` : 'Creación de Nueva Referencia'}
       </p>
 
-      {/* Tabs */}
+      {/* Tabs Premium */}
       {isEdit && (
-        <div className="flex gap-1 rounded-lg bg-neu-base shadow-neu-inset p-1">
+        <div className="flex gap-2 rounded-2xl bg-slate-50 p-1.5 border border-slate-100">
           <button
             type="button"
             onClick={() => setTab('detalles')}
-            className={`flex-1 px-3 py-1.5 text-xs font-medium rounded transition-all ${
+            className={cn(
+              "flex-1 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all",
               tab === 'detalles'
-                ? 'bg-neu-base shadow-neu text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
+                ? "bg-white text-slate-900 shadow-sm border border-slate-200"
+                : "text-slate-400 hover:text-slate-600 hover:bg-white/50"
+            )}
           >
-            Detalles
+            Detalles Técnicos
           </button>
           {tipo === 'fabricado' && (
             <button
               type="button"
               onClick={handleBomTabClick}
-              className={`flex-1 px-3 py-1.5 text-xs font-medium rounded transition-all ${
+              className={cn(
+                "flex-1 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all",
                 tab === 'bom'
-                  ? 'bg-neu-base shadow-neu text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
+                  ? "bg-white text-slate-900 shadow-sm border border-slate-200"
+                  : "text-slate-400 hover:text-slate-600 hover:bg-white/50"
+              )}
             >
-              BOM
+              Fórmula (BOM)
             </button>
           )}
         </div>
@@ -517,7 +547,6 @@ function ProductForm({
                   />
                   <button
                     type="button"
-                    disabled={isEdit}
                     onClick={() => setTipo('fabricado')}
                     className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
                       tipo === 'fabricado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
@@ -527,7 +556,6 @@ function ProductForm({
                   </button>
                   <button
                     type="button"
-                    disabled={isEdit}
                     onClick={() => setTipo('comercializado')}
                     className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
                       tipo === 'comercializado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
@@ -789,21 +817,21 @@ function ProductForm({
         />
       )}
 
-      <div className="flex gap-2 justify-end">
+      <div className="flex gap-3 justify-end pt-6 border-t border-slate-100">
         <button
           type="button"
           onClick={onDone}
-          className="px-3 py-1.5 rounded-lg text-body-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all"
         >
-          Cancelar
+          Descartar
         </button>
         <button
           type="submit"
           disabled={pending}
-          className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset disabled:opacity-60"
+          className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-100 border border-slate-800 disabled:opacity-50"
         >
-          {pending && <Loader2 className="w-3 h-3 animate-spin" />}
-          {isEdit ? 'Guardar cambios' : 'Crear producto'}
+          {pending && <Loader2 className="w-4 h-4 animate-spin" />}
+          {isEdit ? 'Guardar Cambios' : 'Crear Producto'}
         </button>
       </div>
     </form>
