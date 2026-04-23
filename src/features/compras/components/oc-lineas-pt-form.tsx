@@ -143,28 +143,28 @@ export function OCLineasPTForm({ productos, onLineasChange }: Props) {
     }, 0)
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col h-full">
       {/* Tabla compacta - Siempre visible */}
-      <div className="border-t border-black/8" />
-      <div className="overflow-x-auto">
-        <table className="w-full text-body-sm">
+      <div className="border-t border-slate-100" />
+      <div className="overflow-x-auto flex-1">
+        <table className="w-full border-collapse">
           <thead>
-            <tr className="border-b border-black/10">
-              <th className="text-left py-2 px-3 font-semibold">Código</th>
-              <th className="text-left py-2 px-3 font-semibold">Nombre</th>
-              <th className="text-left py-2 px-3 font-semibold">Color</th>
-              <th className="text-right py-2 px-3 font-semibold">Precio</th>
+            <tr className="bg-slate-50 border-b border-slate-100">
+              <th className="px-6 py-4 text-left text-[9px] font-black text-slate-500 uppercase tracking-widest">Código</th>
+              <th className="px-4 py-4 text-left text-[9px] font-black text-slate-500 uppercase tracking-widest">Nombre</th>
+              <th className="px-4 py-4 text-left text-[9px] font-black text-slate-500 uppercase tracking-widest">Color</th>
+              <th className="px-4 py-4 text-right text-[9px] font-black text-slate-500 uppercase tracking-widest">Precio Unit</th>
               {tallasUnion.map(talla => (
-                <th key={talla} className="text-center py-2 px-2 font-semibold text-xs">
+                <th key={talla} className="px-2 py-4 text-center text-[9px] font-black text-slate-500 uppercase tracking-widest min-w-[60px]">
                   {talla}
                 </th>
               ))}
-              <th className="text-right py-2 px-3 font-semibold">Total Uds</th>
-              <th className="text-right py-2 px-3 font-semibold">Total $</th>
-              <th className="text-center py-2 px-3 font-semibold"></th>
+              <th className="px-4 py-4 text-right text-[9px] font-black text-slate-500 uppercase tracking-widest border-l border-slate-200/40">Total Uds</th>
+              <th className="px-4 py-4 text-right text-[9px] font-black text-slate-500 uppercase tracking-widest">Total $</th>
+              <th className="px-6 py-4 text-center text-[9px] font-black text-slate-500 uppercase tracking-widest w-20">Acción</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-50">
             {/* Filas existentes */}
             {productosEnMatriz.map(producto => {
               const totalUds = Object.values(producto.cantidades).reduce((s: number, q: number) => s + q, 0)
@@ -172,11 +172,15 @@ export function OCLineasPTForm({ productos, onLineasChange }: Props) {
               const productoOriginal = productos.find(p => p.id === producto.producto_id)
 
               return (
-                <tr key={producto.producto_id} className="border-b border-black/5">
-                  <td className="py-2 px-3 font-mono text-muted-foreground">{productoOriginal?.referencia}</td>
-                  <td className="py-2 px-3">{producto.nombre}</td>
-                  <td className="py-2 px-3 text-muted-foreground">{producto.color ?? '—'}</td>
-                  <td className="py-2 px-3 text-right">
+                <tr key={producto.producto_id} className="hover:bg-slate-50/30 transition-colors group">
+                  <td className="px-6 py-3 font-mono text-[10px] text-slate-400">{productoOriginal?.referencia}</td>
+                  <td className="px-4 py-3 text-[11px] font-black text-slate-900 uppercase tracking-tight">{producto.nombre}</td>
+                  <td className="px-4 py-3">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-lg">
+                      {producto.color ?? '—'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
                     <input
                       type="number"
                       min="0"
@@ -187,11 +191,11 @@ export function OCLineasPTForm({ productos, onLineasChange }: Props) {
                         handleActualizarPrecio(producto.producto_id, Math.max(0, val))
                       }}
                       placeholder="0"
-                      className="w-20 text-right bg-neu-base rounded-lg shadow-neu-inset-sm px-2 py-1 outline-none text-foreground placeholder:text-muted-foreground/50 text-body-sm"
+                      className="w-24 text-right bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-black tabular-nums text-slate-900 outline-none focus:border-slate-300 transition-all"
                     />
                   </td>
                   {tallasUnion.map(talla => (
-                    <td key={talla} className="text-center py-2 px-2">
+                    <td key={talla} className="px-2 py-3 text-center">
                       <input
                         type="number"
                         min="0"
@@ -201,19 +205,19 @@ export function OCLineasPTForm({ productos, onLineasChange }: Props) {
                           handleActualizarCantidad(producto.producto_id, talla, Math.max(0, val))
                         }}
                         placeholder="0"
-                        className="w-12 text-center bg-neu-base rounded-lg shadow-neu-inset-sm px-2 py-1 outline-none text-foreground placeholder:text-muted-foreground/50 text-body-sm"
+                        className="w-12 text-center bg-slate-50 border border-slate-100 rounded-lg py-1.5 text-[11px] font-black tabular-nums focus:bg-white focus:border-slate-300 outline-none transition-all"
                       />
                     </td>
                   ))}
-                  <td className="py-2 px-3 text-right font-semibold">{totalUds}</td>
-                  <td className="py-2 px-3 text-right font-semibold">
+                  <td className="px-4 py-3 text-right font-black text-[11px] tabular-nums text-slate-900 border-l border-slate-200/30">{totalUds}</td>
+                  <td className="px-4 py-3 text-right font-black text-[11px] tabular-nums text-emerald-600">
                     {formatCurrency(totalValor)}
                   </td>
-                  <td className="py-2 px-3 text-center">
+                  <td className="px-6 py-3 text-center">
                     <button
                       type="button"
                       onClick={() => handleRemover(producto.producto_id)}
-                      className="p-1 rounded-lg text-red-400 hover:text-red-600 transition-colors"
+                      className="p-1.5 rounded-xl text-red-300 hover:text-red-500 hover:bg-red-50 transition-all"
                       aria-label={`Eliminar ${producto.nombre}`}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -224,15 +228,17 @@ export function OCLineasPTForm({ productos, onLineasChange }: Props) {
             })}
 
             {/* Fila nueva para agregar producto */}
-            <tr className="border-b border-black/5 bg-neu-base/50">
-              <td colSpan={1} className="py-2 px-3 text-muted-foreground">—</td>
-              <td colSpan={7} className="py-2 px-3">
+            <tr className="bg-emerald-50/20">
+              <td colSpan={1} className="px-6 py-4 border-r border-emerald-100/30">
+                <span className="text-[9px] font-black text-emerald-600/50 uppercase tracking-[0.3em]">NUEVO</span>
+              </td>
+              <td colSpan={7} className="px-4 py-3">
                 <select
                   value={colorSeleccionado}
                   onChange={e => handleSeleccionarProductoDirecto(e.target.value)}
-                  className="w-full px-3 py-1 rounded-lg bg-neu-base shadow-neu-inset text-foreground outline-none text-body-sm"
+                  className="w-full max-w-sm bg-white border border-emerald-100 rounded-xl px-4 py-2.5 text-xs font-black text-slate-900 uppercase outline-none focus:border-emerald-300 transition-all cursor-pointer"
                 >
-                  <option value="">Seleccionar producto...</option>
+                  <option value="">Seleccionar producto para agregar...</option>
                   {variacionesDisponibles.map(v => (
                     <option key={v.productoId} value={v.productoId}>
                       {v.nombre} — {v.color ?? 'Sin color'}
@@ -244,18 +250,6 @@ export function OCLineasPTForm({ productos, onLineasChange }: Props) {
           </tbody>
         </table>
       </div>
-
-      {/* Total */}
-      {productosEnMatriz.length > 0 && (
-        <div className="pt-3 border-t border-black/10 flex justify-end">
-          <div className="text-right">
-            <p className="text-muted-foreground text-body-xs">Total orden</p>
-            <p className="text-display-sm font-bold text-foreground">
-              {formatCurrency(calcularTotal())}
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

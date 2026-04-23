@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Package, Shirt } from 'lucide-react'
 import { createOrdenCompra } from '@/features/compras/services/compras-actions'
@@ -48,8 +48,24 @@ export function CompraForm({
   const [error, setError] = useState<string | null>(null)
   const [tipo, setTipo] = useState<'materia_prima' | 'producto_terminado'>('materia_prima')
   const [greige, setGreige] = useState<EstadoGreige>('para_tejer')
-  const [lineasMP, setLineasMP] = useState<unknown[]>([])
-  const [lineasPT, setLineasPT] = useState<unknown[]>([])
+  const [lineasMP, setLineasMP] = useState<any[]>([])
+  const [lineasPT, setLineasPT] = useState<any[]>([])
+
+  const totalUds = useMemo(() => {
+    if (tipo === 'materia_prima') {
+      return lineasMP.reduce((acc, l) => acc + (Number(l.cantidad) || 0), 0)
+    } else {
+      return lineasPT.reduce((acc, l) => acc + (Number(l.cantidad) || 0), 0)
+    }
+  }, [lineasMP, lineasPT, tipo])
+
+  const totalPrecio = useMemo(() => {
+    if (tipo === 'materia_prima') {
+      return lineasMP.reduce((acc, l) => acc + ((Number(l.cantidad) || 0) * (Number(l.precio_unitario) || 0)), 0)
+    } else {
+      return lineasPT.reduce((acc, l) => acc + ((Number(l.cantidad) || 0) * (Number(l.precio_pactado) || 0)), 0)
+    }
+  }, [lineasMP, lineasPT, tipo])
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -104,113 +120,111 @@ export function CompraForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="rounded-2xl bg-neu-base shadow-neu p-6 space-y-4">
-
-        {/* Top Row: Tipo toggle + Fecha */}
-        <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-3 items-start">
-
-          {/* Toggle Tipo OC — estilo ProductoForm */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Tipo de OC *</label>
-            <div className="relative flex rounded-xl bg-neu-base shadow-neu-inset p-1 w-full max-w-sm">
-              <div
-                className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-primary-600 shadow transition-transform duration-300 ${
-                  tipo === 'materia_prima' ? 'translate-x-0' : 'translate-x-full'
-                }`}
-              />
-              <button
-                type="button"
-                onClick={() => setTipo('materia_prima')}
-                className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold transition-colors duration-300 ${
-                  tipo === 'materia_prima' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Package className="w-3.5 h-3.5" />
-                Materia Prima
-              </button>
-              <button
-                type="button"
-                onClick={() => setTipo('producto_terminado')}
-                className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold transition-colors duration-300 ${
-                  tipo === 'producto_terminado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Shirt className="w-3.5 h-3.5" />
-                Producto Terminado
-              </button>
-            </div>
-          </div>
-
-          {/* Fecha OC */}
-          <div className="space-y-1 md:min-w-[200px]">
-            <label className="text-xs font-medium text-muted-foreground">
-              Fecha OC <span className="text-red-500">*</span>
-            </label>
-            <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
-              <input
-                name="fecha_oc"
-                type="date"
-                defaultValue={new Date().toISOString().split('T')[0]}
-                required
-                className="w-full bg-transparent text-sm text-foreground outline-none"
-              />
-            </div>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* TOOLBAR */}
+      <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-5 sticky top-0 z-[60] flex flex-wrap items-center gap-6">
+        
+        {/* Toggle Tipo OC */}
+        <div className="w-64 space-y-1">
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Tipo de Orden</label>
+          <div className="relative flex rounded-xl bg-slate-50 border border-slate-100 p-1 w-full">
+            <div
+              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-slate-900 shadow transition-transform duration-300 ${
+                tipo === 'materia_prima' ? 'translate-x-0' : 'translate-x-full'
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setTipo('materia_prima')}
+              className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 py-2 text-[10px] font-black uppercase tracking-widest transition-colors duration-300 ${
+                tipo === 'materia_prima' ? 'text-white' : 'text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              <Package className="w-3.5 h-3.5" />
+              Materia Prima
+            </button>
+            <button
+              type="button"
+              onClick={() => setTipo('producto_terminado')}
+              className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 py-2 text-[10px] font-black uppercase tracking-widest transition-colors duration-300 ${
+                tipo === 'producto_terminado' ? 'text-white' : 'text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              <Shirt className="w-3.5 h-3.5" />
+              Prod. Terminado
+            </button>
           </div>
         </div>
 
-        {/* Row 2: Proveedor */}
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">
-            Proveedor <span className="text-red-500">*</span>
-          </label>
-          <div className="rounded-lg bg-neu-base shadow-neu-inset px-2.5 py-1.5">
-            <select
-              name="proveedor_id"
-              className="w-full bg-transparent text-sm text-foreground outline-none appearance-none"
-            >
-              <option value="">Seleccionar proveedor...</option>
-              {proveedores.map(p => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Proveedor */}
+        <div className="flex-1 min-w-[280px] space-y-1">
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Proveedor / Taller <span className="text-red-500">*</span></label>
+          <select
+            name="proveedor_id"
+            className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-xs font-black text-slate-900 uppercase outline-none focus:bg-white focus:border-slate-300 transition-all cursor-pointer"
+            required
+          >
+            <option value="">Seleccione Proveedor...</option>
+            {proveedores.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.nombre}
+              </option>
+            ))}
+          </select>
           {proveedores.length === 0 && (
-            <p className="text-xs text-muted-foreground">
-              Agrega proveedores en{' '}
-              <a href="/terceros" className="text-primary-600 underline">
-                Terceros
-              </a>
+            <p className="text-[9px] font-bold text-slate-400 px-1 mt-1">
+              Agrega proveedores en <a href="/terceros" className="text-primary-600 hover:underline">Terceros</a>
             </p>
           )}
         </div>
-        {/* Divider */}
-        <div className="border-t border-black/8" />
 
-        {/* Líneas según tipo */}
+        {/* Fecha OC */}
+        <div className="w-40 space-y-1">
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Fecha Emisión <span className="text-red-500">*</span></label>
+          <input
+            name="fecha_oc"
+            type="date"
+            defaultValue={new Date().toISOString().split('T')[0]}
+            required
+            className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-xs font-black text-slate-900 outline-none focus:bg-white focus:border-slate-300 transition-all"
+          />
+        </div>
+      </div>
+
+      {/* TRANSACTIONAL GRID */}
+      <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden min-h-[400px]">
         {tipo === 'materia_prima' ? (
-          <OCLineasMPForm materiales={materiales} onLineasChange={setLineasMP} embedded />
+          <OCLineasMPForm materiales={materiales} onLineasChange={setLineasMP} />
         ) : (
           <OCLineasPTForm productos={productos} onLineasChange={setLineasPT} />
         )}
       </div>
 
       {error && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-red-700 text-sm">
-          {error}
+        <div className="bg-red-50 border border-red-100 rounded-2xl p-6 text-red-600 text-[11px] font-black uppercase text-center tracking-widest">
+          ERROR OPERATIVO: {error}
         </div>
       )}
 
-      <div className="flex justify-end">
+      {/* STICKY FOOTER SUBMIT */}
+      <div className="sticky bottom-4 left-0 right-0 z-40 bg-white/80 backdrop-blur-md rounded-[40px] border border-slate-100 shadow-2xl p-6 flex items-center justify-between">
+        <div className="flex items-center gap-8">
+           <div>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Inversión Final</p>
+              <p className="text-3xl font-black text-slate-900 tracking-tighter tabular-nums">${totalPrecio.toLocaleString('es-CO')}</p>
+           </div>
+           <div className="h-10 w-px bg-slate-100" />
+           <div>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Volumen</p>
+              <p className="text-lg font-black text-slate-900 tracking-tight tabular-nums">{totalUds.toLocaleString('es-CO')} {tipo === 'materia_prima' ? 'UNIDADES' : 'PRENDAS'}</p>
+           </div>
+        </div>
         <button
           type="submit"
           disabled={pending}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-neu-base shadow-neu text-primary-700 font-bold text-sm transition-all active:shadow-neu-inset disabled:opacity-60 hover:shadow-neu-lg"
+          className="px-10 py-5 rounded-2xl bg-slate-900 text-white font-black text-[11px] uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-40"
         >
-          {pending && <Loader2 className="w-4 h-4 animate-spin" />}
-          Crear OC
+          {pending ? 'Procesando...' : 'Confirmar Orden'}
         </button>
       </div>
     </form>
