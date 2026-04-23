@@ -367,6 +367,208 @@ export async function getDespachosList(filtros?: {
 }
 
 /**
+ * Obtiene las OPs que tienen producto terminado liquidado pero sin ubicación (Bin)
+ */
+export async function getColaReciboProduccion() {
+  const supabase = db(await createClient())
+  
+  // 1. Buscar en Kardex entradas de confección/producción sin bin
+  const { data, error } = await supabase
+    .from('kardex')
+    .select(`
+      id,
+      documento_tipo,
+      documento_id,
+      producto_id,
+      talla,
+      cantidad,
+      fecha_movimiento,
+      productos ( referencia, nombre, color )
+    `)
+    .in('documento_tipo', ['op', 'entrega'])
+    .is('bin_id', null)
+    .gt('cantidad', 0)
+
+  if (error) {
+    console.error('getColaReciboProduccion error:', error)
+    return []
+  }
+
+  if (!data || data.length === 0) return []
+
+  // Agrupar por OP para la visualización de la cola
+  const opIds = [...new Set(data.map((d: any) => d.documento_id))]
+  const { data: ops } = await supabase
+    .from('ordenes_produccion')
+    .select('id, codigo, ov_id, ordenes_venta(codigo, terceros!cliente_id(nombre))')
+    .in('id', opIds)
+
+  const opsMap = new Map(ops?.map((o: any) => [o.id, o]))
+
+  const grouped = data.reduce((acc: any[], item: any) => {
+    const op = opsMap.get(item.documento_id)
+    const opKey = item.documento_id
+    
+    let opGroup = acc.find(g => g.op_id === opKey)
+    if (!opGroup) {
+      opGroup = {
+        op_id: opKey,
+        op_codigo: op?.codigo || 'OP-Desconocida',
+        ov_codigo: op?.ordenes_venta?.codigo || 'Stock',
+        cliente: op?.ordenes_venta?.terceros?.nombre || 'Interno',
+        items: []
+      }
+      acc.push(opGroup)
+    }
+
+    opGroup.items.push({
+      kardex_id: item.id,
+      producto_id: item.producto_id,
+      referencia: item.productos?.referencia,
+      nombre: item.productos?.nombre,
+      color: item.productos?.color,
+      talla: item.talla,
+      cantidad: item.cantidad
+    })
+
+    return acc
+  }, [])
+
+  return grouped
+}
+
+/**
+ * Recibe producto de producción asignando bines a los registros de Kardex
+ */
+export async function asignarBinesLote(assignments: { kardex_id: string, bin_id: string }[]) {
+  const supabase = db(await createClient())
+  
+  if (!assignments || assignments.length === 0) {
+    return { error: 'No hay items válidos seleccionados para recibir' }
+  }
+
+  // Realizar las actualizaciones una por una y verificar impacto
+  let updatedCount = 0
+  const errors: string[] = []
+
+  for (const a of assignments) {
+    const { error, count } = await supabase
+      .from('kardex')
+      .update({ bin_id: a.bin_id })
+      .eq('id', a.kardex_id)
+      .select('id', { count: 'exact' })
+
+    if (error) {
+      errors.push(`Error en item ${a.kardex_id}: ${error.message}`)
+    } else if (count === 0) {
+      errors.push(`No se encontró el registro de Kardex con ID ${a.kardex_id}`)
+    } else {
+      updatedCount++
+    }
+  }
+
+  if (errors.length > 0) {
+    return { error: `Errores en la asignación: ${errors.join(', ')}` }
+  }
+
+  if (updatedCount === 0) {
+    return { error: 'No se actualizó ningún registro de inventario.' }
+  }
+
+  // Revalidación global para asegurar que el WMS y Despachos se sincronicen
+  revalidatePath('/', 'layout')
+  
+  return { data: true }
+}
+
+/**
+ * Obtiene las OVs que tienen stock listo en Bines para ser despachadas
+ */
+export async function getColaAlistamientoVentas() {
+  const supabase = db(await createClient())
+
+  // 1. Obtener todas las OVs activas (no entregadas/canceladas/completadas)
+  const { data: ovs, error: ovError } = await supabase
+    .from('ordenes_venta')
+    .select(`
+      id,
+      codigo,
+      fecha_pedido,
+      terceros!cliente_id ( nombre ),
+      ov_detalle ( producto_id, talla, cantidad )
+    `)
+    .not('estado', 'in', '("entregada","cancelada","completada")')
+
+  if (ovError) {
+    console.error('getColaAlistamientoVentas ovError:', ovError)
+    return []
+  }
+
+  // 2. Obtener el stock total por SKU en bines
+  const { data: stockBines } = await supabase
+    .from('kardex')
+    .select('producto_id, talla, cantidad')
+    .not('bin_id', 'is', null)
+  
+  const stockMap = new Map<string, number>()
+  stockBines?.forEach((s: any) => {
+    const key = `${s.producto_id}-${s.talla}`
+    stockMap.set(key, (stockMap.get(key) || 0) + s.cantidad)
+  })
+
+  // 3. Filtrar OVs que tienen al menos algo listo
+  const result = (ovs || []).map((ov: any) => {
+    const itemsListos = ov.ov_detalle.map((d: any) => {
+      const key = `${d.producto_id}-${d.talla}`
+      const disponible = stockMap.get(key) || 0
+      return {
+        ...d,
+        disponible: Math.min(disponible, d.cantidad)
+      }
+    }).filter((i: any) => i.disponible > 0)
+
+    if (itemsListos.length === 0) return null
+
+    return {
+      id: ov.id,
+      codigo: ov.codigo,
+      cliente: ov.terceros?.nombre,
+      fecha: ov.fecha_pedido,
+      total_items_ov: ov.ov_detalle.length,
+      items_listos: itemsListos.length,
+      items: itemsListos
+    }
+  }).filter(Boolean)
+
+  return result
+}
+
+/**
+ * Obtiene bines disponibles para recibir producto (en bodega principal)
+ */
+export async function getBinesDisponiblesRecibo() {
+  const supabase = db(await createClient())
+
+  const { data: bodega } = await supabase
+    .from('bodegas')
+    .select('id')
+    .or('tipo.eq.principal,nombre.ilike.%asimetrico central%')
+    .limit(1)
+    .maybeSingle() as { data: { id: string } | null }
+
+  if (!bodega) return []
+
+  const { data: bines } = await supabase
+    .from('bines')
+    .select('id, codigo, estado')
+    .eq('bodega_id', bodega.id)
+    .eq('estado', 'en_bodega')
+    .order('codigo')
+
+  return bines || []
+}
+
+/**
  * Actualiza estado de un despacho desde el dashboard global (sin contexto de OV)
  */
 export async function updateEstadoDespachoGlobal(id: string, estado: EstadoDespacho) {
@@ -378,5 +580,74 @@ export async function updateEstadoDespachoGlobal(id: string, estado: EstadoDespa
 
   if (error) return { error: error.message }
   revalidatePath('/despachos')
+  return { data: true }
+}
+
+/**
+ * Recibo rápido: Crea un bin y le asigna TODO lo pendiente de una OP/Entrega
+ * No depende de lo que mande el frontend para evitar bines vacíos por serialización
+ */
+export async function reciboRapidoOP(opId: string, binCodigo: string) {
+  const supabase = db(await createClient())
+  
+  // 1. Buscar bodega principal
+  const { data: bodega } = await supabase
+    .from('bodegas')
+    .select('id')
+    .or('tipo.eq.principal,nombre.ilike.%asimetrico central%')
+    .limit(1)
+    .maybeSingle() as { data: { id: string } | null }
+
+  if (!bodega) return { error: 'Bodega principal no encontrada' }
+
+  // 2. Encontrar una posición
+  const { data: pos } = await supabase
+    .from('bodega_posiciones')
+    .select('id')
+    .eq('bodega_id', bodega.id)
+    .limit(1)
+    .maybeSingle() as { data: { id: string } | null }
+
+  // 3. Crear o verificar el BIN
+  let binId: string
+  const { data: existingBin } = await supabase
+    .from('bines')
+    .select('id')
+    .eq('codigo', binCodigo)
+    .maybeSingle() as { data: { id: string } | null }
+
+  if (existingBin) {
+    binId = existingBin.id
+  } else {
+    const { data: newBin, error: binError } = await supabase
+      .from('bines')
+      .insert({
+        codigo: binCodigo,
+        tipo: 'interno',
+        bodega_id: bodega.id,
+        posicion_id: pos?.id || null,
+        estado: 'en_bodega'
+      })
+      .select('id')
+      .single() as { data: { id: string } | null, error: any }
+    
+    if (binError || !newBin) return { error: 'Error creando bin automático' }
+    binId = newBin.id
+  }
+
+  // 4. Actualizar KARDEX usando directamente el documento_id (opId)
+  // Esto es mucho más seguro que confiar en IDs enviados desde el frontend
+  const { error: updateError, count } = await supabase
+    .from('kardex')
+    .update({ bin_id: binId })
+    .eq('documento_id', opId)
+    .gt('cantidad', 0)
+    .is('bin_id', null)
+    .select('id', { count: 'exact' })
+
+  if (updateError) return { error: updateError.message }
+  if (!count || count === 0) return { error: 'No se encontraron ítems pendientes para esta operación' }
+
+  revalidatePath('/', 'layout')
   return { data: true }
 }

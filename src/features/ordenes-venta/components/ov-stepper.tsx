@@ -98,7 +98,7 @@ export function OVStepper({ milestones, currentStatus }: Props) {
                      {step.subStates.map((ss, sidx) => (
                        <div key={sidx} className="flex items-center justify-between gap-2 leading-none">
                          <span className="text-[7px] font-bold text-slate-700">{ss.estado}</span>
-                         <span className="text-[6px] font-medium text-slate-400">{new Date(ss.timestamp).toLocaleDateString()}</span>
+                         <span className="text-[6px] font-medium text-slate-400">{formatDate(ss.timestamp)}</span>
                        </div>
                      ))}
                    </div>

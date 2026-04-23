@@ -116,18 +116,22 @@ export async function getContenidoBin(binId: string): Promise<BinContenido | nul
     .from('kardex')
     .select(`
       producto_id,
+      material_id,
       talla,
       cantidad,
-      productos (referencia, nombre, color)
+      productos (referencia, nombre, color),
+      materiales (codigo, nombre, unidad)
     `)
     .eq('bin_id', binId) as { data: any[] | null }
 
-  // 3. Agrupar items por Producto + Talla (Kardex tiene movimientos individuales)
+  // 3. Agrupar items por Producto/Material + Talla
   const inventoryMap = new Map<string, any>()
   
   ;(kardexItems ?? []).forEach(item => {
+    const isMaterial = !!item.material_id
+    const entityId = item.material_id || item.producto_id
     const cleanTalla = (!item.talla || item.talla === '...' || item.talla === '') ? 'ÚNICA' : item.talla
-    const key = `${item.producto_id}-${cleanTalla}`
+    const key = `${entityId}-${cleanTalla}`
     
     if (inventoryMap.has(key)) {
       const existing = inventoryMap.get(key)
@@ -135,8 +139,9 @@ export async function getContenidoBin(binId: string): Promise<BinContenido | nul
     } else {
       inventoryMap.set(key, {
         producto_id: item.producto_id,
-        referencia: item.productos?.referencia || 'N/A',
-        nombre: item.productos?.nombre || 'Producto Desconocido',
+        material_id: item.material_id,
+        referencia: isMaterial ? item.materiales?.codigo : (item.productos?.referencia || 'N/A'),
+        nombre: isMaterial ? item.materiales?.nombre : (item.productos?.nombre || 'Producto Desconocido'),
         color: item.productos?.color || null,
         talla: cleanTalla,
         cantidad: Number(item.cantidad)

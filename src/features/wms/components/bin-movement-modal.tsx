@@ -41,11 +41,26 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
     setLoading(true)
     setError(null)
     try {
-      const data = await getOCItemsGrid(activeOC.id)
+      let data = []
+      
+      if (activeOC.tipo === 'PROD') {
+        // Para OP/Talleres, los items ya vienen en la metadata agrupados
+        data = (activeOC.metadata?.items || []).map((i: any) => ({
+          id: i.kardex_id,
+          label: i.nombre,
+          sublabel: `${i.talla} — ${i.referencia}`,
+          count: i.cantidad,
+          price: 0, // En producción no manejamos precio de compra aquí
+          icon: 'Shirt',
+          metadata: { ...i }
+        }))
+      } else {
+        data = await getOCItemsGrid(activeOC.id)
+      }
       
       // DESGLOSE DE GRUPOS: Si un item es un grupo, lo expandimos a sus hijos (tallas)
       const flattenedItems: any[] = []
-      data.forEach(item => {
+      data.forEach((item: any) => {
         if (item.metadata?.isGroup && item.metadata?.children) {
           flattenedItems.push(...item.metadata.children)
         } else {
@@ -62,7 +77,7 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
       })
       setQuantities(initialQtys)
     } catch (err: any) {
-      setError('Error al cargar items de la OC')
+      setError(`Error al cargar items de la ${activeOC.tipo === 'PROD' ? 'OP' : 'OC'}`)
     } finally {
       setLoading(false)
     }
@@ -78,6 +93,8 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
         .map(([itemId, qty]) => {
           const item = items.find(i => i.id === itemId)
           return {
+            id: itemId,
+            kardex_id: itemId,
             producto_id: item?.metadata?.producto_id || undefined,
             material_id: item?.metadata?.material_id || undefined,
             talla: item?.metadata?.talla || '...',
@@ -87,6 +104,12 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
             lote_proveedor: loteProveedor || undefined
           }
         })
+
+      if (!loteProveedor || loteProveedor.trim() === '') {
+        setError('El Lote Físico del Proveedor es obligatorio para la trazabilidad')
+        setProcessing(false)
+        return
+      }
 
       if (selectedItems.length === 0) {
         setError('Debes ingresar al menos una unidad')
@@ -101,7 +124,12 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
         targetId: targetBin.id,
         bodegaId: targetBin.bodega_id,
         cantidad: 0, // Ignorado porque usamos items array
-        metadata: { label: items.find(i => quantities[i.id] > 0)?.label || 'CAJAS' },
+        metadata: { 
+          label: items.find(i => quantities[i.id] > 0)?.label || 'CAJAS',
+          tipo: activeOC.tipo,
+          codigo: activeOC.codigo,
+          cliente: activeOC.metadata?.cliente || 'STOCK'
+        },
         items: selectedItems as any
       })
 
@@ -131,7 +159,9 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
               <Package className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-slate-800 tracking-tight">Confirmar Recepción OC</h2>
+              <h2 className="text-xl font-black text-slate-800 tracking-tight">
+                {activeOC?.tipo === 'PROD' ? 'Confirmar Recepción Producción' : 'Confirmar Recepción OC'}
+              </h2>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[10px] font-black text-primary-600 uppercase tracking-widest">{activeOC?.codigo}</span>
                 <ArrowRight className="w-3 h-3 text-slate-400" />
@@ -149,7 +179,7 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
           {loading ? (
             <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-3">
               <Loader2 className="w-10 h-10 animate-spin text-primary-500" />
-              <p className="text-[11px] font-black uppercase tracking-widest">Analizando contenido de OC...</p>
+              <p className="text-[11px] font-black uppercase tracking-widest">Analizando contenido de {activeOC?.tipo === 'PROD' ? 'OP' : 'OC'}...</p>
             </div>
           ) : error ? (
             <div className="p-6 bg-red-50 border border-red-100 rounded-3xl flex items-center gap-4 text-red-600">
@@ -159,7 +189,9 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
           ) : (
             <div className="space-y-6">
               <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col gap-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Lote Físico del Proveedor (Opcional)</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1">
+                  Lote Físico del Proveedor <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   value={loteProveedor}
@@ -231,19 +263,23 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
               </span>
             </div>
             
-            <div className="flex flex-col pl-8 border-l border-slate-200">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Valor Factura (Esperado)</span>
-              <span className="text-lg font-black text-slate-800">
-                ${items.reduce((acc, item) => acc + ((item.price || 0) * (item.count || 0)), 0).toLocaleString()}
-              </span>
-            </div>
-            
-            <div className="flex flex-col pl-8 border-l border-slate-200">
-              <span className="text-[9px] font-black text-primary-500 uppercase tracking-widest">Valor Recepción Actual</span>
-              <span className="text-lg font-black text-primary-700">
-                ${Object.entries(quantities).reduce((acc, [id, qty]) => acc + (qty * (items.find(i => i.id === id)?.price || 0)), 0).toLocaleString()}
-              </span>
-            </div>
+            {activeOC?.tipo !== 'PROD' && (
+              <>
+                <div className="flex flex-col pl-8 border-l border-slate-200">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Valor Factura (Esperado)</span>
+                  <span className="text-lg font-black text-slate-800">
+                    ${items.reduce((acc, item) => acc + ((item.price || 0) * (item.count || 0)), 0).toLocaleString()}
+                  </span>
+                </div>
+                
+                <div className="flex flex-col pl-8 border-l border-slate-200">
+                  <span className="text-[9px] font-black text-primary-500 uppercase tracking-widest">Valor Recepción Actual</span>
+                  <span className="text-lg font-black text-primary-700">
+                    ${Object.entries(quantities).reduce((acc, [id, qty]) => acc + (qty * (items.find(i => i.id === id)?.price || 0)), 0).toLocaleString()}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
           
           <div className="flex gap-3">
@@ -257,7 +293,7 @@ export function BinMovementModal({ isOpen, onClose, activeOC, targetBin, onSucce
             <button 
               onClick={handleProcess}
               disabled={processing || loading || items.length === 0}
-              className="px-10 py-3 bg-primary-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary-900/20 hover:bg-primary-700 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50"
+              className="px-6 py-3 bg-primary-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary-900/20 hover:bg-primary-700 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 min-w-[160px] whitespace-nowrap"
             >
               {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
               Procesar Ingreso

@@ -25,7 +25,8 @@ import {
   Eye,
   Grid3X3,
   List,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Zap
 } from 'lucide-react'
 import { 
   getCenterPendingPurchases, 
@@ -77,6 +78,7 @@ export function BodegaLocationsMaster() {
   const [modalTargetBin, setModalTargetBin] = useState<any>(null)
   
   const [loading, setLoading] = useState(false)
+  const [confirmReciboRapido, setConfirmReciboRapido] = useState<any | null>(null)
   const [showForms, setShowForms] = useState({ bodega: false, zona: false, posicion: false })
   const [prodSearch, setProdSearch] = useState('')
   const [newNames, setNewNames] = useState({ 
@@ -445,25 +447,46 @@ export function BodegaLocationsMaster() {
           <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-1">
             {pendientes.map(item => {
               const isOC = item.tipo === 'OC'
-              const bgActive = isOC ? 'bg-amber-50 border-amber-400 shadow-md ring-2 ring-amber-100' : 'bg-blue-50 border-blue-400 shadow-md ring-2 ring-blue-100'
-              const codeColor = isOC ? 'text-amber-600' : 'text-blue-600'
+              const isPROD = item.tipo === 'PROD'
+              
+              const bgActive = isOC 
+                ? 'bg-amber-50 border-amber-400 shadow-md ring-2 ring-amber-100' 
+                : isPROD 
+                  ? 'bg-purple-50 border-purple-400 shadow-md ring-2 ring-purple-100'
+                  : 'bg-blue-50 border-blue-400 shadow-md ring-2 ring-blue-100'
+              
+              const codeColor = isOC ? 'text-amber-600' : isPROD ? 'text-purple-600' : 'text-blue-600'
               
               return (
-                <button 
-                  key={item.id}
-                  onClick={() => setActiveOC(activeOC?.id === item.id ? null : item)}
-                  className={`w-full p-3 rounded-[20px] text-left border transition-all flex flex-col gap-1 ${activeOC?.id === item.id ? bgActive : 'bg-white border-slate-100 hover:border-slate-300 hover:shadow-sm'}`}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <p className={`text-[10px] font-black ${activeOC?.id === item.id ? codeColor : 'text-slate-800'}`}>{item.codigo}</p>
-                    <span className={`text-[7px] font-black px-1.5 py-0.5 rounded-full ${isOC ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-                      {isOC ? 'COMPRA' : 'TRASLADO'}
-                    </span>
-                  </div>
-                  <p className="text-[8px] font-bold text-slate-400 mt-0.5 truncate uppercase">
-                    {item.sublabel_formatted?.split('|')[0] || item.sublabel_formatted}
-                  </p>
-                </button>
+                <div key={item.id} className="relative group">
+                  <button 
+                    onClick={() => setActiveOC(activeOC?.id === item.id ? null : item)}
+                    className={`w-full p-3 rounded-[20px] text-left border transition-all flex flex-col gap-1 ${activeOC?.id === item.id ? bgActive : 'bg-white border-slate-100 hover:border-slate-300 hover:shadow-sm'}`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <p className={`text-[10px] font-black ${activeOC?.id === item.id ? codeColor : 'text-slate-800'}`}>{item.codigo}</p>
+                      <span className={`text-[7px] font-black px-1.5 py-0.5 rounded-full ${isOC ? 'bg-amber-100 text-amber-700' : isPROD ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                        {isOC ? 'COMPRA' : isPROD ? 'TALLER/FAB' : 'TRASLADO'}
+                      </span>
+                    </div>
+                    <p className="text-[8px] font-bold text-slate-400 mt-0.5 truncate uppercase">
+                      {item.sublabel_formatted?.split('|')[0] || item.sublabel_formatted}
+                    </p>
+                  </button>
+                  
+                  {isPROD && (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmReciboRapido(item);
+                      }}
+                      className="absolute top-2 right-2 p-1.5 bg-purple-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:scale-110 active:scale-95"
+                      title="Recibo Rápido"
+                    >
+                      <Zap className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
               )
             })}
             {pendientes.length === 0 && <div className="h-20 flex items-center justify-center opacity-20"><Search className="w-8 h-8" /></div>}
@@ -924,6 +947,44 @@ export function BodegaLocationsMaster() {
         description="¿Estás seguro de que deseas eliminar este bin? Esta acción no se puede deshacer y fallará si el bin tiene movimientos históricos."
         confirmText="Eliminar permanentemente"
         variant="danger"
+      />
+
+      <ConfirmActionModal 
+        isOpen={!!confirmReciboRapido}
+        onClose={() => setConfirmReciboRapido(null)}
+        onConfirm={async () => {
+          setIsDeleting(true);
+          try {
+            const { reciboRapidoOP } = await import('@/features/ordenes-venta/services/despachos-actions');
+            const item = confirmReciboRapido;
+            
+            // Usamos la misma lógica de nomenclatura que center-actions si es posible
+            const opCodigo = item.codigo || 'OP';
+            const cliente = item.metadata.cliente || 'INTERNO';
+            const cleanCliente = cliente.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 5);
+            const hash = Math.random().toString(36).substring(2, 6).toUpperCase();
+            const descriptiveCode = `${opCodigo}-${cleanCliente}-${hash}`.toUpperCase();
+
+            const res = await reciboRapidoOP(item.id, descriptiveCode);
+            
+            if (res.error) {
+              setFeedback({ title: 'Error', description: res.error, variant: 'danger' });
+            } else {
+              setFeedback({ title: 'Éxito', description: `Se ha recibido ${item.codigo} en el contenedor ${descriptiveCode}`, variant: 'info' });
+              cargarPendientes();
+            }
+          } catch (err: any) {
+            setFeedback({ title: 'Error', description: err.message, variant: 'danger' });
+          } finally {
+            setIsDeleting(false);
+            setConfirmReciboRapido(null);
+          }
+        }}
+        isLoading={isDeleting}
+        title="Recibo Rápido de Producción"
+        description={`¿Deseas realizar el ingreso automático de ${confirmReciboRapido?.codigo}? Se creará un nuevo contenedor en la bodega principal y se asignarán todos los ítems terminados.`}
+        confirmText="Confirmar Recibo"
+        variant="info"
       />
 
       {/* MODAL FEEDBACK / ALERTAS */}

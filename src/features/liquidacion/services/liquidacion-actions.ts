@@ -619,8 +619,8 @@ export async function aprobarLiquidacion(opId: string, bodegaId: string): Promis
           costo_total: d.cantidad_entregada * costoUnit,
           fecha_movimiento: now,
           registrado_por: user.id,
-          bin_id: binId,
-          notas: `Entrada PT - Entrega #${entrega.numero_entrega}${entrega.bin_codigo ? ` (BIN: ${entrega.bin_codigo})` : ''}`,
+          bin_id: null, // LIMBO LOGÍSTICO PARA RECIBO POST-LIQUIDACIÓN
+          notas: `Entrada PT - Entrega #${entrega.numero_entrega}${entrega.bin_codigo ? ` (ORIGEN: ${entrega.bin_codigo})` : ''}`,
         }
       })
 

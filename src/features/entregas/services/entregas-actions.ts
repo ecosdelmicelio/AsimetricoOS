@@ -75,10 +75,6 @@ export async function createEntrega(input: CreateEntregaInput & { reporte_corte_
     prefix = clientName.substring(0, 6) || 'ASI'
   }
 
-  // Generar BIN único para esta entrega
-  const fecha = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-  const bin_codigo = `${prefix}-E${numero_entrega}-${fecha}`
-
   // 1. Crear cabecera
   const { data: entrega, error: entError } = await supabase
     .from('entregas')
@@ -89,7 +85,7 @@ export async function createEntrega(input: CreateEntregaInput & { reporte_corte_
       fecha_entrega: input.fecha_entrega,
       notas: input.notas ?? null,
       estado: 'recibida',
-      bin_codigo,
+      bin_codigo: null,
       cantidad_cortada,
       cantidad_entregada,
       cantidad_faltante,
@@ -217,51 +213,33 @@ export async function resolverFRI(
         .maybeSingle() as { data: { id: string } | null }
 
       if (bodega) {
-        // 3.3. Crear registro real en tabla 'bines'
-        const { data: newBin, error: binError } = await supabase
-          .from('bines')
-          .insert({
-            codigo: entregaData.bin_codigo,
-            tipo: 'interno',
-            bodega_id: bodega.id,
-            estado: 'en_bodega',
-          })
+        const { data: tipoMov } = await supabase
+          .from('kardex_tipos_movimiento')
           .select('id')
-          .single() as { data: { id: string } | null; error: any }
+          .eq('codigo', 'ENTRADA_PRODUCCION')
+          .maybeSingle() as { data: { id: string } | null }
 
-        if (binError || !newBin) {
-          console.error('Error creando bin:', binError)
-        } else {
-          // 3.4. Buscar tipo de movimiento ENTRADA_PRODUCCION
-          const { data: tipoMov } = await supabase
-            .from('kardex_tipos_movimiento')
-            .select('id')
-            .eq('codigo', 'ENTRADA_PRODUCCION')
-            .maybeSingle() as { data: { id: string } | null }
+        if (tipoMov) {
+          const kardexInserts = entregaData.entrega_detalle.map((l: any) => ({
+            producto_id: l.producto_id,
+            talla: l.talla,
+            bodega_id: bodega.id,
+            tipo_movimiento_id: tipoMov.id,
+            documento_tipo: 'entrega',
+            documento_id: entregaId,
+            ov_id: entregaData.ordenes_produccion?.ov_id,
+            bin_id: null,
+            cantidad: l.cantidad_entregada,
+            unidad: 'unidades',
+            costo_unitario: 0,
+            costo_total: 0,
+            fecha_movimiento: now,
+            registrado_por: user.id,
+            notas: `Entregado por Taller - Pendiente Recibo`,
+          }))
 
-          if (tipoMov) {
-            // 3.5. Insertar movimientos en Kardex por cada talla/producto vinculados al BIN
-            const kardexInserts = entregaData.entrega_detalle.map((l: any) => ({
-              producto_id: l.producto_id,
-              talla: l.talla,
-              bodega_id: bodega.id,
-              tipo_movimiento_id: tipoMov.id,
-              documento_tipo: 'entrega',
-              documento_id: entregaId,
-              ov_id: entregaData.ordenes_produccion?.ov_id,
-              bin_id: newBin.id, // VINCULACIÓN CRÍTICA
-              cantidad: l.cantidad_entregada,
-              unidad: 'unidades',
-              costo_unitario: 0,
-              costo_total: 0,
-              fecha_movimiento: now,
-              registrado_por: user.id,
-              notas: `Entregado por Taller - Bin: ${entregaData.bin_codigo}`,
-            }))
-
-            const { error: kError } = await supabase.from('kardex').insert(kardexInserts)
-            if (kError) console.error('Error en Kardex:', kError)
-          }
+          const { error: kError } = await supabase.from('kardex').insert(kardexInserts)
+          if (kError) console.error('Error en Kardex:', kError)
         }
       }
     }

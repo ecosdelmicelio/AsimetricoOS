@@ -39,9 +39,10 @@ function db(supabase: unknown): any {
  * Obtiene operaciones pendientes de recibir (OCs y Traslados entrantes).
  */
 export async function getCenterPendingOperations(bodegaId: string): Promise<any[]> {
-  const [purchases, transfers] = await Promise.all([
+  const [purchases, transfers, production] = await Promise.all([
     getOrdenesCompra(),
-    import('@/features/wms/services/traslados-actions').then(m => m.getTraslados(bodegaId))
+    import('@/features/wms/services/traslados-actions').then(m => m.getTraslados(bodegaId)),
+    import('@/features/ordenes-venta/services/despachos-actions').then(m => m.getColaReciboProduccion())
   ])
   
   // 1. OCs Pendientes
@@ -68,7 +69,17 @@ export async function getCenterPendingOperations(bodegaId: string): Promise<any[
       metadata: tr
     }))
 
-  return [...pendingOCs, ...pendingTRs]
+  // 3. Producción / Talleres (NUEVO)
+  const pendingPROD = production.map(op => ({
+    id: op.op_id,
+    tipo: 'PROD',
+    codigo: op.op_codigo,
+    label_formatted: op.op_codigo,
+    sublabel_formatted: `Producción: ${op.cliente} — OV: ${op.ov_codigo}`,
+    metadata: op
+  }))
+
+  return [...pendingOCs, ...pendingTRs, ...pendingPROD]
 }
 
 /**
@@ -410,13 +421,16 @@ export async function processUnifiedMovement(input: {
   bodegaId?: string
   metadata?: any
   items?: Array<{
+    id?: string
+    kardex_id?: string
     producto_id: string
     talla: string
     cantidad: number
     unidad: string
   }>
 }) {
-  const { mode, sourceId, targetId, itemId, cantidad, precioUnitario, notas, bodegaId, metadata, items } = input
+  const { mode, sourceId, targetId, itemId, cantidad, precioUnitario, notas, bodegaId, metadata, items: rawItems } = input
+  const items = rawItems || []
 
   // Handle Virtual "New Bin" creation if requested
   let finalTargetId = targetId
@@ -426,22 +440,31 @@ export async function processUnifiedMovement(input: {
     
     let descriptiveCode = undefined
 
-    // CEREBRO DE NOMENCLATURA: Ingresos por OC
+    // CEREBRO DE NOMENCLATURA: Ingresos por OC o OP
     if (mode === 'INGRESAR') {
       try {
-        const { getOrdenCompraById } = await import('@/features/compras/services/compras-actions')
-        const oc = await getOrdenCompraById(sourceId)
-        
-        const ocData = (oc as any)?.data
-        const ocNum = ocData?.codigo || (sourceId.length > 8 ? sourceId.substring(0, 8) : sourceId)
-        const tipo = metadata?.producto_id ? 'COM' : 'FAB'
-        
-        // Limpiamos el nombre del producto para el código (opcional)
-        const rawName = metadata?.label || 'CAJA'
-        const cleanName = rawName.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '').substring(0, 4)
-        const hash = Math.random().toString(36).substring(2, 6).toUpperCase()
-        
-        descriptiveCode = `${ocNum}-${cleanName}-${hash}`.toUpperCase()
+        if (metadata?.tipo === 'PROD') {
+          // Nomenclatura para OPs (Producción / Talleres)
+          const opCodigo = metadata?.codigo || 'OP'
+          const cliente = metadata?.cliente || 'INTERNO'
+          const cleanCliente = cliente.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 5)
+          const hash = Math.random().toString(36).substring(2, 6).toUpperCase()
+          
+          descriptiveCode = `${opCodigo}-${cleanCliente}-${hash}`.toUpperCase()
+        } else {
+          // Nomenclatura para OCs (Compras)
+          const { getOrdenCompraById } = await import('@/features/compras/services/compras-actions')
+          const oc = await getOrdenCompraById(sourceId)
+          
+          const ocNum = oc?.codigo || (sourceId.length > 8 ? sourceId.substring(0, 8) : sourceId)
+          
+          // Limpiamos el nombre del producto para el código
+          const rawName = metadata?.label || 'CAJA'
+          const cleanName = rawName.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '').toUpperCase().substring(0, 4)
+          const hash = Math.random().toString(36).substring(2, 6).toUpperCase()
+          
+          descriptiveCode = `${ocNum}-${cleanName}-${hash}`.toUpperCase()
+        }
       } catch (err) {
         console.error('Error in naming cerebro:', err)
       }
@@ -458,6 +481,28 @@ export async function processUnifiedMovement(input: {
 
   switch (mode) {
     case 'INGRESAR': {
+      // Si es una OP (Producción/Taller), usamos asignarBinesLote
+      if (metadata?.tipo === 'PROD') {
+        const { asignarBinesLote } = await import('@/features/ordenes-venta/services/despachos-actions')
+        
+        const assignments = items
+          .filter((i: any) => (i.kardex_id || i.id) && (i.kardex_id !== 'undefined' && i.id !== 'undefined'))
+          .map((i: any) => ({
+            kardex_id: i.kardex_id || i.id,
+            bin_id: finalTargetId
+          }))
+        
+        console.log('Final Assignments for OP:', assignments)
+        
+        if (assignments.length === 0) return { error: 'No hay items válidos seleccionados para recibir' }
+        if (!finalTargetId || finalTargetId === 'undefined' || finalTargetId.includes('|')) {
+          return { error: 'ID de bin de destino inválido o no creado correctamente' }
+        }
+        
+        return await asignarBinesLote(assignments)
+      }
+
+      // Si es una OC (Compra), usamos crearRecepcionesOCConBins
       const { crearRecepcionesOCConBins } = await import('@/features/compras/services/compras-actions')
       
       let receiptItems = []

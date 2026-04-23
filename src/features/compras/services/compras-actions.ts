@@ -525,8 +525,8 @@ export async function crearRecepcionesOCConBins(
     const { data: recepciones_creadas, error } = await supabase
       .from('recepcion_oc')
       .insert(inserts)
-      .select('id, producto_id, talla, cantidad_recibida, precio_unitario, lote_interno, lote_proveedor') as {
-        data: Array<{ id: string; producto_id: string; talla: string; cantidad_recibida: number; precio_unitario: number, lote_interno?: string, lote_proveedor?: string }> | null
+      .select('id, producto_id, material_id, talla, cantidad_recibida, precio_unitario, lote_interno, lote_proveedor') as {
+        data: Array<{ id: string; producto_id: string | null; material_id: string | null; talla: string; cantidad_recibida: number; precio_unitario: number, lote_interno?: string, lote_proveedor?: string }> | null
         error: { message: string } | null
       }
 

@@ -1,16 +1,11 @@
 import Link from 'next/link'
-import { ArrowLeft, Package, Calendar, User, FileText, Factory, Globe, Clock, TrendingUp, DollarSign } from 'lucide-react'
-import { getOrdenVentaById, getHistorialOV, getOVProgressSummary, getOVMilestones } from '@/features/ordenes-venta/services/ov-actions'
-import { getOPsByOV } from '@/features/ordenes-produccion/services/op-actions'
-import { getDespachosByOV, getBinesDisponiblesParaOV } from '@/features/ordenes-venta/services/despachos-actions'
-import { getPagosPorDocumento } from '@/features/configuracion/services/pagos-actions'
+import { ArrowLeft, Package, User, Clock, TrendingUp, DollarSign } from 'lucide-react'
+import { getOrdenVentaById, getOVProgressSummary, getOVMilestones } from '@/features/ordenes-venta/services/ov-actions'
 import { OVStatusBadge } from './ov-status-badge'
 import { OVActions } from './ov-actions'
 import { OVProgressMatrix } from './ov-progress-matrix'
-import { OVFinancialPanel } from './ov-financial-panel'
-import { OVDespachos } from './ov-despachos'
 import { OVStepper } from './ov-stepper'
-import { formatDate, formatCurrency, cn } from '@/shared/lib/utils'
+import { formatDate, formatCurrency } from '@/shared/lib/utils'
 
 interface Props {
   id: string
@@ -31,20 +26,12 @@ export async function OVDetail({ id }: Props) {
   }
 
   const [
-    despachos,
-    bines,
     progress,
     milestones,
-    pagosRes
   ] = await Promise.all([
-    getDespachosByOV(ov.id),
-    getBinesDisponiblesParaOV(ov.id),
     getOVProgressSummary(ov.id),
     getOVMilestones(ov.id),
-    getPagosPorDocumento(ov.id)
   ])
-
-  const pagosData = pagosRes.data || []
 
   const cliente = ov.terceros
   const detalles = ov.ov_detalle ?? []
@@ -173,45 +160,6 @@ export async function OVDetail({ id }: Props) {
           </div>
 
         </div>
-      </div>
-
-      {/* 📊 LOGISTICS LOGS */}
-      <div className="grid grid-cols-1 gap-8">
-        
-        {/* Financial Action Area */}
-        <section className="space-y-6">
-          <div className="flex items-center gap-4 px-4">
-            <div className="w-2 h-8 bg-primary-500 rounded-full shadow-lg shadow-primary-200" />
-            <div>
-              <h2 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase">Terminal Financiera y Recaudos</h2>
-              <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">Control de Facturación y Gestión de Cartera</p>
-            </div>
-          </div>
-          <div className="rounded-[2.5rem] bg-white shadow-xl border border-slate-50 p-8 sm:p-10">
-            <OVFinancialPanel ov={ov} pagos={pagosData} />
-          </div>
-        </section>
-
-        {/* Dispatch Action Area */}
-        <section className="space-y-6">
-          <div className="flex items-center gap-4 px-4">
-            <div className="w-2 h-8 bg-emerald-500 rounded-full shadow-lg shadow-emerald-200" />
-            <div>
-              <h2 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase">Terminal de Despacho y Logística</h2>
-              <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">Identificación de Bines y Gestión de Salidas</p>
-            </div>
-          </div>
-          <div className="rounded-[2.5rem] bg-white shadow-xl border border-slate-50 p-8 sm:p-10">
-            <OVDespachos 
-              ovId={id} 
-              despachos={despachos} 
-              binesDisponibles={bines} 
-              detallesOV={detalles} 
-              estado={ov.estado}
-            />
-          </div>
-        </section>
-
       </div>
     </div>
   )

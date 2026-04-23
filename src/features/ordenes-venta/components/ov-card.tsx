@@ -110,31 +110,44 @@ export function OVCard({
           </p>
         </div>
 
-        {/* Ultra-Compact Metrics Matrix */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        {/* Triple Track Pipeline Matrix */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between text-[8px] font-black text-slate-400 uppercase tracking-tighter">
-              <span>Cump. Físico</span>
-              <span>{physicalPct}%</span>
+              <span>Fabricación</span>
+              <span className="text-amber-500">{pct(unidadesProducidas, totalUnidades)}%</span>
             </div>
-            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-500 rounded-full" style={{ width: `${physicalPct}%` }} />
+            <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-amber-400 rounded-full transition-all duration-500" style={{ width: `${pct(unidadesProducidas, totalUnidades)}%` }} />
             </div>
-            <div className="text-[9px] font-black text-slate-800 tracking-tighter">
-              {unidadesDespachadas} <span className="text-slate-300 font-bold">/</span> {totalUnidades} <span className="text-slate-400 text-[8px] uppercase">Und</span>
+            <div className="text-[9px] font-black text-slate-700 tracking-tighter truncate">
+              {unidadesProducidas} <span className="text-slate-300 font-bold">/</span> {totalUnidades}
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between text-[8px] font-black text-slate-400 uppercase tracking-tighter">
-              <span>Cump. Eco</span>
-              <span>{economicPct}%</span>
+              <span>Logística</span>
+              <span className="text-blue-500">{physicalPct}%</span>
             </div>
-            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${economicPct}%` }} />
+            <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-500 rounded-full transition-all duration-500" style={{ width: `${physicalPct}%` }} />
             </div>
-            <div className="text-[9px] font-black text-slate-800 tracking-tighter truncate">
-              {formatCurrency(valorDespachado)} <span className="text-slate-300 font-bold">/</span> {formatCurrency(totalValor)}
+            <div className="text-[9px] font-black text-slate-700 tracking-tighter truncate">
+              {unidadesDespachadas} <span className="text-slate-300 font-bold">/</span> {totalUnidades}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between text-[8px] font-black text-slate-400 uppercase tracking-tighter">
+              <span>Financiero</span>
+              <span className="text-emerald-500">{economicPct}%</span>
+            </div>
+            <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${economicPct}%` }} />
+            </div>
+            <div className="text-[9px] font-black text-slate-700 tracking-tighter truncate">
+              {formatCurrency(valorDespachado)}
             </div>
           </div>
         </div>
@@ -142,7 +155,7 @@ export function OVCard({
         {/* Stepper Footer */}
         <div className="pt-3 border-t border-slate-50 flex items-center justify-between">
            <OVStatusBadge estado={displayStatus} />
-           <div className="scale-75 origin-right">
+           <div className="scale-[0.7] origin-right">
               <OVMiniStepper currentStatus={displayStatus} daysSinceConfirm={daysSinceConfirm} />
            </div>
         </div>
