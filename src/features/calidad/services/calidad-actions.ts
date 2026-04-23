@@ -71,7 +71,7 @@ export async function getOPConInspeccion(op_id: string): Promise<{
         cantidad_asignada,
         producto_id,
         talla,
-        productos(nombre, referencia)
+        productos(nombre, referencia, color)
       )
     `)
     .eq('id', op_id)
@@ -124,13 +124,20 @@ export async function getOPConInspeccion(op_id: string): Promise<{
       cliente: op.ordenes_venta?.terceros?.nombre ?? '—',
       ov_codigo: op.ordenes_venta?.codigo ?? '—',
       total_unidades,
-      productos: op.op_detalle.map(d => ({
-        id: d.producto_id,
-        nombre: d.productos?.nombre ?? 'Producto',
-        referencia: d.productos?.referencia ?? 'Ref',
-        talla: d.talla,
-        cantidad: d.cantidad_asignada,
-      }))
+      productos: Object.values(op.op_detalle.reduce((acc, d) => {
+        if (!acc[d.producto_id]) {
+          acc[d.producto_id] = {
+            id: d.producto_id,
+            nombre: d.productos?.nombre ?? 'Producto',
+            referencia: d.productos?.referencia ?? 'Ref',
+            color: d.productos?.color ?? null,
+            talla: d.talla,
+            cantidad: 0
+          }
+        }
+        acc[d.producto_id].cantidad += d.cantidad_asignada
+        return acc
+      }, {} as Record<string, { id: string; nombre: string; referencia: string; color: string | null; talla: string; cantidad: number }>))
     },
     inspeccion: inspeccionActiva,
     historialInspecciones: todasInspecciones.filter(i => i.resultado !== 'pendiente'),

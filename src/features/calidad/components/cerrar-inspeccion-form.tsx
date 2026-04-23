@@ -1,17 +1,10 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useState, useTransition, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircle, XCircle, PackageSearch, Loader2, AlertTriangle, Plus, Trash2 } from 'lucide-react'
+import { CheckCircle, XCircle, PackageSearch, Loader2, AlertTriangle } from 'lucide-react'
 import { closeInspeccion } from '@/features/calidad/services/calidad-actions'
 import type { ResultadoInspeccion } from '@/features/calidad/types'
-
-interface SegundasEntry {
-  id: string // Temp ID for local state
-  producto_id: string
-  talla: string
-  cantidad: number
-}
 
 interface Props {
   inspeccion_id:       string
@@ -19,7 +12,7 @@ interface Props {
   estado_op:           string
   tieneDefectoCritico: boolean
   muestraSugerida:     number
-  productos: { id: string; nombre: string; referencia: string; talla: string; cantidad: number }[]
+  productos: { id: string; nombre: string; referencia: string; color: string | null; talla: string; cantidad: number }[]
 }
 
 export function CerrarInspeccionForm({
@@ -35,36 +28,59 @@ export function CerrarInspeccionForm({
   const [resultado, setResultado] = useState<ResultadoInspeccion | null>(
     tieneDefectoCritico ? 'rechazada' : null
   )
-  const [segundasEntries, setSegundasEntries] = useState<SegundasEntry[]>([])
+  // Matriz de segundas: { [productoId]: { [talla]: cantidad } }
+  const [segundasMatrix, setSegundasMatrix] = useState<Record<string, Record<string, number>>>({})
   const [error, setError] = useState<string | null>(null)
+
+  // Agrupar productos por referencia y color para la matriz
+  const productosAgrupados = useMemo(() => {
+    const grupos: Record<string, { key: string; nombre: string; referencia: string; color: string | null; items: { id: string; talla: string }[] }> = {}
+    
+    productos.forEach(p => {
+      const key = `${p.referencia}-${p.color || ''}`
+      if (!grupos[key]) {
+        grupos[key] = { key, nombre: p.nombre, referencia: p.referencia, color: p.color, items: [] }
+      }
+      grupos[key].items.push({ id: p.id, talla: p.talla })
+    })
+    
+    return Object.values(grupos)
+  }, [productos])
 
   // Sincronizar cuando un defecto crítico se agrega en tiempo real
   useEffect(() => {
     if (tieneDefectoCritico) setResultado('rechazada')
   }, [tieneDefectoCritico])
 
-  const addSegundasEntry = () => {
-    const firstProd = productos[0]
-    if (!firstProd) return
-    setSegundasEntries(prev => [
+  const updateMatrixValue = (productId: string, value: string) => {
+    const num = parseInt(value) || 0
+    setSegundasMatrix(prev => ({
       ...prev,
-      { id: Math.random().toString(36).substr(2, 9), producto_id: firstProd.id, talla: firstProd.talla, cantidad: 1 }
-    ])
-  }
-
-  const removeSegundasEntry = (id: string) => {
-    setSegundasEntries(prev => prev.filter(e => e.id !== id))
-  }
-
-  const updateSegundasEntry = (id: string, field: keyof SegundasEntry, value: any) => {
-    setSegundasEntries(prev => prev.map(e => e.id === id ? { ...e, [field]: value } : e))
+      [productId]: {
+        'default': Math.max(0, num) // Almacenamos por ID de producto (que es único por talla)
+      }
+    }))
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!resultado) return
-    if (resultado === 'segundas' && segundasEntries.length === 0) {
-      setError('Debes agregar al menos una prenda de segunda calidad')
+    
+    // Convertir matriz a detalle plano
+    const detail: { producto_id: string, talla: string, cantidad: number }[] = []
+    Object.entries(segundasMatrix).forEach(([pid, tallas]) => {
+      const cant = tallas['default'] || 0
+      if (cant > 0) {
+        // Encontrar la talla correspondiente a este ID
+        const prod = productos.find(p => p.id === pid)
+        if (prod) {
+          detail.push({ producto_id: pid, talla: prod.talla, cantidad: cant })
+        }
+      }
+    })
+
+    if (resultado === 'segundas' && detail.length === 0) {
+      setError('Debes ingresar al menos una cantidad de segunda calidad en la matriz')
       return
     }
 
@@ -75,11 +91,6 @@ export function CerrarInspeccionForm({
     formData.set('resultado', resultado)
     
     if (resultado === 'segundas') {
-      const detail = segundasEntries.map(({ producto_id, talla, cantidad }) => ({
-        producto_id,
-        talla,
-        cantidad
-      }))
       formData.set('segundas_detalle', JSON.stringify(detail))
     }
 
@@ -106,8 +117,8 @@ export function CerrarInspeccionForm({
       {tieneDefectoCritico && (
         <div className="flex items-start gap-3 rounded-2xl bg-rose-50 border border-rose-100 px-4 py-3">
           <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-          <p className="text-rose-700 text-[10px] font-black uppercase tracking-widest leading-tight">
-            DEFECTO CRÍTICO DETECTADO — EL RESULTADO SERÁ <span className="underline decoration-2 underline-offset-2">RECHAZADA</span> AUTOMÁTICAMENTE.
+          <p className="text-rose-700 text-[10px] font-black uppercase tracking-widest leading-tight text-left">
+            DEFECTO CRÍTICO DETECTADO — EL RESULTADO SERÁ <span className="underline decoration-2 underline-offset-2 text-rose-800">RECHAZADA</span> AUTOMÁTICAMENTE.
           </p>
         </div>
       )}
@@ -116,7 +127,6 @@ export function CerrarInspeccionForm({
       <div className="space-y-2">
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">DIAGNÓSTICO FINAL *</p>
         <div className="grid grid-cols-3 gap-3">
-          {/* Aceptada */}
           <button
             type="button"
             disabled={criticoBloquea}
@@ -131,7 +141,6 @@ export function CerrarInspeccionForm({
             <span className="text-[10px] font-black uppercase tracking-widest">ACEPTADA</span>
           </button>
 
-          {/* Rechazada */}
           <button
             type="button"
             onClick={() => setResultado('rechazada')}
@@ -145,7 +154,6 @@ export function CerrarInspeccionForm({
             <span className="text-[10px] font-black uppercase tracking-widest">RECHAZADA</span>
           </button>
 
-          {/* Segundas */}
           <button
             type="button"
             disabled={criticoBloquea}
@@ -162,70 +170,47 @@ export function CerrarInspeccionForm({
         </div>
       </div>
 
-      {/* Registro Compacto de Segundas */}
+      {/* Matriz Ultracompacta de Segundas */}
       {resultado === 'segundas' && (
         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="flex items-center justify-between px-1">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Desglose de Segundas *</label>
-            <button
-              type="button"
-              onClick={addSegundasEntry}
-              className="text-[9px] font-black bg-slate-900 text-white px-2 py-1 rounded-lg uppercase tracking-widest hover:bg-primary-600 transition-all flex items-center gap-1"
-            >
-              <Plus className="w-3 h-3" /> Agregar
-            </button>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Matriz de Unidades Retenidas *</label>
           </div>
 
-          <div className="space-y-2 max-h-[160px] overflow-y-auto no-scrollbar pr-1">
-            {segundasEntries.map(entry => (
-              <div key={entry.id} className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100 shadow-sm animate-in zoom-in-95 duration-200">
-                <div className="flex-1 min-w-0">
-                  <select
-                    value={`${entry.producto_id}|${entry.talla}`}
-                    onChange={e => {
-                      const [pid, talla] = e.target.value.split('|')
-                      updateSegundasEntry(entry.id, 'producto_id', pid)
-                      updateSegundasEntry(entry.id, 'talla', talla)
-                    }}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] font-black uppercase tracking-tight text-slate-900 outline-none focus:border-amber-400"
-                  >
-                    {productos.map(p => (
-                      <option key={`${p.id}-${p.talla}`} value={`${p.id}|${p.talla}`}>
-                        {p.referencia} - {p.talla}
-                      </option>
+          <div className="space-y-3 max-h-[400px] overflow-y-auto no-scrollbar pr-1">
+            {productosAgrupados.map(prod => (
+              <div key={prod.key} className="rounded-2xl border border-slate-100 bg-slate-50/30 overflow-hidden">
+                <div className="px-4 py-2 border-b border-slate-100 bg-white">
+                  <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight">
+                    {prod.referencia} {prod.color && <span className="text-slate-400 font-bold ml-1">· {prod.color}</span>}
+                  </p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate">{prod.nombre}</p>
+                </div>
+                <div className="p-3">
+                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                    {prod.items.map(item => (
+                      <div key={item.id} className="flex flex-col items-center gap-1">
+                        <span className="text-[9px] font-black text-slate-400 uppercase">{item.talla}</span>
+                        <input
+                          type="number"
+                          min={0}
+                          placeholder="0"
+                          value={segundasMatrix[item.id]?.['default'] || ''}
+                          onChange={e => updateMatrixValue(item.id, e.target.value)}
+                          className="w-full bg-white border border-slate-200 rounded-lg py-1.5 text-center text-[12px] font-black text-slate-900 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-50 transition-all"
+                        />
+                      </div>
                     ))}
-                  </select>
+                  </div>
                 </div>
-                <div className="w-16">
-                  <input
-                    type="number"
-                    min={1}
-                    value={entry.cantidad}
-                    onChange={e => updateSegundasEntry(entry.id, 'cantidad', parseInt(e.target.value) || 1)}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-center text-[11px] font-black text-slate-900 outline-none focus:border-amber-400"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeSegundasEntry(entry.id)}
-                  className="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-rose-500 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
               </div>
             ))}
-
-            {segundasEntries.length === 0 && (
-              <div className="py-4 text-center border-2 border-dashed border-slate-100 rounded-2xl">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sin registros</p>
-              </div>
-            )}
           </div>
 
-          <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-100 px-4 py-3">
+          <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 shadow-sm">
             <PackageSearch className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <p className="text-amber-700 text-[10px] font-black uppercase tracking-widest leading-tight">
-              ESTAS PRENDAS SERÁN INGRESADAS A LA <span className="underline decoration-2 underline-offset-2">BODEGA DE SEGUNDAS</span> AUTOMÁTICAMENTE.
+            <p className="text-amber-700 text-[10px] font-black uppercase tracking-widest leading-tight text-left">
+              ESTAS UNIDADES SERÁN TRASLADADAS A LA <span className="underline decoration-2 underline-offset-2">BODEGA DE SEGUNDAS</span> PARA SU REPROCESO O CLASIFICACIÓN FINAL.
             </p>
           </div>
         </div>
@@ -233,33 +218,33 @@ export function CerrarInspeccionForm({
 
       {/* Notas */}
       <div className="space-y-2">
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Notas de cierre</label>
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Notas de Cierre</label>
         <div className="rounded-xl bg-slate-50/50 border border-slate-100">
           <textarea
             name="notas"
             rows={2}
-            placeholder="Observaciones finales..."
+            placeholder="Observaciones adicionales..."
             className="w-full bg-transparent px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none resize-none placeholder:text-slate-300"
           />
         </div>
       </div>
 
-      {/* Banners de resultado */}
+      {/* Banners de estado */}
       <div className="h-10">
         {resultado === 'aceptada' && (
           <div className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3 text-center animate-in fade-in slide-in-from-bottom-2">
-            CON ESTE RESULTADO LA OP AVANZARÁ AL SIGUIENTE ESTADO.
+            LA ORDEN SERÁ MARCADA COMO ACEPTADA Y AVANZARÁ EN EL FLUJO.
           </div>
         )}
         {resultado === 'rechazada' && (
           <div className="text-[10px] font-black uppercase tracking-widest text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-4 py-3 text-center animate-in fade-in slide-in-from-bottom-2">
-            CON ESTE RESULTADO LA OP PERMANECERÁ EN ESTADO PENDIENTE.
+            LA ORDEN PERMANECERÁ EN ESTADO PENDIENTE DE REVISIÓN.
           </div>
         )}
       </div>
 
       {error && (
-        <div className="p-3 bg-rose-50 border border-rose-100 text-rose-600 text-[10px] font-black uppercase tracking-widest rounded-xl text-center">
+        <div className="p-3 bg-rose-50 border border-rose-100 text-rose-600 text-[10px] font-black uppercase tracking-widest rounded-xl text-center shadow-sm">
           {error}
         </div>
       )}
@@ -267,9 +252,9 @@ export function CerrarInspeccionForm({
       <button
         type="submit"
         disabled={pending || !resultado}
-        className="w-full py-4 rounded-2xl bg-slate-900 text-white font-black text-[12px] uppercase tracking-[0.2em] hover:bg-black transition-all disabled:opacity-50 flex items-center justify-center gap-3 shadow-xl active:scale-95 mt-4"
+        className="w-full py-4 rounded-2xl bg-slate-900 text-white font-black text-[12px] uppercase tracking-[0.2em] hover:bg-black transition-all disabled:opacity-50 flex items-center justify-center gap-3 shadow-xl active:scale-95 mt-2"
       >
-        {pending ? <Loader2 className="w-5 h-5 animate-spin" /> : 'FINALIZAR INSPECCIÓN'}
+        {pending ? <Loader2 className="w-5 h-5 animate-spin" /> : 'CONFIRMAR DIAGNÓSTICO'}
       </button>
     </form>
   )
