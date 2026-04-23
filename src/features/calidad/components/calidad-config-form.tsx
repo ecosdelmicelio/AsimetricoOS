@@ -30,6 +30,7 @@ export function CalidadConfigForm({ config }: Props) {
   const [friPct,         setFriPct]         = useState(config.fri_pct)
   const [aqlNivel,       setAqlNivel]       = useState(config.aql_nivel)
   const [inspeccionNivel,setInspeccionNivel]= useState<CalidadConfig['inspeccion_nivel']>(config.inspeccion_nivel)
+  const [mermaTolerada,  setMermaTolerada]  = useState(config.porcentaje_merma_tolerada ?? 2.0)
 
   // Preview dinámica para 100 prendas
   const previewConfig: CalidadConfig = {
@@ -39,6 +40,7 @@ export function CalidadConfigForm({ config }: Props) {
     fri_pct: friPct,
     aql_nivel: aqlNivel,
     inspeccion_nivel: inspeccionNivel,
+    porcentaje_merma_tolerada: mermaTolerada,
   }
   const previewDupro = calcMuestraSugerida(100, 'dupro', previewConfig)
   const previewFri   = calcMuestraSugerida(100, 'fri',   previewConfig)
@@ -53,6 +55,7 @@ export function CalidadConfigForm({ config }: Props) {
         fri_pct:          friPct,
         aql_nivel:        aqlNivel,
         inspeccion_nivel: inspeccionNivel,
+        porcentaje_merma_tolerada: mermaTolerada,
       })
       if (res.error) { setError(res.error); return }
       setSaved(true)
@@ -84,6 +87,26 @@ export function CalidadConfigForm({ config }: Props) {
           <span className="text-xs text-muted-foreground ml-2">
             Para 100 prendas → <strong className="text-foreground">{previewDupro} prendas</strong>
           </span>
+        </div>
+      </div>
+
+      {/* MERMA TOLERADA */}
+      <div className="rounded-2xl bg-neu-base shadow-neu p-5 space-y-3">
+        <div>
+          <p className="font-semibold text-foreground text-body-sm">Merma Tolerada (Liquidación)</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Porcentaje de desperdicio aceptable antes de descontar tela al taller</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <input
+            type="number"
+            min={0}
+            max={100}
+            step="0.1"
+            value={mermaTolerada}
+            onChange={e => setMermaTolerada(parseFloat(e.target.value) || 0)}
+            className="w-24 rounded-xl bg-neu-base shadow-neu-inset px-3 py-2 text-body-sm text-foreground focus:outline-none"
+          />
+          <span className="text-muted-foreground text-body-sm">%</span>
         </div>
       </div>
 

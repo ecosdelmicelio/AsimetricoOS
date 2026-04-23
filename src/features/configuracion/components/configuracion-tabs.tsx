@@ -3,13 +3,14 @@
 import { useState } from 'react'
 import { Code2, AlertTriangle, ShieldCheck, Package, Landmark, Users } from 'lucide-react'
 import { CalidadConfigForm } from '@/features/calidad/components/calidad-config-form'
+import { DefectosConfig } from '@/features/calidad/components/defectos-config'
 import { TiposMovimientoTab } from '@/features/configuracion/components/tipos-movimiento-tab'
 import { BodegasTab } from '@/features/configuracion/components/bodegas-tab'
 import { AtributosConfig } from '@/features/productos/components/atributos-config'
 import { AtributosConfigMP } from '@/features/materiales/components/atributos-config'
 import { AtributosConfigServicio } from '@/features/servicios/components/atributos-config-servicio'
 import { PlmConfigPanel } from '@/features/configuracion/components/plm-config-panel'
-import type { CalidadConfig } from '@/features/calidad/types'
+import type { CalidadConfig, TipoDefecto } from '@/features/calidad/types'
 import type { TipoMovimiento } from '@/features/configuracion/services/tipos-movimiento-actions'
 import type { Bodega } from '@/features/wms/types'
 import type { AtributoPT } from '@/features/productos/types/atributos'
@@ -33,7 +34,7 @@ const TABS: { id: Tab; label: string; sub: string; icon: any }[] = [
 ]
 
 interface Props {
-  tiposDefecto: { id: string; codigo: string; nombre: string; categoria: string }[]
+  tiposDefecto: TipoDefecto[]
   tiposMovimiento: TipoMovimiento[]
   calidadConfig: CalidadConfig
   atributosPT: AtributoPT[]
@@ -104,7 +105,7 @@ export function ConfiguracionTabs({
         {tab === 'atributos-pt' && <AtributosConfig atributos={atributosPT} />}
         {tab === 'atributos-mp' && <AtributosConfigMP atributos={atributosMP} />}
         {tab === 'atributos-servicios' && <AtributosConfigServicio atributos={atributosServicios} />}
-        {tab === 'defectos' && <DefectosPanel tiposDefecto={tiposDefecto} />}
+        {tab === 'defectos' && <DefectosConfig tiposDefecto={tiposDefecto} />}
         {tab === 'movimientos' && <TiposMovimientoTab tiposMovimiento={tiposMovimiento} />}
         {tab === 'calidad'  && <CalidadConfigForm config={calidadConfig} />}
         {tab === 'plm'      && <PlmConfigPanel ajustes={ajustes} />}
@@ -160,39 +161,6 @@ function DataGrid({ title, data, columns }: { title: string; data: any[]; column
           </tbody>
         </table>
       </div>
-    </div>
-  )
-}
-
-function DefectosPanel({ tiposDefecto }: { tiposDefecto: { id: string; codigo: string; nombre: string; categoria: string }[] }) {
-  return (
-    <div className="space-y-4">
-      <p className="text-body-sm text-muted-foreground">
-        Tipos de defecto usados en inspecciones de calidad (DuPro y FRI).
-      </p>
-      {tiposDefecto.length === 0 ? (
-        <div className="rounded-2xl bg-neu-base shadow-neu p-8 text-center flex flex-col items-center gap-2">
-          <AlertTriangle className="w-7 h-7 text-muted-foreground" />
-          <p className="text-body-sm text-muted-foreground">Sin tipos de defecto configurados</p>
-        </div>
-      ) : (
-        <div className="rounded-2xl bg-neu-base shadow-neu overflow-hidden">
-          <div className="grid grid-cols-12 gap-3 px-5 py-3 border-b border-black/5">
-            <span className="col-span-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Código</span>
-            <span className="col-span-5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Nombre</span>
-            <span className="col-span-5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Categoría</span>
-          </div>
-          <div className="divide-y divide-black/5">
-            {tiposDefecto.map(td => (
-              <div key={td.id} className="grid grid-cols-12 gap-3 items-center px-5 py-3">
-                <span className="col-span-2 font-mono text-body-sm font-bold text-primary-700">{td.codigo}</span>
-                <span className="col-span-5 text-body-sm text-foreground">{td.nombre}</span>
-                <span className="col-span-5 text-body-sm text-muted-foreground capitalize">{td.categoria}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

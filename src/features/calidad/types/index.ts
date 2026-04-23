@@ -8,6 +8,7 @@ export interface CalidadConfig {
   fri_pct: number
   aql_nivel: string
   inspeccion_nivel: 'I' | 'II' | 'III'
+  porcentaje_merma_tolerada: number
   updated_at: string
 }
 export type GravedadDefecto = 'menor' | 'mayor' | 'critico'
@@ -20,6 +21,7 @@ export interface TipoDefecto {
   gravedad_sugerida: GravedadDefecto
   puntos_penalidad: number
   activo: boolean
+  tipos_producto_aplicables: string[]
 }
 
 export interface Novedad {

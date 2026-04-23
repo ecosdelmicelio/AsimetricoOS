@@ -23,7 +23,7 @@ async function getTiposDefecto() {
   const supabase = db(await createClient())
   const { data } = await supabase
     .from('tipos_defecto')
-    .select('id, codigo, nombre, categoria')
+    .select('id, codigo, descripcion, categoria, gravedad_sugerida, puntos_penalidad, activo, tipos_producto_aplicables')
     .order('codigo')
   return data ?? []
 }

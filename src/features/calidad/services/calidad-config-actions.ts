@@ -13,6 +13,7 @@ const DEFAULTS: Omit<CalidadConfig, 'id' | 'updated_at'> = {
   fri_pct:          10,
   aql_nivel:        '2.5',
   inspeccion_nivel: 'II',
+  porcentaje_merma_tolerada: 2.0,
 }
 
 export async function getCalidadConfig(): Promise<CalidadConfig> {
