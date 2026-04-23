@@ -33,85 +33,102 @@ export function OPCard({
   const daysPast = Math.max(0, Math.ceil((now.getTime() - createdDate.getTime()) / (1000 * 3600 * 24)))
   const completionPct = totalUnidades > 0 ? Math.round((unidadesEntregadas / totalUnidades) * 100) : 0
 
-  return (
-    <details className="group rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md transition-shadow outline-none overflow-hidden">
-      <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer list-none outline-none [&::-webkit-details-marker]:hidden">
-        {/* Status indicator dot */}
-        <div className={cn(
-          'w-2 h-2 rounded-full shrink-0',
-          estado === 'completada' || estado === 'liquidada' ? 'bg-emerald-500' : 
-          estado === 'en_entregas' ? 'bg-indigo-500' :
-          estado === 'en_terminado' ? 'bg-blue-600' :
-          estado === 'en_corte' || estado === 'en_confeccion' || estado === 'dupro_pendiente' ? 'bg-amber-400' : 'bg-slate-300'
-        )} />
-
-        {/* Core info */}
-        <div className="flex-1 min-w-0 pr-1">
-          {/* Header Line: Code + OV Info */}
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <div className="flex items-center gap-2">
-              <Link
-                href={`/ordenes-produccion/${id}`}
-                className="font-black text-sm text-slate-800 tracking-tighter hover:text-primary-600 transition-colors truncate"
-                onClick={(e: React.MouseEvent) => e.stopPropagation()}
-              >
-                {codigo}
-              </Link>
-              {opPayload?.es_muestra && (
-                <Link
-                  href={opPayload?.desarrollo_id ? `/desarrollo/${opPayload.desarrollo_id}` : '#'}
-                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                  className="text-[8px] font-black bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded border border-violet-200 uppercase tracking-tighter hover:bg-violet-200 transition-colors shrink-0"
-                >
-                  MUESTRA
-                </Link>
-              )}
-            </div>
-            
-            <span className="text-[8px] font-black bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded border border-slate-100 uppercase tracking-tighter shrink-0" title="Orden de Venta Origen">
-              {ovCodigo}
-            </span>
-          </div>
-
-          {/* Sub Header: Taller */}
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide truncate mb-2" title={tallerNombre}>
-            {tallerNombre}
-          </p>
-
-          <div className="mb-3">
-            <OPStatusBadge estado={estado} labelOverride={getOPStatusLabel(opPayload)} />
-          </div>
-
-          {/* Metrics Block */}
-          <div className="grid grid-cols-2 gap-2 mb-3">
-             <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 flex flex-col justify-between">
-              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Avance</span>
-              <span className="text-xs font-black text-slate-800 leading-none">
-                {unidadesEntregadas} / {totalUnidades}
+  return (    <details className="group rounded-[32px] bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:border-slate-300 hover:-translate-y-0.5 transition-all duration-500 outline-none overflow-hidden">
+      <summary className="flex flex-col px-4 py-3 cursor-pointer list-none outline-none [&::-webkit-details-marker]:hidden">
+        {/* Header Line: Code + OV + Aging */}
+        <div className="flex items-center justify-between gap-1 mb-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Link
+              href={`/ordenes-produccion/${id}`}
+              className="font-black text-[12px] text-slate-900 tracking-tighter hover:text-primary-600 transition-colors whitespace-nowrap"
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+            >
+              {codigo}
+            </Link>
+            <div className={cn(
+              'w-2 h-2 rounded-full shrink-0',
+              estado === 'completada' || estado === 'liquidada' ? 'bg-emerald-500' : 
+              estado === 'en_entregas' ? 'bg-indigo-500' :
+              estado === 'en_terminado' ? 'bg-blue-600' :
+              estado === 'en_corte' || estado === 'en_confeccion' || estado === 'dupro_pendiente' ? 'bg-amber-400' : 'bg-slate-300'
+            )} />
+            {opPayload?.es_muestra && (
+              <span className="text-[7px] font-black bg-violet-100 text-violet-700 px-1 py-0.5 rounded border border-violet-200 uppercase tracking-tighter shrink-0">
+                MUESTRA
               </span>
-            </div>
-            <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 flex flex-col justify-between">
-              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Real / Est</span>
-              <span className={cn(
-                "text-xs font-black leading-none truncate",
-                valorOrden > costoEstandar ? "text-rose-600" : "text-slate-800"
-              )}>
-                {formatCurrency(valorOrden)}
-              </span>
-            </div>
+            )}
           </div>
-
-          {/* Mini Stepper */}
-          <div className="mt-1">
-            <OPMiniStepper currentStatus={estado} />
+          
+          <div className="flex items-center gap-1 shrink-0">
+             <span className="text-[8px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md border border-slate-200/50 uppercase tracking-tighter">
+                {ovCodigo}
+              </span>
+             <span className="text-[8px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md border border-slate-200/50 uppercase tracking-tighter">
+                {daysPast}d
+              </span>
+            <div className="w-5 h-5 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center transition-all group-open:bg-primary-50 group-open:border-primary-100">
+              <ChevronDown className="w-3 h-3 text-slate-400 transition-transform group-open:rotate-180 group-open:text-primary-500" />
+            </div>
           </div>
         </div>
 
-        {/* Expand chevron */}
-        <div className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 self-start transition-all group-open:bg-primary-50 group-open:border-primary-100">
-          <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform group-open:rotate-180 group-open:text-primary-500" />
+        {/* Taller / Client Info */}
+        <div className="mb-2">
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider truncate leading-tight" title={tallerNombre}>
+            {tallerNombre} <span className="text-slate-200 mx-1">|</span> <span className="text-slate-300 font-bold">{clienteNombre}</span>
+          </p>
+        </div>
+
+        {/* Triple Track Pipeline Matrix - Compacted */}
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between text-[7px] font-black text-slate-400 uppercase tracking-tighter">
+              <span>UNID</span>
+              <span className="text-amber-500">{completionPct}%</span>
+            </div>
+            <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-amber-400 rounded-full transition-all duration-500" style={{ width: `${completionPct}%` }} />
+            </div>
+            <div className="text-[8px] font-black text-slate-700 tracking-tighter truncate">
+              {unidadesEntregadas}<span className="text-slate-300 font-bold mx-0.5">/</span>{totalUnidades}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between text-[7px] font-black text-slate-400 uppercase tracking-tighter">
+              <span>COST</span>
+              <span className={cn(valorOrden > costoEstandar ? "text-rose-500" : "text-emerald-500")}>
+                {valorOrden > 0 ? `${Math.round((valorOrden/costoEstandar)*100)}%` : '0%'}
+              </span>
+            </div>
+            <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+              <div className={cn("h-full rounded-full transition-all duration-500", valorOrden > costoEstandar ? "bg-rose-500" : "bg-emerald-500")} style={{ width: `${valorOrden > 0 ? Math.min(100, (valorOrden/costoEstandar)*100) : 0}%` }} />
+            </div>
+            <div className="text-[8px] font-black text-slate-700 tracking-tighter truncate">
+              {formatCurrency(valorOrden)}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between text-[7px] font-black text-slate-400 uppercase tracking-tighter">
+              <span>EST</span>
+              <span className="text-slate-500">100%</span>
+            </div>
+            <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-slate-400 rounded-full transition-all duration-500" style={{ width: '100%' }} />
+            </div>
+            <div className="text-[8px] font-black text-slate-700 tracking-tighter truncate">
+              {formatCurrency(costoEstandar)}
+            </div>
+          </div>
+        </div>
+
+        {/* Stepper Footer - Slimmed */}
+        <div className="pt-2 border-t border-slate-50">
+           <OPMiniStepper currentStatus={estado} />
         </div>
       </summary>
+
 
       {/* Expanded Panel */}
       <div className="px-4 pb-4 pt-0 border-t border-slate-100 bg-slate-50/50">

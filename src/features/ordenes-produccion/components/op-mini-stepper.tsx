@@ -20,7 +20,7 @@ export function OPMiniStepper({ currentStatus }: Props) {
   const currentIndex = STEPS.findIndex(s => s.id === currentStatus)
   
   return (
-    <div className="flex items-center gap-1 w-full max-w-[200px]">
+    <div className="flex items-center gap-1.5 w-full">
       {STEPS.map((step, i) => {
         const isPast = i < currentIndex
         const isCurrent = i === currentIndex
@@ -29,13 +29,13 @@ export function OPMiniStepper({ currentStatus }: Props) {
         return (
           <div key={step.id} className="flex-1 flex flex-col gap-1">
             <div className={cn(
-              'h-1 rounded-full transition-all duration-500',
+              'h-1.5 rounded-full transition-all duration-500',
               isPast && 'bg-emerald-500',
               isCurrent && 'bg-amber-400 animate-pulse',
               isFuture && 'bg-slate-100'
             )} />
             <span className={cn(
-              'text-[7px] font-black uppercase tracking-tighter text-center',
+              'text-[8px] font-black uppercase tracking-tighter text-center',
               isCurrent ? 'text-slate-900' : 'text-slate-300'
             )}>
               {step.label}
