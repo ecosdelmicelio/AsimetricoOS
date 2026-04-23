@@ -38,16 +38,30 @@ export async function getOPsParaInspeccion(): Promise<OPParaInspeccion[]> {
       }[] | null
     }
 
-  return (ops ?? []).map(op => ({
-    id: op.id,
-    codigo: op.codigo,
-    estado: op.estado,
-    fecha_promesa: op.fecha_promesa,
-    taller: op.terceros?.nombre ?? '—',
-    cliente: op.ordenes_venta?.terceros?.nombre ?? '—',
-    ov_codigo: op.ordenes_venta?.codigo ?? '—',
-    inspeccion_pendiente: op.inspecciones?.find(i => i.resultado === 'pendiente') ?? null,
-  }))
+  return (ops ?? [])
+    .filter(op => {
+      const hasPending = op.inspecciones?.some(i => i.resultado === 'pendiente')
+      const hasClosedDupro = op.inspecciones?.some(i => i.tipo === 'dupro' && i.resultado !== 'pendiente')
+      
+      // Si hay una inspección pendiente, siempre mostrar.
+      if (hasPending) return true
+      
+      // Si no hay inspecciones de tipo 'dupro' cerradas, es la primera vez (mostrar).
+      if (!hasClosedDupro) return true
+      
+      // En cualquier otro caso (DupuPro ya hecho y nada pendiente), ocultar.
+      return false
+    })
+    .map(op => ({
+      id: op.id,
+      codigo: op.codigo,
+      estado: op.estado,
+      fecha_promesa: op.fecha_promesa,
+      taller: op.terceros?.nombre ?? '—',
+      cliente: op.ordenes_venta?.terceros?.nombre ?? '—',
+      ov_codigo: op.ordenes_venta?.codigo ?? '—',
+      inspeccion_pendiente: op.inspecciones?.find(i => i.resultado === 'pendiente') ?? null,
+    }))
 }
 
 export async function getOPConInspeccion(op_id: string): Promise<{
@@ -112,7 +126,7 @@ export async function getOPConInspeccion(op_id: string): Promise<{
   const inspeccionActiva = todasInspecciones.find(i => i.resultado === 'pendiente') ?? null
   const total_unidades = (op.op_detalle ?? []).reduce((s, d) => s + d.cantidad_asignada, 0)
 
-  return {
+  const resultado = {
     op: {
       id: op.id,
       codigo: op.codigo,
@@ -139,9 +153,42 @@ export async function getOPConInspeccion(op_id: string): Promise<{
         return acc
       }, {} as Record<string, { id: string; nombre: string; referencia: string; color: string | null; talla: string; cantidad: number }>))
     },
-    inspeccion: inspeccionActiva,
+    inspeccion: inspeccionActiva ? {
+      ...inspeccionActiva,
+      esReproceso: (inspeccionActiva as any).tipo === 'reproceso'
+    } : null,
     historialInspecciones: todasInspecciones.filter(i => i.resultado !== 'pendiente'),
   }
+
+  // Si es un reproceso, sobreescribimos los productos con los items específicos del reproceso
+  if (resultado.inspeccion && (resultado.inspeccion as any).esReproceso) {
+    const { data: itemsReproceso } = await supabase
+      .from('inspeccion_items_reproceso')
+      .select(`
+        id,
+        producto_id,
+        talla,
+        cantidad,
+        productos (nombre, referencia, color)
+      `)
+      .eq('inspeccion_id', (resultado.inspeccion as any).id)
+
+    if (itemsReproceso && itemsReproceso.length > 0) {
+      resultado.op.productos = itemsReproceso.map(item => ({
+        id: item.producto_id,
+        nombre: (item.productos as any)?.nombre ?? 'Producto',
+        referencia: (item.productos as any)?.referencia ?? 'Ref',
+        color: (item.productos as any)?.color ?? null,
+        talla: item.talla,
+        cantidad: item.cantidad,
+      }))
+    } else {
+      // Si por alguna razón no hay items, dejamos la lista vacía para no cargar toda la OP
+      resultado.op.productos = []
+    }
+  }
+
+  return resultado
 }
 
 export async function getTiposDefecto(): Promise<TipoDefecto[]> {
@@ -400,55 +447,98 @@ export async function closeInspeccion(formData: FormData): Promise<{ error?: str
   if (resultado === 'aceptada' || resultado === 'segundas') {
     const nextState = NEXT_STATE[estado_op]
     if (nextState) {
-      await supabase
-        .from('ordenes_produccion')
-        .update({ estado: nextState })
-        .eq('id', op_id)
-    }
-  }
+      // VALIDACIÓN: No permitir mover a 'en_terminado' si hay segundas pendientes de reproceso/decisión
+      if (nextState === 'en_terminado') {
+        const { data: segundasPendientes } = await supabase
+          .from('view_segundas_tracking')
+          .select('kardex_id')
+          .eq('op_id', op_id)
+          .limit(1)
 
-  // Si hubo segundas, registrar movimiento en Kardex de Bodega Segundas
-  const segundasDetalleRaw = formData.get('segundas_detalle') as string
-  if (resultado === 'segundas' && segundasDetalleRaw) {
-    const segundasDetalle = JSON.parse(segundasDetalleRaw) as { producto_id: string, talla: string, cantidad: number }[]
-    
-    if (segundasDetalle.length > 0) {
-    
-    // 1. Obtener bodega_segundas_id de la configuración
-    const { data: config } = await supabase
-      .from('calidad_config')
-      .select('bodega_segundas_id')
-      .single() as { data: { bodega_segundas_id: string | null } | null }
-
-    // 2. Obtener tipo_movimiento_id para ENTRADA_SEGUNDAS
-    const { data: tipoMov } = await supabase
-      .from('kardex_tipos_movimiento')
-      .select('id')
-      .eq('codigo', 'ENTRADA_SEGUNDAS')
-      .single() as { data: { id: string } | null }
-
-      if (config?.bodega_segundas_id && tipoMov && user) {
-        const insertRows = segundasDetalle.map(item => ({
-          producto_id: item.producto_id,
-          bodega_id: config.bodega_segundas_id,
-          tipo_movimiento_id: tipoMov.id,
-          documento_tipo: 'op',
-          documento_id: op_id,
-          cantidad: item.cantidad,
-          talla: item.talla,
-          unidad: 'ud',
-          costo_unitario: 0,
-          costo_total: 0,
-          fecha_movimiento: new Date().toISOString(),
-          registrado_por: user.id,
-          notas: `Ingreso de segundas (Talla: ${item.talla}) desde Inspección DuPro`,
-        }))
-
-        await supabase.from('kardex').insert(insertRows)
+        if (segundasPendientes && segundasPendientes.length > 0) {
+          // Si hay segundas, bloqueamos el avance a 'en_terminado'
+          // Pero dejamos que la inspección se cierre. La OP se quedará en su estado actual (o dupro_pendiente).
+          // NOTA: Para no bloquear la UI de golpe sin aviso, podríamos devolver un mensaje, 
+          // pero aquí simplemente no actualizamos el estado si no se cumple.
+        } else {
+          await supabase
+            .from('ordenes_produccion')
+            .update({ estado: nextState })
+            .eq('id', op_id)
+        }
+      } else {
+        await supabase
+          .from('ordenes_produccion')
+          .update({ estado: nextState })
+          .eq('id', op_id)
       }
     }
   }
 
+  // 1. Obtener configuraciones de bodegas una sola vez
+  const { data: config } = await supabase
+    .from('calidad_config')
+    .select('bodega_segundas_id, bodega_desperdicio_id')
+    .single() as { data: { bodega_segundas_id: string | null; bodega_desperdicio_id: string | null } | null }
+
+  // 2. Obtener tipos de movimiento necesarios
+  const { data: tiposKardex } = await supabase
+    .from('kardex_tipos_movimiento')
+    .select('id, codigo')
+    .in('codigo', ['ENTRADA_SEGUNDAS', 'SALIDA_DESPERDICIO'])
+
+  const entradaSegundasId = tiposKardex?.find(t => t.codigo === 'ENTRADA_SEGUNDAS')?.id
+  const salidaDesperdicioId = tiposKardex?.find(t => t.codigo === 'SALIDA_DESPERDICIO')?.id
+
+  // Si hubo segundas, registrar movimiento en Kardex de Bodega Segundas
+  const segundasDetalleRaw = formData.get('segundas_detalle') as string
+  if (resultado === 'segundas' && segundasDetalleRaw && config?.bodega_segundas_id && entradaSegundasId) {
+    const segundasDetalle = JSON.parse(segundasDetalleRaw) as { producto_id: string, talla: string, cantidad: number }[]
+    
+    for (const item of segundasDetalle) {
+      if (item.cantidad <= 0) continue
+      await supabase.from('kardex').insert({
+        producto_id: item.producto_id,
+        bodega_id: config.bodega_segundas_id,
+        tipo_movimiento_id: entradaSegundasId,
+        documento_tipo: 'op',
+        documento_id: op_id,
+        cantidad: item.cantidad,
+        talla: item.talla,
+        unidad: 'ud',
+        costo_unitario: 0,
+        costo_total: 0,
+        fecha_movimiento: new Date().toISOString(),
+        registrado_por: user.id,
+        notas: `Segundas reportadas en inspección ${inspeccionData?.tipo || ''}`,
+      })
+    }
+  }
+
+  // Si hubo desperdicio reportado directamente (nuevo)
+  const desperdicioDetalleRaw = formData.get('desperdicio_detalle') as string
+  if (desperdicioDetalleRaw && config?.bodega_desperdicio_id && salidaDesperdicioId) {
+    const desperdicioDetalle = JSON.parse(desperdicioDetalleRaw) as { producto_id: string, talla: string, cantidad: number }[]
+    
+    for (const item of desperdicioDetalle) {
+      if (item.cantidad <= 0) continue
+      await supabase.from('kardex').insert({
+        producto_id: item.producto_id,
+        bodega_id: config.bodega_desperdicio_id,
+        tipo_movimiento_id: salidaDesperdicioId,
+        documento_tipo: 'op',
+        documento_id: op_id,
+        cantidad: item.cantidad,
+        talla: item.talla,
+        unidad: 'ud',
+        costo_unitario: 0,
+        costo_total: 0,
+        fecha_movimiento: new Date().toISOString(),
+        registrado_por: user.id,
+        notas: `Desperdicio reportado directamente en inspección ${inspeccionData?.tipo || ''}`,
+      })
+    }
+  }
   revalidatePath(`/calidad/${op_id}`)
   revalidatePath('/calidad')
   revalidatePath(`/ordenes-produccion/${op_id}`)
@@ -470,6 +560,8 @@ export interface SegundasTracking {
   taller_nombre: string | null
   ov_id: string | null
   ov_codigo: string | null
+  en_reproceso: boolean
+  n_intentos: number
 }
 
 /**
@@ -544,17 +636,56 @@ export async function iniciarReprocesoSegundas(kardexId: string, opId: string, p
       if (kardexError) throw new Error(`Kardex: ${kardexError.message}`)
     }
 
-    // 4. Crear una nueva inspección DuPro pendiente para la OP (Reproceso formal)
-    const { error: inspError } = await supabase.from('inspecciones').insert({
-      op_id: opId,
-      tipo: 'dupro',
-      resultado: 'pendiente',
-      inspector_id: user.id, // Asignamos al usuario actual como inspector inicial
-      timestamp_inicio: new Date().toISOString(),
-    })
-    if (inspError) throw new Error(`Inspección: ${inspError.message}`)
+    // 4. Buscar o crear una inspección de tipo 'reproceso' que esté pendiente
+    let { data: inspExistente } = await supabase
+      .from('inspecciones')
+      .select('id')
+      .eq('op_id', opId)
+      .eq('tipo', 'reproceso')
+      .eq('resultado', 'pendiente')
+      .single()
+
+    let finalInspId = inspExistente?.id
+
+    if (!finalInspId) {
+      const { data: nuevaInsp, error: inspError } = await supabase.from('inspecciones').insert({
+        op_id: opId,
+        tipo: 'reproceso',
+        resultado: 'pendiente',
+        inspector_id: user.id,
+        timestamp_inicio: new Date().toISOString(),
+      }).select().single()
+      
+      if (inspError) throw new Error(`Inspección: ${inspError.message}`)
+      finalInspId = nuevaInsp.id
+    }
+
+    // 5. Registrar el item específico en el detalle del reproceso
+    const { data: itemExistente } = await supabase
+      .from('inspeccion_items_reproceso')
+      .select('id, cantidad')
+      .eq('inspeccion_id', finalInspId)
+      .eq('producto_id', productoId)
+      .eq('talla', talla)
+      .single()
+
+    if (itemExistente) {
+      await supabase
+        .from('inspeccion_items_reproceso')
+        .update({ cantidad: itemExistente.cantidad + cantidad })
+        .eq('id', itemExistente.id)
+    } else {
+      await supabase
+        .from('inspeccion_items_reproceso')
+        .insert({
+          inspeccion_id: finalInspId,
+          producto_id: productoId,
+          talla: talla,
+          cantidad: cantidad
+        })
+    }
     
-    // 5. Cambiar estado de la OP a dupro_pendiente
+    // 6. Cambiar estado de la OP a dupro_pendiente (o un estado específico de reproceso si existiera)
     const { error: opError } = await supabase
       .from('ordenes_produccion')
       .update({ estado: 'dupro_pendiente' })
@@ -568,6 +699,77 @@ export async function iniciarReprocesoSegundas(kardexId: string, opId: string, p
     return { success: true }
   } catch (err: any) {
     console.error('Error en iniciarReprocesoSegundas:', err)
+    return { error: err.message }
+  }
+}
+
+/**
+ * Registra unidades como desperdicio definitivo (salida de segundas y entrada a desperdicio).
+ */
+export async function registrarDesperdicio(kardexId: string, opId: string, productoId: string, cantidad: number, talla: string) {
+  const supabase = db(await createClient())
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  try {
+    // 1. Obtener configuraciones de bodegas
+    const { data: config } = await supabase
+      .from('calidad_config')
+      .select('bodega_segundas_id, bodega_desperdicio_id')
+      .single() as { data: { bodega_segundas_id: string | null; bodega_desperdicio_id: string | null } | null }
+
+    // 2. Obtener tipos de movimiento
+    const { data: tipos } = await supabase
+      .from('kardex_tipos_movimiento')
+      .select('id, codigo')
+      .in('codigo', ['TRASLADO_SALIDA', 'SALIDA_DESPERDICIO'])
+
+    const trasladoSalidaId = tipos?.find(t => t.codigo === 'TRASLADO_SALIDA')?.id
+    const desperdicioId = tipos?.find(t => t.codigo === 'SALIDA_DESPERDICIO')?.id
+
+    if (config?.bodega_segundas_id && trasladoSalidaId) {
+      // 3. Salida de Bodega Segundas
+      await supabase.from('kardex').insert({
+        producto_id: productoId,
+        bodega_id: config.bodega_segundas_id,
+        tipo_movimiento_id: trasladoSalidaId,
+        documento_tipo: 'op',
+        documento_id: opId,
+        cantidad: -Math.abs(cantidad),
+        talla: talla,
+        unidad: 'ud',
+        costo_unitario: 0,
+        costo_total: 0,
+        fecha_movimiento: new Date().toISOString(),
+        registrado_por: user.id,
+        notas: `Salida de segundas por descarte definitivo (Talla: ${talla})`,
+      })
+
+      // 4. Entrada a Bodega Desperdicio (si existe configurada)
+      if (config.bodega_desperdicio_id && desperdicioId) {
+        await supabase.from('kardex').insert({
+          producto_id: productoId,
+          bodega_id: config.bodega_desperdicio_id,
+          tipo_movimiento_id: desperdicioId,
+          documento_tipo: 'op',
+          documento_id: opId,
+          cantidad: Math.abs(cantidad),
+          talla: talla,
+          unidad: 'ud',
+          costo_unitario: 0,
+          costo_total: 0,
+          fecha_movimiento: new Date().toISOString(),
+          registrado_por: user.id,
+          notas: `Ingreso a desperdicio desde segundas (Talla: ${talla})`,
+        })
+      }
+    }
+
+    revalidatePath(`/ordenes-produccion/${opId}`)
+    revalidatePath('/calidad/segundas')
+    return { success: true }
+  } catch (err: any) {
+    console.error('Error en registrarDesperdicio:', err)
     return { error: err.message }
   }
 }

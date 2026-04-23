@@ -28,8 +28,8 @@ export function CerrarInspeccionForm({
   const [resultado, setResultado] = useState<ResultadoInspeccion | null>(
     tieneDefectoCritico ? 'rechazada' : null
   )
-  // Matriz de segundas: { [productoId]: { [talla]: cantidad } }
-  const [segundasMatrix, setSegundasMatrix] = useState<Record<string, Record<string, number>>>({})
+  // Matriz de unidades: { [productoId]: { segundas: number, desperdicio: number } }
+  const [matrix, setMatrix] = useState<Record<string, { segundas: number, desperdicio: number }>>({})
   const [error, setError] = useState<string | null>(null)
 
   // Agrupar productos por referencia y color para la matriz
@@ -52,36 +52,47 @@ export function CerrarInspeccionForm({
     if (tieneDefectoCritico) setResultado('rechazada')
   }, [tieneDefectoCritico])
 
-  const updateMatrixValue = (productId: string, value: string) => {
+  const updateMatrixValue = (productId: string, type: 'segundas' | 'desperdicio', value: string) => {
     const num = parseInt(value) || 0
     const prod = productos.find(p => p.id === productId)
     const max = prod?.cantidad || 0
     
-    setSegundasMatrix(prev => ({
-      ...prev,
-      [productId]: {
-        'default': Math.min(max, Math.max(0, num))
+    setMatrix(prev => {
+      const current = prev[productId] || { segundas: 0, desperdicio: 0 }
+      const otherValue = type === 'segundas' ? current.desperdicio : current.segundas
+      
+      // La suma de segundas + desperdicio no puede exceder el total de la talla
+      const finalValue = Math.min(num, max - otherValue)
+      
+      return {
+        ...prev,
+        [productId]: {
+          ...current,
+          [type]: Math.max(0, finalValue)
+        }
       }
-    }))
+    })
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!resultado) return
     
-    // Convertir matriz a detalle plano y validar límites
-    const detail: { producto_id: string, talla: string, cantidad: number }[] = []
+    const segundasDetail: { producto_id: string, talla: string, cantidad: number }[] = []
+    const desperdicioDetail: { producto_id: string, talla: string, cantidad: number }[] = []
     let errorExceso = null
 
-    Object.entries(segundasMatrix).forEach(([pid, tallas]) => {
-      const cant = tallas['default'] || 0
-      if (cant > 0) {
-        const prod = productos.find(p => p.id === pid)
-        if (prod) {
-          if (cant > prod.cantidad) {
-            errorExceso = `Exceso en ${prod.referencia} ${prod.talla}: máx ${prod.cantidad}`
-          }
-          detail.push({ producto_id: pid, talla: prod.talla, cantidad: cant })
+    Object.entries(matrix).forEach(([pid, values]) => {
+      const prod = productos.find(p => p.id === pid)
+      if (prod) {
+        if (values.segundas > 0) {
+          segundasDetail.push({ producto_id: pid, talla: prod.talla, cantidad: values.segundas })
+        }
+        if (values.desperdicio > 0) {
+          desperdicioDetail.push({ producto_id: pid, talla: prod.talla, cantidad: values.desperdicio })
+        }
+        if (values.segundas + values.desperdicio > prod.cantidad) {
+          errorExceso = `Exceso en ${prod.referencia} ${prod.talla}: máx ${prod.cantidad}`
         }
       }
     })
@@ -91,8 +102,8 @@ export function CerrarInspeccionForm({
       return
     }
 
-    if (resultado === 'segundas' && detail.length === 0) {
-      setError('Debes ingresar al menos una cantidad de segunda calidad en la matriz')
+    if (resultado === 'segundas' && segundasDetail.length === 0 && desperdicioDetail.length === 0) {
+      setError('Debes ingresar al menos una cantidad (Segunda o Desperdicio) en la matriz')
       return
     }
 
@@ -102,8 +113,11 @@ export function CerrarInspeccionForm({
     formData.set('estado_op', estado_op)
     formData.set('resultado', resultado)
     
-    if (resultado === 'segundas') {
-      formData.set('segundas_detalle', JSON.stringify(detail))
+    if (segundasDetail.length > 0) {
+      formData.set('segundas_detalle', JSON.stringify(segundasDetail))
+    }
+    if (desperdicioDetail.length > 0) {
+      formData.set('desperdicio_detalle', JSON.stringify(desperdicioDetail))
     }
 
     startTransition(async () => {
@@ -182,11 +196,21 @@ export function CerrarInspeccionForm({
         </div>
       </div>
 
-      {/* Matriz Ultracompacta de Segundas */}
+      {/* Matriz Ultracompacta de Unidades Retenidas */}
       {resultado === 'segundas' && (
         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="flex items-center justify-between px-1">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Matriz de Unidades Retenidas *</label>
+            <div className="flex gap-4">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-amber-400" />
+                <span className="text-[9px] font-black text-slate-400 uppercase">Segundas</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-rose-400" />
+                <span className="text-[9px] font-black text-slate-400 uppercase">Desperdicio</span>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-3 max-h-[400px] overflow-y-auto no-scrollbar pr-1">
@@ -199,24 +223,42 @@ export function CerrarInspeccionForm({
                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate">{prod.nombre}</p>
                 </div>
                 <div className="p-3">
-                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {prod.items.map(item => {
                       const max = productos.find(p => p.id === item.id)?.cantidad || 0
+                      const current = matrix[item.id] || { segundas: 0, desperdicio: 0 }
                       return (
-                        <div key={item.id} className="flex flex-col items-center gap-1">
-                          <div className="flex items-center gap-1">
-                            <span className="text-[9px] font-black text-slate-400 uppercase">{item.talla}</span>
-                            <span className="text-[8px] font-bold text-slate-300">({max})</span>
+                        <div key={item.id} className="flex items-center justify-between gap-3 bg-white p-2.5 rounded-xl border border-slate-100">
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-slate-900 uppercase">{item.talla}</span>
+                            <span className="text-[8px] font-bold text-slate-300">Total: {max}</span>
                           </div>
-                          <input
-                            type="number"
-                            min={0}
-                            max={max}
-                            placeholder="0"
-                            value={segundasMatrix[item.id]?.['default'] || ''}
-                            onChange={e => updateMatrixValue(item.id, e.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded-lg py-1.5 text-center text-[12px] font-black text-slate-900 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-50 transition-all"
-                          />
+                          <div className="flex gap-2">
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[8px] font-black text-amber-500 uppercase text-center">Seg</span>
+                              <input
+                                type="number"
+                                min={0}
+                                max={max}
+                                placeholder="0"
+                                value={current.segundas || ''}
+                                onChange={e => updateMatrixValue(item.id, 'segundas', e.target.value)}
+                                className="w-12 bg-slate-50 border border-slate-200 rounded-lg py-1 text-center text-[11px] font-black text-slate-900 outline-none focus:border-amber-400 focus:bg-white transition-all"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[8px] font-black text-rose-500 uppercase text-center">Desp</span>
+                              <input
+                                type="number"
+                                min={0}
+                                max={max}
+                                placeholder="0"
+                                value={current.desperdicio || ''}
+                                onChange={e => updateMatrixValue(item.id, 'desperdicio', e.target.value)}
+                                className="w-12 bg-slate-50 border border-slate-200 rounded-lg py-1 text-center text-[11px] font-black text-slate-900 outline-none focus:border-rose-400 focus:bg-white transition-all"
+                              />
+                            </div>
+                          </div>
                         </div>
                       )
                     })}
@@ -226,10 +268,10 @@ export function CerrarInspeccionForm({
             ))}
           </div>
 
-          <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 shadow-sm">
-            <PackageSearch className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <p className="text-amber-700 text-[10px] font-black uppercase tracking-widest leading-tight text-left">
-              ESTAS UNIDADES SERÁN TRASLADADAS A LA <span className="underline decoration-2 underline-offset-2">BODEGA DE SEGUNDAS</span> PARA SU REPROCESO O CLASIFICACIÓN FINAL.
+          <div className="flex items-start gap-2 rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 shadow-sm">
+            <PackageSearch className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest leading-tight text-left italic">
+              LAS SEGUNDAS ENTRARÁN EN LOOP DE REPROCESO. EL DESPERDICIO SE DESCONTARÁ DEFINITIVAMENTE DE LA PRODUCCIÓN.
             </p>
           </div>
         </div>
