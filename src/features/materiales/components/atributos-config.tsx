@@ -6,6 +6,7 @@ import { createAtributoMP, deleteAtributoMP, validateAbreviacionMP, updateAbrevi
 import { generarAbreviacion } from '@/shared/lib/abreviacion-utils'
 import type { AtributoMP, TipoAtributoMP } from '@/features/materiales/types/atributos'
 import { TIPOS_ATRIBUTO_MP, LABELS_ATRIBUTO_MP } from '@/features/materiales/types/atributos'
+import { cn } from '@/shared/lib/utils'
 
 interface Props {
   atributos: AtributoMP[]

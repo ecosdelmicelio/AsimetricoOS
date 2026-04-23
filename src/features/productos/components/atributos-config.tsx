@@ -6,6 +6,7 @@ import { createAtributoPT, deleteAtributoPT, validateAbreviacionPT, updateAbrevi
 import { generarAbreviacion } from '@/shared/lib/abreviacion-utils'
 import type { AtributoPT, TipoAtributo } from '@/features/productos/types/atributos'
 import { TIPOS_ATRIBUTO, LABELS_ATRIBUTO } from '@/features/productos/types/atributos'
+import { cn } from '@/shared/lib/utils'
 
 interface Props {
   atributos: AtributoPT[]
