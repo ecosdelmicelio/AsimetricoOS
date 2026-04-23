@@ -64,51 +64,54 @@ export function CerrarInspeccionForm({
   const criticoBloquea = tieneDefectoCritico
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl bg-neu-base shadow-neu p-5 space-y-4">
-      <h3 className="font-semibold text-foreground text-body-md">Cerrar inspección</h3>
+    <form onSubmit={handleSubmit} className="rounded-[2.5rem] bg-white border border-slate-100 shadow-xl p-8 space-y-6">
+      <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+        <div className="w-1.5 h-4 bg-slate-900 rounded-full" />
+        FINALIZAR INSPECCIÓN TÉCNICA
+      </h3>
 
       {/* Banner rechazo automático por crítico */}
       {tieneDefectoCritico && (
-        <div className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-3 py-3">
-          <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-          <p className="text-red-700 text-xs font-semibold leading-snug">
-            Se registró al menos un defecto CRÍTICO. El resultado es <strong>Rechazada</strong> de forma automática.
+        <div className="flex items-start gap-3 rounded-2xl bg-rose-50 border border-rose-100 px-4 py-3">
+          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+          <p className="text-rose-700 text-[10px] font-black uppercase tracking-widest leading-tight">
+            DEFECTO CRÍTICO DETECTADO — EL RESULTADO SERÁ <span className="underline decoration-2 underline-offset-2">RECHAZADA</span> AUTOMÁTICAMENTE.
           </p>
         </div>
       )}
 
       {/* Resultado — 3 opciones */}
-      <div className="space-y-1.5">
-        <p className="text-body-sm text-muted-foreground">Resultado *</p>
-        <div className="grid grid-cols-3 gap-2">
+      <div className="space-y-2">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">DIAMAGNÓSTICO FINAL *</p>
+        <div className="grid grid-cols-3 gap-3">
 
           {/* Aceptada */}
           <button
             type="button"
             disabled={criticoBloquea}
             onClick={() => !criticoBloquea && setResultado('aceptada')}
-            className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border-2 font-semibold text-body-sm transition-all ${
+            className={`flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border-2 transition-all group ${
               resultado === 'aceptada'
-                ? 'border-green-500 bg-green-50 text-green-700'
-                : 'border-transparent bg-neu-base shadow-neu text-muted-foreground hover:text-foreground'
-            } ${criticoBloquea ? 'opacity-40 cursor-not-allowed' : ''}`}
+                ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                : 'border-slate-100 bg-slate-50/50 text-slate-400 hover:border-slate-200'
+            } ${criticoBloquea ? 'opacity-30 cursor-not-allowed' : 'active:scale-95'}`}
           >
-            <CheckCircle className="w-4 h-4" />
-            Aceptada
+            <CheckCircle className={`w-5 h-5 ${resultado === 'aceptada' ? 'text-emerald-500' : 'text-slate-300'}`} />
+            <span className="text-[10px] font-black uppercase tracking-widest">ACEPTADA</span>
           </button>
 
           {/* Rechazada */}
           <button
             type="button"
             onClick={() => setResultado('rechazada')}
-            className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border-2 font-semibold text-body-sm transition-all ${
+            className={`flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border-2 transition-all group ${
               resultado === 'rechazada'
-                ? 'border-red-500 bg-red-50 text-red-700'
-                : 'border-transparent bg-neu-base shadow-neu text-muted-foreground hover:text-foreground'
-            }`}
+                ? 'border-rose-500 bg-rose-50 text-rose-700'
+                : 'border-slate-100 bg-slate-50/50 text-slate-400 hover:border-slate-200'
+            } active:scale-95`}
           >
-            <XCircle className="w-4 h-4" />
-            Rechazada
+            <XCircle className={`w-5 h-5 ${resultado === 'rechazada' ? 'text-rose-500' : 'text-slate-300'}`} />
+            <span className="text-[10px] font-black uppercase tracking-widest">RECHAZADA</span>
           </button>
 
           {/* Segundas */}
@@ -116,71 +119,75 @@ export function CerrarInspeccionForm({
             type="button"
             disabled={criticoBloquea}
             onClick={() => !criticoBloquea && setResultado('segundas')}
-            className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border-2 font-semibold text-body-sm transition-all ${
+            className={`flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border-2 transition-all group ${
               resultado === 'segundas'
-                ? 'border-purple-500 bg-purple-50 text-purple-700'
-                : 'border-transparent bg-neu-base shadow-neu text-muted-foreground hover:text-foreground'
-            } ${criticoBloquea ? 'opacity-40 cursor-not-allowed' : ''}`}
+                ? 'border-amber-500 bg-amber-50 text-amber-700'
+                : 'border-slate-100 bg-slate-50/50 text-slate-400 hover:border-slate-200'
+            } ${criticoBloquea ? 'opacity-30 cursor-not-allowed' : 'active:scale-95'}`}
           >
-            <PackageSearch className="w-4 h-4" />
-            Segundas
+            <PackageSearch className={`w-5 h-5 ${resultado === 'segundas' ? 'text-amber-500' : 'text-slate-300'}`} />
+            <span className="text-[10px] font-black uppercase tracking-widest">SEGUNDAS</span>
           </button>
         </div>
       </div>
 
       {/* Cantidad Segundas */}
       {resultado === 'segundas' && (
-        <div className="space-y-1.5">
-          <label className="text-body-sm text-muted-foreground">Prendas de segunda calidad *</label>
-          <input
-            type="number"
-            min={1}
-            value={cantidadSegundas}
-            onChange={e => setCantidadSegundas(e.target.value)}
-            placeholder="Cantidad"
-            className="w-full rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5 text-body-sm text-foreground focus:outline-none"
-          />
-          <div className="flex items-start gap-2 rounded-xl bg-purple-50 border border-purple-200 px-3 py-2.5">
-            <PackageSearch className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
-            <p className="text-purple-700 text-xs font-semibold leading-snug">
-              Las prendas marcadas como Segundas salen del flujo normal de producción.
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Prendas de segunda calidad *</label>
+          <div className="rounded-xl bg-slate-50/50 border border-slate-100">
+            <input
+              type="number"
+              min={1}
+              value={cantidadSegundas}
+              onChange={e => setCantidadSegundas(e.target.value)}
+              placeholder="0"
+              className="w-full bg-transparent px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none"
+            />
+          </div>
+          <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-100 px-4 py-3">
+            <PackageSearch className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <p className="text-amber-700 text-[10px] font-black uppercase tracking-widest leading-tight">
+              ESTAS PRENDAS SERÁN EXCLUIDAS DEL FLUJO NORMAL DE DESPACHOS.
             </p>
           </div>
         </div>
       )}
 
       {/* Notas */}
-      <div className="space-y-1.5">
-        <label className="text-body-sm text-muted-foreground">Notas de cierre</label>
-        <textarea
-          name="notas"
-          rows={2}
-          placeholder="Observaciones finales..."
-          className="w-full rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5 text-body-sm text-foreground focus:outline-none resize-none"
-        />
+      <div className="space-y-2">
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Notas de cierre</label>
+        <div className="rounded-xl bg-slate-50/50 border border-slate-100">
+          <textarea
+            name="notas"
+            rows={2}
+            placeholder="Observaciones finales..."
+            className="w-full bg-transparent px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none resize-none placeholder:text-slate-300"
+          />
+        </div>
       </div>
 
       {/* Banners de resultado */}
       {resultado === 'aceptada' && (
-        <p className="text-body-sm text-green-600 bg-green-50 rounded-xl px-3 py-2">
-          La OP avanzará al siguiente estado automáticamente.
-        </p>
+        <div className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3 text-center">
+          LA OP AVANZARÁ A "TERMINADO" AUTOMÁTICAMENTE.
+        </div>
       )}
       {resultado === 'rechazada' && !tieneDefectoCritico && (
-        <p className="text-body-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">
-          La OP quedará pendiente para re-inspección.
-        </p>
+        <div className="text-[10px] font-black uppercase tracking-widest text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-4 py-3 text-center">
+          LA OP QUEDARÁ EN CALIDAD PARA RE-INSPECCIÓN.
+        </div>
       )}
 
-      {error && <p className="text-red-600 text-body-sm">{error}</p>}
+      {error && <p className="text-rose-600 text-[10px] font-black uppercase tracking-widest text-center">{error}</p>}
 
       <button
         type="submit"
         disabled={pending || !resultado}
-        className="w-full py-3 rounded-xl bg-primary-600 text-white font-semibold text-body-sm hover:bg-primary-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+        className="w-full py-4 rounded-xl bg-slate-900 text-white text-[11px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
       >
         {pending && <Loader2 className="w-4 h-4 animate-spin" />}
-        Cerrar inspección
+        CERRAR INSPECCIÓN TÉCNICA
       </button>
     </form>
   )

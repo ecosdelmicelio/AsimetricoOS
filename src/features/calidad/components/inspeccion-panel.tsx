@@ -37,9 +37,11 @@ export async function InspeccionPanel({ op_id }: Props) {
 
   if (!op) {
     return (
-      <div className="rounded-2xl bg-neu-base shadow-neu p-12 text-center">
-        <p className="font-medium text-foreground">OP no encontrada o no está en calidad</p>
-        <Link href="/calidad" className="text-primary-600 text-body-sm mt-2 inline-block">← Volver</Link>
+      <div className="rounded-[2rem] bg-white border border-slate-100 shadow-xl p-12 text-center">
+        <p className="font-bold text-slate-900">OP no encontrada o no está en calidad</p>
+        <Link href="/calidad" className="text-primary-600 text-[10px] font-black uppercase tracking-widest mt-4 inline-block hover:underline">
+          ← Volver al listado
+        </Link>
       </div>
     )
   }
@@ -62,42 +64,42 @@ export async function InspeccionPanel({ op_id }: Props) {
         <div className="flex items-center gap-3">
           <Link
             href="/calidad"
-            className="w-9 h-9 rounded-xl bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors active:shadow-neu-inset"
+            className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-95"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-display-xs font-heading font-bold text-foreground">{op.codigo}</h1>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold bg-purple-100 text-purple-700">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <h1 className="text-2xl font-black tracking-tighter text-slate-900 leading-none">{op.codigo}</h1>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-slate-900 text-white">
                 {tipoLabel}
               </span>
               {cicloActual > 1 && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold bg-orange-100 text-orange-700">
-                  <RefreshCw className="w-3 h-3" />
-                  Re-inspección #{cicloActual}
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-100 text-amber-700">
+                  <RefreshCw className="w-2.5 h-2.5" />
+                  RE-INSPECCIÓN #{cicloActual}
                 </span>
               )}
               {inspeccion && <CalidadStatusBadge resultado={inspeccion.resultado} />}
             </div>
-            <p className="text-muted-foreground text-body-sm mt-0.5">
-              {op.taller} · {op.cliente} · Promesa: {formatDate(op.fecha_promesa)}
+            <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest leading-none">
+              {op.taller} · {op.cliente} · PROMESA: {formatDate(op.fecha_promesa)}
             </p>
           </div>
         </div>
       </div>
 
       {/* Context strip — muestra sugerida + estadísticas del taller */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {/* Muestra sugerida */}
-        <div className="rounded-2xl bg-neu-base shadow-neu px-4 py-3 flex flex-col gap-0.5">
-          <p className="text-xs text-muted-foreground flex items-center gap-1">
-            <Layers className="w-3 h-3" /> Muestra sugerida
+        <div className="rounded-[1.5rem] bg-white border border-slate-100 shadow-sm px-5 py-4 flex flex-col gap-1">
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+            <Layers className="w-3 h-3 text-primary-500" /> Muestra sugerida
           </p>
-          <p className="font-bold text-foreground text-body-md">
-            {muestraSugerida} prenda{muestraSugerida !== 1 ? 's' : ''}
+          <p className="font-black text-slate-900 text-lg leading-tight">
+            {muestraSugerida} <span className="text-[10px] font-bold text-slate-400">UDS</span>
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight opacity-70">
             {tipoInspeccion === 'dupro'
               ? `${calidadConfig.dupro_pct}% del lote`
               : calidadConfig.fri_metodo === 'aql'
@@ -110,65 +112,65 @@ export async function InspeccionPanel({ op_id }: Props) {
         </div>
 
         {/* FTT del taller */}
-        <div className="rounded-2xl bg-neu-base shadow-neu px-4 py-3 flex flex-col gap-0.5">
-          <p className="text-xs text-muted-foreground flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" /> FTT taller
+        <div className="rounded-[1.5rem] bg-white border border-slate-100 shadow-sm px-5 py-4 flex flex-col gap-1">
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+            <TrendingUp className="w-3 h-3 text-emerald-500" /> FTT TALLER
           </p>
           {tallerStats && tallerStats.total_cerradas > 0 ? (
             <>
-              <p className={`font-bold text-body-md ${tallerStats.ftt >= 80 ? 'text-green-600' : tallerStats.ftt >= 60 ? 'text-orange-600' : 'text-red-600'}`}>
+              <p className={`font-black text-lg leading-tight ${tallerStats.ftt >= 80 ? 'text-emerald-600' : tallerStats.ftt >= 60 ? 'text-amber-600' : 'text-rose-600'}`}>
                 {tallerStats.ftt}%
               </p>
-              <p className="text-xs text-muted-foreground">
-                {tallerStats.aceptadas}/{tallerStats.total_cerradas} aprobadas
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight opacity-70">
+                {tallerStats.aceptadas}/{tallerStats.total_cerradas} APROBADAS
               </p>
             </>
           ) : (
-            <p className="font-bold text-foreground text-body-md">—</p>
+            <p className="font-black text-slate-900 text-lg leading-tight">—</p>
           )}
         </div>
 
         {/* Defecto más frecuente */}
-        <div className="rounded-2xl bg-neu-base shadow-neu px-4 py-3 col-span-2 flex flex-col gap-0.5">
-          <p className="text-xs text-muted-foreground flex items-center gap-1">
-            <Bug className="w-3 h-3" /> Defectos frecuentes ({op.taller})
+        <div className="rounded-[1.5rem] bg-white border border-slate-100 shadow-sm px-5 py-4 col-span-2 flex flex-col gap-1">
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+            <Bug className="w-3 h-3 text-rose-500" /> DEFECTOS FRECUENTES ({op.taller})
           </p>
           {tallerStats && tallerStats.top_defectos.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5 mt-1">
+            <div className="flex flex-wrap gap-2 mt-1">
               {tallerStats.top_defectos.map((d, i) => (
                 <span
                   key={d.codigo}
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold ${
-                    i === 0 ? 'bg-red-100 text-red-700' : 'bg-neu-base shadow-neu text-muted-foreground'
+                  className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                    i === 0 ? 'bg-rose-100 text-rose-700' : 'bg-slate-50 text-slate-500 border border-slate-100'
                   }`}
                 >
-                  {d.codigo} <span className="font-normal opacity-75">×{d.veces}</span>
+                  {d.codigo} <span className="font-bold opacity-60">×{d.veces}</span>
                 </span>
               ))}
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground mt-1">Sin historial aún</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight opacity-70 mt-1">Sin historial aún</p>
           )}
         </div>
       </div>
 
       {/* Sin inspección activa */}
       {!inspeccion && tipoInspeccion && (
-        <div className="rounded-2xl bg-neu-base shadow-neu p-8 flex flex-col items-center text-center gap-4">
-          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${cicloActual > 1 ? 'bg-orange-50' : 'bg-neu-base shadow-neu-inset'}`}>
+        <div className="rounded-[2.5rem] bg-white border border-slate-100 shadow-xl p-10 flex flex-col items-center text-center gap-6">
+          <div className={`w-16 h-16 rounded-[2rem] flex items-center justify-center ${cicloActual > 1 ? 'bg-amber-50' : 'bg-slate-50'}`}>
             {cicloActual > 1
-              ? <RefreshCw className="w-7 h-7 text-orange-500" />
-              : <AlertTriangle className="w-7 h-7 text-yellow-500" />
+              ? <RefreshCw className="w-8 h-8 text-amber-500 animate-spin-slow" />
+              : <AlertTriangle className="w-8 h-8 text-amber-500" />
             }
           </div>
           <div>
-            <p className="font-medium text-foreground">
-              {cicloActual > 1 ? `Re-inspección #${cicloActual} pendiente` : 'Sin inspección iniciada'}
+            <p className="text-lg font-black text-slate-900 tracking-tight uppercase">
+              {cicloActual > 1 ? `Re-inspección #${cicloActual} pendiente` : 'Inspección No Iniciada'}
             </p>
-            <p className="text-muted-foreground text-body-sm mt-1">
+            <p className="text-slate-500 text-sm font-medium mt-2 max-w-sm mx-auto">
               {cicloActual > 1
                 ? `La inspección anterior fue rechazada. Inicia el ciclo #${cicloActual} una vez corregidas las novedades.`
-                : `Inicia la inspección ${tipoLabel} para registrar novedades`
+                : `Debes iniciar formalmente la inspección técnica de ${tipoLabel} para poder registrar hallazgos.`
               }
             </p>
           </div>
@@ -180,19 +182,19 @@ export async function InspeccionPanel({ op_id }: Props) {
       {inspeccion && (
         <div className="space-y-4">
           {/* Novedades */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-foreground text-body-md">
-                Novedades registradas ({inspeccion.novedades_calidad.length})
+          <div className="space-y-4">
+            <div className="flex items-center justify-between px-2">
+              <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                HALLAZGOS REGISTRADOS ({inspeccion.novedades_calidad.length})
               </h2>
             </div>
 
             {inspeccion.novedades_calidad.length === 0 ? (
-              <div className="rounded-2xl bg-neu-base shadow-neu px-5 py-8 text-center">
-                <p className="text-muted-foreground text-body-sm">Sin novedades aún</p>
+              <div className="rounded-[2rem] bg-white border border-slate-100 shadow-sm px-6 py-12 text-center">
+                <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Sin novedades aún</p>
               </div>
             ) : (
-              <div className="rounded-2xl bg-neu-base shadow-neu overflow-hidden">
+              <div className="rounded-[2rem] bg-white border border-slate-100 shadow-sm overflow-hidden">
                 {inspeccion.novedades_calidad.map((n, i) => {
                   const gravedadConfig = GRAVEDAD_CONFIG[n.gravedad] ?? GRAVEDAD_CONFIG.menor
                   return (
@@ -201,15 +203,15 @@ export async function InspeccionPanel({ op_id }: Props) {
                       className={`flex items-start gap-3 px-4 py-3 ${i < inspeccion.novedades_calidad.length - 1 ? 'border-b border-black/5' : ''}`}
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-foreground text-body-sm">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="font-black text-slate-900 text-xs uppercase tracking-tight">
                             {n.tipos_defecto?.codigo ?? 'DEF-?'} — {n.tipos_defecto?.descripcion ?? ''}
                           </span>
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold ${gravedadConfig.className}`}>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${gravedadConfig.className}`}>
                             {gravedadConfig.label}
                           </span>
                         </div>
-                        <p className="text-muted-foreground text-body-sm mt-0.5">
+                        <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">
                           {n.cantidad_afectada} prenda{n.cantidad_afectada !== 1 ? 's' : ''}
                           {n.descripcion && ` · ${n.descripcion}`}
                         </p>
@@ -250,24 +252,24 @@ export async function InspeccionPanel({ op_id }: Props) {
 
       {/* Historial de inspecciones anteriores */}
       {historialInspecciones.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="font-semibold text-foreground text-body-md text-muted-foreground">
-            Inspecciones anteriores
+        <div className="space-y-4">
+          <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-400 px-2">
+            INSPECCIONES ANTERIORES
           </h2>
-          <div className="rounded-2xl bg-neu-base shadow-neu overflow-hidden">
+          <div className="rounded-[2rem] bg-white border border-slate-100 shadow-sm overflow-hidden">
             {historialInspecciones.map((h, i) => (
               <div
                 key={h.id}
-                className={`flex items-center justify-between px-4 py-3 ${i < historialInspecciones.length - 1 ? 'border-b border-black/5' : ''}`}
+                className={`flex items-center justify-between px-6 py-4 ${i < historialInspecciones.length - 1 ? 'border-b border-slate-50' : ''}`}
               >
                 <div>
-                  <p className="text-body-sm font-medium text-foreground">
+                  <p className="text-xs font-black text-slate-900 uppercase tracking-widest">
                     Inspección {h.tipo.toUpperCase()}
                   </p>
-                  <p className="text-muted-foreground text-xs mt-0.5">
+                  <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">
                     {h.timestamp_cierre ? formatDate(h.timestamp_cierre) : '—'}
-                    {h.muestra_revisada && h.muestra_revisada > 0 ? ` · ${h.muestra_revisada} prendas revisadas` : ''}
-                    {h.cantidad_segundas && h.cantidad_segundas > 0 ? ` · ${h.cantidad_segundas} segundas` : ''}
+                    {h.muestra_revisada && h.muestra_revisada > 0 ? ` · ${h.muestra_revisada} PRENDAS` : ''}
+                    {h.cantidad_segundas && h.cantidad_segundas > 0 ? ` · ${h.cantidad_segundas} SEGUNDAS` : ''}
                   </p>
                 </div>
                 <CalidadStatusBadge resultado={h.resultado} />

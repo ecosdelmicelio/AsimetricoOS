@@ -52,72 +52,72 @@ function NuevoDefectoForm({
   }
 
   return (
-    <div className="rounded-xl bg-neu-base shadow-neu-inset p-3 space-y-3">
-      <p className="text-xs font-semibold text-primary-700 uppercase tracking-wide">Nuevo tipo de defecto</p>
+    <div className="rounded-2xl bg-slate-50/50 border border-slate-100 p-4 space-y-4">
+      <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest">NUEVO TIPO DE DEFECTO</p>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div className="col-span-2 space-y-1">
-          <label className="text-xs text-muted-foreground">Descripción *</label>
-          <div className="rounded-lg bg-neu-base shadow-neu px-2.5 py-1.5">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="col-span-2 space-y-1.5">
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Descripción *</label>
+          <div className="rounded-xl bg-white border border-slate-200 shadow-sm px-3 py-2">
             <input
               value={descripcion}
               onChange={e => setDescripcion(e.target.value)}
-              placeholder="Ej: Elastico flojo en cintura"
-              className="w-full bg-transparent text-body-sm text-foreground outline-none"
+              placeholder="Ej: Elástico flojo en cintura"
+              className="w-full bg-transparent text-sm text-slate-900 font-medium outline-none placeholder:text-slate-300"
               autoFocus
             />
           </div>
         </div>
-        <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Categoría *</label>
-          <div className="relative rounded-lg bg-neu-base shadow-neu px-2.5 py-1.5">
+        <div className="space-y-1.5">
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Categoría *</label>
+          <div className="relative rounded-xl bg-white border border-slate-200 shadow-sm px-3 py-2">
             <select
               value={categoria}
               onChange={e => setCategoria(e.target.value)}
-              className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none"
+              className="w-full bg-transparent text-sm text-slate-900 font-medium outline-none appearance-none cursor-pointer"
             >
               {CATEGORIAS.map(c => (
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
-            <ChevronDown className="absolute right-2 top-2 w-3 h-3 text-muted-foreground pointer-events-none" />
+            <ChevronDown className="absolute right-2.5 top-2.5 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
         </div>
-        <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Gravedad *</label>
-          <div className="relative rounded-lg bg-neu-base shadow-neu px-2.5 py-1.5">
+        <div className="space-y-1.5">
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Gravedad *</label>
+          <div className="relative rounded-xl bg-white border border-slate-200 shadow-sm px-3 py-2">
             <select
               value={gravedad}
               onChange={e => setGravedad(e.target.value as GravedadDefecto)}
-              className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none"
+              className="w-full bg-transparent text-sm text-slate-900 font-medium outline-none appearance-none cursor-pointer"
             >
               {GRAVEDADES.map(g => (
                 <option key={g.value} value={g.value}>{g.label}</option>
               ))}
             </select>
-            <ChevronDown className="absolute right-2 top-2 w-3 h-3 text-muted-foreground pointer-events-none" />
+            <ChevronDown className="absolute right-2.5 top-2.5 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
         </div>
       </div>
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-[10px] font-bold text-rose-600 uppercase tracking-tight">{error}</p>}
 
       <div className="flex gap-2">
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 py-1.5 rounded-lg bg-neu-base shadow-neu text-body-sm text-muted-foreground"
+          className="flex-1 py-2.5 rounded-xl bg-white border border-slate-200 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:bg-slate-50 transition-all"
         >
-          Cancelar
+          CANCELAR
         </button>
         <button
           type="button"
           onClick={handleSave}
           disabled={pending}
-          className="flex-1 py-1.5 rounded-lg bg-primary-600 text-white font-semibold text-body-sm disabled:opacity-50 flex items-center justify-center gap-1.5"
+          className="flex-1 py-2.5 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {pending && <Loader2 className="w-3 h-3 animate-spin" />}
-          Crear y seleccionar
+          CREAR Y SELECCIONAR
         </button>
       </div>
     </div>
@@ -220,10 +220,10 @@ export function NovedadForm({ inspeccion_id, op_id, tiposDefecto }: Props) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center justify-center gap-2 w-full rounded-xl border-2 border-dashed border-black/10 py-4 text-body-sm text-muted-foreground hover:text-foreground hover:border-black/20 transition-all"
+        className="flex items-center justify-center gap-2 w-full rounded-[2rem] border-2 border-dashed border-slate-200 py-6 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:border-slate-900 hover:bg-slate-50 transition-all group"
       >
-        <Plus className="w-4 h-4" />
-        Registrar novedad
+        <Plus className="w-4 h-4 transition-transform group-hover:scale-125" />
+        REGISTRAR NOVEDAD TÉCNICA
       </button>
     )
   }
@@ -232,18 +232,21 @@ export function NovedadForm({ inspeccion_id, op_id, tiposDefecto }: Props) {
     <form
       ref={formRef}
       onSubmit={handleSubmit}
-      className="rounded-2xl bg-neu-base shadow-neu p-5 space-y-4"
+      className="rounded-[2.5rem] bg-white border border-slate-100 shadow-xl p-8 space-y-6"
     >
-      <h3 className="font-semibold text-foreground text-body-sm">Nueva novedad</h3>
+      <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+        <div className="w-1.5 h-4 bg-slate-900 rounded-full" />
+        NUEVA NOVEDAD DE CALIDAD
+      </h3>
 
       {/* Tipo de defecto */}
-      <div className="space-y-1.5">
-        <label className="text-body-sm text-muted-foreground">Tipo de defecto *</label>
-        <div className="relative rounded-xl bg-neu-base shadow-neu-inset">
+      <div className="space-y-2">
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Tipo de defecto *</label>
+        <div className="relative rounded-xl bg-slate-50/50 border border-slate-100 focus-within:border-slate-900 transition-all">
           <select
             value={selectedTipoId}
             onChange={e => handleTipoChange(e.target.value)}
-            className="w-full rounded-xl bg-transparent px-3 py-2.5 text-body-sm text-foreground focus:outline-none appearance-none"
+            className="w-full rounded-xl bg-transparent px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none appearance-none cursor-pointer"
           >
             <option value="">Seleccionar defecto...</option>
             {localTipos.map(t => (
@@ -253,7 +256,7 @@ export function NovedadForm({ inspeccion_id, op_id, tiposDefecto }: Props) {
             ))}
             <option value="__nuevo__">+ Crear nuevo tipo de defecto...</option>
           </select>
-          <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <ChevronDown className="absolute right-3.5 top-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
         </div>
       </div>
 
@@ -295,57 +298,61 @@ export function NovedadForm({ inspeccion_id, op_id, tiposDefecto }: Props) {
 
       {/* Cantidad afectada */}
       {!creandoNuevo && (
-        <div className="space-y-1.5">
-          <label className="text-body-sm text-muted-foreground">Prendas afectadas *</label>
-          <input
-            type="number"
-            name="cantidad_afectada"
-            min={1}
-            required
-            defaultValue={1}
-            className="w-full rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5 text-body-sm text-foreground focus:outline-none"
-          />
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Prendas afectadas *</label>
+          <div className="rounded-xl bg-slate-50/50 border border-slate-100">
+            <input
+              type="number"
+              name="cantidad_afectada"
+              min={1}
+              required
+              defaultValue={1}
+              className="w-full bg-transparent px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none"
+            />
+          </div>
         </div>
       )}
 
       {/* Descripción adicional */}
       {!creandoNuevo && (
-        <div className="space-y-1.5">
-          <label className="text-body-sm text-muted-foreground">Descripción adicional</label>
-          <textarea
-            name="descripcion"
-            rows={2}
-            placeholder="Describe el defecto con más detalle..."
-            className="w-full rounded-xl bg-neu-base shadow-neu-inset px-3 py-2.5 text-body-sm text-foreground focus:outline-none resize-none"
-          />
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Descripción adicional</label>
+          <div className="rounded-xl bg-slate-50/50 border border-slate-100">
+            <textarea
+              name="descripcion"
+              rows={2}
+              placeholder="Describe el defecto con más detalle..."
+              className="w-full bg-transparent px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none resize-none placeholder:text-slate-300"
+            />
+          </div>
         </div>
       )}
 
       {/* Foto — OBLIGATORIA */}
       {!creandoNuevo && (
-        <div className="space-y-1.5">
-          <label className="text-body-sm text-muted-foreground">
-            Foto <span className="text-red-500 font-semibold">* obligatoria</span>
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+            Foto <span className="text-rose-500">* OBLIGATORIA</span>
           </label>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-body-sm transition-all ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                 preview
-                  ? 'bg-green-50 text-green-700 shadow-inner'
-                  : 'bg-neu-base shadow-neu text-muted-foreground hover:text-foreground'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'
               }`}
             >
               <Camera className="w-4 h-4" />
-              {preview ? 'Cambiar foto' : 'Tomar / adjuntar foto'}
+              {preview ? 'CAMBIAR FOTO' : 'ADJUNTAR EVIDENCIA'}
             </button>
             {preview && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={preview} alt="Preview" className="w-12 h-12 object-cover rounded-xl shadow-neu-inset" />
+              <img src={preview} alt="Preview" className="w-14 h-14 object-cover rounded-xl border-2 border-white shadow-md" />
             )}
             {!preview && (
-              <span className="text-xs text-red-500">Sin foto</span>
+              <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest italic opacity-60">Falta evidencia visual</span>
             )}
           </div>
           <input
@@ -360,24 +367,24 @@ export function NovedadForm({ inspeccion_id, op_id, tiposDefecto }: Props) {
         </div>
       )}
 
-      {error && <p className="text-red-600 text-body-sm">{error}</p>}
+      {error && <p className="text-rose-600 text-[10px] font-black uppercase tracking-widest">{error}</p>}
 
       {!creandoNuevo && (
-        <div className="flex gap-2 pt-1">
+        <div className="flex gap-3 pt-4">
           <button
             type="button"
             onClick={resetForm}
-            className="flex-1 py-2.5 rounded-xl bg-neu-base shadow-neu text-body-sm text-muted-foreground hover:text-foreground transition-all"
+            className="flex-1 py-3.5 rounded-xl bg-white border border-slate-200 text-[11px] font-black text-slate-500 uppercase tracking-widest hover:bg-slate-50 transition-all"
           >
-            Cancelar
+            CANCELAR
           </button>
           <button
             type="submit"
             disabled={pending || !selectedTipoId || !gravedad || !preview}
-            className="flex-1 py-2.5 rounded-xl bg-primary-600 text-white font-semibold text-body-sm hover:bg-primary-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-1 py-3.5 rounded-xl bg-slate-900 text-white text-[11px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {pending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            Guardar novedad
+            {pending && <Loader2 className="w-4 h-4 animate-spin" />}
+            GUARDAR NOVEDAD
           </button>
         </div>
       )}

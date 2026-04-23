@@ -18,7 +18,7 @@ const STEP_LABELS: Partial<Record<EstadoOP, string>> = {
 }
 import { XCircle } from 'lucide-react'
 
-// en_corte → en_confeccion es automático al guardar reporte de corte.
+// en_corte → en_confeccion es automático al guardar reporte de corte, pero se permite manual si se atasca.
 // en_confeccion → dupro_pendiente usa iniciarDupro() (crea inspección + transición).
 // dupro_pendiente → en_terminado ocurre al cerrar la inspección DUPRO en /calidad.
 // en_terminado → en_entregas es automático al guardar insumos.
@@ -35,8 +35,9 @@ const LABELS_ACCION: Partial<Record<EstadoOP, string>> = {
 interface Props {
   opId: string
   estadoActual: string
+  tieneReporteCorte?: boolean
 }
-export function OPActions({ opId, estadoActual }: Props) {
+export function OPActions({ opId, estadoActual, tieneReporteCorte = false }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -48,6 +49,9 @@ export function OPActions({ opId, estadoActual }: Props) {
   // en_confeccion tiene su propia acción
   const esEnviarDupro = estado === 'en_confeccion'
   const esRealizarDupro = estado === 'dupro_pendiente'
+  const esAvanzarCorte = estado === 'en_corte'
+
+  const isDisabled = isPending || (esAvanzarCorte && !tieneReporteCorte)
 
   function handleAvanzar() {
     if (esRealizarDupro) {
@@ -74,14 +78,15 @@ export function OPActions({ opId, estadoActual }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-2 w-full">
+    <div className="flex flex-col gap-3 w-full">
       {(esEnviarDupro || esRealizarDupro || (siguienteEstado && labelAccion)) && (
         <button
           onClick={handleAvanzar}
-          disabled={isPending}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-neu-base shadow-neu text-primary-700 font-semibold text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg disabled:opacity-40 disabled:pointer-events-none w-full shrink-0"
+          disabled={isDisabled}
+          title={esAvanzarCorte && !tieneReporteCorte ? "Debes registrar al menos un reporte de corte primero" : undefined}
+          className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-900 text-white font-black uppercase tracking-widest text-[11px] transition-all hover:bg-slate-800 hover:shadow-lg disabled:opacity-40 disabled:pointer-events-none disabled:hover:shadow-none w-full shrink-0"
         >
-          {isPending && !esRealizarDupro ? 'Actualizando...' : (LABELS_ACCION[estado] ?? 'Acción')}
+          {isPending && !esRealizarDupro ? 'ACTUALIZANDO...' : (LABELS_ACCION[estado] ?? 'ACCIÓN')}
         </button>
       )}
 
@@ -89,11 +94,11 @@ export function OPActions({ opId, estadoActual }: Props) {
         <button
           onClick={handleCancelar}
           disabled={isPending}
-          className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-neu-base shadow-neu-inset text-red-600 hover:text-red-700 font-medium text-body-sm transition-all active:shadow-neu-inset hover:shadow-neu-lg disabled:opacity-40 w-full shrink-0"
+          className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white border border-rose-200 text-rose-500 hover:text-rose-700 hover:bg-rose-50 hover:border-rose-300 font-black uppercase tracking-widest text-[11px] transition-all shadow-sm hover:shadow-md disabled:opacity-40 w-full shrink-0"
           title="Cancelar OP"
         >
           <XCircle className="w-4 h-4" />
-          <span>Cancelar</span>
+          <span>CANCELAR</span>
         </button>
       )}
     </div>

@@ -165,7 +165,7 @@ export function OPDetailClient({
 
             {/* Actions */}
             <div className="flex flex-col gap-2 shrink-0 w-full sm:w-40 self-start sticky top-4">
-              <OPActions opId={id} estadoActual={op.estado} />
+              <OPActions opId={id} estadoActual={op.estado} tieneReporteCorte={reportes.length > 0} />
             </div>
           </div>
 

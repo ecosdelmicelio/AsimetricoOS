@@ -387,12 +387,12 @@ export async function createReporteCorte(input: CreateReporteCorteInput) {
     }
   }
 
-  // Transición automática: en_corte → en_confeccion
+  // Transición automática: programada/en_corte → en_confeccion
   await supabase
     .from('ordenes_produccion')
     .update({ estado: 'en_confeccion' })
     .eq('id', input.op_id)
-    .eq('estado', 'en_corte')
+    .in('estado', ['programada', 'en_corte'])
 
   revalidatePath(`/ordenes-produccion/${input.op_id}`)
   return { data: { id: reporte.id } }
@@ -518,6 +518,13 @@ export async function updateReporteCorte(reporteId: string, input: CreateReporte
       }
     }
   }
+
+  // Transición automática en actualización (por si quedó atascada)
+  await supabase
+    .from('ordenes_produccion')
+    .update({ estado: 'en_confeccion' })
+    .eq('id', input.op_id)
+    .in('estado', ['programada', 'en_corte'])
 
   revalidatePath(`/ordenes-produccion/${input.op_id}`)
   return { data: { id: reporteId } }
