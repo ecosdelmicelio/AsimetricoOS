@@ -2,10 +2,9 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/shared/lib/supabase/server'
+import { db } from '@/shared/lib/supabase/db'
 import type { CalidadConfig } from '@/features/calidad/types'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function db(supabase: unknown): any { return supabase }
 
 const DEFAULTS: Omit<CalidadConfig, 'id' | 'updated_at'> = {
   dupro_pct:        30,

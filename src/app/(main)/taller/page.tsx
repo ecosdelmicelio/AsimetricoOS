@@ -5,13 +5,12 @@ import { PageHeader } from '@/shared/components/page-header'
 import { Factory, ShieldAlert } from 'lucide-react'
 import { redirect } from 'next/navigation'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function db(supabase: unknown): any { return supabase }
+import { db } from '@/shared/lib/supabase/db'
 
 export default async function TallerPage() {
   const supabase = db(await createClient())
   
-  const { data: { user } } = await (await createClient()).auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   const { data: profile } = await supabase

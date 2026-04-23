@@ -4,11 +4,17 @@ import { useState, useEffect } from 'react'
 import { Trophy, TrendingDown, AlertCircle, CheckCircle2, Factory, Package } from 'lucide-react'
 import { cn, formatCurrency } from '@/shared/lib/utils'
 import { getParetoDefectos, getRankingTalleres } from '../services/calidad-actions'
+import { getTallerData } from '@/features/talleres/services/taller-actions'
+import { WorkshopPortal } from '@/features/talleres/components/workshop-portal'
+import { ChevronLeft } from 'lucide-react'
 
 export function QualityAnalytics() {
   const [pareto, setPareto] = useState<any[]>([])
   const [ranking, setRanking] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedTallerId, setSelectedTallerId] = useState<string | null>(null)
+  const [tallerData, setTallerData] = useState<any>(null)
+  const [loadingTaller, setLoadingTaller] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -23,6 +29,18 @@ export function QualityAnalytics() {
     load()
   }, [])
 
+  useEffect(() => {
+    if (selectedTallerId) {
+      setLoadingTaller(true)
+      getTallerData(selectedTallerId).then(data => {
+        setTallerData(data)
+        setLoadingTaller(false)
+      })
+    } else {
+      setTallerData(null)
+    }
+  }, [selectedTallerId])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -33,6 +51,26 @@ export function QualityAnalytics() {
 
   const topDefecto = pareto[0]
   const topTaller = ranking[0]
+
+  if (selectedTallerId && tallerData) {
+    return (
+      <div className="space-y-6">
+        <button 
+          onClick={() => setSelectedTallerId(null)}
+          className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors bg-white px-4 py-2 rounded-full border border-slate-100 shadow-sm"
+        >
+          <ChevronLeft className="w-4 h-4" /> Volver al Ranking
+        </button>
+        {loadingTaller ? (
+          <div className="flex items-center justify-center h-64">
+             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900" />
+          </div>
+        ) : (
+          <WorkshopPortal data={tallerData} />
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -117,36 +155,37 @@ export function QualityAnalytics() {
 
           <div className="space-y-4">
             {ranking.map((taller, idx) => (
-              <div 
+              <button 
                 key={taller.taller_id} 
-                className="flex items-center justify-between p-5 rounded-3xl border border-slate-50 hover:border-slate-200 hover:shadow-md transition-all group"
+                onClick={() => setSelectedTallerId(taller.taller_id)}
+                className="w-full flex items-center justify-between p-5 rounded-3xl border border-slate-50 hover:border-slate-900 hover:bg-slate-900 transition-all group text-left"
               >
                 <div className="flex items-center gap-5">
                   <div className={cn(
-                    "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm border",
-                    idx === 0 ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-slate-50 text-slate-400 border-slate-100"
+                    "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm border transition-colors",
+                    idx === 0 ? "bg-amber-50 text-amber-600 border-amber-100 group-hover:bg-amber-500 group-hover:text-white" : "bg-slate-50 text-slate-400 border-slate-100 group-hover:bg-slate-800 group-hover:text-white"
                   )}>
                     #{idx + 1}
                   </div>
                   <div>
-                    <p className="text-sm font-black text-slate-900 uppercase tracking-tight group-hover:text-primary-600 transition-colors">
+                    <p className="text-sm font-black text-slate-900 uppercase tracking-tight group-hover:text-white transition-colors">
                       {taller.nombre}
                     </p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 group-hover:text-slate-300">
                       {taller.totalInspeccionado} uds inspeccionadas
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-black text-slate-900 tabular-nums">{taller.score}%</p>
+                  <p className="text-lg font-black text-slate-900 tabular-nums group-hover:text-white transition-colors">{taller.score}%</p>
                   <p className={cn(
-                    "text-[10px] font-black uppercase tracking-tighter",
-                    parseFloat(taller.defectRate) < 2 ? "text-emerald-600" : "text-rose-500"
+                    "text-[10px] font-black uppercase tracking-tighter transition-colors",
+                    parseFloat(taller.defectRate) < 2 ? "text-emerald-600 group-hover:text-emerald-400" : "text-rose-500 group-hover:text-rose-400"
                   )}>
                     {taller.defectRate}% error
                   </p>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>

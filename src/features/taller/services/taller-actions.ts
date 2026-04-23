@@ -1,10 +1,9 @@
 'use server'
 
 import { createClient } from '@/shared/lib/supabase/server'
+import { db } from '@/shared/lib/supabase/db'
 import type { TallerDashboardData, TallerMesStats } from '@/features/taller/types'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function db(supabase: unknown): any { return supabase }
 
 const ESTADOS_ACTIVOS = ['programada', 'en_corte', 'en_confeccion', 'dupro_pendiente', 'en_terminado', 'en_entregas']
 
