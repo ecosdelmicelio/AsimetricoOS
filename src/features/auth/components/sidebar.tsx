@@ -60,6 +60,7 @@ const NAV_ITEMS: NavItem[] = [
     subItems: [
       { href: '/ordenes-produccion', label: 'Producción', roles: ['orquestador', 'jefe_piso'] },
       { href: '/calidad',            label: 'Calidad',    roles: ['orquestador', 'inspector'] },
+      { href: '/calidad/segundas',   label: 'Segundas',   roles: ['orquestador', 'inspector'] },
       { href: '/compras',            label: 'Compras',    roles: ['orquestador'] },
       { href: '/wms',                label: 'Bodegas',    roles: ['orquestador'] },
       { href: '/kardex',             label: 'Kardex',     roles: ['orquestador'] },

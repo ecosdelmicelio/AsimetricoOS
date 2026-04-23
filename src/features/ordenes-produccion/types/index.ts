@@ -61,7 +61,7 @@ export interface LiquidacionOP {
 }
 
 export interface OPConDetalle extends OrdenProduccion {
-  terceros: { nombre: string } | null
+  terceros: { nombre: string; bodega_taller_id?: string | null } | null
   ordenes_venta: { codigo: string; terceros: { nombre: string } | null } | null
   op_detalle: (OPDetalle & {
     productos: { nombre: string; referencia: string; color: string | null; origen_usa: boolean } | null

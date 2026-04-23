@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { getOrdenProduccionById, getHistorialOP, getOPProgressSummary } from '@/features/ordenes-produccion/services/op-actions'
 import { getReporteCortePorOP } from '@/features/reporte-corte/services/reporte-corte-actions'
 import { getEntregasByOP } from '@/features/entregas/services/entregas-actions'
+import { getSegundasPorOP } from '@/features/calidad/services/calidad-actions'
 import { getLiquidacionesByOP, getInsumosParaReporte, calcularResumenLiquidacion, getLiquidacionOP, getServiciosRef, getServiciosBOMParaOP } from '@/features/liquidacion/services/liquidacion-actions'
 import { createClient } from '@/shared/lib/supabase/server'
 import { OPDetailClient } from './op-detail-client'
@@ -19,13 +20,14 @@ export async function OPDetail({ id }: Props) {
   const supabase = await createClient()
 
   // Fetch paralelo base
-  const [opRes, historialRes, reporteDataRes, entregasRes, liquidacionesOPRes, progressDataRes] = await Promise.all([
+  const [opRes, historialRes, reporteDataRes, entregasRes, liquidacionesOPRes, progressDataRes, segundas] = await Promise.all([
     getOrdenProduccionById(id),
     getHistorialOP(id),
     getReporteCortePorOP(id),
     getEntregasByOP(id),
     getLiquidacionesByOP(id),
     getOPProgressSummary(id),
+    getSegundasPorOP(id),
   ])
 
   if (opRes.error || !opRes.data) {
@@ -83,7 +85,8 @@ export async function OPDetail({ id }: Props) {
       bodegaDestino={bodegaDestino}
       serviciosRef={serviciosRef}
       serviciosBOM={serviciosBOM}
-      bodegaTallerId={op.bodega_taller_id}
+      bodegaTallerId={op.bodega_taller_id || op.terceros?.bodega_taller_id || null}
+      segundas={segundas}
     />
   )
 }

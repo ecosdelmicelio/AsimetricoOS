@@ -12,10 +12,12 @@ import { ReporteCortePanelClient } from '@/features/reporte-corte/components/rep
 import { EntregasPanel } from '@/features/entregas/components/entregas-panel'
 import { ReporteInsumosPanel } from '@/features/liquidacion/components/reporte-insumos-panel'
 import { LiquidacionPanel } from '@/features/liquidacion/components/liquidacion-panel'
+import { OPSegundasPanel } from '@/features/calidad/components/op-segundas-panel'
 import type { EstadoOP, OPConDetalle, OPProgressLine } from '@/features/ordenes-produccion/types'
 import type { ReporteCorteCompleto } from '@/features/reporte-corte/types'
 import type { InsumoParaReporte, ResumenLiquidacion, ServicioRef } from '@/features/liquidacion/types'
 import type { HistorialEstado } from '@/features/ordenes-venta/types'
+import type { SegundasTracking } from '@/features/calidad/services/calidad-actions'
 import { formatDate, formatCurrency } from '@/shared/lib/utils'
 
 interface OPDetailClientProps {
@@ -33,6 +35,7 @@ interface OPDetailClientProps {
   serviciosRef: ServicioRef[]
   serviciosBOM: any[]
   bodegaTallerId: string | null
+  segundas: SegundasTracking[]
 }
 
 export function OPDetailClient({
@@ -46,10 +49,10 @@ export function OPDetailClient({
   resumenLiquidacion,
   liquidacionAprobada,
   bodegas,
-  bodegaDestino,
   serviciosRef,
   serviciosBOM,
   bodegaTallerId,
+  segundas,
 }: OPDetailClientProps) {
   const [activeOverlay, setActiveOverlay] = useState<'corte' | 'insumos' | 'entregas' | null>(null)
   const [reporteEditandoId, setReporteEditandoId] = useState<string | null>(null)
@@ -250,6 +253,8 @@ export function OPDetailClient({
                     </div>
                   </div>
                 </div>
+
+                <OPSegundasPanel opId={id} segundas={segundas} />
               </div>
             </div>
           </div>

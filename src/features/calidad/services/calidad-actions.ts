@@ -67,7 +67,12 @@ export async function getOPConInspeccion(op_id: string): Promise<{
       id, codigo, estado, fecha_promesa, ov_id, taller_id,
       terceros!taller_id(nombre),
       ordenes_venta(codigo, terceros!cliente_id(nombre)),
-      op_detalle(cantidad_asignada)
+      op_detalle(
+        cantidad_asignada,
+        producto_id,
+        talla,
+        productos(nombre, referencia)
+      )
     `)
     .eq('id', op_id)
     .single() as {
@@ -76,7 +81,12 @@ export async function getOPConInspeccion(op_id: string): Promise<{
         taller_id: string
         terceros: { nombre: string } | null
         ordenes_venta: { codigo: string; terceros: { nombre: string } | null } | null
-        op_detalle: { cantidad_asignada: number }[]
+        op_detalle: { 
+          cantidad_asignada: number; 
+          producto_id: string; 
+          talla: string;
+          productos: { nombre: string; referencia: string } | null 
+        }[]
       } | null
     }
 
@@ -114,6 +124,13 @@ export async function getOPConInspeccion(op_id: string): Promise<{
       cliente: op.ordenes_venta?.terceros?.nombre ?? '—',
       ov_codigo: op.ordenes_venta?.codigo ?? '—',
       total_unidades,
+      productos: op.op_detalle.map(d => ({
+        id: d.producto_id,
+        nombre: d.productos?.nombre ?? 'Producto',
+        referencia: d.productos?.referencia ?? 'Ref',
+        talla: d.talla,
+        cantidad: d.cantidad_asignada,
+      }))
     },
     inspeccion: inspeccionActiva,
     historialInspecciones: todasInspecciones.filter(i => i.resultado !== 'pendiente'),
@@ -331,6 +348,8 @@ export async function closeInspeccion(formData: FormData): Promise<{ error?: str
     ? (parseInt(formData.get('cantidad_segundas') as string, 10) || null)
     : null
 
+  const { data: { user } } = await supabase.auth.getUser()
+  
   // Obtener info de la inspección (tipo y reporte_corte_id)
   const { data: inspeccionData } = await supabase
     .from('inspecciones')
@@ -381,8 +400,170 @@ export async function closeInspeccion(formData: FormData): Promise<{ error?: str
     }
   }
 
+  // Si hubo segundas, registrar movimiento en Kardex de Bodega Segundas
+  const segundasDetalleRaw = formData.get('segundas_detalle') as string
+  if (resultado === 'segundas' && segundasDetalleRaw) {
+    const segundasDetalle = JSON.parse(segundasDetalleRaw) as { producto_id: string, talla: string, cantidad: number }[]
+    
+    if (segundasDetalle.length > 0) {
+    
+    // 1. Obtener bodega_segundas_id de la configuración
+    const { data: config } = await supabase
+      .from('calidad_config')
+      .select('bodega_segundas_id')
+      .single() as { data: { bodega_segundas_id: string | null } | null }
+
+    // 2. Obtener tipo_movimiento_id para ENTRADA_SEGUNDAS
+    const { data: tipoMov } = await supabase
+      .from('kardex_tipos_movimiento')
+      .select('id')
+      .eq('codigo', 'ENTRADA_SEGUNDAS')
+      .single() as { data: { id: string } | null }
+
+      if (config?.bodega_segundas_id && tipoMov && user) {
+        const insertRows = segundasDetalle.map(item => ({
+          producto_id: item.producto_id,
+          bodega_id: config.bodega_segundas_id,
+          tipo_movimiento_id: tipoMov.id,
+          documento_tipo: 'op',
+          documento_id: op_id,
+          cantidad: item.cantidad,
+          talla: item.talla,
+          unidad: 'ud',
+          costo_unitario: 0,
+          costo_total: 0,
+          fecha_movimiento: new Date().toISOString(),
+          registrado_por: user.id,
+          notas: `Ingreso de segundas (Talla: ${item.talla}) desde Inspección DuPro`,
+        }))
+
+        await supabase.from('kardex').insert(insertRows)
+      }
+    }
+  }
+
   revalidatePath(`/calidad/${op_id}`)
   revalidatePath('/calidad')
   revalidatePath(`/ordenes-produccion/${op_id}`)
   return {}
+}
+
+export interface SegundasTracking {
+  kardex_id: string
+  fecha_movimiento: string
+  cantidad: number
+  notas: string | null
+  producto_id: string
+  producto_referencia: string
+  producto_nombre: string
+  op_id: string
+  op_codigo: string
+  taller_id: string | null
+  taller_nombre: string | null
+  ov_id: string | null
+  ov_codigo: string | null
+}
+
+/**
+ * Obtiene el tracking consolidado de todas las prendas en segundas.
+ */
+export async function getSegundasTracking(): Promise<SegundasTracking[]> {
+  const supabase = db(await createClient())
+  
+  const { data } = await supabase
+    .from('view_segundas_tracking')
+    .select('*')
+    .order('fecha_movimiento', { ascending: false })
+
+  return data ?? []
+}
+
+/**
+ * Obtiene el tracking consolidado de segundas para una OP específica.
+ */
+export async function getSegundasPorOP(opId: string): Promise<SegundasTracking[]> {
+  const supabase = db(await createClient())
+  
+  const { data } = await supabase
+    .from('view_segundas_tracking')
+    .select('*')
+    .eq('op_id', opId)
+    .order('fecha_movimiento', { ascending: false })
+
+  return data ?? []
+}
+
+/**
+ * Inicia el proceso de reproceso para un lote de segundas.
+ * Devuelve las prendas al taller y marca la OP con una nueva inspección requerida.
+ */
+export async function iniciarReprocesoSegundas(kardexId: string, opId: string, productoId: string, cantidad: number) {
+  const supabase = db(await createClient())
+  
+  // 1. Obtener la bodega de segundas de la config
+  const { data: config } = await supabase
+    .from('calidad_config')
+    .select('bodega_segundas_id')
+    .single() as { data: { bodega_segundas_id: string | null } | null }
+
+  // 2. Obtener tipo_movimiento_id para TRASLADO_SALIDA y ENTRADA_PRODUCCION
+  const { data: tiposMov } = await supabase
+    .from('kardex_tipos_movimiento')
+    .select('id, codigo')
+    .in('codigo', ['TRASLADO_SALIDA', 'ENTRADA_PRODUCCION'])
+
+  const salidaId = tiposMov?.find(t => t.codigo === 'TRASLADO_SALIDA')?.id
+  const entradaId = tiposMov?.find(t => t.codigo === 'ENTRADA_PRODUCCION')?.id
+
+  // 3. Crear los movimientos de Kardex (Salida de Segundas)
+  if (config?.bodega_segundas_id && salidaId && entradaId) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await supabase.from('kardex').insert({
+        producto_id: productoId,
+        bodega_id: config.bodega_segundas_id,
+        tipo_movimiento_id: salidaId,
+        documento_tipo: 'op',
+        documento_id: opId,
+        cantidad: -Math.abs(cantidad),
+        unidad: 'ud',
+        costo_unitario: 0,
+        costo_total: 0,
+        fecha_movimiento: new Date().toISOString(),
+        registrado_por: user.id,
+        notas: `Salida de segundas para reproceso (Ref: ${kardexId})`,
+      })
+      // Aquí, aunque usamos ENTRADA_PRODUCCION como lógica, la OP ya es de producción.
+      // El inventario de Asimetrico maneja el "Stock en Taller" mediante las cantidades no entregadas.
+      // Al salir de Segundas, la cantidad "desaparece" temporalmente del Kardex de segundas,
+      // pero las unidades quedan "pendientes" en la OP hasta que se entreguen como de primera calidad.
+    }
+  }
+
+  // 4. Crear una nueva inspección DuPro pendiente para la OP (Reproceso formal)
+  const { data: opData } = await supabase
+    .from('ordenes_produccion')
+    .select('total_unidades, estado')
+    .eq('id', opId)
+    .single()
+
+  if (opData) {
+    await supabase.from('inspecciones_calidad').insert({
+      op_id: opId,
+      tipo: 'dupro',
+      resultado: 'pendiente',
+    })
+    
+    // Cambiar estado de la OP a dupro_pendiente para forzar la revisión de estas unidades de reproceso
+    await supabase
+      .from('ordenes_produccion')
+      .update({ estado: 'dupro_pendiente' })
+      .eq('id', opId)
+  }
+
+  revalidatePath(`/ordenes-produccion/${opId}`)
+  revalidatePath('/calidad')
+  revalidatePath('/calidad/segundas')
+  
+  return { error: null }
 }

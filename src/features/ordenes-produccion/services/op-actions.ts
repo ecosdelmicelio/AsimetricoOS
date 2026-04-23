@@ -296,7 +296,7 @@ export async function getOrdenProduccionById(id: string) {
     .from('ordenes_produccion')
     .select(`
       *,
-      terceros!taller_id ( nombre ),
+      terceros!taller_id ( nombre, bodega_taller_id ),
       ordenes_venta ( codigo, terceros!cliente_id ( nombre ) ),
       op_detalle ( *, productos ( nombre, referencia, color, origen_usa ) )
     `)

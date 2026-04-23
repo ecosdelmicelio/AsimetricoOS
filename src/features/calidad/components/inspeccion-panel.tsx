@@ -246,6 +246,7 @@ export async function InspeccionPanel({ op_id }: Props) {
             estado_op={op.estado}
             tieneDefectoCritico={tieneDefectoCritico}
             muestraSugerida={muestraSugerida}
+            productos={op.productos}
           />
         </div>
       )}
