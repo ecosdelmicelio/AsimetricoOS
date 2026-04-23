@@ -366,6 +366,7 @@ export function OVForm({ clientes, productos, aliases = [], initialData }: Props
           <select
             value={clienteId}
             onChange={e => setClienteId(e.target.value)}
+            autoFocus={!initialData}
             className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-xs font-black text-slate-900 uppercase outline-none focus:bg-white focus:border-slate-300 transition-all cursor-pointer"
             required
           >
@@ -478,7 +479,7 @@ export function OVForm({ clientes, productos, aliases = [], initialData }: Props
                   <SelectorProductoCelda 
                     productos={productosFiltrados.filter(p => !productosEnForm.some(pf => pf.producto_id === p.id))}
                     onSelect={handleAddProduct}
-                    autoFocus={productosEnForm.length === 0}
+                    autoFocus={false}
                     clienteId={clienteId}
                   />
                 </td>
