@@ -141,6 +141,18 @@ export async function updateEstadoOV(id: string, estado: string) {
 
   revalidatePath('/ordenes-venta')
   revalidatePath(`/ordenes-venta/${id}`)
+
+  // 📦 Cascada: Si se marca como entregada, cerrar despachos abiertos
+  if (estado === 'entregada') {
+    await supabase
+      .from('despachos')
+      .update({ estado: 'entregado' })
+      .eq('ov_id', id)
+      .in('estado', ['preparacion', 'enviado'])
+    
+    revalidatePath('/despachos')
+  }
+
   return { data: true, mrp: mrpResult }
 }
 

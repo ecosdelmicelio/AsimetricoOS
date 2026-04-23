@@ -67,14 +67,14 @@ export function OVCard({
   const physicalPct = pct(unidadesDespachadas, totalUnidades)
   const economicPct = pct(valorDespachado, totalValor)
   return (
-    <details className="group rounded-[40px] bg-white border border-slate-100 shadow-sm hover:shadow-2xl hover:border-slate-300 hover:-translate-y-1 transition-all duration-500 outline-none overflow-hidden">
-      <summary className="flex flex-col px-5 py-4 cursor-pointer list-none outline-none [&::-webkit-details-marker]:hidden">
+    <details className="group rounded-[32px] bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:border-slate-300 hover:-translate-y-0.5 transition-all duration-500 outline-none overflow-hidden">
+      <summary className="flex flex-col px-4 py-3 cursor-pointer list-none outline-none [&::-webkit-details-marker]:hidden">
         {/* Header Line: Code + Status + Aging */}
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex items-center gap-1.5 min-w-0">
             <Link
               href={`/ordenes-venta/${id}`}
-              className="font-black text-[13px] text-slate-900 tracking-tighter hover:text-blue-600 transition-colors truncate"
+              className="font-black text-[12px] text-slate-900 tracking-tighter hover:text-blue-600 transition-colors truncate"
               onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               {codigo}
@@ -91,10 +91,10 @@ export function OVCard({
             )} />
           </div>
           
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
              {daysSinceConfirm !== undefined && (
-              <span className="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-lg border border-slate-200/50 uppercase tracking-tighter">
-                {daysSinceConfirm} DIAS
+              <span className="text-[8px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md border border-slate-200/50 uppercase tracking-tighter">
+                {daysSinceConfirm}d
               </span>
             )}
             <div className="w-5 h-5 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center transition-all group-open:bg-blue-50 group-open:border-blue-100">
@@ -104,58 +104,60 @@ export function OVCard({
         </div>
 
         {/* Client Info */}
-        <div className="mb-4">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate leading-tight" title={clienteNombre}>
+        <div className="mb-2">
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider truncate leading-tight" title={clienteNombre}>
             {clienteNombre}
           </p>
         </div>
 
-        {/* Triple Track Pipeline Matrix */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between text-[8px] font-black text-slate-400 uppercase tracking-tighter">
-              <span>Fabricación</span>
+        {/* Triple Track Pipeline Matrix - Compacted */}
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between text-[7px] font-black text-slate-400 uppercase tracking-tighter">
+              <span>FAB</span>
               <span className="text-amber-500">{pct(unidadesProducidas, totalUnidades)}%</span>
             </div>
             <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
               <div className="h-full bg-amber-400 rounded-full transition-all duration-500" style={{ width: `${pct(unidadesProducidas, totalUnidades)}%` }} />
             </div>
-            <div className="text-[9px] font-black text-slate-700 tracking-tighter truncate">
-              {unidadesProducidas} <span className="text-slate-300 font-bold">/</span> {totalUnidades}
+            <div className="text-[8px] font-black text-slate-700 tracking-tighter truncate">
+              {unidadesProducidas}<span className="text-slate-300 font-bold mx-0.5">/</span>{totalUnidades}
             </div>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between text-[8px] font-black text-slate-400 uppercase tracking-tighter">
-              <span>Logística</span>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between text-[7px] font-black text-slate-400 uppercase tracking-tighter">
+              <span>LOG</span>
               <span className="text-blue-500">{physicalPct}%</span>
             </div>
             <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
               <div className="h-full bg-blue-500 rounded-full transition-all duration-500" style={{ width: `${physicalPct}%` }} />
             </div>
-            <div className="text-[9px] font-black text-slate-700 tracking-tighter truncate">
-              {unidadesDespachadas} <span className="text-slate-300 font-bold">/</span> {totalUnidades}
+            <div className="text-[8px] font-black text-slate-700 tracking-tighter truncate">
+              {unidadesDespachadas}<span className="text-slate-300 font-bold mx-0.5">/</span>{totalUnidades}
             </div>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between text-[8px] font-black text-slate-400 uppercase tracking-tighter">
-              <span>Financiero</span>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between text-[7px] font-black text-slate-400 uppercase tracking-tighter">
+              <span>FIN</span>
               <span className="text-emerald-500">{economicPct}%</span>
             </div>
             <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
               <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${economicPct}%` }} />
             </div>
-            <div className="text-[9px] font-black text-slate-700 tracking-tighter truncate">
+            <div className="text-[8px] font-black text-slate-700 tracking-tighter truncate">
               {formatCurrency(valorDespachado)}
             </div>
           </div>
         </div>
 
-        {/* Stepper Footer */}
-        <div className="pt-3 border-t border-slate-50 flex items-center justify-between">
-           <OVStatusBadge estado={displayStatus} />
-           <div className="scale-[0.7] origin-right">
+        {/* Stepper Footer - Slimmed */}
+        <div className="pt-2 border-t border-slate-50 flex items-center justify-between">
+           <div className="scale-[0.8] origin-left">
+             <OVStatusBadge estado={displayStatus} />
+           </div>
+           <div className="scale-[0.6] origin-right translate-y-0.5">
               <OVMiniStepper currentStatus={displayStatus} daysSinceConfirm={daysSinceConfirm} />
            </div>
         </div>

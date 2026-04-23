@@ -570,15 +570,63 @@ export async function getBinesDisponiblesRecibo() {
 
 /**
  * Actualiza estado de un despacho desde el dashboard global (sin contexto de OV)
+ * Implementa sincronización automática con el estado de la OV
  */
 export async function updateEstadoDespachoGlobal(id: string, estado: EstadoDespacho) {
   const supabase = db(await createClient())
-  const { error } = await supabase
+  
+  // 1. Actualizar el despacho y obtener el ov_id
+  const { data: despacho, error } = await supabase
     .from('despachos')
     .update({ estado })
     .eq('id', id)
+    .select('ov_id')
+    .single() as { data: { ov_id: string } | null; error: any }
 
   if (error) return { error: error.message }
+  if (!despacho) return { error: 'Despacho no encontrado' }
+
+  // 🔄 SINCRONIZACIÓN AUTOMÁTICA CON LA OV
+  // Si el despacho avanza, impactamos el estado de la orden madre
+  if (estado === 'entregado' || estado === 'enviado') {
+    const ovId = despacho.ov_id
+    
+    // Calcular progreso real de la OV
+    // A. Total Pedido
+    const { data: detOV } = await supabase
+      .from('ov_detalle')
+      .select('cantidad')
+      .eq('ov_id', ovId)
+    
+    const totalPedido = detOV?.reduce((sum: number, d: any) => sum + (d.cantidad || 0), 0) || 0
+
+    // B. Total Entregado (Suma de todos los despachos ya 'entregados' para esta OV)
+    const { data: entregados } = await supabase
+      .from('despacho_detalle')
+      .select('cantidad, despachos!inner(estado)')
+      .eq('despachos.ov_id', ovId)
+      .eq('despachos.estado', 'entregado')
+    
+    const totalEntregado = entregados?.reduce((sum: number, d: any) => sum + (d.cantidad || 0), 0) || 0
+
+    // C. Determinar Estado Resultante
+    let nuevoEstadoOV = 'confirmada'
+    if (totalEntregado >= totalPedido && totalPedido > 0) {
+      nuevoEstadoOV = 'entregada'
+    } else if (totalEntregado > 0 || estado === 'enviado') {
+      // Si ya hay algo entregado o al menos algo en ruta, la orden está en proceso de despacho
+      nuevoEstadoOV = 'despachada'
+    }
+
+    // D. Aplicar cambio en la OV
+    await supabase
+      .from('ordenes_venta')
+      .update({ estado: nuevoEstadoOV })
+      .eq('id', ovId)
+    
+    revalidatePath(`/ordenes-venta/${ovId}`)
+  }
+
   revalidatePath('/despachos')
   return { data: true }
 }
