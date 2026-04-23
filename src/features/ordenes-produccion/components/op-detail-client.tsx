@@ -53,6 +53,7 @@ export function OPDetailClient({
   serviciosBOM,
   bodegaTallerId,
   segundas,
+  bodegaDestino,
 }: OPDetailClientProps) {
   const [activeOverlay, setActiveOverlay] = useState<'corte' | 'insumos' | 'entregas' | null>(null)
   const [reporteEditandoId, setReporteEditandoId] = useState<string | null>(null)

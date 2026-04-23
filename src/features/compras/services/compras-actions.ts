@@ -237,6 +237,16 @@ export async function createRecepcionOC(input: {
   const precioUnitario = input.precio_unitario ?? 0
   const costoTotal = input.cantidad_recibida * precioUnitario
 
+  // 4. Verificar si requiere inspección de calidad
+  let requiresInspection = false
+  if (input.material_id) {
+    const { data: mat } = await supabase.from('materiales').select('requiere_inspeccion').eq('id', input.material_id).single()
+    requiresInspection = !!mat?.requiere_inspeccion
+  } else if (input.producto_id) {
+    const { data: prod } = await supabase.from('productos').select('requiere_inspeccion').eq('id', input.producto_id).single()
+    requiresInspection = !!prod?.requiere_inspeccion
+  }
+
   // 5. Crear recepcion_oc (polimórfica)
   const { data: recepcion, error: recepcionError } = await supabase
     .from('recepcion_oc')
@@ -250,18 +260,30 @@ export async function createRecepcionOC(input: {
       precio_unitario: precioUnitario,
       notas: input.notas?.trim() || null,
       recibido_por: user?.id ?? null,
+      estado: requiresInspection ? 'en_cuarentena' : 'recibido',
     })
     .select('id')
     .single() as { data: { id: string } | null; error: { message: string } | null }
 
   if (recepcionError || !recepcion) return { error: recepcionError?.message || 'Error creando recepción' }
 
-  // 6. Obtener bodega default
-  let bodega: Bodega
-  try {
-    bodega = await getBodegaDefault()
-  } catch (e) {
-    return { error: `Error obteniendo bodega default: ${(e as Error).message}` }
+  // 6. Obtener bodega (Cuarentena si requiere inspección, sino Default)
+  let targetBodegaId: string
+  if (requiresInspection) {
+    const { data: bCuarentena } = await supabase
+      .from('bodegas')
+      .select('id')
+      .eq('codigo', 'BOD-CUARENTENA')
+      .single() as { data: { id: string } | null }
+    if (!bCuarentena) return { error: 'Bodega de Cuarentena no configurada. Por favor crear bodega con código BOD-CUARENTENA.' }
+    targetBodegaId = bCuarentena.id
+  } else {
+    try {
+      const bDefault = await getBodegaDefault()
+      targetBodegaId = bDefault.id
+    } catch (e) {
+      return { error: `Error obteniendo bodega default: ${(e as Error).message}` }
+    }
   }
 
   // 7. Buscar tipo de movimiento ENTRADA_OC
@@ -277,7 +299,6 @@ export async function createRecepcionOC(input: {
   // 8. Obtener información para calcular CPP y unidad
   let unidad = 'unidades'
   let saldoPonderado = precioUnitario
-  let materialesData = null
 
   if (oc.tipo === 'materia_prima') {
     const { data: material } = await supabase
@@ -288,12 +309,12 @@ export async function createRecepcionOC(input: {
     if (!material) return { error: 'Material no encontrado' }
     unidad = material.unidad
 
-    // Calcular CPP (saldo_ponderado)
+    // Calcular CPP (saldo_ponderado) en la bodega destino
     const { data: kardexAnterior } = await supabase
       .from('kardex')
       .select('cantidad, saldo_ponderado')
       .eq('material_id', input.material_id)
-      .eq('bodega_id', bodega.id)
+      .eq('bodega_id', targetBodegaId)
       .order('fecha_movimiento', { ascending: false })
       .limit(1)
       .single() as { data: { cantidad: number; saldo_ponderado: number } | null }
@@ -313,7 +334,7 @@ export async function createRecepcionOC(input: {
     .insert({
       material_id: input.material_id ?? null,
       producto_id: input.producto_id ?? null,
-      bodega_id: bodega.id,
+      bodega_id: targetBodegaId,
       tipo_movimiento_id: tipoMov.id,
       documento_tipo: 'recepcion_oc',
       documento_id: recepcion.id,
@@ -325,13 +346,14 @@ export async function createRecepcionOC(input: {
       talla: input.talla ?? null,
       fecha_movimiento: new Date().toISOString(),
       registrado_por: user?.id ?? null,
-      notas: `Recepción OC - ${input.notas ? input.notas.substring(0, 50) : ''}`,
+      notas: `Recepción OC - ${requiresInspection ? '(CUARENTENA) ' : ''}${input.notas ? input.notas.substring(0, 50) : ''}`,
     }) as { error: { message: string } | null }
 
   if (kardexError) return { error: `Error en kardex: ${kardexError.message}` }
 
-  // 10. Actualizar saldo del material (si es MP)
-  if (oc.tipo === 'materia_prima' && input.material_id) {
+  // 10. Actualizar saldo del material (si es MP y NO está en cuarentena)
+  // Nota: Si está en cuarentena, el saldo disponible real no debería aumentar aún
+  if (!requiresInspection && oc.tipo === 'materia_prima' && input.material_id) {
     const { error: saldoError } = await supabase
       .rpc('actualizar_saldo_material', {
         p_material_id: input.material_id,
@@ -340,7 +362,6 @@ export async function createRecepcionOC(input: {
 
     if (saldoError) {
       console.error('Error actualizando saldo:', saldoError)
-      // No bloqueamos si hay error en el saldo, continuamos
     }
   }
 
@@ -493,6 +514,24 @@ export async function crearRecepcionesOCConBins(
   const resultados: Array<{ binId: string; contenido: any }> = []
 
   for (const recepcion of recepciones) {
+    // 0. Verificar si algún ítem requiere inspección
+    let batchRequiresInspection = false
+    for (const item of recepcion.items) {
+      if (item.material_id) {
+        const { data: mat } = await supabase.from('materiales').select('requiere_inspeccion').eq('id', item.material_id).single()
+        if (mat?.requiere_inspeccion) { batchRequiresInspection = true; break; }
+      } else if (item.producto_id) {
+        const { data: prod } = await supabase.from('productos').select('requiere_inspeccion').eq('id', item.producto_id).single()
+        if (prod?.requiere_inspeccion) { batchRequiresInspection = true; break; }
+      }
+    }
+
+    let targetBodegaId = recepcion.bodegaId
+    if (batchRequiresInspection) {
+      const { data: bCuarentena } = await supabase.from('bodegas').select('id').eq('codigo', 'BOD-CUARENTENA').single()
+      if (bCuarentena) targetBodegaId = bCuarentena.id
+    }
+
     // Generar el Auto-Lote Encriptado (Basado en la OC y fecha de recepción)
     const { data: ocInfo } = await supabase.from('ordenes_compra').select('codigo').eq('id', recepcion.ocId).single()
     const baseCode = ocInfo ? ocInfo.codigo.substring(0, 5) : 'OCXXX'
@@ -505,7 +544,7 @@ export async function crearRecepcionesOCConBins(
     let commonBin: any = null
     
     if (!firstBinId) {
-      commonBin = await crearBin(recepcion.bodegaId, undefined, 'interno', false)
+      commonBin = await crearBin(targetBodegaId, undefined, 'interno', false)
     }
 
     const inserts = recepcion.items.map(item => ({
@@ -518,8 +557,9 @@ export async function crearRecepcionesOCConBins(
       bin_id: item.bin_id || commonBin?.id,
       recibido_por: usuarioId,
       fecha_recepcion: today.toISOString(),
-      lote_interno: loteInterno, // INYECCIÓN DEL AUTO-LOTE AQUI
+      lote_interno: loteInterno,
       lote_proveedor: (item as any).lote_proveedor || null,
+      estado: batchRequiresInspection ? 'en_cuarentena' : 'recibido',
     }))
 
     const { data: recepciones_creadas, error } = await supabase
@@ -540,7 +580,7 @@ export async function crearRecepcionesOCConBins(
     const movimientosKardex = recepciones_creadas.map(rec => ({
       producto_id: rec.producto_id || null,
       material_id: (rec as any).material_id || null,
-      bodega_id: recepcion.bodegaId,
+      bodega_id: targetBodegaId,
       tipo_movimiento_id: tipoMov.id,
       documento_tipo: 'recepcion_oc',
       documento_id: rec.id,
@@ -554,7 +594,7 @@ export async function crearRecepcionesOCConBins(
       talla: rec.talla,
       fecha_movimiento: new Date().toISOString(),
       registrado_por: user?.id ?? null,
-      notas: `Recepción OC - Bin ${selectedBinId}`,
+      notas: `Recepción OC - ${batchRequiresInspection ? '(CUARENTENA) ' : ''}Bin ${selectedBinId}`,
     }))
 
     const { error: kardexError } = await supabase

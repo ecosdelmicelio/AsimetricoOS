@@ -2,10 +2,9 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/shared/lib/supabase/server'
+import { db } from '@/shared/lib/supabase/db'
 import type { InsumoParaReporte, ResumenLiquidacion, LineaComparativo, CppPorProducto, ServicioRef } from '@/features/liquidacion/types'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function db(supabase: unknown): any { return supabase }
 
 // ─── REPORTE DE INSUMOS ─────────────────────────────────────────────────────
 
@@ -140,6 +139,25 @@ export async function calcularResumenLiquidacion(opId: string): Promise<ResumenL
 
   const totalUnidadesOP = (opDetalle ?? []).reduce((s, d) => s + d.cantidad_asignada, 0)
   const productoIds = [...new Set((opDetalle ?? []).map(d => d.producto_id))]
+
+  // Obtener configuración de Calidad (Merma Tolerada)
+  const { data: configCalidad } = await supabase
+    .from('calidad_config')
+    .select('porcentaje_merma_tolerada')
+    .single()
+  const mermaToleradaPct = configCalidad?.porcentaje_merma_tolerada ?? 0
+
+  // Total inspecciones de esta OP para segundas/rechazadas
+  const { data: inspecciones } = await supabase
+    .from('inspecciones')
+    .select('cantidad_segundas, cantidad_rechazadas')
+    .eq('op_id', opId)
+  
+  const totalSegundas = (inspecciones ?? []).reduce((s: number, i: any) => s + (i.cantidad_segundas || 0), 0)
+  const totalRechazadas = (inspecciones ?? []).reduce((s: number, i: any) => s + (i.cantidad_rechazadas || 0), 0)
+
+  const toleranciaUnidades = (totalUnidadesOP * mermaToleradaPct) / 100
+  const excesoMermas = Math.max(0, (totalSegundas + totalRechazadas) - toleranciaUnidades)
 
   // Total entregado (entregas aceptadas)
   const { data: entregasAceptadas } = await supabase
@@ -431,6 +449,14 @@ export async function calcularResumenLiquidacion(opId: string): Promise<ResumenL
     cpp,
     comparativo,
     cpp_por_producto,
+    calidad: {
+      totalSegundas,
+      totalRechazadas,
+      mermaToleradaPct,
+      toleranciaUnidades,
+      excesoMermas,
+      impactoFinanciero: excesoMermas * cpp // Estimado
+    }
   }
 }
 

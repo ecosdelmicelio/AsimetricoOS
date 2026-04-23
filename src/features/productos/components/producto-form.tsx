@@ -66,6 +66,7 @@ export function ProductoForm({ atributosPT, marcas }: Props) {
   const [nombreComercial, setNombreComercial] = useState('')
   const [partidaArancelaria, setPartidaArancelaria] = useState('')
   const [autoColor, setAutoColor] = useState(false)
+  const [requiereInspeccion, setRequiereInspeccion] = useState(false)
 
   // Auto-llenar color cuando se selecciona el atributo color
   useEffect(() => {
@@ -124,6 +125,7 @@ export function ProductoForm({ atributosPT, marcas }: Props) {
         tipo_distribucion: tipoDistribucion,
         marca_id: marcaSeleccionada || undefined,
         atributos: atributosSeleccionados,
+        requiere_inspeccion: requiereInspeccion,
       })
       if (res.error) { setError(res.error); return }
       router.push(`/catalogo/${res.data!.id}`)
@@ -205,12 +207,35 @@ export function ProductoForm({ atributosPT, marcas }: Props) {
               >
                 MTO
               </button>
+          </div>
+        </div>
+
+        {/* Quality Control Toggle */}
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground block">Calidad</label>
+          <div 
+            onClick={() => setRequiereInspeccion(!requiereInspeccion)}
+            className={`flex items-center gap-2 p-2.5 rounded-xl cursor-pointer border transition-all ${
+              requiereInspeccion 
+                ? 'bg-amber-50 border-amber-200 text-amber-700' 
+                : 'bg-neu-base shadow-neu-inset border-transparent text-slate-400 opacity-60 hover:opacity-100'
+            }`}
+          >
+            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
+              requiereInspeccion ? 'border-amber-500 bg-amber-500' : 'border-slate-300 bg-white'
+            }`}>
+              {requiereInspeccion && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
             </div>
+            <span className="text-[10px] font-black uppercase tracking-widest">Requiere Cuarentena</span>
           </div>
         </div>
       </div>
+    </div>
 
       {/* Row 2 (Debajo del código): Nombre, Ref Cliente, Nombre Comercial */}
+
+
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-1.5">

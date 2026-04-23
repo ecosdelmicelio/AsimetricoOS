@@ -251,6 +251,7 @@ function MaterialForm({
   const [toleranciaRecepcionPct, setToleranciaRecepcionPct] = useState(material?.tolerancia_recepcion_pct?.toString() ?? '')
   const [unidadEmpaque, setUnidadEmpaque] = useState(material?.unidad_empaque ?? '')
   const [proveedorId, setProveedorId] = useState(material?.proveedor_id ?? '')
+  const [requiereInspeccion, setRequiereInspeccion] = useState(material?.requiere_inspeccion ?? false)
   const [proveedores, setProveedores] = useState<{ id: string; nombre: string }[]>([])
 
   // Atributos
@@ -358,6 +359,7 @@ function MaterialForm({
             tipo_mp: tipoMP,
             activo,
             rendimiento_kg: rendimientoNum,
+            requiere_inspeccion: requiereInspeccion,
             ...variablesLogisticas
           })
         : await createMaterial({
@@ -370,6 +372,7 @@ function MaterialForm({
             tipo_mp: tipoMP,
             rendimiento_kg: rendimientoNum,
             atributos: atributosSeleccionados,
+            requiere_inspeccion: requiereInspeccion,
             ...variablesLogisticas
           })
       if (res.error) { setError(res.error); return }
@@ -445,6 +448,25 @@ function MaterialForm({
               Importado
             </button>
           </div>
+        </div>
+
+        <div className="space-y-1 md:min-w-[120px]">
+          <label className="text-xs font-medium text-muted-foreground">Calidad</label>
+          <button
+            type="button"
+            onClick={() => setRequiereInspeccion(!requiereInspeccion)}
+            className={cn(
+              "flex items-center gap-2 p-2 rounded-xl transition-all border w-full",
+              requiereInspeccion 
+                ? "bg-amber-50 border-amber-200 text-amber-700" 
+                : "bg-neu-base shadow-neu-inset border-transparent text-slate-400"
+            )}
+          >
+             <div className={cn("w-3 h-3 rounded-full border transition-all", 
+               requiereInspeccion ? "bg-amber-500 border-amber-600" : "bg-white border-slate-300"
+             )} />
+             <span className="text-[10px] font-black uppercase">Cuarentena</span>
+          </button>
         </div>
       </div>
 

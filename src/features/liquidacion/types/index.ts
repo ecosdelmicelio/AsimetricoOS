@@ -57,4 +57,12 @@ export interface ResumenLiquidacion {
   cpp: number
   comparativo: LineaComparativo[]
   cpp_por_producto: CppPorProducto[]
+  calidad?: {
+    totalSegundas: number
+    totalRechazadas: number
+    mermaToleradaPct: number
+    toleranciaUnidades: number
+    excesoMermas: number
+    impactoFinanciero: number
+  }
 }

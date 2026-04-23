@@ -314,6 +314,60 @@ export function LiquidacionPanel({ opId, resumenInicial, serviciosRefIniciales, 
           </div>
         </div>
 
+        {/* Resumen de Calidad y Mermas */}
+        {resumen.calidad && (
+          <div className="rounded-2xl bg-slate-50 border border-slate-200 p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-slate-600" />
+                <p className="font-semibold text-slate-700 text-body-sm">Calidad y Mermas</p>
+              </div>
+              <span className="text-[10px] font-black uppercase text-slate-500 bg-white border border-slate-100 px-3 py-1 rounded-full">
+                Merma Tolerada: {resumen.calidad.mermaToleradaPct}%
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white p-3 rounded-xl border border-slate-100 text-center">
+                <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Segundas</p>
+                <p className="text-lg font-black text-slate-900 tabular-nums">{resumen.calidad.totalSegundas}</p>
+              </div>
+              <div className="bg-white p-3 rounded-xl border border-slate-100 text-center">
+                <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Rechazos</p>
+                <p className="text-lg font-black text-slate-900 tabular-nums">{resumen.calidad.totalRechazadas}</p>
+              </div>
+              <div className="bg-white p-3 rounded-xl border border-slate-100 text-center">
+                <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Tolerancia</p>
+                <p className="text-lg font-black text-slate-500 tabular-nums">{Math.round(resumen.calidad.toleranciaUnidades)} uds</p>
+              </div>
+              <div className={cn(
+                "p-3 rounded-xl border text-center",
+                resumen.calidad.excesoMermas > 0 ? "bg-rose-50 border-rose-100" : "bg-emerald-50 border-emerald-100"
+              )}>
+                <p className={cn(
+                  "text-[10px] font-black uppercase mb-1",
+                  resumen.calidad.excesoMermas > 0 ? "text-rose-600" : "text-emerald-600"
+                )}>Exceso</p>
+                <p className={cn(
+                  "text-lg font-black tabular-nums",
+                  resumen.calidad.excesoMermas > 0 ? "text-rose-700" : "text-emerald-700"
+                )}>{Math.round(resumen.calidad.excesoMermas)} uds</p>
+              </div>
+            </div>
+
+            {resumen.calidad.excesoMermas > 0 && (
+              <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 flex items-center justify-between">
+                <p className="text-xs text-rose-700 font-medium">
+                  Impacto financiero estimado del exceso:
+                </p>
+                <p className="text-sm font-black text-rose-700">
+                  {formatCOP(resumen.calidad.impactoFinanciero)}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center justify-between text-body-sm">
           <span className="text-muted-foreground">Costo total: <span className="font-semibold text-foreground">{formatCOP(resumen.costo_total)}</span></span>
           <span className="text-muted-foreground">{resumen.cantidad_entregada} uds entregadas</span>

@@ -64,6 +64,177 @@ export async function getOPsParaInspeccion(): Promise<OPParaInspeccion[]> {
     }))
 }
 
+export async function getRecepcionesEnCuarentena() {
+  const supabase = db(await createClient())
+  
+  const { data } = await supabase
+    .from('recepcion_oc')
+    .select(`
+      *,
+      ordenes_compra(codigo, tipo, terceros!proveedor_id(nombre)),
+      materiales(codigo, nombre, unidad),
+      productos(referencia, nombre)
+    `)
+    .eq('estado', 'en_cuarentena')
+    .order('fecha_recepcion', { ascending: false })
+  return data ?? []
+}
+
+export async function getTiposDefectoFiltrados(tipoItem?: string) {
+  const supabase = db(await createClient())
+  let query = supabase.from('tipos_defecto').select('*').eq('activo', true)
+  
+  if (tipoItem) {
+    const { data } = await query
+    return (data ?? []).filter((td: any) => 
+      !td.tipos_producto_aplicables || 
+      td.tipos_producto_aplicables.length === 0 || 
+      td.tipos_producto_aplicables.includes(tipoItem)
+    )
+  }
+  
+  const { data } = await query
+  return data ?? []
+}
+
+export async function getRecepcionById(id: string) {
+  const supabase = db(await createClient())
+  
+  const { data } = await supabase
+    .from('recepcion_oc')
+    .select(`
+      *,
+      ordenes_compra(codigo, tipo, terceros!proveedor_id(nombre)),
+      materiales(codigo, nombre, unidad, tipo),
+      productos(referencia, nombre, tipo_producto)
+    `)
+    .eq('id', id)
+    .single() as { data: any | null }
+    
+  return data
+}
+
+export async function procesarInspeccionRecepcion(input: {
+  recepcion_id: string
+  resultado: 'aprobado' | 'rechazado'
+  novedades: { tipo_defecto_id: string; cantidad: number; notas?: string }[]
+  notas?: string
+}) {
+  const supabase = db(await createClient())
+  const { data: { user } } = await supabase.auth.getUser()
+  const { getBodegaDefault } = await import('@/shared/lib/bodega-default')
+
+  // 1. Obtener detalles de la recepción
+  const { data: recepcion } = await supabase
+    .from('recepcion_oc')
+    .select('*, ordenes_compra(tipo)')
+    .eq('id', input.recepcion_id)
+    .single() as { data: any | null }
+
+  if (!recepcion) throw new Error('Recepción no encontrada')
+
+  // 2. Crear el registro de inspección
+  const { data: inspeccion, error: insError } = await supabase
+    .from('inspecciones')
+    .insert({
+      recepcion_id: input.recepcion_id,
+      tipo: 'recepcion_compra',
+      muestra_revisada: recepcion.cantidad_recibida,
+      cantidad_inspeccionada: recepcion.cantidad_recibida,
+      inspector_id: user?.id,
+      resultado: input.resultado,
+      timestamp_inicio: new Date().toISOString(),
+      timestamp_cierre: new Date().toISOString(),
+      notas: input.notas
+    })
+    .select('id')
+    .single() as { data: { id: string } | null; error: any }
+
+  if (insError) throw new Error(`Error creando inspección: ${insError.message}`)
+
+  // 3. Insertar novedades de defectos
+  if (input.novedades.length > 0) {
+    const novInserts = input.novedades.map(n => ({
+      inspeccion_id: inspeccion.id,
+      tipo_defecto_id: n.tipo_defecto_id,
+      cantidad: n.cantidad,
+      notas: n.notas
+    }))
+    await supabase.from('inspeccion_novedades').insert(novInserts)
+  }
+
+  // 4. Determinar bodegas
+  const { data: bCuarentena } = await supabase.from('bodegas').select('id').eq('codigo', 'BOD-CUARENTENA').single() as any
+  const { data: bDesperdicio } = await supabase.from('bodegas').select('id').eq('codigo', 'BOD-DESPERDICIO').single() as any
+  const bDefault = await getBodegaDefault()
+
+  if (!bCuarentena) throw new Error('Bodega de Cuarentena no configurada')
+  
+  const targetBodegaId = input.resultado === 'aprobado' ? bDefault.id : (bDesperdicio?.id || bCuarentena.id)
+
+  // 5. Transferencia física en Kardex
+  const { data: tipoMovSalida } = await supabase.from('kardex_tipos_movimiento').select('id').eq('codigo', 'SALIDA_TRASLADO').single() as any
+  const { data: tipoMovEntrada } = await supabase.from('kardex_tipos_movimiento').select('id').eq('codigo', 'ENTRADA_TRASLADO').single() as any
+
+  const unidad = recepcion.material_id ? 'kg' : 'unidades'
+  const costoTotal = (recepcion.cantidad_recibida * (recepcion.precio_unitario || 0))
+
+  const movimientos = [
+    {
+      material_id: recepcion.material_id,
+      producto_id: recepcion.producto_id,
+      bodega_id: bCuarentena.id,
+      tipo_movimiento_id: tipoMovSalida.id,
+      documento_tipo: 'inspeccion',
+      documento_id: inspeccion.id,
+      cantidad: -recepcion.cantidad_recibida,
+      unidad,
+      costo_unitario: recepcion.precio_unitario || 0,
+      costo_total: -costoTotal,
+      talla: recepcion.talla,
+      fecha_movimiento: new Date().toISOString(),
+      registrado_por: user?.id,
+      notas: `Salida Cuarentena - Inspección ${input.resultado.toUpperCase()}`
+    },
+    {
+      material_id: recepcion.material_id,
+      producto_id: recepcion.producto_id,
+      bodega_id: targetBodegaId,
+      tipo_movimiento_id: tipoMovEntrada.id,
+      documento_tipo: 'inspeccion',
+      documento_id: inspeccion.id,
+      cantidad: recepcion.cantidad_recibida,
+      unidad,
+      costo_unitario: recepcion.precio_unitario || 0,
+      costo_total: costoTotal,
+      talla: recepcion.talla,
+      fecha_movimiento: new Date().toISOString(),
+      registrado_por: user?.id,
+      notas: `Entrada tras Inspección - Resultado: ${input.resultado.toUpperCase()}`
+    }
+  ]
+
+  await supabase.from('kardex').insert(movimientos)
+
+  // 6. Actualizar estado de la recepción
+  await supabase
+    .from('recepcion_oc')
+    .update({ estado: input.resultado === 'aprobado' ? 'recibido' : 'rechazado' })
+    .eq('id', input.recepcion_id)
+
+  // 7. Si fue aprobado y es MP, actualizar el saldo disponible central
+  if (input.resultado === 'aprobado' && recepcion.material_id) {
+    await supabase.rpc('actualizar_saldo_material', {
+      p_material_id: recepcion.material_id,
+      p_cantidad: recepcion.cantidad_recibida
+    })
+  }
+
+  revalidatePath('/calidad')
+  return { success: true }
+}
+
+
 export async function getOPConInspeccion(op_id: string): Promise<{
   op: {
     id: string; codigo: string; estado: string; fecha_promesa: string
@@ -772,4 +943,85 @@ export async function registrarDesperdicio(kardexId: string, opId: string, produ
     console.error('Error en registrarDesperdicio:', err)
     return { error: err.message }
   }
+}
+
+// ─── ANALÍTICA DE CALIDAD ───────────────────────────────────────────────────
+
+export async function getParetoDefectos(filters: { taller_id?: string; fecha_inicio?: string; fecha_fin?: string } = {}) {
+  const supabase = db(await createClient())
+  
+  let query = supabase
+    .from('novedades_calidad')
+    .select(`
+      cantidad_afectada,
+      tipo_defecto:tipos_defecto (id, descripcion, categoria),
+      inspeccion:inspecciones!inner (
+        op_id,
+        op:ordenes_produccion!inner (taller_id)
+      )
+    `)
+
+  if (filters.taller_id) {
+    query = query.eq('inspeccion.op.taller_id', filters.taller_id)
+  }
+
+  const { data, error } = await query
+  if (error) {
+    console.error('Error Pareto:', error)
+    return []
+  }
+
+  // Agrupar por defecto
+  const counts: Record<string, { descripcion: string; categoria: string; total: number }> = {}
+  data.forEach((n: any) => {
+    const d = n.tipo_defecto
+    if (!d) return
+    if (!counts[d.id]) {
+      counts[d.id] = { descripcion: d.descripcion, categoria: d.categoria, total: 0 }
+    }
+    counts[d.id].total += (n.cantidad_afectada || 0)
+  })
+
+  return Object.values(counts).sort((a, b) => b.total - a.total)
+}
+
+export async function getRankingTalleres() {
+  const supabase = db(await createClient())
+  
+  const { data: talleres } = await supabase
+    .from('terceros')
+    .select('id, nombre')
+    .contains('tipos', ['taller'])
+
+  if (!talleres) return []
+
+  const ranking = await Promise.all(talleres.map(async (taller) => {
+    // Obtener inspecciones de este taller
+    const { data: insp } = await supabase
+      .from('inspecciones')
+      .select(`
+        resultado, 
+        cantidad_inspeccionada, 
+        cantidad_segundas,
+        op:ordenes_produccion!inner(taller_id)
+      `)
+      .eq('op.taller_id', taller.id)
+      .eq('resultado', 'aceptada') as any
+
+    const totalInsp = (insp ?? []).reduce((s: number, i: any) => s + (i.cantidad_inspeccionada || 0), 0)
+    const totalSeg = (insp ?? []).reduce((s: number, i: any) => s + (i.cantidad_segundas || 0), 0)
+    
+    const defectRate = totalInsp > 0 ? (totalSeg / totalInsp) * 100 : 0
+    const score = Math.max(0, 100 - (defectRate * 5))
+
+    return {
+      taller_id: taller.id,
+      nombre: taller.nombre,
+      score: Math.round(score),
+      defectRate: defectRate.toFixed(1),
+      totalInspeccionado: totalInsp
+    }
+  }))
+
+  return ranking.sort((a, b) => b.score - a.score)
 }
