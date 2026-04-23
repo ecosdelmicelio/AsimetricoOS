@@ -16,10 +16,13 @@ export function OPSegundasPanel({ opId, segundas }: Props) {
 
   if (segundas.length === 0) return null
 
-  const handleReproceso = async (kardexId: string, productoId: string, cantidad: number) => {
+  const handleReproceso = async (kardexId: string, productoId: string, cantidad: number, talla: string) => {
     setProcessingId(kardexId)
     startTransition(async () => {
-      await iniciarReprocesoSegundas(kardexId, opId, productoId, cantidad)
+      const res = await iniciarReprocesoSegundas(kardexId, opId, productoId, cantidad, talla)
+      if (res.error) {
+        alert(`Error al iniciar reproceso: ${res.error}`)
+      }
       setProcessingId(null)
     })
   }
@@ -41,21 +44,31 @@ export function OPSegundasPanel({ opId, segundas }: Props) {
           <div key={s.kardex_id} className="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 flex flex-col gap-4">
             <div>
               <div className="flex items-start justify-between gap-2 mb-1">
-                <p className="text-xs font-black text-slate-900 truncate">{s.producto_referencia}</p>
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-black text-[10px]">
+                <div className="flex flex-col min-w-0">
+                  <p className="text-xs font-black text-slate-900 truncate leading-tight">
+                    {s.producto_nombre}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[9px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md uppercase tracking-tighter">
+                      {s.producto_referencia}
+                    </span>
+                    <span className="text-[9px] font-black text-primary-600 uppercase tracking-widest">
+                      Talla: {s.talla}
+                    </span>
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 font-black text-[10px] shrink-0">
                   {s.cantidad} UDS
                 </span>
               </div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate">
-                {s.producto_nombre}
-              </p>
-              <p className="text-[9px] font-bold text-slate-400 mt-2">
+              <p className="text-[9px] font-bold text-slate-400 mt-2 flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-slate-300" />
                 Reportado: {formatDate(s.fecha_movimiento)}
               </p>
             </div>
 
             <button
-              onClick={() => handleReproceso(s.kardex_id, s.producto_id, s.cantidad)}
+              onClick={() => handleReproceso(s.kardex_id, s.producto_id, s.cantidad, s.talla)}
               disabled={pending}
               className="w-full py-2.5 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
             >

@@ -54,10 +54,13 @@ export function CerrarInspeccionForm({
 
   const updateMatrixValue = (productId: string, value: string) => {
     const num = parseInt(value) || 0
+    const prod = productos.find(p => p.id === productId)
+    const max = prod?.cantidad || 0
+    
     setSegundasMatrix(prev => ({
       ...prev,
       [productId]: {
-        'default': Math.max(0, num) // Almacenamos por ID de producto (que es único por talla)
+        'default': Math.min(max, Math.max(0, num))
       }
     }))
   }
@@ -66,18 +69,27 @@ export function CerrarInspeccionForm({
     e.preventDefault()
     if (!resultado) return
     
-    // Convertir matriz a detalle plano
+    // Convertir matriz a detalle plano y validar límites
     const detail: { producto_id: string, talla: string, cantidad: number }[] = []
+    let errorExceso = null
+
     Object.entries(segundasMatrix).forEach(([pid, tallas]) => {
       const cant = tallas['default'] || 0
       if (cant > 0) {
-        // Encontrar la talla correspondiente a este ID
         const prod = productos.find(p => p.id === pid)
         if (prod) {
+          if (cant > prod.cantidad) {
+            errorExceso = `Exceso en ${prod.referencia} ${prod.talla}: máx ${prod.cantidad}`
+          }
           detail.push({ producto_id: pid, talla: prod.talla, cantidad: cant })
         }
       }
     })
+
+    if (errorExceso) {
+      setError(errorExceso)
+      return
+    }
 
     if (resultado === 'segundas' && detail.length === 0) {
       setError('Debes ingresar al menos una cantidad de segunda calidad en la matriz')
@@ -188,19 +200,26 @@ export function CerrarInspeccionForm({
                 </div>
                 <div className="p-3">
                   <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                    {prod.items.map(item => (
-                      <div key={item.id} className="flex flex-col items-center gap-1">
-                        <span className="text-[9px] font-black text-slate-400 uppercase">{item.talla}</span>
-                        <input
-                          type="number"
-                          min={0}
-                          placeholder="0"
-                          value={segundasMatrix[item.id]?.['default'] || ''}
-                          onChange={e => updateMatrixValue(item.id, e.target.value)}
-                          className="w-full bg-white border border-slate-200 rounded-lg py-1.5 text-center text-[12px] font-black text-slate-900 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-50 transition-all"
-                        />
-                      </div>
-                    ))}
+                    {prod.items.map(item => {
+                      const max = productos.find(p => p.id === item.id)?.cantidad || 0
+                      return (
+                        <div key={item.id} className="flex flex-col items-center gap-1">
+                          <div className="flex items-center gap-1">
+                            <span className="text-[9px] font-black text-slate-400 uppercase">{item.talla}</span>
+                            <span className="text-[8px] font-bold text-slate-300">({max})</span>
+                          </div>
+                          <input
+                            type="number"
+                            min={0}
+                            max={max}
+                            placeholder="0"
+                            value={segundasMatrix[item.id]?.['default'] || ''}
+                            onChange={e => updateMatrixValue(item.id, e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-lg py-1.5 text-center text-[12px] font-black text-slate-900 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-50 transition-all"
+                          />
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               </div>
