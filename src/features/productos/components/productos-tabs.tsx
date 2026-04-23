@@ -46,14 +46,14 @@ export function ProductosTabs({
       />
 
       {/* Tabs Premium */}
-      <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+      <div className="flex gap-4 overflow-x-auto no-scrollbar py-4 px-2 -mx-2">
         {TABS.map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex items-center gap-4 px-6 py-4 rounded-[28px] transition-all min-w-[280px] group border-2 ${
+            className={`flex items-center gap-4 px-6 py-4 rounded-[28px] transition-all min-w-[280px] shrink-0 group border-2 ${
               tab === t.id
-                ? 'bg-white border-slate-900 shadow-xl shadow-slate-100 scale-[1.02]'
+                ? 'bg-white border-slate-900 shadow-xl shadow-slate-200 scale-[1.02]'
                 : 'bg-white border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 opacity-70 hover:opacity-100'
             }`}
           >
