@@ -109,17 +109,17 @@ export function MaterialesPanel({ materiales, saldosPorMaterial = [] }: Props) {
       {/* Tabla Premium */}
       {visibles.length > 0 && (
         <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden group">
-          <table className="w-full border-collapse">
+          <table className="w-full border-collapse table-fixed">
             <thead>
               <tr className="border-b border-slate-50 bg-slate-50/20">
-                <th className="hidden lg:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-24">Registro</th>
-                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-40">Identificación</th>
-                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 min-w-[200px]">Descripción de la Materia Prima</th>
-                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-24">U.M.</th>
-                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-right px-6 py-5 w-24">Saldos</th>
-                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-right px-6 py-5 w-40">Costo & Valorización</th>
-                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center px-6 py-5 w-24">Status</th>
-                <th className="px-6 py-5 w-16" />
+                <th className="hidden lg:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-4 py-4 w-24">Registro</th>
+                <th className="hidden sm:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-4 py-4 w-32">Identificación</th>
+                <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-4 py-4">Descripción de la Materia Prima</th>
+                <th className="hidden md:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-4 py-4 w-20">U.M.</th>
+                <th className="hidden lg:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-right px-4 py-4 w-24">Saldos</th>
+                <th className="hidden xl:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-right px-4 py-4 w-32">Valorización</th>
+                <th className="hidden md:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-center px-4 py-4 w-24">Status</th>
+                <th className="px-4 py-4 w-14" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -142,75 +142,83 @@ export function MaterialesPanel({ materiales, saldosPorMaterial = [] }: Props) {
 function MaterialRow({ material: m, onEdit, onToggleActivo, saldo }: { material: Material; onEdit: () => void; onToggleActivo: () => void; saldo?: SaldoTotalMP }) {
   return (
     <tr className={cn('group/row transition-all hover:bg-slate-50/50', !m.activo ? 'opacity-40 grayscale-[0.5]' : '')}>
-      <td className="hidden lg:table-cell px-6 py-5 whitespace-nowrap">
+      <td className="hidden lg:table-cell px-4 py-4 whitespace-nowrap">
         <span className="text-[10px] font-black text-slate-400 tabular-nums">
           {m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}
         </span>
       </td>
-      <td className="px-6 py-5 whitespace-nowrap">
-        <span className="text-[11px] font-black text-slate-900 tracking-wider font-mono bg-slate-100 px-2 py-1 rounded-lg">
+      <td className="hidden sm:table-cell px-4 py-4">
+        <span className="text-[11px] font-black text-slate-900 tracking-wider font-mono bg-slate-100 px-2 py-1 rounded-lg truncate block">
           {m.codigo}
         </span>
       </td>
-      <td className="px-6 py-5">
-        <div className="flex items-start gap-4">
-          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border", 
+      <td className="px-4 py-4">
+        <div className="flex items-start gap-3">
+          <div className={cn("hidden md:flex w-8 h-8 rounded-xl items-center justify-center shrink-0 border", 
             m.tipo_mp === 'nacional' ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-indigo-50 border-indigo-100 text-indigo-600"
           )}>
-            {m.tipo_mp === 'nacional' ? <MapPin className="w-5 h-5" /> : <Globe className="w-5 h-5" />}
+            {m.tipo_mp === 'nacional' ? <MapPin className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-black text-slate-900 truncate tracking-tight uppercase">{m.nombre}</p>
+            <p className="text-[12px] font-black text-slate-900 truncate tracking-tight uppercase">{m.nombre}</p>
+            <div className="flex flex-wrap gap-2 mt-1">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest md:hidden">
+                {UNIDADES.find(u => u.value === m.unidad)?.label ?? m.unidad}
+              </span>
+              <span className="text-[10px] font-black text-emerald-600 tracking-widest md:hidden">
+                {formatCurrency(saldo?.costo_promedio ?? m.costo_unit)}
+              </span>
+            </div>
             {m.terceros?.nombre && (
-              <p className="text-[10px] font-black text-slate-400 mt-1 uppercase truncate opacity-70">
+              <p className="hidden sm:block text-[9px] font-black text-slate-400 mt-1 uppercase truncate opacity-70">
                 <Building2 className="w-3 h-3 inline mr-1 mb-0.5" />
                 {m.terceros.nombre}
               </p>
             )}
-            {m.referencia_proveedor && (
-              <p className="text-[9px] font-medium text-slate-300 mt-0.5 uppercase truncate italic">Ref: {m.referencia_proveedor}</p>
-            )}
           </div>
         </div>
       </td>
-      <td className="px-6 py-5">
+      <td className="hidden md:table-cell px-4 py-4">
         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
           {UNIDADES.find(u => u.value === m.unidad)?.label ?? m.unidad}
         </span>
       </td>
-      <td className="px-6 py-5 text-right whitespace-nowrap">
+      <td className="hidden lg:table-cell px-4 py-4 text-right whitespace-nowrap">
         <div className="flex flex-col">
           <span className="text-sm font-black text-slate-900 tabular-nums">{saldo?.saldo_total ?? 0}</span>
           <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">disponible</span>
         </div>
       </td>
-      <td className="px-6 py-5 text-right whitespace-nowrap">
+      <td className="hidden xl:table-cell px-4 py-4 text-right whitespace-nowrap">
         <div className="flex flex-col">
           <span className="text-xs font-black text-slate-900 tabular-nums">
             {formatCurrency(saldo?.valor_total ?? 0)}
           </span>
           <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">
-            CU: {formatCurrency(saldo?.costo_promedio ?? m.costo_unit)}/{UNIDAD_LABEL[m.unidad]}
+            CU: {formatCurrency(saldo?.costo_promedio ?? m.costo_unit)}
           </span>
         </div>
       </td>
-      <td className="px-6 py-5 text-center">
+      <td className="hidden md:table-cell px-4 py-4 text-center">
         <button
           onClick={onToggleActivo}
-          className={cn('text-[9px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-xl border transition-all',
+          className={cn('text-[9px] font-black uppercase tracking-[0.15em] px-2 py-1 rounded-xl border transition-all',
             m.activo ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
           )}
         >
-          {m.activo ? 'Activo' : 'Inactivo'}
+          {m.activo ? 'Act.' : 'Inact.'}
         </button>
       </td>
-      <td className="px-6 py-5 text-right">
-        <button
-          onClick={onEdit}
-          className="w-8 h-8 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-slate-400 hover:text-slate-900 hover:border-slate-200 hover:shadow-md transition-all opacity-0 group-hover/row:opacity-100"
-        >
-          <Edit2 className="w-4 h-4" />
-        </button>
+      <td className="px-4 py-4 text-right">
+        <div className="flex justify-end opacity-100 transition-all duration-300">
+          <button
+            onClick={onEdit}
+            title="Editar materia prima"
+            className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-200 shadow-sm flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100 hover:shadow-md transition-all"
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </td>
     </tr>
   )

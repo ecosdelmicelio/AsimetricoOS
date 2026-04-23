@@ -201,6 +201,7 @@ export function OCLineasMPForm({ materiales, onLineasChange, embedded = false }:
                           value={editCantidad}
                           onChange={e => setEditCantidad(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && saveEditing(linea.tempId)}
+                          onBlur={() => saveEditing(linea.tempId)}
                           autoFocus
                           step="0.01"
                           min="0"
@@ -225,6 +226,7 @@ export function OCLineasMPForm({ materiales, onLineasChange, embedded = false }:
                           value={editPrecio}
                           onChange={e => setEditPrecio(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && saveEditing(linea.tempId)}
+                          onBlur={() => saveEditing(linea.tempId)}
                           step="0.01"
                           min="0"
                           className="w-28 text-right bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-black tabular-nums text-slate-900 outline-none focus:border-slate-300"

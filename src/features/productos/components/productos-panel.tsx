@@ -149,20 +149,20 @@ export function ProductosPanel({ productos, marcas, atributosPT, saldosPorProduc
 
       {/* Tabla Premium */}
       {visibles.length > 0 && (
-        <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-x-hidden group">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+        <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden group">
+          <div className="w-full overflow-hidden">
+            <table className="w-full border-collapse table-fixed">
               <thead>
                 <tr className="border-b border-slate-50 bg-slate-50/20">
-                  <th className="hidden lg:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-24">Registro</th>
-                  <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5">Identificación (SKU)</th>
-                  <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 min-w-[200px]">Descripción Producto</th>
-                  <th className="hidden xl:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-32">Marca</th>
-                  <th className="hidden sm:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-6 py-5 w-28 text-center">Distrib.</th>
-                  <th className="hidden md:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-right px-6 py-5 w-24">Saldos</th>
-                  <th className="hidden lg:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-right px-6 py-5 w-36">Valoración</th>
-                  <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center px-6 py-5 w-28">Estatus</th>
-                  <th className="px-6 py-5 w-16 text-center" />
+                  <th className="hidden lg:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-4 py-4 w-24">Registro</th>
+                  <th className="hidden sm:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-4 py-4 w-32">Identificación</th>
+                  <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-4 py-4">Descripción Producto</th>
+                  <th className="hidden xl:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-4 py-4 w-28">Marca</th>
+                  <th className="hidden md:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-left px-4 py-4 w-24 text-center">Distrib.</th>
+                  <th className="hidden lg:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-right px-4 py-4 w-24">Saldos</th>
+                  <th className="hidden xl:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-right px-4 py-4 w-32">Valoración</th>
+                  <th className="hidden sm:table-cell text-[10px] font-black text-slate-400 uppercase tracking-widest text-center px-4 py-4 w-24">Estatus</th>
+                  <th className="px-4 py-4 w-16 text-center" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -208,49 +208,45 @@ function ProductRow({
 
   return (
     <tr className={cn('group/row transition-all hover:bg-slate-50/50', p.estado === 'inactivo' ? 'opacity-40 grayscale-[0.5]' : '')}>
-      <td className="hidden lg:table-cell px-6 py-5">
+      <td className="hidden lg:table-cell px-4 py-4">
         <span className="text-[10px] font-black text-slate-400 tabular-nums">
           {p.created_at ? new Date(p.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—'}
         </span>
       </td>
-      <td className="px-6 py-5">
+      <td className="hidden sm:table-cell px-4 py-4">
         <div className="flex flex-col">
-          <span className="text-[11px] font-black text-slate-900 tracking-wider font-mono bg-slate-100 px-2 py-0.5 rounded-lg w-fit">
+          <span className="text-[11px] font-black text-slate-900 tracking-wider font-mono bg-slate-100 px-2 py-0.5 rounded-lg w-fit truncate block max-w-[100px]">
             {p.referencia}
           </span>
           {p.referencia_cliente && (
-            <span className="text-[9px] font-black text-slate-400 mt-1 uppercase truncate max-w-[120px]">
-              Ref Cli: {p.referencia_cliente}
+            <span className="text-[9px] font-black text-slate-400 mt-1 uppercase truncate max-w-[100px]">
+              Ref: {p.referencia_cliente}
             </span>
           )}
         </div>
       </td>
-      <td className="px-6 py-5">
-        <div className="flex items-start gap-4">
-          <button 
-            onClick={onEdit}
-            title="Editar producto"
-            className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-all hover:shadow-md hover:scale-105 active:scale-95", 
-              p.tipo_producto === 'fabricado' ? "bg-blue-50 border-blue-100 text-blue-600" : "bg-amber-50 border-amber-100 text-amber-600"
-            )}
-          >
-            {p.tipo_producto === 'fabricado' ? <Wrench className="w-5 h-5" /> : <Package className="w-5 h-5" />}
-          </button>
-          <button 
-            onClick={onEdit}
-            className="min-w-0 flex-1 text-left group/name hover:bg-slate-50 transition-all rounded-lg p-1 -m-1"
-          >
-            <p className="text-[13px] font-black text-slate-900 truncate tracking-tight group-hover/name:text-primary-600">{p.nombre}</p>
-            {p.nombre_comercial && (
-              <p className="text-[10px] font-black text-primary-600/70 border border-primary-100 bg-primary-50 px-1.5 py-0.5 rounded w-fit mt-1 uppercase tracking-widest">{p.nombre_comercial}</p>
-            )}
-          </button>
-        </div>
+      <td className="px-4 py-4">
+        <button 
+          onClick={onEdit}
+          className="min-w-0 flex-1 text-left group/name hover:bg-slate-50 transition-all rounded-lg p-1 -m-1"
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[13px] font-black text-slate-900 truncate tracking-tight group-hover/name:text-primary-600">
+              {p.nombre}
+            </span>
+            <span className="sm:hidden text-[9px] font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">
+              {p.referencia}
+            </span>
+          </div>
+          {p.nombre_comercial && (
+            <p className="text-[10px] font-black text-primary-600/70 border border-primary-100 bg-primary-50 px-1.5 py-0.5 rounded w-fit mt-1 uppercase tracking-widest truncate max-w-full">{p.nombre_comercial}</p>
+          )}
+        </button>
       </td>
-      <td className="hidden xl:table-cell px-6 py-5">
+      <td className="hidden xl:table-cell px-4 py-4">
         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest truncate">{brandName}</span>
       </td>
-      <td className="hidden sm:table-cell px-6 py-5">
+      <td className="hidden md:table-cell px-4 py-4">
         <div className="flex justify-center">
           <div className={cn('px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest w-fit', 
             p.tipo_distribucion === 'MTO' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
@@ -259,13 +255,13 @@ function ProductRow({
           </div>
         </div>
       </td>
-      <td className="hidden md:table-cell px-6 py-5 text-right">
+      <td className="hidden lg:table-cell px-4 py-4 text-right">
         <div className="flex flex-col">
           <span className="text-sm font-black text-slate-900 tabular-nums">{saldo?.saldo_total ?? 0}</span>
           <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">unidades</span>
         </div>
       </td>
-      <td className="hidden lg:table-cell px-6 py-5 text-right whitespace-nowrap">
+      <td className="hidden xl:table-cell px-4 py-4 text-right whitespace-nowrap">
         <div className="flex flex-col">
           <span className="text-xs font-black text-slate-900 tabular-nums">
             {formatCurrency(saldo?.valor_total ?? 0)}
@@ -278,35 +274,35 @@ function ProductRow({
         </div>
       </td>
 
-      <td className="px-6 py-5 text-center">
+      <td className="hidden sm:table-cell px-4 py-4 text-center">
         <button
           onClick={p.estado !== 'en_desarrollo' ? onToggleActivo : undefined}
           disabled={p.estado === 'en_desarrollo'}
-          className={cn('text-[9px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-xl border transition-all',
+          className={cn('text-[9px] font-black uppercase tracking-[0.15em] px-2 py-1 rounded-xl border transition-all',
             p.estado === 'activo' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100' :
             p.estado === 'inactivo' ? 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200' :
             'bg-blue-50 text-blue-600 border-blue-100 cursor-default'
           )}
         >
-          {p.estado}
+          {p.estado === 'en_desarrollo' ? 'I+D' : p.estado === 'activo' ? 'Act.' : 'Inact.'}
         </button>
       </td>
-      <td className="px-6 py-5 text-right">
-        <div className="flex justify-end gap-2 group-hover/row:translate-x-0 translate-x-1 opacity-40 group-hover/row:opacity-100 transition-all duration-300">
+      <td className="px-4 py-4 text-right">
+        <div className="flex justify-end gap-2 opacity-100 transition-all duration-300">
           <button
             onClick={onEdit}
             title="Editar producto"
-            className="w-9 h-9 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-slate-400 hover:text-slate-900 hover:border-slate-300 hover:shadow-lg transition-all"
+            className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-200 shadow-sm flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100 hover:shadow-md transition-all"
           >
-            <Edit2 className="w-4 h-4" />
+            <Edit2 className="w-3.5 h-3.5" />
           </button>
           {p.estado === 'en_desarrollo' && (
             <button
               onClick={onDelete}
               title="Eliminar borrador"
-              className="w-9 h-9 rounded-xl bg-white border border-rose-100 shadow-sm flex items-center justify-center text-rose-400 hover:text-rose-600 hover:border-rose-300 hover:shadow-lg transition-all"
+              className="w-8 h-8 rounded-xl bg-white border border-rose-100 shadow-sm flex items-center justify-center text-rose-400 hover:text-rose-600 hover:border-rose-300 hover:shadow-lg transition-all"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
