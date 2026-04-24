@@ -9,7 +9,7 @@ export default async function OPDetailPage({ params }: Props) {
   const { id } = await params
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="w-full">
       <Suspense fallback={<OPDetailSkeleton />}>
         <OPDetail id={id} />
       </Suspense>

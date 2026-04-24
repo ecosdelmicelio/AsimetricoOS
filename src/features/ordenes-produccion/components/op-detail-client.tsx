@@ -104,7 +104,7 @@ export function OPDetailClient({
     : null
 
   return (
-    <div className="space-y-8 pb-20 max-w-[1400px] mx-auto">
+    <div className="space-y-8 pb-20 w-full px-4 lg:px-10">
 
       {/* 🏭 INDUSTRIAL PRODUCTION COMMAND CENTER HEADER */}
       <div className="rounded-[2.5rem] bg-white shadow-2xl border border-slate-100 overflow-hidden">

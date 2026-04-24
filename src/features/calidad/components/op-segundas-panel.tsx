@@ -4,6 +4,7 @@ import { useState, useTransition, useMemo } from 'react'
 import { AlertTriangle, PackageSearch, RefreshCw, Loader2 } from 'lucide-react'
 import { iniciarReprocesoSegundas, registrarDesperdicio, type SegundasTracking } from '@/features/calidad/services/calidad-actions'
 import { formatDate } from '@/shared/lib/utils'
+import { ConfirmActionModal } from '@/features/wms/components/confirm-action-modal'
 
 interface Props {
   opId: string
@@ -13,27 +14,58 @@ interface Props {
 export function OPSegundasPanel({ opId, segundas }: Props) {
   const [pending, startTransition] = useTransition()
   const [processingId, setProcessingId] = useState<string | null>(null)
+  
+  // Modal states
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    onConfirm?: () => void;
+    variant: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    variant: 'danger'
+  })
+
+  const showError = (msg: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Error Operativo',
+      description: msg,
+      variant: 'danger'
+    })
+  }
 
   const handleReproceso = async (kardexId: string, productoId: string, cantidad: number, talla: string) => {
     setProcessingId(kardexId)
     startTransition(async () => {
       const res = await iniciarReprocesoSegundas(kardexId, opId, productoId, cantidad, talla)
       if (res.error) {
-        alert(`Error al iniciar reproceso: ${res.error}`)
+        showError(`No se pudo iniciar el reproceso: ${res.error}`)
       }
       setProcessingId(null)
     })
   }
 
-  const handleDesperdicio = async (kardexId: string, productoId: string, cantidad: number, talla: string) => {
-    if (!confirm('¿Estás seguro de descartar definitivamente esta prenda? Se enviará a la bodega de desperdicio.')) return
-    setProcessingId(kardexId)
-    startTransition(async () => {
-      const res = await registrarDesperdicio(kardexId, opId, productoId, cantidad, talla)
-      if (res.error) {
-        alert(`Error al descartar: ${res.error}`)
+  const handleDesperdicio = (kardexId: string, productoId: string, cantidad: number, talla: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: '¿Confirmar Descarte Definitivo?',
+      description: `Estás a punto de enviar ${cantidad} unidad(es) de talla ${talla} a la bodega de desperdicio. Esta acción no se puede deshacer.`,
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }))
+        setProcessingId(kardexId)
+        startTransition(async () => {
+          const res = await registrarDesperdicio(kardexId, opId, productoId, cantidad, talla)
+          if (res.error) {
+            showError(`Error al descartar la prenda: ${res.error}`)
+          }
+          setProcessingId(null)
+        })
       }
-      setProcessingId(null)
     })
   }
 
@@ -76,6 +108,18 @@ export function OPSegundasPanel({ opId, segundas }: Props) {
 
   return (
     <div className="pt-8 mt-8 border-t border-slate-100 flex flex-col gap-6">
+      
+      {/* Modales de Confirmación / Alerta */}
+      <ConfirmActionModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        description={confirmModal.description}
+        variant={confirmModal.variant}
+        isLoading={processingId !== null && confirmModal.onConfirm !== undefined}
+      />
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-amber-100 rounded-xl">
@@ -166,18 +210,6 @@ export function OPSegundasPanel({ opId, segundas }: Props) {
                               {item.en_reproceso ? `En Revisión ${item.talla}` : `Reprocesar ${item.talla}`}
                             </button>
                           )}
-
-                          <button
-                            onClick={() => handleDesperdicio(item.kardex_id, item.producto_id, item.cantidad, item.talla)}
-                            disabled={isDisabled}
-                            className={`flex items-center justify-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border min-w-[160px] ${
-                              reachedMaxIntentos
-                                ? 'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100'
-                                : 'bg-white text-slate-400 border-slate-100 hover:text-rose-500 hover:border-rose-100'
-                            }`}
-                          >
-                            {reachedMaxIntentos ? 'Descarte Obligatorio' : 'Descartar Prenda'}
-                          </button>
                         </div>
                       )
                     })}

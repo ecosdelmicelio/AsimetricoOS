@@ -13,6 +13,7 @@ interface Props {
   tieneDefectoCritico: boolean
   muestraSugerida:     number
   productos: { id: string; nombre: string; referencia: string; color: string | null; talla: string; cantidad: number }[]
+  rechazosAnteriores:  number
 }
 
 export function CerrarInspeccionForm({
@@ -22,12 +23,15 @@ export function CerrarInspeccionForm({
   tieneDefectoCritico,
   muestraSugerida,
   productos,
+  rechazosAnteriores,
 }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [resultado, setResultado] = useState<ResultadoInspeccion | null>(
     tieneDefectoCritico ? 'rechazada' : null
   )
+
+  const canDiscard = rechazosAnteriores >= 2
   // Matriz de unidades: { [productoId]: { segundas: number, desperdicio: number } }
   const [matrix, setMatrix] = useState<Record<string, { segundas: number, desperdicio: number }>>({})
   const [error, setError] = useState<string | null>(null)
@@ -206,10 +210,12 @@ export function CerrarInspeccionForm({
                 <div className="w-2 h-2 rounded-full bg-amber-400" />
                 <span className="text-[9px] font-black text-slate-400 uppercase">Segundas</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-rose-400" />
-                <span className="text-[9px] font-black text-slate-400 uppercase">Desperdicio</span>
-              </div>
+              {canDiscard && (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-rose-400" />
+                  <span className="text-[9px] font-black text-slate-400 uppercase">Desperdicio</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -246,18 +252,20 @@ export function CerrarInspeccionForm({
                                 className="w-12 bg-slate-50 border border-slate-200 rounded-lg py-1 text-center text-[11px] font-black text-slate-900 outline-none focus:border-amber-400 focus:bg-white transition-all"
                               />
                             </div>
-                            <div className="flex flex-col gap-1">
-                              <span className="text-[8px] font-black text-rose-500 uppercase text-center">Desp</span>
-                              <input
-                                type="number"
-                                min={0}
-                                max={max}
-                                placeholder="0"
-                                value={current.desperdicio || ''}
-                                onChange={e => updateMatrixValue(item.id, 'desperdicio', e.target.value)}
-                                className="w-12 bg-slate-50 border border-slate-200 rounded-lg py-1 text-center text-[11px] font-black text-slate-900 outline-none focus:border-rose-400 focus:bg-white transition-all"
-                              />
-                            </div>
+                            {canDiscard && (
+                              <div className="flex flex-col gap-1">
+                                <span className="text-[8px] font-black text-rose-500 uppercase text-center">Desp</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={max}
+                                  placeholder="0"
+                                  value={current.desperdicio || ''}
+                                  onChange={e => updateMatrixValue(item.id, 'desperdicio', e.target.value)}
+                                  className="w-12 bg-slate-50 border border-slate-200 rounded-lg py-1 text-center text-[11px] font-black text-slate-900 outline-none focus:border-rose-400 focus:bg-white transition-all"
+                                />
+                              </div>
+                            )}
                           </div>
                         </div>
                       )
@@ -271,7 +279,10 @@ export function CerrarInspeccionForm({
           <div className="flex items-start gap-2 rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 shadow-sm">
             <PackageSearch className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
             <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest leading-tight text-left italic">
-              LAS SEGUNDAS ENTRARÁN EN LOOP DE REPROCESO. EL DESPERDICIO SE DESCONTARÁ DEFINITIVAMENTE DE LA PRODUCCIÓN.
+              {canDiscard 
+                ? "LAS SEGUNDAS ENTRARÁN EN LOOP DE REPROCESO. EL DESPERDICIO SE DESCONTARÁ DEFINITIVAMENTE."
+                : "LAS PRENDAS ENTRARÁN EN LOOP DE REPROCESO. EL DESCARTE SOLO SE PERMITE DESPUÉS DE 2 RECHAZOS."
+              }
             </p>
           </div>
         </div>

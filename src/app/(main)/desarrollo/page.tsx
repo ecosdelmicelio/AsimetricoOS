@@ -2,10 +2,16 @@ import { Suspense } from 'react'
 import { DesarrolloList } from '@/features/desarrollo/components/desarrollo-list'
 import { FlaskConical } from 'lucide-react'
 
-export default function DesarrolloPage() {
+export default async function DesarrolloPage({
+  searchParams
+}: {
+  searchParams: Promise<{ tab?: string }>
+}) {
+  const { tab } = await searchParams
+
   return (
-    <Suspense fallback={<DesarrolloListSkeleton />}>
-      <DesarrolloList />
+    <Suspense fallback={<DesarrolloListSkeleton />} key={tab}>
+      <DesarrolloList activeTab={tab} />
     </Suspense>
   )
 }

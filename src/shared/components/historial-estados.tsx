@@ -62,31 +62,31 @@ export function HistorialEstados({ historial, createdAt, createdBy }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2 px-2">
-        <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
-          <History className="w-4 h-4" />
+      <div className="flex items-center gap-3 px-4">
+        <div className="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-xl shadow-slate-900/20">
+          <History className="w-5 h-5" />
         </div>
         <div>
           <h3 className="text-sm font-black text-slate-900 uppercase tracking-tighter">Historial de Estados</h3>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Trazabilidad de la orden</p>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Trazabilidad Crítica de la Orden</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm p-10 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none">
+      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl p-10 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-10 opacity-[0.02] pointer-events-none rotate-12">
           <History className="w-64 h-64" />
         </div>
         
         <div className="relative">
           {/* Línea vertical */}
-          <div className="absolute left-[13px] top-4 bottom-4 w-px bg-slate-100" />
+          <div className="absolute left-[17px] top-6 bottom-6 w-0.5 bg-slate-100/80" />
 
-          <div className="space-y-8">
+          <div className="space-y-10">
             {/* Evento: creación */}
             <TimelineItem
               dot="filled"
-              label="Orden creada"
-              sub={createdBy ?? 'Sistema'}
+              label="Orden de Producción Generada"
+              sub={createdBy ?? 'Sistema Central'}
               time={isClient ? formatRelative(createdAt) : ''}
               isFirst
             />
@@ -100,15 +100,15 @@ export function HistorialEstados({ historial, createdAt, createdBy }: Props) {
               return (
                 <div key={h.id} className="relative">
                   {/* Duración entre estados */}
-                  <div className="flex items-center gap-2 pl-10 py-1 mb-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
-                      Permanencia: {durDesde}
+                  <div className="flex items-center gap-2 pl-12 py-2 mb-4">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 px-3 py-1 rounded-lg border border-slate-100 shadow-sm">
+                      Tiempo de Permanencia: {durDesde}
                     </span>
                   </div>
                   <TimelineItem
                     dot="ring"
                     label={`Transición a ${label(h.estado_nuevo)}`}
-                    sub={h.profiles?.full_name ?? 'Desconocido'}
+                    sub={h.profiles?.full_name ?? 'Operario Desconocido'}
                     time={isClient ? formatRelative(h.timestamp_cambio) : ''}
                   />
                 </div>
@@ -116,9 +116,11 @@ export function HistorialEstados({ historial, createdAt, createdBy }: Props) {
             })}
 
             {historial.length === 0 && (
-              <p className="pl-10 text-slate-400 text-xs font-bold uppercase tracking-widest py-4 italic">
-                Sin cambios de estado adicionales registrados
-              </p>
+              <div className="pl-12 py-10">
+                <p className="text-slate-300 text-[11px] font-black uppercase tracking-widest italic border-l-2 border-slate-100 pl-4">
+                  Sin transiciones de estado adicionales registradas hasta el momento
+                </p>
+              </div>
             )}
           </div>
         </div>
@@ -141,30 +143,32 @@ function TimelineItem({
   isFirst?: boolean
 }) {
   return (
-    <div className="flex items-start gap-5 group">
+    <div className="flex items-start gap-6 group">
       {/* Dot */}
       <div className="relative z-10 mt-1 shrink-0">
         {dot === 'filled' ? (
-          <div className="w-7 h-7 rounded-xl bg-slate-900 flex items-center justify-center shadow-lg shadow-slate-200 group-hover:scale-110 transition-transform">
-            <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+          <div className="w-9 h-9 rounded-2xl bg-slate-900 flex items-center justify-center shadow-xl shadow-slate-900/20 group-hover:scale-110 transition-transform duration-300">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
           </div>
         ) : (
-          <div className="w-7 h-7 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm group-hover:border-primary-500 transition-all">
-            <div className="w-2 h-2 rounded-full bg-primary-500" />
+          <div className="w-9 h-9 rounded-2xl bg-white border-2 border-slate-100 flex items-center justify-center shadow-sm group-hover:border-primary-500 transition-all duration-300 group-hover:shadow-lg">
+            <div className="w-2.5 h-2.5 rounded-full bg-slate-200 group-hover:bg-primary-500 transition-colors" />
           </div>
         )}
       </div>
 
       {/* Contenido */}
-      <div className="flex-1 min-w-0 bg-slate-50/50 p-4 rounded-2xl border border-transparent hover:border-slate-100 hover:bg-white transition-all group-hover:shadow-md">
-        <div className="flex items-start justify-between gap-4 mb-1">
-          <span className="text-sm font-black text-slate-900 uppercase tracking-tight">{itemLabel}</span>
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0" suppressHydrationWarning>
+      <div className="flex-1 min-w-0 bg-slate-50/30 p-5 rounded-3xl border border-transparent hover:border-slate-100 hover:bg-white transition-all duration-300 group-hover:shadow-xl">
+        <div className="flex items-start justify-between gap-4 mb-2">
+          <span className="text-[13px] font-black text-slate-900 uppercase tracking-tight">{itemLabel}</span>
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0 bg-white px-2 py-1 rounded-lg border border-slate-100" suppressHydrationWarning>
             {time}
           </span>
         </div>
-        <div className="flex items-center gap-1.5">
-           <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+        <div className="flex items-center gap-2">
+           <div className="w-2 h-2 rounded-full bg-primary-500/20 flex items-center justify-center">
+             <div className="w-1 h-1 rounded-full bg-primary-500" />
+           </div>
            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">{sub}</p>
         </div>
       </div>
