@@ -88,6 +88,12 @@ export async function graduarDesarrollo(desarrolloId: string) {
       leadtime_dias:   condiciones.leadtime_total_dias ?? null,
       tallas:          condiciones.tallas_disponibles ?? ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
       precio_base:     condiciones.precio_referencia ?? null,
+      // 🏭 Atributos Técnicos/Comerciales Heredados
+      nombre_comercial:       desarrollo.nombre_comercial ?? desarrollo.nombre_proyecto,
+      subpartida_arancelaria: desarrollo.subpartida_arancelaria ?? null,
+      composicion:            desarrollo.composicion ?? null,
+      instrucciones_cuidado:  desarrollo.instrucciones_cuidado ?? null,
+      requiere_inspeccion:    (ultimaVersion.puntos_criticos_calidad?.length ?? 0) > 0,
     })
     .select('id')
     .single()

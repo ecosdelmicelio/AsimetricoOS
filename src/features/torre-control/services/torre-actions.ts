@@ -237,7 +237,8 @@ export async function getTorreData(): Promise<TorreData> {
     const cantEntregada = entregasOP.reduce((s: number, e: any) => s + (e.cantidad_entregada || 0), 0)
     
     // Check Date
-    const ultEntrega = entregasOP.length > 0 ? new Date(Math.max(...entregasOP.map(e => new Date(e.fecha_entrega).getTime()))) : null
+    const entregaTimes = entregasOP.map(e => new Date(e.fecha_entrega).getTime()).filter(t => !isNaN(t))
+    const ultEntrega = entregaTimes.length > 0 ? new Date(Math.max(...entregaTimes)) : null
     const isOT = ultEntrega ? ultEntrega <= fechaPromesa : false
     
     // Check Quantity (98% tolerance)
@@ -252,7 +253,8 @@ export async function getTorreData(): Promise<TorreData> {
   const desviaciones = liquidables.map((op: any) => {
     const promesa = new Date(op.fecha_promesa)
     const real = new Date(op.updated_at)
-    return (real.getTime() - promesa.getTime()) / 86_400_000
+    const diff = (real.getTime() - promesa.getTime()) / 86_400_000
+    return isNaN(diff) ? 0 : diff
   })
   const eficiencia_programacion = desviaciones.length > 0 ? desviaciones.reduce((a, b) => a + b, 0) / desviaciones.length : 0
 
@@ -396,12 +398,12 @@ export async function getCapacidadData() {
   const { data: talleres } = await supabase
     .from('terceros')
     .select('id, nombre, capacidad_diaria')
-    .contains('tipos', ['taller'])
+    .overlaps('tipos', ['taller', 'satelite'])
     .eq('estado', 'activo')
 
   const { data: ops } = await supabase
     .from('ordenes_produccion')
-    .select('*, op_detalle(cantidad_asignada)')
+    .select('id, taller_id, fecha_promesa, estado, op_detalle(cantidad_asignada)')
     .in('estado', ['programada', 'en_corte', 'en_confeccion', 'en_terminado'])
 
   const hoy = new Date()

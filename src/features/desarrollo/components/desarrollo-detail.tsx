@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ChevronRight, AlertTriangle, Plus, FlaskConical, Edit3 } from 'lucide-react'
+import { ArrowLeft, ChevronRight, AlertTriangle, Plus, FlaskConical, Edit3, Printer } from 'lucide-react'
 import Link from 'next/link'
 import { cn, formatCurrency } from '@/shared/lib/utils'
 import { DesarrolloStatusBadge } from './desarrollo-status-badge'
@@ -14,8 +14,16 @@ import { AprobacionesPanel } from './aprobaciones-panel'
 import { ViabilidadOpsPanel } from './viabilidad-ops-panel'
 import { CondicionesPanel } from './condiciones-panel'
 import { AuditoriaMaster } from './auditoria-master'
+import { RutaOperacionalEditor } from './ruta-operacional-editor'
+import { FichaTecnicaPrint } from './ficha-tecnica-print'
+import { PuntosCriticosEditor } from './puntos-criticos-editor'
+import { DesarrolloInfoComercial } from './desarrollo-info-comercial'
 import { GenerarMuestraModal } from './generar-muestra-modal'
-import { cambiarStatusDesarrollo } from '@/features/desarrollo/services/desarrollo-actions'
+import { 
+  cambiarStatusDesarrollo, 
+  updateDesarrolloComercial, 
+  updateVersionQuality 
+} from '@/features/desarrollo/services/desarrollo-actions'
 import { graduarDesarrollo } from '@/features/desarrollo/services/graduacion-actions'
 import {
   STATUS_LABELS,
@@ -39,7 +47,7 @@ const TRANSICIONES_PERMITIDAS: Record<StatusDesarrollo, StatusDesarrollo[]> = {
   derivado:      [],
 }
 
-type Tab = 'info' | 'versiones' | 'bom' | 'condiciones' | 'muestra' | 'assets' | 'hallazgos' | 'historial' | 'auditoria'
+type Tab = 'info' | 'versiones' | 'bom' | 'operacional' | 'condiciones' | 'muestra' | 'assets' | 'hallazgos' | 'historial' | 'auditoria' | 'comercial' | 'calidad'
 
 interface Tercero { id: string; nombre: string }
 
@@ -57,6 +65,7 @@ interface Version {
   desarrollo_assets: Array<{ id: string; tipo: string; url: string; descripcion: string | null; created_at: string; version_id: string }>
   desarrollo_hallazgos: Array<{ id: string; categoria: string; severidad: string; descripcion: string; zona_prenda: string | null; foto_url: string | null; resuelto: boolean; resuelto_en_version: number | null; created_at: string; version_id: string }>
   desarrollo_costos: Array<{ id: string; concepto: string; descripcion: string | null; monto: number; created_at: string; version_id: string }>
+  puntos_criticos_calidad: any[]
 }
 
 interface Transicion {
@@ -87,6 +96,10 @@ interface DesarrolloData {
   prioridad: string
   fecha_compromiso: string | null
   notas: string | null
+  nombre_comercial: string | null
+  subpartida_arancelaria: string | null
+  composicion: string | null
+  instrucciones_cuidado: string | null
   updated_at: string | null
   terceros: { nombre: string } | null
   desarrollo_versiones: Version[]
@@ -95,6 +108,7 @@ interface DesarrolloData {
   desarrollo_viabilidad_ops: DesarrolloViabilidadOps[]
   desarrollo_condiciones: any[]
   desarrollo_condiciones_material: any[]
+  desarrollo_operaciones: any[]
   json_alta_resolucion?: any
   tipo_muestra_asignada?: string
   disonancia_activa?: boolean
@@ -129,6 +143,7 @@ export function DesarrolloDetail({
   const [showGraduarModal, setShowGraduarModal] = useState(false)
   const [graduacionError, setGraduacionError] = useState<string | null>(null)
   const [productoGraduado, setProductoGraduado] = useState<{ productoId: string; referencia: string } | null>(null)
+  const [showPrintView, setShowPrintView]     = useState(false)
 
   // Lightroom state
   const [galeriaFotos, setGaleriaFotos]   = useState<string[]>([])
@@ -179,6 +194,8 @@ export function DesarrolloDetail({
     }
   } as any)[status]
   const tercerosMuestra = esFabricado ? talleres : proveedores
+
+  const isGraduatedStatus = status === 'graduated'
 
   const hasBom = (ultimaVersion?.bom_data as any)?.materiales?.length > 0
   const hasMedidas = ultimaVersion?.cuadro_medidas != null && Object.keys(ultimaVersion.cuadro_medidas as any).length > 0
@@ -235,19 +252,19 @@ export function DesarrolloDetail({
   const getVisibleTabs = (s: StatusDesarrollo): Tab[] => {
     switch (s) {
       case 'draft':
-        return ['versiones', 'assets', 'info']
+        return ['versiones', 'operacional', 'assets', 'info']
       case 'ops_review':
-        return ['condiciones', 'bom', 'versiones', 'info']
+        return ['condiciones', 'bom', 'operacional', 'versiones', 'info']
       case 'sampling':
       case 'fitting':
-        return ['muestra', 'hallazgos', 'assets', 'versiones', 'info']
+        return ['muestra', 'hallazgos', 'operacional', 'assets', 'versiones', 'info']
       case 'client_review':
         return ['assets', 'hallazgos', 'info']
       case 'approved':
       case 'graduated':
-        return ['info', 'bom', 'condiciones', 'assets', 'versiones']
+        return ['info', 'comercial', 'bom', 'operacional', 'calidad', 'condiciones', 'assets', 'versiones']
       default:
-        return ['info', 'versiones', 'bom', 'condiciones', 'muestra', 'assets', 'hallazgos', 'historial']
+        return ['info', 'comercial', 'calidad', 'versiones', 'bom', 'operacional', 'condiciones', 'muestra', 'assets', 'hallazgos', 'historial']
     }
   }
 
@@ -261,6 +278,9 @@ export function DesarrolloDetail({
     { id: 'auditoria',   label: 'Auditoría Ops (S7)' },
     { id: 'versiones',   label: 'Diseño & BOM', badge: desarrollo.desarrollo_versiones.length },
     { id: 'bom',         label: 'BOM & Costos' },
+    { id: 'operacional', label: 'Ruta (SAM)' },
+    { id: 'calidad',     label: 'Requisitos Calidad' },
+    { id: 'comercial',   label: 'Info Comercial' },
     { id: 'condiciones', label: 'Viabilidad Ops' },
     { id: 'muestra',     label: 'Muestra Física' },
     { id: 'assets',      label: 'Fotos & Archivos', badge: versionSeleccionada?.desarrollo_assets.length },
@@ -316,6 +336,14 @@ export function DesarrolloDetail({
             </div>
           </div>
         </div>
+
+        <button
+          onClick={() => setShowPrintView(true)}
+          className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-white border border-slate-100 shadow-sm text-slate-900 font-black text-[10px] uppercase tracking-widest hover:shadow-md hover:border-slate-300 transition-all"
+        >
+          <Printer className="w-4 h-4 text-slate-400" />
+          Imprimir Ficha
+        </button>
       </div>
 
       {/* Stepper Vertical-ish / Horizontal Premium */}
@@ -416,7 +444,7 @@ export function DesarrolloDetail({
       )}
 
       {/* Banner de Contexto / Advice */}
-      {currentAdvice && (
+      {currentAdvice && !isGraduatedStatus && (
         <div className={cn('rounded-[32px] border-l-[6px] px-8 py-6 flex gap-6 items-center shadow-lg shadow-slate-100/50 transition-all duration-500 hover:shadow-xl', currentAdvice.bg)}>
           <div className="w-14 h-14 rounded-2xl bg-white/40 flex items-center justify-center shrink-0 border border-white/20 backdrop-blur-sm shadow-inner">
              <FlaskConical className="w-6 h-6 text-current opacity-70" />
@@ -424,6 +452,22 @@ export function DesarrolloDetail({
           <div className="min-w-0">
             <h4 className="text-[11px] font-black uppercase tracking-[0.2em] mb-1">{currentAdvice.title}</h4>
             <p className="text-sm font-medium opacity-80 leading-relaxed max-w-2xl">{currentAdvice.description}</p>
+          </div>
+        </div>
+      )}
+      {isGraduatedStatus && (
+        <div className="rounded-[32px] bg-slate-900 border border-slate-800 px-8 py-6 flex gap-6 items-center shadow-2xl shadow-slate-200">
+          <div className="w-14 h-14 rounded-2xl bg-primary-500/20 flex items-center justify-center shrink-0 border border-primary-500/30 backdrop-blur-sm">
+             <FlaskConical className="w-6 h-6 text-primary-400" />
+          </div>
+          <div className="min-w-0">
+            <h4 className="text-[11px] font-black uppercase tracking-[0.2em] mb-1 text-primary-400">Archivo Técnico Maestro</h4>
+            <p className="text-sm font-medium text-slate-300 leading-relaxed max-w-2xl">
+              Este desarrollo ha sido graduado. La información contenida aquí es la **Fuente Única de Verdad** para producción, calidad y comercio exterior.
+            </p>
+          </div>
+          <div className="ml-auto px-4 py-2 rounded-xl bg-slate-800 text-slate-400 text-[9px] font-black uppercase tracking-widest border border-slate-700">
+            Audit-Ready
           </div>
         </div>
       )}
@@ -491,6 +535,29 @@ export function DesarrolloDetail({
                 disonanciaActiva={desarrollo.disonancia_activa}
                 status={desarrollo.status}
              />
+          )}
+
+          {/* TAB: Info Comercial */}
+          {activeTab === 'comercial' && (
+            <DesarrolloInfoComercial 
+              desarrollo={desarrollo}
+              onSave={async (data) => {
+                await updateDesarrolloComercial(desarrollo.id, data)
+                router.refresh()
+              }}
+            />
+          )}
+
+          {/* TAB: Calidad */}
+          {activeTab === 'calidad' && versionSeleccionada && (
+            <PuntosCriticosEditor 
+              versionId={versionSeleccionada.id}
+              initialPuntos={versionSeleccionada.puntos_criticos_calidad || []}
+              onSave={async (puntos) => {
+                await updateVersionQuality(versionSeleccionada.id, puntos)
+                router.refresh()
+              }}
+            />
           )}
 
           {/* TAB: Versiones */}
@@ -724,6 +791,17 @@ export function DesarrolloDetail({
                   <p className="text-sm text-amber-900 leading-relaxed">{versionSeleccionada.comportamiento_tela}</p>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* TAB: Ruta Operacional */}
+          {activeTab === 'operacional' && versionSeleccionada && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <RutaOperacionalEditor 
+                desarrolloId={desarrollo.id}
+                versionId={versionSeleccionada.id}
+                initialOperaciones={desarrollo.desarrollo_operaciones.filter(o => o.version_id === versionSeleccionada.id)}
+              />
             </div>
           )}
 
@@ -1015,6 +1093,16 @@ export function DesarrolloDetail({
           fotos={galeriaFotos}
           initialIndex={galeriaIndex}
           onClose={() => setGaleriaOpen(false)}
+        />
+      )}
+
+      {/* Ficha Técnica Imprimible */}
+      {showPrintView && versionSeleccionada && (
+        <FichaTecnicaPrint
+          desarrollo={desarrollo}
+          version={versionSeleccionada}
+          operaciones={desarrollo.desarrollo_operaciones.filter(o => o.version_id === versionSeleccionada.id)}
+          onClose={() => setShowPrintView(false)}
         />
       )}
     </div>

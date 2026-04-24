@@ -586,6 +586,7 @@ export async function closeInspeccion(formData: FormData): Promise<{ error?: str
     .update({
       resultado,
       muestra_revisada,
+      cantidad_inspeccionada: muestra_revisada,
       notas,
       cantidad_segundas,
       timestamp_cierre: new Date().toISOString(),
@@ -953,10 +954,15 @@ export async function getParetoDefectos(filters: { taller_id?: string; fecha_ini
     .from('novedades_calidad')
     .select(`
       cantidad_afectada,
-      tipo_defecto:tipos_defecto (id, descripcion, categoria),
+      tipo_defecto:tipos_defecto (id, descripcion, categoria, gravedad_sugerida),
       inspeccion:inspecciones!inner (
         op_id,
-        op:ordenes_produccion!inner (taller_id)
+        op:ordenes_produccion!inner (
+          taller_id,
+          op_detalle!inner (
+            productos!inner (categoria)
+          )
+        )
       )
     `)
 
@@ -970,18 +976,47 @@ export async function getParetoDefectos(filters: { taller_id?: string; fecha_ini
     return []
   }
 
-  // Agrupar por defecto
-  const counts: Record<string, { descripcion: string; categoria: string; total: number }> = {}
+  // Agrupar por Categoría de Producto (Tipo de Producto)
+  const counts: Record<string, { label: string; total: number; topCategory: string; subcategories: Record<string, { count: number; gravedad: string; categoriaDefecto: string }> }> = {}
+  
   data.forEach((n: any) => {
-    const d = n.tipo_defecto
-    if (!d) return
-    if (!counts[d.id]) {
-      counts[d.id] = { descripcion: d.descripcion, categoria: d.categoria, total: 0 }
+    // Tomamos la categoría del primer producto del detalle de la OP vinculada
+    const categoria = n.inspeccion?.op?.op_detalle?.[0]?.productos?.categoria || 'Sin Categoría'
+    const defectoDesc = n.tipo_defecto?.descripcion || 'Otro'
+    const gravedad = n.tipo_defecto?.gravedad_sugerida || 'media'
+    const catDef = n.tipo_defecto?.categoria || 'General'
+    
+    if (!counts[categoria]) {
+      counts[categoria] = { label: categoria.toUpperCase(), total: 0, topCategory: '', subcategories: {} }
     }
-    counts[d.id].total += (n.cantidad_afectada || 0)
+    
+    const cant = n.cantidad_afectada || 0
+    counts[categoria].total += cant
+    
+    if (!counts[categoria].subcategories[defectoDesc]) {
+      counts[categoria].subcategories[defectoDesc] = { count: 0, gravedad, categoriaDefecto: catDef }
+    }
+    counts[categoria].subcategories[defectoDesc].count += cant
   })
 
-  return Object.values(counts).sort((a, b) => b.total - a.total)
+  // Calcular la categoría predominante para cada tipo de producto
+  return Object.values(counts)
+    .map(c => {
+      const catTotals: Record<string, number> = {}
+      Object.values(c.subcategories).forEach(sub => {
+        catTotals[sub.categoriaDefecto] = (catTotals[sub.categoriaDefecto] || 0) + sub.count
+      })
+      
+      const topCat = Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A'
+
+      return {
+        ...c,
+        topCategory: topCat,
+        descripcion: c.label,
+        total: c.total
+      }
+    })
+    .sort((a, b) => b.total - a.total)
 }
 
 export async function getRankingTalleres() {
@@ -990,27 +1025,40 @@ export async function getRankingTalleres() {
   const { data: talleres } = await supabase
     .from('terceros')
     .select('id, nombre')
-    .contains('tipos', ['taller'])
+    .overlaps('tipos', ['taller', 'satelite'])
 
   if (!talleres) return []
 
   const ranking = await Promise.all(talleres.map(async (taller) => {
-    // Obtener inspecciones de este taller
+    // Obtener inspecciones de este taller con sus novedades
     const { data: insp } = await supabase
       .from('inspecciones')
       .select(`
         resultado, 
+        muestra_revisada,
         cantidad_inspeccionada, 
         cantidad_segundas,
-        op:ordenes_produccion!inner(taller_id)
+        op:ordenes_produccion!inner(taller_id),
+        novedades:novedades_calidad(cantidad_afectada)
       `)
       .eq('op.taller_id', taller.id)
-      .eq('resultado', 'aceptada') as any
+      .neq('resultado', 'pendiente') as any
 
-    const totalInsp = (insp ?? []).reduce((s: number, i: any) => s + (i.cantidad_inspeccionada || 0), 0)
-    const totalSeg = (insp ?? []).reduce((s: number, i: any) => s + (i.cantidad_segundas || 0), 0)
+    const totalInsp = (insp ?? []).reduce((s: number, i: any) => s + (i.muestra_revisada || i.cantidad_inspeccionada || 0), 0)
     
-    const defectRate = totalInsp > 0 ? (totalSeg / totalInsp) * 100 : 0
+    // Sumamos segundas reportadas + unidades afectadas por novedades (rechazos reales)
+    const totalSeg = (insp ?? []).reduce((s: number, i: any) => s + (i.cantidad_segundas || 0), 0)
+    const totalNovedades = (insp ?? []).reduce((s: number, i: any) => {
+      const udsNov = i.novedades?.reduce((sum: number, n: any) => sum + (n.cantidad_afectada || 0), 0) || 0
+      return s + udsNov
+    }, 0)
+    
+    // El total de defectos es el máximo entre las unidades marcadas como segundas o la suma de las novedades reportadas
+    // Esto evita duplicidad si el inspector marca la misma unidad en ambos lados, 
+    // pero asegura que se cuenten los rechazos si no se marcaron como segundas.
+    const totalDefectos = Math.max(totalSeg, totalNovedades)
+    
+    const defectRate = totalInsp > 0 ? (totalDefectos / totalInsp) * 100 : 0
     const score = Math.max(0, 100 - (defectRate * 5))
 
     return {

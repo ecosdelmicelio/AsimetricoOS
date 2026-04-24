@@ -36,7 +36,11 @@ export async function getTallerData(tallerId: string) {
       *,
       productos:op_detalle(
         cantidad_asignada,
-        producto:productos(nombre, referencia)
+        producto:productos(
+          nombre, 
+          referencia,
+          producto_final_id
+        )
       ),
       servicios:op_servicios(
         tarifa_unitaria,
@@ -152,4 +156,31 @@ export async function reportarHitoProduccion(data: {
 
   revalidatePath('/taller')
   return { success: true }
+}
+
+export async function getFichaTecnicaCompleta(productoId: string) {
+  const supabase = db(await createClient())
+
+  const { data: desarrollo, error } = await supabase
+    .from('desarrollo')
+    .select(`
+      *,
+      desarrollo_versiones(
+        *,
+        desarrollo_operaciones(*)
+      )
+    `)
+    .eq('producto_final_id', productoId)
+    .order('created_at', { foreignTable: 'desarrollo_versiones', ascending: false })
+    .limit(1, { foreignTable: 'desarrollo_versiones' })
+    .single()
+
+  if (error) throw error
+  
+  const version = desarrollo.desarrollo_versiones?.[0]
+  return {
+    desarrollo,
+    version,
+    operaciones: version?.desarrollo_operaciones || []
+  }
 }

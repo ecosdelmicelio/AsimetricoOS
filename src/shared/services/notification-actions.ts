@@ -47,12 +47,19 @@ export async function getMisNotificaciones() {
     .eq('id', user.id)
     .single()
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('notificaciones')
     .select('*')
-    .or(`user_id.eq.${user.id},profile_role.eq.${profile?.role}`)
     .order('created_at', { ascending: false })
     .limit(20)
+
+  if (profile?.role) {
+    query = query.or(`user_id.eq.${user.id},profile_role.eq.${profile.role}`)
+  } else {
+    query = query.eq('user_id', user.id)
+  }
+
+  const { data, error } = await query
 
   if (error) return { data: [], error: error.message }
   return { data, error: null }

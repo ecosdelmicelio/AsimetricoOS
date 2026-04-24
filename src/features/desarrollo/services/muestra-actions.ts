@@ -318,7 +318,7 @@ export async function getTalleresParaMuestra() {
   const { data } = await supabase
     .from('terceros')
     .select('id, nombre')
-    .contains('tipos', ['taller'])
+    .overlaps('tipos', ['taller', 'satelite'])
     .order('nombre')
   return { data: (data ?? []) as { id: string; nombre: string }[] }
 }

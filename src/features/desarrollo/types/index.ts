@@ -11,6 +11,7 @@ export type DesarrolloCondicionMaterial = Tables<'desarrollo_condiciones_materia
 export type DesarrolloViabilidadOps = Tables<'desarrollo_viabilidad_ops'>
 export type DesarrolloOrden = Tables<'desarrollo_ordenes'>
 export type ProductoCondicion = Tables<'producto_condiciones'>
+export type DesarrolloOperacion = Tables<'desarrollo_operaciones'>
 
 export type StatusDesarrollo =
   | 'draft'

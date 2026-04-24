@@ -288,6 +288,37 @@ export function NuevaVersionForm({
                     <Ruler className="w-3 h-3" /> Plantilla Aplicada
                   </span>
                 )}
+                <div className="flex gap-2">
+                  <button 
+                    type="button" 
+                    onClick={async () => {
+                      const { data } = await getMedidasTemplate(categoria, clienteId)
+                      if (data && data.puntos_medida) {
+                        const newMedidas: any = {}
+                        data.puntos_medida.forEach(p => {
+                          newMedidas[p.label] = {
+                            tallas: Object.fromEntries(TALLAS.map(t => [t, ''])),
+                            tolerancia: p.tolerancia ?? 0.5
+                          }
+                        })
+                        setMedidas(prev => ({ ...newMedidas, ...prev }))
+                        setTemplateLoaded(true)
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all"
+                  >
+                    Importar Plantilla
+                  </button>
+                  {mode === 'create' && initialMedidas && Object.keys(initialMedidas).length > 0 && (
+                    <button 
+                      type="button" 
+                      onClick={() => setMedidas(initialMedidas as any)}
+                      className="px-3 py-1.5 rounded-xl border border-primary-200 bg-primary-50 text-primary-700 text-[9px] font-black uppercase tracking-widest hover:bg-primary-100 transition-all"
+                    >
+                      Clonar Anterior
+                    </button>
+                  )}
+                </div>
               </div>
               
               <div className="overflow-x-auto">

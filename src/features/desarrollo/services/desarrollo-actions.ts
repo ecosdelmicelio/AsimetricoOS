@@ -56,6 +56,7 @@ export async function getDesarrolloById(id: string) {
       desarrollo_viabilidad_ops ( * ),
       desarrollo_condiciones ( * ),
       desarrollo_condiciones_material ( *, materiales(nombre) ),
+      desarrollo_operaciones ( * ),
       profiles ( full_name )
     `)
     .eq('id', id)
@@ -424,4 +425,40 @@ export async function graduarDesarrollo(desarrolloId: string, referenciaFinal: s
   revalidatePath('/catalogo')
   
   return { data: producto, error: null }
+}
+
+// ─── UPDATE COMERCIAL & CALIDAD ───────────────────────────────────────────────
+
+export async function updateDesarrolloComercial(id: string, data: any) {
+  const supabase = db(await createClient())
+  const { error } = await supabase
+    .from('desarrollo')
+    .update({
+      nombre_comercial:       data.nombre_comercial,
+      subpartida_arancelaria: data.subpartida_arancelaria,
+      composicion:            data.composicion,
+      instrucciones_cuidado:  data.instrucciones_cuidado,
+      notas:                  data.notas,
+      updated_at:             new Date().toISOString()
+    })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
+  revalidatePath(`/desarrollo/${id}`)
+  return { error: null }
+}
+
+export async function updateVersionQuality(versionId: string, puntos: any[]) {
+  const supabase = db(await createClient())
+  const { error } = await supabase
+    .from('desarrollo_versiones')
+    .update({
+      puntos_criticos_calidad: puntos,
+      updated_at:              new Date().toISOString()
+    })
+    .eq('id', versionId)
+
+  if (error) return { error: error.message }
+  revalidatePath('/desarrollo')
+  return { error: null }
 }

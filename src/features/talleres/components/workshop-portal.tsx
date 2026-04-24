@@ -11,6 +11,7 @@ import { getParetoDefectos } from '@/features/calidad/services/calidad-actions'
 import { reportarHitoProduccion } from '@/features/talleres/services/taller-actions'
 import { InventarioTable } from '@/features/wms/components/inventario-table'
 import { NotaEntregaForm } from './nota-entrega-form'
+import { FichaTecnicaPrint } from '@/features/desarrollo/components/ficha-tecnica-print'
 import { toast } from 'sonner'
 
 interface Props {
@@ -25,6 +26,7 @@ export function WorkshopPortal({ data }: Props) {
   const [reportingHito, setReportingHito] = useState<string | null>(null)
   const [loadingHito, setLoadingHito] = useState(false)
   const [selectedOPForEntrega, setSelectedOPForEntrega] = useState<any | null>(null)
+  const [selectedFT, setSelectedFT] = useState<{ desarrollo: any, version: any, operaciones: any[] } | null>(null)
   
   const { taller, inspecciones, ops, materiales, liquidaciones, entregas, stats } = data
 
@@ -195,6 +197,29 @@ export function WorkshopPortal({ data }: Props) {
                             <span className="text-[10px] font-bold text-slate-400 uppercase truncate max-w-[200px]">
                               {op.productos?.[0]?.producto?.nombre || 'General'}
                             </span>
+                            {op.productos?.[0]?.producto?.producto_final_id && (
+                              <button 
+                                onClick={async () => {
+                                  const prodId = op.productos[0].producto.producto_final_id
+                                  if (!prodId) return
+                                  
+                                  const loadingToast = toast.loading('Cargando ficha técnica...')
+                                  try {
+                                    const { getFichaTecnicaCompleta } = await import('@/features/talleres/services/taller-actions')
+                                    const ftData = await getFichaTecnicaCompleta(prodId)
+                                    setSelectedFT(ftData)
+                                    toast.dismiss(loadingToast)
+                                  } catch (error) {
+                                    console.error(error)
+                                    toast.error('No se pudo cargar la ficha técnica completa.')
+                                    toast.dismiss(loadingToast)
+                                  }
+                                }}
+                                className="text-[9px] font-black text-primary-500 uppercase tracking-widest mt-1 hover:underline text-left"
+                              >
+                                Ver Ficha Técnica →
+                              </button>
+                            )}
                           </div>
                         </td>
                         <td className="py-6">
@@ -459,6 +484,15 @@ export function WorkshopPortal({ data }: Props) {
             setSelectedOPForEntrega(null)
             window.location.reload()
           }} 
+        />
+      )}
+
+      {selectedFT && (
+        <FichaTecnicaPrint
+          desarrollo={selectedFT.desarrollo}
+          version={selectedFT.version}
+          operaciones={selectedFT.operaciones}
+          onClose={() => setSelectedFT(null)}
         />
       )}
     </div>

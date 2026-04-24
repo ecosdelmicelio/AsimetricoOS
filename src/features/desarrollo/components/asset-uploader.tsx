@@ -8,6 +8,7 @@ import type { DesarrolloAsset } from '@/features/desarrollo/types'
 
 const TIPOS = [
   { value: 'foto_muestra',    label: 'Foto Muestra' },
+  { value: 'sketch',          label: 'Sketch Técnico' },
   { value: 'foto_hallazgo',   label: 'Foto Hallazgo' },
   { value: 'optitex',         label: 'Optitex' },
   { value: 'ficha_tecnica',   label: 'Ficha Técnica' },
@@ -18,7 +19,7 @@ const TIPOS = [
   { value: 'accesorio',       label: 'Accesorio' },
 ]
 
-const IMAGE_TYPES = ['foto_muestra','foto_hallazgo']
+const IMAGE_TYPES = ['foto_muestra', 'sketch', 'foto_hallazgo']
 
 interface Props {
   assets:       DesarrolloAsset[]
