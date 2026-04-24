@@ -1,5 +1,6 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/shared/lib/supabase/server'
 import { db } from '@/shared/lib/supabase/db'
 
@@ -23,7 +24,7 @@ export async function getTallerData(tallerId: string) {
       cantidad_segundas,
       cantidad_rechazadas,
       created_at,
-      op:ordenes_produccion!inner(codigo, taller_id)
+      op:ordenes_produccion!inner(id, codigo, taller_id)
     `)
     .eq('op.taller_id', tallerId)
     .order('created_at', { ascending: false })
@@ -93,7 +94,7 @@ export async function getTallerData(tallerId: string) {
       *,
       op:ordenes_produccion(codigo)
     `)
-    .in('op_id', opsProcessed.map(o => o.id).concat(insp.map(i => i.op?.id).filter(Boolean)))
+    .in('op_id', (opsProcessed as any[]).map(o => o.id).concat((insp as any[] || []).map(i => i.op?.id).filter(Boolean)))
     .order('created_at', { ascending: false })
     .limit(10)
 
