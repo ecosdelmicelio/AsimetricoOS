@@ -218,3 +218,14 @@ export async function deleteProducto(id: string): Promise<{ error?: string }> {
   revalidatePath('/catalogo')
   return {}
 }
+
+export async function getProductoAssets(productoId: string) {
+  const supabase = db(await createClient())
+  const { data } = await supabase
+    .from('producto_assets')
+    .select('*')
+    .eq('producto_id', productoId)
+    .order('created_at', { ascending: false })
+    
+  return data || []
+}

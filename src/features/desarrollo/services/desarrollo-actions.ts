@@ -8,6 +8,7 @@ import type {
   CreateDesarrolloInput,
   StatusDesarrollo,
 } from '@/features/desarrollo/types'
+import { crearNotificacion } from '@/shared/services/notification-actions'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function db(supabase: unknown): any {
@@ -324,4 +325,103 @@ export async function getProductosPadre() {
 
   if (error) return { data: [], error: error.message }
   return { data, error: null }
+}
+
+// ─── PROMOCIÓN A PRODUCTO (Graduación) ──────────────────────────────────────────
+
+export async function graduarDesarrollo(desarrolloId: string, referenciaFinal: string) {
+  const supabase = db(await createClient())
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  if (!referenciaFinal) return { error: 'La referencia final es obligatoria' }
+
+  // 1. Obtener desarrollo y última versión
+  const { data: dev, error: devError } = await supabase
+    .from('desarrollo')
+    .select(`
+      *,
+      desarrollo_versiones (
+        *,
+        desarrollo_assets ( * )
+      )
+    `)
+    .eq('id', desarrolloId)
+    .single()
+
+  if (devError || !dev) return { error: 'Desarrollo no encontrado' }
+  
+  // Encontrar la versión más alta
+  const ultimaVersion = (dev.desarrollo_versiones as any[]).sort((a, b) => b.version_n - a.version_n)[0]
+
+  if (!ultimaVersion) return { error: 'No hay versiones para graduar' }
+
+  // 2. Crear el producto real
+  const { data: producto, error: prodError } = await supabase
+    .from('productos')
+    .insert({
+      referencia:     referenciaFinal,
+      nombre:         dev.nombre_proyecto,
+      categoria:      dev.categoria_producto,
+      tipo_producto:  dev.tipo_producto,
+      estado:         'activo',
+      tallas:         ['XS', 'S', 'M', 'L', 'XL', 'XXL'], 
+    })
+    .select('id')
+    .single()
+
+  if (prodError) return { error: `Error creando producto: ${prodError.message}` }
+
+  // 3. Heredar BOM
+  const bom = ultimaVersion.bom_data as any
+  const materiales = Array.isArray(bom) ? bom : (bom?.materiales || [])
+  
+  if (Array.isArray(materiales) && materiales.length > 0) {
+    const bomInserts = materiales.map((item: any) => ({
+      producto_id: producto.id,
+      material_id: item.material_id,
+      cantidad:    item.consumo || item.cantidad || 0,
+      notas:       'Heredado de Desarrollo',
+      tipo:        'materia_prima'
+    }))
+    await supabase.from('bom').insert(bomInserts)
+  }
+
+  // 4. Heredar Assets (Documentación)
+  const assets = ultimaVersion.desarrollo_assets
+  if (Array.isArray(assets) && assets.length > 0) {
+    const assetInserts = assets.map((asset: any) => ({
+      producto_id: producto.id,
+      tipo:        asset.tipo === 'ficha_tecnica' ? 'ficha_tecnica' : 
+                   asset.tipo === 'foto_muestra' ? 'foto' : 'otro',
+      url:         asset.url,
+      descripcion: asset.descripcion ?? 'Heredado de Desarrollo',
+      created_por: user.id
+    }))
+    await supabase.from('producto_assets').insert(assetInserts)
+  }
+
+  // 5. Actualizar desarrollo
+  await supabase
+    .from('desarrollo')
+    .update({ 
+      status: 'graduated', 
+      producto_final_id: producto.id,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', desarrolloId)
+
+  // 6. Notificar
+  await crearNotificacion({
+    profile_role: 'orquestador',
+    titulo: '🎓 Desarrollo Graduado',
+    mensaje: `El proyecto "${dev.nombre_proyecto}" se ha convertido en el producto ${referenciaFinal}.`,
+    data: { producto_id: producto.id, desarrollo_id: desarrolloId }
+  })
+
+  revalidatePath('/desarrollo')
+  revalidatePath(`/desarrollo/${desarrolloId}`)
+  revalidatePath('/catalogo')
+  
+  return { data: producto, error: null }
 }

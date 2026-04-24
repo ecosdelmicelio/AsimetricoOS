@@ -25,6 +25,7 @@ import {
   FlaskConical
 } from 'lucide-react'
 import Image from 'next/image'
+import { NotificationBell } from '@/shared/components/layout/notification-bell'
 import type { UserRole } from '@/shared/types'
 
 interface NavItem {
@@ -56,23 +57,23 @@ const NAV_ITEMS: NavItem[] = [
   {
     label: 'Operaciones',
     icon: Factory,
-    roles: ['orquestador', 'jefe_piso', 'inspector'],
+    roles: ['orquestador', 'jefe_piso', 'inspector', 'taller'],
     subItems: [
-      { href: '/ordenes-produccion', label: 'Producción', roles: ['orquestador', 'jefe_piso'] },
-      { href: '/calidad',            label: 'Calidad',    roles: ['orquestador', 'inspector'] },
-      { href: '/calidad/segundas',   label: 'Segundas',   roles: ['orquestador', 'inspector'] },
+      { href: '/ordenes-produccion', label: 'Producción', roles: ['orquestador', 'jefe_piso', 'taller'] },
+      { href: '/calidad',            label: 'Calidad',    roles: ['orquestador', 'inspector', 'taller'] },
+      { href: '/calidad/segundas',   label: 'Segundas',   roles: ['orquestador', 'inspector', 'taller'] },
       { href: '/compras',            label: 'Compras',    roles: ['orquestador'] },
-      { href: '/wms',                label: 'Bodegas',    roles: ['orquestador'] },
-      { href: '/kardex',             label: 'Kardex',     roles: ['orquestador'] },
-      { href: '/despachos',          label: 'Despachos',  roles: ['orquestador'] },
+      { href: '/wms',                label: 'Bodegas',    roles: ['orquestador', 'taller'] },
+      { href: '/kardex',             label: 'Kardex',     roles: ['orquestador', 'taller'] },
+      { href: '/despachos',          label: 'Despachos',  roles: ['orquestador', 'taller'] },
     ]
   },
   {
     label: 'Desarrollo',
     icon: FlaskConical,
-    roles: ['orquestador'],
+    roles: ['orquestador', 'taller'],
     subItems: [
-      { href: '/desarrollo', label: 'Muestras/PLM', roles: ['orquestador'] },
+      { href: '/desarrollo', label: 'Muestras/PLM', roles: ['orquestador', 'taller'] },
       { href: '/catalogo',   label: 'Catálogo',     roles: ['orquestador'] },
     ]
   },
@@ -91,19 +92,13 @@ const NAV_ITEMS: NavItem[] = [
       { href: '/configuracion', label: 'Configuración', roles: ['orquestador'] },
     ]
   },
-  { 
-    href: '/taller', 
-    label: 'Mi Taller', 
-    icon: Factory, 
-    roles: ['taller'] 
-  },
 ]
 
 const ROLE_LABEL: Record<UserRole, string> = {
   orquestador: 'Orquestador',
   jefe_piso:   'Jefe de Piso',
   inspector:   'Inspector',
-  taller:      'Taller',
+  taller:      'Socio de Taller',
 }
 
 export function Sidebar() {
@@ -243,12 +238,15 @@ export function Sidebar() {
               "flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary-950/30 overflow-hidden transition-all mt-2",
               (expanded || mobileOpen) ? "justify-between" : "justify-center"
             )}>
-              {(expanded || mobileOpen) && (
-                 <div className="flex flex-col min-w-0">
-                   <span className="text-body-sm font-medium text-white truncate max-w-[140px]">{authUser.profile.full_name}</span>
-                   <span className="text-[10px] text-primary-400 capitalize truncate">{ROLE_LABEL[authUser.role]}</span>
-                 </div>
-              )}
+              <div className="flex items-center gap-3 overflow-hidden">
+                <NotificationBell />
+                {(expanded || mobileOpen) && (
+                   <div className="flex flex-col min-w-0">
+                     <span className="text-body-sm font-medium text-white truncate max-w-[100px]">{authUser.profile.full_name}</span>
+                     <span className="text-[10px] text-primary-400 capitalize truncate">{ROLE_LABEL[authUser.role]}</span>
+                   </div>
+                )}
+              </div>
               <button
                 onClick={handleLogout}
                 className="text-primary-400 hover:text-red-400 transition-colors shrink-0"

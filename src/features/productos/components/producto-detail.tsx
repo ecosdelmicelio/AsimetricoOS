@@ -1,8 +1,12 @@
 import Link from 'next/link'
 import { ArrowLeft, Edit } from 'lucide-react'
-import { getProductoById } from '@/features/productos/services/producto-actions'
+import { 
+  getProductoById, 
+  getProductoAssets 
+} from '@/features/productos/services/producto-actions'
 import { ProductoEstadoToggle } from './producto-estado-toggle'
 import { BOMPanel } from './bom-panel'
+import { DocumentosPanel } from './documentos-panel'
 import { ProductoInventarioPanel } from './producto-inventario-panel'
 import {
   getSaldosKardexPT,
@@ -17,12 +21,14 @@ interface Props { id: string }
 export async function ProductoDetail({ id }: Props) {
   const [
     producto,
+    assets,
     saldosPT,
     historialPT,
     bodegas,
     tiposMovimiento,
   ] = await Promise.all([
     getProductoById(id),
+    getProductoAssets(id),
     getSaldosKardexPT({ producto_id: id }),
     getHistorialKardexPT({ producto_id: id }),
     getBodegas(),
@@ -94,6 +100,9 @@ export async function ProductoDetail({ id }: Props) {
 
       {/* BOM */}
       <BOMPanel productoId={producto.id} precioBase={producto.precio_base} />
+
+      {/* Documentación */}
+      <DocumentosPanel assets={assets as any[]} />
 
       {/* Inventario */}
       <div className="mt-8 pt-8 border-t border-black/10">
