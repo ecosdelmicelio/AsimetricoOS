@@ -44,6 +44,7 @@ const NAV_ITEMS: NavItem[] = [
     subItems: [
       { href: '/torre-control',            label: 'Gerencial',   roles: ['orquestador'] },
       { href: '/torre-control/operaciones', label: 'Operaciones', roles: ['orquestador'] },
+      { href: '/torre-control/capacidad',   label: 'Capacidad',   roles: ['orquestador'] },
       { href: '/torre-control/comercial',   label: 'Comercial',   roles: ['orquestador'] },
       { href: '/torre-control/financiera',  label: 'Financiera',  roles: ['orquestador'] },
     ]

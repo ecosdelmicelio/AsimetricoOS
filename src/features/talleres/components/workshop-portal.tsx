@@ -10,21 +10,23 @@ import { cn, formatDate, formatCurrency } from '@/shared/lib/utils'
 import { getParetoDefectos } from '@/features/calidad/services/calidad-actions'
 import { reportarHitoProduccion } from '@/features/talleres/services/taller-actions'
 import { InventarioTable } from '@/features/wms/components/inventario-table'
+import { NotaEntregaForm } from './nota-entrega-form'
 import { toast } from 'sonner'
 
 interface Props {
   data: any
 }
 
-type Tab = 'dashboard' | 'inventario' | 'calidad'
+type Tab = 'dashboard' | 'inventario' | 'calidad' | 'despachos'
 
 export function WorkshopPortal({ data }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard')
   const [pareto, setPareto] = useState<any[]>([])
   const [reportingHito, setReportingHito] = useState<string | null>(null)
   const [loadingHito, setLoadingHito] = useState(false)
+  const [selectedOPForEntrega, setSelectedOPForEntrega] = useState<any | null>(null)
   
-  const { taller, inspecciones, ops, stats, materiales, liquidaciones } = data
+  const { taller, inspecciones, ops, materiales, liquidaciones, entregas, stats } = data
 
   useEffect(() => {
     async function loadPareto() {
@@ -90,6 +92,15 @@ export function WorkshopPortal({ data }: Props) {
             )}
           >
             <ClipboardCheck className="w-4 h-4" /> Autocontrol
+          </button>
+          <button 
+            onClick={() => setActiveTab('despachos')}
+            className={cn(
+              "px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+              activeTab === 'despachos' ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:bg-slate-50"
+            )}
+          >
+            <Truck className="w-4 h-4" /> Despachos
           </button>
         </div>
       </div>
@@ -354,6 +365,101 @@ export function WorkshopPortal({ data }: Props) {
             </div>
           </div>
         </div>
+      )}
+      {activeTab === 'despachos' && (
+        <div className="animate-in fade-in slide-in-from-top-2 duration-500">
+          <div className="flex items-center justify-between mb-8 px-6">
+            <div>
+              <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Mis Despachos</h2>
+              <p className="text-slate-400 font-medium">Historial de entregas realizadas a bodega principal</p>
+            </div>
+            <div className="w-16 h-16 rounded-[24px] bg-blue-50 flex items-center justify-center text-blue-600">
+              <Truck className="w-8 h-8" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 bg-white rounded-[40px] p-10 border border-slate-100 shadow-sm">
+              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter mb-6">Historial de Entregas</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-left border-b border-slate-50">
+                      <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Referencia</th>
+                      <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Fecha</th>
+                      <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Cantidad</th>
+                      <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {entregas.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="py-20 text-center text-slate-300 font-bold uppercase tracking-widest text-xs">No has realizado despachos aún</td>
+                      </tr>
+                    ) : (
+                      entregas.map((e: any) => (
+                        <tr key={e.id} className="group">
+                          <td className="py-6">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-black text-slate-900">OP-{e.op?.codigo}</span>
+                              <span className="text-[9px] font-bold text-slate-400 uppercase">Nota #{e.numero_entrega}</span>
+                            </div>
+                          </td>
+                          <td className="py-6 text-sm font-medium text-slate-500">{formatDate(e.fecha_entrega)}</td>
+                          <td className="py-6 text-right font-black text-slate-900 tabular-nums">{e.cantidad_entregada}</td>
+                          <td className="py-6 text-center">
+                            <span className={cn(
+                              "text-[8px] font-black uppercase px-2 py-1 rounded-full",
+                              e.estado === 'aceptada' ? "bg-emerald-50 text-emerald-600" :
+                              e.estado === 'rechazada' ? "bg-rose-50 text-rose-600" :
+                              "bg-blue-50 text-blue-600"
+                            )}>
+                              {e.estado}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              <div className="bg-slate-900 rounded-[40px] p-10 text-white shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 opacity-10"><PlusCircle className="w-24 h-24" /></div>
+                <h3 className="text-xl font-black uppercase tracking-tighter mb-6">Nuevo Despacho</h3>
+                <p className="text-white/50 text-xs mb-8">Selecciona una orden activa para generar una nueva nota de entrega.</p>
+                <div className="space-y-3">
+                  {ops.filter((o: any) => ['en_confeccion', 'programada'].includes(o.estado)).map((op: any) => (
+                    <button
+                      key={op.id}
+                      onClick={() => setSelectedOPForEntrega(op)}
+                      className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-left"
+                    >
+                      <div>
+                        <p className="text-xs font-black">OP-{op.codigo}</p>
+                        <p className="text-[10px] font-bold text-white/40">{op.total_unidades} Unds • {op.estado}</p>
+                      </div>
+                      <PlusCircle className="w-5 h-5 text-primary-400" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedOPForEntrega && (
+        <NotaEntregaForm 
+          op={selectedOPForEntrega} 
+          onClose={() => setSelectedOPForEntrega(null)} 
+          onSuccess={() => {
+            setSelectedOPForEntrega(null)
+            window.location.reload()
+          }} 
+        />
       )}
     </div>
   )

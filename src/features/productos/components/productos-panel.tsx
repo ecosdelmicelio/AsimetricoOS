@@ -467,19 +467,28 @@ function ProductForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <p className="text-[10px] font-black text-primary-600 uppercase tracking-[0.2em] mb-2">
-        {isEdit ? `Modificando Registro: ${product.referencia}` : 'Creación de Nueva Referencia'}
-      </p>
+    <form onSubmit={handleSubmit} className="space-y-8 p-1">
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
+          {isEdit ? `Modificando Registro: ${product.referencia}` : 'Creación de Nueva Referencia'}
+        </p>
+        {isEdit && (
+          <div className={cn("px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest", 
+            estado === 'activo' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'
+          )}>
+            {estado}
+          </div>
+        )}
+      </div>
 
       {/* Tabs Premium */}
       {isEdit && (
-        <div className="flex gap-2 rounded-2xl bg-slate-50 p-1.5 border border-slate-100">
+        <div className="flex gap-2 rounded-[24px] bg-slate-50 p-1.5 border border-slate-100">
           <button
             type="button"
             onClick={() => setTab('detalles')}
             className={cn(
-              "flex-1 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all",
+              "flex-1 px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-[18px] transition-all",
               tab === 'detalles'
                 ? "bg-white text-slate-900 shadow-sm border border-slate-200"
                 : "text-slate-400 hover:text-slate-600 hover:bg-white/50"
@@ -492,7 +501,7 @@ function ProductForm({
               type="button"
               onClick={handleBomTabClick}
               className={cn(
-                "flex-1 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all",
+                "flex-1 px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-[18px] transition-all",
                 tab === 'bom'
                   ? "bg-white text-slate-900 shadow-sm border border-slate-200"
                   : "text-slate-400 hover:text-slate-600 hover:bg-white/50"
@@ -506,286 +515,285 @@ function ProductForm({
 
       {/* Tab: Detalles */}
       {tab === 'detalles' && (
-        <div className="space-y-4">
-          {/* Top Row: Código Generado + Tipo y Distribución */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Código Generado - 2 columnas en desktop */}
-            <div className="lg:col-span-2 space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Código Generado *</label>
-              {(() => {
-                const atributosAgrupados: Record<TipoAtributo, AtributoPT[]> = {
-                  tipo: [], fit: [], superior: [], inferior: [], capsula: [], diseno: [], color: [], genero: []
-                }
-                atributosPT.forEach(a => {
-                  if (atributosAgrupados[a.tipo]) atributosAgrupados[a.tipo].push(a)
-                })
+        <div className="space-y-8 animate-in fade-in duration-500">
+          {/* SECCIÓN 1: Identidad */}
+          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-6 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-2">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Código Generado *</label>
+                {(() => {
+                  const atributosAgrupados: Record<TipoAtributo, AtributoPT[]> = {
+                    tipo: [], fit: [], superior: [], inferior: [], capsula: [], diseno: [], color: [], genero: []
+                  }
+                  atributosPT.forEach(a => {
+                    if (atributosAgrupados[a.tipo]) atributosAgrupados[a.tipo].push(a)
+                  })
 
-                return (
-                  <CodigoPreviewPT
-                    atributos={atributosAgrupados}
-                    seleccionados={atributosSeleccionados}
-                    onCodigoChange={handleCodigoChange}
-                    onNombreRecomendado={handleNombreRecomendado}
-                  />
-                )
-              })()}
-            </div>
-
-            {/* Tipo y Distribución - 1 columna en desktop, lado derecho */}
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Tipo *</label>
-                <div className="relative flex rounded-xl bg-neu-base shadow-neu-inset p-1 w-full">
-                  <div
-                    className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-primary-600 shadow transition-transform duration-300 ${
-                      tipo === 'fabricado' ? 'translate-x-0' : 'translate-x-full'
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setTipo('fabricado')}
-                    className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
-                      tipo === 'fabricado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
-                    } ${isEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    Fabricado
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTipo('comercializado')}
-                    className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
-                      tipo === 'comercializado' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
-                    } ${isEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    Comercializado
-                  </button>
-                </div>
+                  return (
+                    <CodigoPreviewPT
+                      atributos={atributosAgrupados}
+                      seleccionados={atributosSeleccionados}
+                      onCodigoChange={handleCodigoChange}
+                      onNombreRecomendado={handleNombreRecomendado}
+                    />
+                  )
+                })()}
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Distribución *</label>
-                <div className="relative flex rounded-xl bg-neu-base shadow-neu-inset p-1 w-full">
-                  <div
-                    className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-primary-600 shadow transition-transform duration-300 ${
-                      tipoDistribucion === 'MTS' ? 'translate-x-0' : 'translate-x-full'
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setTipoDistribucion('MTS')}
-                    className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
-                      tipoDistribucion === 'MTS' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    MTS
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTipoDistribucion('MTO')}
-                    className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold transition-colors duration-300 ${
-                      tipoDistribucion === 'MTO' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    MTO
-                  </button>
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Tipo Producto *</label>
+                  <div className="relative flex rounded-xl bg-slate-50 p-1 w-full border border-slate-100">
+                    <div
+                      className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-slate-900 shadow transition-transform duration-300 ${
+                        tipo === 'fabricado' ? 'translate-x-0' : 'translate-x-full'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setTipo('fabricado')}
+                      className={`relative z-10 flex-1 py-2 text-[10px] font-black uppercase tracking-widest transition-colors duration-300 ${
+                        tipo === 'fabricado' ? 'text-white' : 'text-slate-400 hover:text-slate-600'
+                      } ${isEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      Fabricado
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTipo('comercializado')}
+                      className={`relative z-10 flex-1 py-2 text-[10px] font-black uppercase tracking-widest transition-colors duration-300 ${
+                        tipo === 'comercializado' ? 'text-white' : 'text-slate-400 hover:text-slate-600'
+                      } ${isEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      Comercial.
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Plan de Distribución *</label>
+                  <div className="relative flex rounded-xl bg-slate-50 p-1 w-full border border-slate-100">
+                    <div
+                      className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-slate-900 shadow transition-transform duration-300 ${
+                        tipoDistribucion === 'MTS' ? 'translate-x-0' : 'translate-x-full'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setTipoDistribucion('MTS')}
+                      className={`relative z-10 flex-1 py-2 text-[10px] font-black uppercase tracking-widest transition-colors duration-300 ${
+                        tipoDistribucion === 'MTS' ? 'text-white' : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      MTS (Stock)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTipoDistribucion('MTO')}
+                      className={`relative z-10 flex-1 py-2 text-[10px] font-black uppercase tracking-widest transition-colors duration-300 ${
+                        tipoDistribucion === 'MTO' ? 'text-white' : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      MTO (Orden)
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Row 2 (Debajo del código): Nombre, Ref Cliente, Nombre Comercial */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-foreground">Nombre *</label>
-              <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+          {/* SECCIÓN 2: Descripción y Comercial */}
+          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Nombre Descriptivo *</label>
                 <input
                   value={nombre}
                   onChange={e => { nombreEditadoRef.current = true; setNombre(e.target.value) }}
                   required
-                  placeholder="Camiseta algodón"
-                  className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+                  placeholder="Ej: Camiseta algodón"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-black text-slate-900 uppercase outline-none focus:bg-white focus:border-slate-300 transition-all"
                 />
               </div>
-            </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Ref Cliente</label>
-              <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Referencia Cliente (B2B)</label>
                 <input
                   value={referenciaCliente}
                   onChange={e => setReferenciaCliente(e.target.value)}
                   placeholder="SKU-CLIENTE-123"
-                  className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-black text-slate-900 uppercase outline-none focus:bg-white focus:border-slate-300 transition-all"
                 />
               </div>
-            </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Nombre Comercial</label>
-              <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Nombre Comercial</label>
                 <input
                   value={nombreComercial}
                   onChange={e => setNombreComercial(e.target.value)}
-                  placeholder="Premium, Ejecutivo"
-                  className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+                  placeholder="Ej: Premium, Ejecutivo"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-black text-slate-900 uppercase outline-none focus:bg-white focus:border-slate-300 transition-all"
                 />
               </div>
             </div>
           </div>
 
-          {/* Row 3: Color + Marca + Precios */}
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Color</label>
-              <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+          {/* SECCIÓN 3: Logística y Precios */}
+          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-6 space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Color (Manual)</label>
                 <input
                   value={color}
                   onChange={e => setColor(e.target.value)}
-                  placeholder="Negro"
-                  className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+                  placeholder="Ej: Negro"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-black text-slate-900 uppercase outline-none focus:bg-white focus:border-slate-300 transition-all"
                 />
               </div>
-            </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Marca</label>
-              <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Marca / Colección</label>
                 <select
                   value={marcaId}
                   onChange={e => setMarcaId(e.target.value)}
-                  className="w-full bg-transparent text-body-sm text-foreground outline-none appearance-none"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-black text-slate-900 uppercase outline-none focus:bg-white focus:border-slate-300 transition-all cursor-pointer appearance-none"
                 >
-                  <option value="">—</option>
+                  <option value="">— Selección —</option>
                   {marcas.map(m => (
                     <option key={m.id} value={m.id}>{m.nombre}</option>
                   ))}
                 </select>
               </div>
-            </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">N1 (COP)</label>
-              <div className="relative rounded-lg bg-neu-base shadow-neu px-3 py-2">
-                <span className="text-muted-foreground text-xs mr-1">$</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={1000}
-                  value={precioN1}
-                  onChange={e => setPrecioN1(e.target.value)}
-                  placeholder="0"
-                  className="bg-transparent text-body-sm text-foreground outline-none w-20"
-                />
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">N1 (P. Lista)</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300">$</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1000}
+                    value={precioN1}
+                    onChange={e => setPrecioN1(e.target.value)}
+                    placeholder="0"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-8 pr-4 py-3 text-xs font-black text-slate-900 tabular-nums outline-none focus:bg-white focus:border-slate-300 transition-all"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">N2 (COP)</label>
-              <div className="relative rounded-lg bg-neu-base shadow-neu px-3 py-2">
-                <span className="text-muted-foreground text-xs mr-1">$</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={1000}
-                  value={precioN2}
-                  onChange={e => setPrecioN2(e.target.value)}
-                  placeholder="0"
-                  className="bg-transparent text-body-sm text-foreground outline-none w-20"
-                />
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">N2 (P. Mayor)</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300">$</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1000}
+                    value={precioN2}
+                    onChange={e => setPrecioN2(e.target.value)}
+                    placeholder="0"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-8 pr-4 py-3 text-xs font-black text-slate-900 tabular-nums outline-none focus:bg-white focus:border-slate-300 transition-all"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">N3 (COP)</label>
-              <div className="relative rounded-lg bg-neu-base shadow-neu px-3 py-2">
-                <span className="text-muted-foreground text-xs mr-1">$</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={1000}
-                  value={precioN3}
-                  onChange={e => setPrecioN3(e.target.value)}
-                  placeholder="0"
-                  className="bg-transparent text-body-sm text-foreground outline-none w-20"
-                />
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">N3 (Ex-Work)</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300">$</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1000}
+                    value={precioN3}
+                    onChange={e => setPrecioN3(e.target.value)}
+                    placeholder="0"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-8 pr-4 py-3 text-xs font-black text-slate-900 tabular-nums outline-none focus:bg-white focus:border-slate-300 transition-all"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Atributos - creación y edición */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Atributos de Configuración</label>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
-              {TIPOS_ATRIBUTO.map(tipoAtributo => {
-                const atributosDelTipo = atributosPT.filter(a => a.tipo === tipoAtributo)
-                return (
-                  <div key={tipoAtributo} className="space-y-0.5">
-                    <label className="text-[10px] font-medium text-muted-foreground block truncate">
-                      {LABELS_ATRIBUTO[tipoAtributo]}
-                    </label>
-                    <select
-                      value={atributosSeleccionados[tipoAtributo] ?? ''}
-                      onChange={e =>
-                        setAtributosSeleccionados(prev => ({
-                          ...prev,
-                          [tipoAtributo]: e.target.value,
-                        }))
-                      }
-                      className="w-full text-xs rounded-lg bg-neu-base shadow-neu-inset px-2 py-1.5 text-foreground outline-none appearance-none"
-                    >
-                      <option value="">—</option>
-                      {atributosDelTipo.map(attr => (
-                        <option key={attr.id} value={attr.id}>
-                          {attr.valor}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )
-              })}
+          {/* SECCIÓN 4: Atributos de Ingeniería */}
+          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-6 space-y-6">
+            <div className="space-y-3">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Atributos de Ingeniería (Controlados por PLM)</label>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                {TIPOS_ATRIBUTO.map(tipoAtributo => {
+                  const atributosDelTipo = atributosPT.filter(a => a.tipo === tipoAtributo)
+                  return (
+                    <div key={tipoAtributo} className="space-y-2">
+                      <label className="text-[8px] font-black text-slate-400 uppercase tracking-tighter block truncate px-1">
+                        {LABELS_ATRIBUTO[tipoAtributo]}
+                      </label>
+                      <select
+                        value={atributosSeleccionados[tipoAtributo] ?? ''}
+                        onChange={e =>
+                          setAtributosSeleccionados(prev => ({
+                            ...prev,
+                            [tipoAtributo]: e.target.value,
+                          }))
+                        }
+                        disabled={isEdit}
+                        className={cn(
+                          "w-full text-[10px] font-black uppercase tracking-tighter rounded-xl bg-slate-50 border border-slate-100 px-2 py-2.5 text-slate-900 outline-none appearance-none transition-all",
+                          isEdit ? "opacity-40 cursor-not-allowed" : "hover:bg-white hover:border-slate-300 focus:bg-white focus:border-slate-300"
+                        )}
+                      >
+                        <option value="">—</option>
+                        {atributosDelTipo.map(attr => (
+                          <option key={attr.id} value={attr.id}>
+                            {attr.valor}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </div>
 
-          {/* Row Final: Partida Arancelaria + Estado */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Partida Arancelaria</label>
-              <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+          {/* SECCIÓN 5: Otros Datos */}
+          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Partida Arancelaria (Aduanas)</label>
                 <input
                   value={partidaArancelaria}
                   onChange={e => setPartidaArancelaria(e.target.value)}
                   placeholder="Ej: 6109.10.00.00"
-                  className="w-full bg-transparent text-body-sm text-foreground outline-none placeholder:text-muted-foreground"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-black text-slate-900 uppercase outline-none focus:bg-white focus:border-slate-300 transition-all"
                 />
               </div>
-            </div>
 
-            {isEdit && (
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Estado</label>
-                <div className="rounded-lg bg-neu-base shadow-neu px-3 py-2">
+              {isEdit && (
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Estatus Operativo</label>
                   <select
                     value={estado}
                     onChange={e => setEstado(e.target.value as EstadoProducto)}
                     disabled={estado === 'inactivo'}
-                    className={`w-full bg-transparent text-body-sm text-foreground outline-none appearance-none ${estado === 'inactivo' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={cn(
+                      "w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-black text-slate-900 uppercase outline-none appearance-none transition-all",
+                      estado === 'inactivo' ? "opacity-50 cursor-not-allowed" : "focus:bg-white focus:border-slate-300 cursor-pointer"
+                    )}
                   >
                     {estado === 'inactivo' ? (
-                      <option value="activo">Activo</option>
+                      <option value="inactivo">Inactivo</option>
                     ) : (
                       <>
                         <option value="activo">Activo</option>
                         <option value="inactivo">Inactivo</option>
-                        <option value="en_desarrollo">En desarrollo</option>
+                        <option value="en_desarrollo">En desarrollo (I+D)</option>
                       </>
                     )}
                   </select>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-
-          {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
         </div>
       )}
 
@@ -804,31 +812,43 @@ function ProductForm({
           catalogoMateriales={catalogoMateriales}
           catalogoServicios={catalogoServicios}
           precioBase={product.precio_base}
-          costoTotal={bomData.costo_total}
-          costoMateriales={bomData.costo_materiales}
-          costoServicios={bomData.costo_servicios}
+          costoTotal={bomData.costoTotal}
+          costoMateriales={bomData.costoMateriales}
+          costoServicios={bomData.costoServicios}
           bomCompleto={bomCompletadoLocal}
           onBOMCompleted={() => setBomCompletadoLocal(true)}
           onBOMChanged={handleBOMChanged}
         />
       )}
 
-      <div className="flex gap-3 justify-end pt-6 border-t border-slate-100">
-        <button
-          type="button"
-          onClick={onDone}
-          className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all"
-        >
-          Descartar
-        </button>
-        <button
-          type="submit"
-          disabled={pending}
-          className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-100 border border-slate-800 disabled:opacity-50"
-        >
-          {pending && <Loader2 className="w-4 h-4 animate-spin" />}
-          {isEdit ? 'Guardar Cambios' : 'Crear Producto'}
-        </button>
+      {/* STICKY FOOTER PREMIUM */}
+      <div className="sticky bottom-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md rounded-[40px] border border-slate-100 shadow-2xl p-6 flex items-center justify-between mt-8">
+        <div className="flex flex-col">
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Validación de Datos</p>
+          {error ? (
+            <p className="text-xs font-black text-red-500 uppercase tracking-tight">{error}</p>
+          ) : (
+            <p className="text-xs font-black text-emerald-600 uppercase tracking-tight">Registro listo para sincronizar</p>
+          )}
+        </div>
+        
+        <div className="flex gap-4">
+          <button
+            type="button"
+            onClick={onDone}
+            className="px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all"
+          >
+            Descartar
+          </button>
+          <button
+            type="submit"
+            disabled={pending}
+            className="flex items-center gap-3 px-10 py-4 rounded-2xl bg-slate-900 text-white font-black text-[11px] uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-40"
+          >
+            {pending && <Loader2 className="w-4 h-4 animate-spin" />}
+            {isEdit ? 'Actualizar Referencia' : 'Confirmar Registro'}
+          </button>
+        </div>
       </div>
     </form>
   )

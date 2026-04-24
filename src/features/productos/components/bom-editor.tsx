@@ -537,11 +537,16 @@ function LineaRow({
         <div className="flex items-center gap-1 shrink-0">
           {editing ? (
             <>
-              <button onClick={() => setEditing(false)}
+              <button 
+                type="button"
+                onClick={() => setEditing(false)}
                 className="px-2 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground">
                 Cancelar
               </button>
-              <button onClick={handleSave} disabled={pending}
+              <button 
+                type="button"
+                onClick={handleSave} 
+                disabled={pending}
                 className="px-2 py-1 rounded-lg bg-primary-600 text-white text-xs font-semibold disabled:opacity-50 flex items-center gap-1">
                 {pending && <Loader2 className="w-3 h-3 animate-spin" />}
                 Guardar
@@ -549,11 +554,16 @@ function LineaRow({
             </>
           ) : (
             <>
-              <button onClick={() => setEditing(true)}
+              <button 
+                type="button"
+                onClick={() => setEditing(true)}
                 className="px-2 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground bg-neu-base shadow-neu">
                 Editar
               </button>
-              <button onClick={handleDelete} disabled={pending}
+              <button 
+                type="button"
+                onClick={handleDelete} 
+                disabled={pending}
                 className="w-7 h-7 rounded-lg bg-neu-base shadow-neu flex items-center justify-center text-muted-foreground hover:text-red-500 disabled:opacity-50">
                 {pending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
               </button>
@@ -589,6 +599,7 @@ function TabButton({ active, onClick, icon, children }: {
 function AddButton({ onClick, label, disabled }: { onClick: () => void; label: string; disabled?: boolean }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       className="flex items-center justify-center gap-2 w-full rounded-xl border-2 border-dashed border-black/10 py-3 text-body-sm text-muted-foreground hover:text-foreground hover:border-black/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"

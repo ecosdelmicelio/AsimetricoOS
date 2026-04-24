@@ -71,7 +71,7 @@ export function OPDetailClient({
 
   const id = op.id
   const estadoOP = op.estado as EstadoOP
-  const ESTADOS_CON_INSUMOS: EstadoOP[] = ['en_terminado', 'entregada', 'liquidada']
+  const ESTADOS_CON_INSUMOS: EstadoOP[] = ['en_confeccion', 'dupro_pendiente', 'en_terminado', 'entregada', 'liquidada']
   const ESTADOS_CON_LIQUIDACION: EstadoOP[] = ['entregada', 'liquidada']
   
   const reportes = reporteData.dataAll ?? []

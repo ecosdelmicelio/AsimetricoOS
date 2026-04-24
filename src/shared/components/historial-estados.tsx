@@ -61,24 +61,34 @@ export function HistorialEstados({ historial, createdAt, createdBy }: Props) {
   }, [])
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <History className="w-4 h-4" />
-        <h3 className="font-semibold text-foreground text-body-sm">Historial de Estados</h3>
+    <div className="space-y-6">
+      <div className="flex items-center gap-2 px-2">
+        <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
+          <History className="w-4 h-4" />
+        </div>
+        <div>
+          <h3 className="text-sm font-black text-slate-900 uppercase tracking-tighter">Historial de Estados</h3>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Trazabilidad de la orden</p>
+        </div>
       </div>
 
-      <div className="rounded-2xl bg-neu-base shadow-neu p-5">
+      <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm p-10 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none">
+          <History className="w-64 h-64" />
+        </div>
+        
         <div className="relative">
           {/* Línea vertical */}
-          <div className="absolute left-[11px] top-4 bottom-4 w-px bg-black/10" />
+          <div className="absolute left-[13px] top-4 bottom-4 w-px bg-slate-100" />
 
-          <div className="space-y-5">
+          <div className="space-y-8">
             {/* Evento: creación */}
             <TimelineItem
               dot="filled"
               label="Orden creada"
               sub={createdBy ?? 'Sistema'}
               time={isClient ? formatRelative(createdAt) : ''}
+              isFirst
             />
 
             {/* Transiciones de estado */}
@@ -88,14 +98,16 @@ export function HistorialEstados({ historial, createdAt, createdBy }: Props) {
                 : duracion(createdAt, h.timestamp_cambio)
 
               return (
-                <div key={h.id}>
+                <div key={h.id} className="relative">
                   {/* Duración entre estados */}
-                  <div className="flex items-center gap-2 pl-7 py-1">
-                    <span className="text-xs text-muted-foreground/60 italic">{durDesde} en {label(h.estado_anterior)}</span>
+                  <div className="flex items-center gap-2 pl-10 py-1 mb-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
+                      Permanencia: {durDesde}
+                    </span>
                   </div>
                   <TimelineItem
                     dot="ring"
-                    label={`→ ${label(h.estado_nuevo)}`}
+                    label={`Transición a ${label(h.estado_nuevo)}`}
                     sub={h.profiles?.full_name ?? 'Desconocido'}
                     time={isClient ? formatRelative(h.timestamp_cambio) : ''}
                   />
@@ -104,7 +116,9 @@ export function HistorialEstados({ historial, createdAt, createdBy }: Props) {
             })}
 
             {historial.length === 0 && (
-              <p className="pl-7 text-muted-foreground text-body-sm">Sin cambios de estado aún</p>
+              <p className="pl-10 text-slate-400 text-xs font-bold uppercase tracking-widest py-4 italic">
+                Sin cambios de estado adicionales registrados
+              </p>
             )}
           </div>
         </div>
@@ -118,36 +132,41 @@ function TimelineItem({
   label: itemLabel,
   sub,
   time,
+  isFirst = false,
 }: {
   dot: 'filled' | 'ring'
   label: string
   sub: string
   time: string
+  isFirst?: boolean
 }) {
   return (
-    <div className="flex items-start gap-3">
+    <div className="flex items-start gap-5 group">
       {/* Dot */}
-      <div className="relative z-10 mt-0.5 shrink-0">
+      <div className="relative z-10 mt-1 shrink-0">
         {dot === 'filled' ? (
-          <div className="w-6 h-6 rounded-full bg-neu-base shadow-neu flex items-center justify-center">
-            <div className="w-2.5 h-2.5 rounded-full bg-primary-500" />
+          <div className="w-7 h-7 rounded-xl bg-slate-900 flex items-center justify-center shadow-lg shadow-slate-200 group-hover:scale-110 transition-transform">
+            <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
           </div>
         ) : (
-          <div className="w-6 h-6 rounded-full bg-neu-base shadow-neu-inset flex items-center justify-center">
-            <div className="w-2 h-2 rounded-full bg-primary-400" />
+          <div className="w-7 h-7 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm group-hover:border-primary-500 transition-all">
+            <div className="w-2 h-2 rounded-full bg-primary-500" />
           </div>
         )}
       </div>
 
       {/* Contenido */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <span className="text-body-sm font-semibold text-foreground">{itemLabel}</span>
-          <span className="text-xs text-muted-foreground shrink-0" suppressHydrationWarning>
+      <div className="flex-1 min-w-0 bg-slate-50/50 p-4 rounded-2xl border border-transparent hover:border-slate-100 hover:bg-white transition-all group-hover:shadow-md">
+        <div className="flex items-start justify-between gap-4 mb-1">
+          <span className="text-sm font-black text-slate-900 uppercase tracking-tight">{itemLabel}</span>
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0" suppressHydrationWarning>
             {time}
           </span>
         </div>
-        <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
+        <div className="flex items-center gap-1.5">
+           <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+           <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">{sub}</p>
+        </div>
       </div>
     </div>
   )

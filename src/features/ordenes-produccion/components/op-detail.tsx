@@ -14,7 +14,7 @@ interface Props {
 }
 
 export async function OPDetail({ id }: Props) {
-  const ESTADOS_CON_INSUMOS: EstadoOP[] = ['en_terminado', 'entregada', 'liquidada']
+  const ESTADOS_CON_INSUMOS: EstadoOP[] = ['en_confeccion', 'dupro_pendiente', 'en_terminado', 'entregada', 'liquidada']
   const ESTADOS_CON_LIQUIDACION: EstadoOP[] = ['entregada', 'liquidada']
 
   const supabase = await createClient()
@@ -32,9 +32,9 @@ export async function OPDetail({ id }: Props) {
 
   if (opRes.error || !opRes.data) {
     return (
-      <div className="rounded-2xl bg-neu-base shadow-neu p-12 text-center">
-        <p className="text-foreground font-medium">Orden no encontrada</p>
-        <Link href="/ordenes-produccion" className="text-primary-600 text-body-sm mt-2 inline-block">
+      <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm p-20 text-center">
+        <p className="text-slate-900 font-black uppercase tracking-tighter text-xl">Orden no encontrada</p>
+        <Link href="/ordenes-produccion" className="text-primary-600 font-bold uppercase tracking-widest text-[10px] mt-4 inline-block hover:underline">
           ← Volver a la lista
         </Link>
       </div>
@@ -60,7 +60,7 @@ export async function OPDetail({ id }: Props) {
     ESTADOS_CON_INSUMOS.includes(estadoOP) ? getInsumosParaReporte(id) : Promise.resolve([]),
     ESTADOS_CON_LIQUIDACION.includes(estadoOP) ? calcularResumenLiquidacion(id) : Promise.resolve(null),
     ESTADOS_CON_LIQUIDACION.includes(estadoOP) ? getLiquidacionOP(id) : Promise.resolve(null),
-    ['en_terminado', 'entregada', 'liquidada'].includes(estadoOP)
+    ['en_confeccion', 'dupro_pendiente', 'en_terminado', 'entregada', 'liquidada'].includes(estadoOP)
       ? supabase.from('bodegas').select('id, nombre').eq('activo', true).order('nombre')
       : Promise.resolve({ data: [] }),
     ESTADOS_CON_LIQUIDACION.includes(estadoOP) ? getServiciosRef(id) : Promise.resolve([]),

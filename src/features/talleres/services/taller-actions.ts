@@ -98,12 +98,23 @@ export async function getTallerData(tallerId: string) {
     .order('created_at', { ascending: false })
     .limit(10)
 
+  // 6. Entregas (Despachos realizados)
+  const { data: entregas } = await supabase
+    .from('entregas')
+    .select(`
+      *,
+      op:ordenes_produccion(codigo)
+    `)
+    .in('op_id', (opsProcessed as any[]).map(o => o.id))
+    .order('created_at', { ascending: false })
+
   return {
     taller,
     inspecciones: insp || [],
     ops: opsProcessed,
     materiales: materialesEnTransito,
     liquidaciones: liquidaciones || [],
+    entregas: entregas || [],
     stats: {
       totalWIPUnits,
       expectedBilling,

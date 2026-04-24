@@ -389,3 +389,58 @@ export async function getTorreData(): Promise<TorreData> {
     }
   }
 }
+
+export async function getCapacidadData() {
+  const supabase = db(await createClient())
+  
+  const { data: talleres } = await supabase
+    .from('terceros')
+    .select('id, nombre, capacidad_diaria')
+    .contains('tipos', ['taller'])
+    .eq('estado', 'activo')
+
+  const { data: ops } = await supabase
+    .from('ordenes_produccion')
+    .select('*, op_detalle(cantidad_asignada)')
+    .in('estado', ['programada', 'en_corte', 'en_confeccion', 'en_terminado'])
+
+  const hoy = new Date()
+  const semanas = [0, 1, 2, 3].map(offset => {
+    const start = new Date(hoy)
+    start.setDate(hoy.getDate() + (offset * 7))
+    const end = new Date(start)
+    end.setDate(start.getDate() + 6)
+    return { start, end, label: `Semana ${offset + 1}` }
+  })
+
+  const capacityDetail = (talleres || []).map(t => {
+    const loadPerWeek = semanas.map(sem => {
+      // Unidades de OPs cuya fecha promesa cae en esta semana
+      const unitsInWeek = (ops || [])
+        .filter(op => op.taller_id === t.id)
+        .filter(op => {
+          const promesa = new Date(op.fecha_promesa)
+          return promesa >= sem.start && promesa <= sem.end
+        })
+        .reduce((acc, op) => acc + (op.op_detalle?.reduce((s: number, d: any) => s + (d.cantidad_asignada || 0), 0) || 0), 0)
+
+      const capSemanal = (t.capacidad_diaria || 0) * 5.5 // 5.5 días laborales
+      return {
+        semana: sem.label,
+        carga: unitsInWeek,
+        capacidad: capSemanal,
+        pct: capSemanal > 0 ? (unitsInWeek / capSemanal) * 100 : 0
+      }
+    })
+
+    return {
+      taller_id: t.id,
+      nombre: t.nombre,
+      capacidad_diaria: t.capacidad_diaria,
+      semanas: loadPerWeek,
+      totalWIP: (ops || []).filter(op => op.taller_id === t.id).reduce((acc, op) => acc + (op.op_detalle?.reduce((s: number, d: any) => s + (d.cantidad_asignada || 0), 0) || 0), 0)
+    }
+  })
+
+  return capacityDetail
+}

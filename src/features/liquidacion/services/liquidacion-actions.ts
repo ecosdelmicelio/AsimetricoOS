@@ -35,7 +35,7 @@ export async function getInsumosParaReporte(opId: string): Promise<InsumoParaRep
   // 3. BOM: materiales NO tela y NO servicio, por producto
   const { data: bomItems } = await supabase
     .from('bom')
-    .select('producto_id, material_id, cantidad, materiales!inner(nombre, unidad)')
+    .select('producto_id, material_id, cantidad, materiales!inner(nombre, unidad, es_tela)')
     .in('producto_id', productoIds)
     .eq('tipo', 'materia_prima')
     .eq('reportable_en_corte', false)

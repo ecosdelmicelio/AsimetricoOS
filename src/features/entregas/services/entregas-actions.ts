@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/shared/lib/supabase/server'
+import { crearNotificacion } from '@/shared/services/notification-actions'
 import type { CreateEntregaInput, EntregaConDetalle } from '@/features/entregas/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -114,12 +115,19 @@ export async function createEntrega(input: CreateEntregaInput & { reporte_corte_
 
   if (detError) return { error: detError.message }
 
-  // Transición: en_terminado → entregada al registrar la primera entrega
   await supabase
     .from('ordenes_produccion')
     .update({ estado: 'entregada' })
     .eq('id', input.op_id)
     .eq('estado', 'en_terminado')
+
+  // 3. Notificar al Orquestador
+  await crearNotificacion({
+    profile_role: 'orquestador',
+    titulo: '🚚 Nuevo Despacho de Taller',
+    mensaje: `El taller ha enviado ${cantidad_entregada} unidades de la OP-${opData.codigo}. Pendiente inspección.`,
+    data: { op_id: input.op_id, entrega_id: entrega.id }
+  })
 
   revalidatePath(`/ordenes-produccion/${input.op_id}`)
   return { data: { id: entrega.id, numero_entrega: entrega.numero_entrega } }
